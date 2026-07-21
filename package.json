@@ -1,0 +1,53 @@
+{
+  "name": "ethio-job-portal",
+  "version": "1.0.0",
+  "description": "EthioJob Portal - Connecting Ethiopian Youth with Employment Opportunities",
+  "main": "backend/index.js",
+  "scripts": {
+    "start": "node backend/index.js",
+    "server": "nodemon backend/index.js",
+    "client": "npm run dev --prefix client",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "seed": "node backend/utils/seeder.js",
+    "build": "npm run build --prefix client"
+  },
+  "keywords": [
+    "job-portal",
+    "ethiopia",
+    "mern",
+    "react",
+    "nodejs",
+    "mongodb"
+  ],
+  "author": "EthioJob Portal Team",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.3",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb-memory-server": "^10.1.2",
+    "mongoose": "^8.24.1",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^6.9.7",
+    "puppeteer-core": "^25.3.0",
+    "socket.io": "^4.6.2",
+    "uuid": "^9.0.1",
+    "xss-clean": "^0.1.4"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2"
+  }
+}

@@ -1,0 +1,381 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   EthioJob Portal - Global Styles
+   ============================================ */
+
+@layer base {
+  * {
+    @apply border-gray-200 dark:border-gray-700;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+    @apply antialiased;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply px-6 py-2.5 rounded-lg font-medium transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-primary-500 text-white hover:bg-primary-600;
+    @apply focus:ring-primary-500 shadow-sm hover:shadow-md;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary-500 text-white hover:bg-secondary-600;
+    @apply focus:ring-secondary-500 shadow-sm hover:shadow-md;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-white hover:bg-amber-600;
+    @apply focus:ring-accent shadow-sm hover:shadow-md;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary-500 text-primary-500 hover:bg-primary-50;
+    @apply dark:hover:bg-primary-900/20;
+  }
+
+  .btn-ghost {
+    @apply text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800;
+  }
+
+  .btn-danger {
+    @apply bg-red-500 text-white hover:bg-red-600 focus:ring-red-500;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm;
+    @apply border border-gray-200 dark:border-gray-700;
+    @apply p-6 transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:shadow-lg hover:-translate-y-1;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full px-4 py-2.5 rounded-lg border border-gray-300;
+    @apply focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-white;
+    @apply transition-all duration-200;
+  }
+
+  .textarea {
+    @apply input resize-none;
+  }
+
+  .select {
+    @apply input;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300;
+  }
+
+  .badge-success {
+    @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300;
+  }
+
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300;
+  }
+
+  .badge-danger {
+    @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300;
+  }
+
+  /* Container */
+  .container-custom {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+
+  /* Section */
+  .section {
+    @apply py-12 md:py-20;
+  }
+
+  /* Heading */
+  .heading-1 {
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold;
+  }
+
+  .heading-2 {
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold;
+  }
+
+  .heading-3 {
+    @apply text-2xl md:text-3xl font-bold;
+  }
+
+  /* Glassmorphism */
+  .glass {
+    @apply bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg;
+    @apply border border-white/20 dark:border-gray-700/20;
+  }
+
+  /* Skeleton Loader */
+  .skeleton {
+    @apply animate-pulse bg-gray-200 dark:bg-gray-700 rounded;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Loading Spinner */
+.spinner {
+  border: 3px solid rgba(15, 157, 88, 0.1);
+  border-top-color: #0F9D58;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Transitions */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 300ms;
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+/* ============================================
+   ACCESSIBILITY STYLES
+   Supports: Visual, Motor, Cognitive, Hearing
+   WCAG 2.2 AA Compliant
+   ============================================ */
+
+/* ── Accessibility Font Size System ── */
+html {
+  font-size: var(--a11y-font-size, 16px);
+}
+body {
+  line-height: var(--a11y-line-height, 1.5);
+  letter-spacing: var(--a11y-letter-spacing, 0em);
+}
+
+/* ── Dyslexia-Friendly Font ── */
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Regular.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-dyslexia,
+.font-dyslexia * {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
+}
+
+.font-mono-a11y,
+.font-mono-a11y * {
+  font-family: 'Courier New', 'Consolas', monospace !important;
+}
+
+/* ── High Contrast Mode ── */
+.high-contrast {
+  --tw-text-opacity: 1;
+}
+.high-contrast body {
+  background: #000 !important;
+  color: #fff !important;
+}
+.high-contrast .card,
+.high-contrast .bg-white,
+.high-contrast .dark\:bg-gray-800 {
+  background: #111 !important;
+  border-color: #fff !important;
+  color: #fff !important;
+}
+.high-contrast a,
+.high-contrast .text-primary-500 {
+  color: #5dff5d !important;
+}
+.high-contrast .btn-primary {
+  background: #fff !important;
+  color: #000 !important;
+  border: 2px solid #fff !important;
+}
+.high-contrast .btn-primary:hover {
+  background: #5dff5d !important;
+  color: #000 !important;
+}
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast select {
+  background: #222 !important;
+  color: #fff !important;
+  border-color: #aaa !important;
+}
+.high-contrast img {
+  filter: contrast(1.2);
+}
+
+/* ── Color Blind Filters ── */
+.cb-protanopia {
+  filter: url('#protanopia');
+}
+.cb-deuteranopia {
+  filter: url('#deuteranopia');
+}
+.cb-tritanopia {
+  filter: url('#tritanopia');
+}
+
+/* ── Focus Mode (dims non-essential content) ── */
+.focus-mode header,
+.focus-mode footer,
+.focus-mode nav,
+.focus-mode aside {
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+.focus-mode header:hover,
+.focus-mode header:focus-within,
+.focus-mode footer:hover,
+.focus-mode footer:focus-within,
+.focus-mode nav:hover,
+.focus-mode nav:focus-within,
+.focus-mode aside:hover,
+.focus-mode aside:focus-within {
+  opacity: 1;
+}
+.focus-mode main {
+  opacity: 1;
+}
+
+/* ── Reduced Motion ── */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Cursor Size ── */
+.cursor-large,
+.cursor-large * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M5 2l20 14-9 2 5 10-4 2-5-10-7 7z' fill='%23000' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E") 5 2, auto !important;
+}
+
+.cursor-xlarge,
+.cursor-xlarge * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M7 3l30 21-13 3 7 15-6 3-7-15-11 10z' fill='%23000' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E") 7 3, auto !important;
+}
+
+/* ── Enhanced Focus Indicators (WCAG 2.4.7) ── */
+*:focus-visible {
+  outline: 3px solid #0F9D58 !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+.high-contrast *:focus-visible {
+  outline: 3px solid #5dff5d !important;
+  outline-offset: 3px !important;
+}
+
+/* ── Screen Reader Only Utility ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.sr-only:focus,
+.sr-only.focus\:not-sr-only:focus {
+  position: fixed;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
