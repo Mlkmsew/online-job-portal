@@ -1,4 +1,4 @@
-# 🌍 EthioJob Portal
+# 🌍 OnlineJob Portal
 
 **Connecting Ethiopian Youth with Employment Opportunities**
 
