@@ -1,10 +1,13 @@
 // ============================================
 // Footer Component
 // ============================================
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { FiBriefcase, FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
 
 const Footer = () => {
+  const { t } = useTranslation();
+
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="container-custom py-12">
@@ -16,53 +19,53 @@ const Footer = () => {
               <span className="text-2xl font-bold text-white">EthioJob</span>
             </div>
             <p className="text-sm">
-              Connecting Ethiopian Youth with Employment Opportunities
+              {t('footer.brandDescription')}
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Quick Links</h3>
+            <h3 className="text-white font-semibold mb-4">{t('footer.quickLinks')}</h3>
             <ul className="space-y-2">
-              <li><Link to="/jobs" className="hover:text-primary-500 transition">Browse Jobs</Link></li>
-              <li><Link to="/companies" className="hover:text-primary-500 transition">Companies</Link></li>
-              <li><Link to="/about" className="hover:text-primary-500 transition">About Us</Link></li>
-              <li><Link to="/contact" className="hover:text-primary-500 transition">Contact</Link></li>
+              <li><Link to="/jobs" className="hover:text-primary-500 transition">{t('nav.jobs')}</Link></li>
+              <li><Link to="/companies" className="hover:text-primary-500 transition">{t('nav.companies')}</Link></li>
+              <li><Link to="/about" className="hover:text-primary-500 transition">{t('nav.about')}</Link></li>
+              <li><Link to="/contact" className="hover:text-primary-500 transition">{t('nav.contact')}</Link></li>
             </ul>
           </div>
 
           {/* For Job Seekers */}
           <div>
-            <h3 className="text-white font-semibold mb-4">For Job Seekers</h3>
+            <h3 className="text-white font-semibold mb-4">{t('footer.forJobSeekers')}</h3>
             <ul className="space-y-2">
-              <li><Link to="/register" className="hover:text-primary-500 transition">Create Account</Link></li>
-              <li><Link to="/jobs" className="hover:text-primary-500 transition">Search Jobs</Link></li>
-              <li><Link to="/faq" className="hover:text-primary-500 transition">FAQ</Link></li>
+              <li><Link to="/register" className="hover:text-primary-500 transition">{t('auth.register')}</Link></li>
+              <li><Link to="/jobs" className="hover:text-primary-500 transition">{t('jobs.title')}</Link></li>
+              <li><Link to="/faq" className="hover:text-primary-500 transition">{t('footer.faq')}</Link></li>
             </ul>
           </div>
 
           {/* Contact */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Contact Us</h3>
+            <h3 className="text-white font-semibold mb-4">{t('footer.contact')}</h3>
             <ul className="space-y-3">
               <li className="flex items-center space-x-2">
                 <FiMail className="text-primary-500" />
-                <span className="text-sm">info@ethiojob.com</span>
+                <span className="text-sm">{t('footer.email')}</span>
               </li>
               <li className="flex items-center space-x-2">
                 <FiPhone className="text-primary-500" />
-                <span className="text-sm">+251 11 555 1234</span>
+                <span className="text-sm">{t('footer.phone')}</span>
               </li>
               <li className="flex items-center space-x-2">
                 <FiMapPin className="text-primary-500" />
-                <span className="text-sm">Addis Ababa, Ethiopia</span>
+                <span className="text-sm">{t('footer.address')}</span>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
-          <p>&copy; {new Date().getFullYear()} EthioJob Portal. All rights reserved.</p>
+          <p>{t('footer.copyright', { year: new Date().getFullYear() })}</p>
         </div>
       </div>
     </footer>

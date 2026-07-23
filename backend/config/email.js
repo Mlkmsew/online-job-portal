@@ -12,7 +12,16 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  tls: {
+    // Allow self-signed certs for some SMTP providers in dev environments
+    rejectUnauthorized: process.env.NODE_ENV === 'production',
+  },
 });
+
+// Verify transporter connectivity on startup (helps debug SMTP issues)
+transporter.verify()
+  .then(() => console.log('✅ Nodemailer transporter is ready'))
+  .catch((err) => console.error('❌ Nodemailer transporter verification failed:', err));
 
 /**
  * Send email utility
@@ -20,7 +29,7 @@ const transporter = nodemailer.createTransport({
  */
 const sendEmail = async (options) => {
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'EthioJob Portal <noreply@ethiojob.com>',
+    from: process.env.EMAIL_FROM || 'OnlineJob Portal <noreply@ethiojob.com>',
     to: options.to,
     subject: options.subject,
     html: options.html,
@@ -29,10 +38,28 @@ const sendEmail = async (options) => {
 
   try {
     const info = await transporter.sendMail(mailOptions);
+    // Log detailed info to assist debugging delivery issues
     console.log(`📧 Email sent: ${info.messageId}`);
+    if (info.accepted && info.accepted.length) console.log('Accepted:', info.accepted);
+    if (info.rejected && info.rejected.length) console.log('Rejected:', info.rejected);
+    if (info.response) console.log('SMTP response:', info.response);
     return info;
   } catch (error) {
-    console.error('❌ Email sending failed:', error.message);
+    console.error('❌ Email sending failed:', error && error.message ? error.message : error);
+    // In development, print the full mail options so token/code can be retrieved
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        console.log('--- Mail options (DEV) ---');
+        console.log('To:', mailOptions.to);
+        console.log('Subject:', mailOptions.subject);
+        if (mailOptions.text) console.log('Text:', mailOptions.text);
+        // Avoid printing large HTML by truncating
+        if (mailOptions.html) console.log('HTML (truncated):', mailOptions.html.substring(0, 400));
+        console.log('-------------------------');
+      } catch (e) {
+        // ignore
+      }
+    }
     throw error;
   }
 };
@@ -40,7 +67,7 @@ const sendEmail = async (options) => {
 // Email templates
 const emailTemplates = {
   verifyEmail: (name, verifyUrl) => ({
-    subject: 'Verify Your Email - EthioJob Portal',
+    subject: 'Verify Your Email - OnlineJob Portal',
     html: `
       <!DOCTYPE html>
       <html>
@@ -62,17 +89,17 @@ const emailTemplates = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🌍 EthioJob Portal</h1>
+            <h1>🌍 OnlineJob Portal</h1>
             <p>Connecting Ethiopian Youth with Employment Opportunities</p>
           </div>
           <div class="body">
             <h2>Hello, ${name}! 👋</h2>
-            <p>Welcome to EthioJob Portal! We're excited to have you on board. Please verify your email address to activate your account and start exploring thousands of job opportunities.</p>
+            <p>Welcome to OnlineJob Portal! We're excited to have you on board. Please verify your email address to activate your account and start exploring thousands of job opportunities.</p>
             <a href="${verifyUrl}" class="btn">✅ Verify Email Address</a>
             <p>This link expires in <strong>24 hours</strong>. If you didn't create an account, please ignore this email.</p>
           </div>
           <div class="footer">
-            <p>© 2024 EthioJob Portal. All rights reserved.</p>
+            <p>© 2024 OnlineJob Portal. All rights reserved.</p>
             <p>Addis Ababa, Ethiopia</p>
           </div>
         </div>
@@ -81,8 +108,29 @@ const emailTemplates = {
     `,
   }),
 
+  verifyOTP: (name, code) => ({
+    subject: 'Your verification code - OnlineJob Portal',
+    text: `Hello ${name},\n\nYour verification code is: ${code}. It expires in 10 minutes.\n\nIf you did not request this, please ignore this email.\n\n— OnlineJob Portal`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"></head>
+      <body style="font-family:Arial,Helvetica,sans-serif;background:#F8FAFC;padding:20px;">
+        <div style="max-width:600px;margin:0 auto;background:#fff;padding:24px;border-radius:8px;">
+          <h2 style="color:#0F766E">Hello, ${name} 👋</h2>
+          <p>Your verification code is:</p>
+          <p style="font-size:22px;font-weight:bold;letter-spacing:4px">${code}</p>
+          <p style="color:#64748B">This code expires in <strong>10 minutes</strong>. If you didn't create an account, please ignore this email.</p>
+          <hr style="margin-top:20px;border:none;border-top:1px solid #EEF2F7" />
+          <p style="font-size:12px;color:#94A3B8">© OnlineJob Portal</p>
+        </div>
+      </body>
+      </html>
+    `,
+  }),
+
   resetPassword: (name, resetUrl) => ({
-    subject: 'Reset Your Password - EthioJob Portal',
+    subject: 'Reset Your Password - OnlineJob Portal',
     html: `
       <!DOCTYPE html>
       <html>
@@ -112,7 +160,7 @@ const emailTemplates = {
             <p>This link expires in <strong>10 minutes</strong>. If you didn't request a password reset, please ignore this email and your password will remain unchanged.</p>
           </div>
           <div class="footer">
-            <p>© 2024 EthioJob Portal. All rights reserved.</p>
+            <p>© 2024 OnlineJob Portal. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -147,7 +195,7 @@ const emailTemplates = {
             </div>
             <p>The employer will review your application and get back to you. You can track your application status from your dashboard.</p>
           </div>
-          <div class="footer"><p>© 2024 EthioJob Portal</p></div>
+          <div class="footer"><p>© 2024 OnlineJob Portal</p></div>
         </div>
       </body>
       </html>
@@ -183,7 +231,7 @@ const emailTemplates = {
             </div>
             <p>Please confirm your attendance by logging into your dashboard.</p>
           </div>
-          <div class="footer"><p>© 2024 EthioJob Portal</p></div>
+          <div class="footer"><p>© 2024 OnlineJob Portal</p></div>
         </div>
       </body>
       </html>
@@ -192,3 +240,4 @@ const emailTemplates = {
 };
 
 module.exports = { sendEmail, emailTemplates };
+

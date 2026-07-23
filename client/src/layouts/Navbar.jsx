@@ -34,10 +34,10 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await dispatch(logout()).unwrap();
-      toast.success('Logged out successfully');
+      toast.success(t('auth.logoutSuccess'));
       navigate('/');
     } catch (error) {
-      toast.error('Logout failed');
+      toast.error(t('auth.logoutFailed'));
     }
   };
 
@@ -76,7 +76,7 @@ const Navbar = () => {
               {t('nav.contact')}
             </Link>
             <Link to="/career-guide" className="text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 transition" role="menuitem">
-              Career Guide
+              {t('nav.careerGuide')}
             </Link>
 
             <LanguageSwitcher />
@@ -139,7 +139,7 @@ const Navbar = () => {
               {t('nav.contact')}
             </Link>
             <Link to="/career-guide" className="block text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 py-2" role="menuitem" onClick={() => setIsOpen(false)}>
-              Career Guide
+              {t('nav.careerGuide')}
             </Link>
             
             <div className="flex items-center gap-4 py-2">

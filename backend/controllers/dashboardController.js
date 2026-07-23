@@ -22,13 +22,30 @@ exports.getDashboard = asyncHandler(async (req, res) => {
     Interview.find({ applicant: userId, scheduledDate: { $gte: new Date() } }).sort({ scheduledDate: 1 }).limit(10),
   ]);
 
-  // Recommended jobs: match by skills
+  // Recommended jobs: match by skills and calculate percentage
   let recommended = [];
-  if (user && user.skills && user.skills.length) {
-    recommended = await Job.find({ skillsRequired: { $in: user.skills }, status: 'active' })
+  const userSkillIds = (user.skills || []).map((s) => (s._id ? s._id.toString() : s.toString()));
+  if (user && userSkillIds.length) {
+    const jobs = await Job.find({ skillsRequired: { $in: userSkillIds }, status: 'active' })
       .populate('company', 'name logo')
+      .populate('skillsRequired', 'name')
       .sort({ createdAt: -1 })
-      .limit(8);
+      .limit(16);
+
+    recommended = jobs
+      .map((job) => {
+        const requiredIds = (job.skillsRequired || []).map((skill) => skill._id.toString());
+        const matchedCount = requiredIds.filter((skillId) => userSkillIds.includes(skillId)).length;
+        const percentage = requiredIds.length ? Math.round((matchedCount / requiredIds.length) * 100) : 0;
+        return {
+          ...job.toObject(),
+          matchPercentage: percentage,
+          matchedSkillsCount: matchedCount,
+          requiredSkillsCount: requiredIds.length,
+        };
+      })
+      .sort((a, b) => b.matchPercentage - a.matchPercentage || new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 8);
   }
 
   // Recently applied jobs
@@ -52,7 +69,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
   since.setDate(since.getDate() - 29);
 
   const appAgg = await Application.aggregate([
-    { $match: { applicant: mongoose.Types.ObjectId(userId), createdAt: { $gte: since } } },
+    { $match: { applicant: new mongoose.Types.ObjectId(userId), createdAt: { $gte: since } } },
     {
       $group: {
         _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },

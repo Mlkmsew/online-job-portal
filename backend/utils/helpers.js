@@ -58,6 +58,14 @@ const hashToken = (token) => {
 };
 
 /**
+ * Escape user input for safe RegExp construction
+ */
+const escapeRegex = (text) => {
+  if (typeof text !== 'string') return '';
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+/**
  * Pick only allowed fields from object
  */
 const pick = (obj, fields) => {
@@ -80,4 +88,4 @@ const formatSalary = (salary) => {
   return `${currency || 'ETB'} ${range} / ${period || 'Month'}${isNegotiable ? ' (Negotiable)' : ''}`;
 };
 
-module.exports = { asyncHandler, paginate, createNotification, hashToken, pick, formatSalary };
+module.exports = { asyncHandler, paginate, createNotification, hashToken, pick, formatSalary, escapeRegex };

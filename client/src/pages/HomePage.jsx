@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import AnimatedSearch from '../components/home/AnimatedSearch';
 import PopularCategories from '../components/home/PopularCategories';
 import FeaturedJobs from '../components/home/FeaturedJobs';
@@ -14,22 +15,25 @@ import Newsletter from '../components/home/Newsletter';
 import CTA from '../components/home/CTA';
 import Footer from '../components/home/Footer';
 
-const HomePage = () => (
-  <main className="page-container">
-    <section className="hero-section">
-      <div className="hero-copy">
-        <span className="eyebrow">EthioJob Portal</span>
-        <h1>Connecting Ethiopian Youth with Employment Opportunities.</h1>
-        <p>Search jobs, build your profile, and apply to tech, healthcare, finance, and government roles across Ethiopia.</p>
-        <div className="hero-actions">
-          <Link to="/jobs" className="btn btn-primary">Explore Jobs</Link>
-          <Link to="/register" className="btn btn-secondary">Create Account</Link>
+const HomePage = () => {
+  const { t } = useTranslation();
+
+  return (
+    <main className="page-container">
+      <section className="hero-section">
+        <div className="hero-copy">
+          <span className="eyebrow">{t('common.appName')}</span>
+          <h1>{t('home.heroTitle')}</h1>
+          <p>{t('home.heroSubtitle')}</p>
+          <div className="hero-actions">
+            <Link to="/jobs" className="btn btn-primary">{t('home.heroActionExplore')}</Link>
+            <Link to="/register" className="btn btn-secondary">{t('home.heroActionCreate')}</Link>
+          </div>
         </div>
-      </div>
-      <motion.div className="hero-visual" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-        <div className="hero-card">Modern job portal for Ethiopian youth</div>
-      </motion.div>
-    </section>
+        <motion.div className="hero-visual" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <div className="hero-card">{t('home.heroCard')}</div>
+        </motion.div>
+      </section>
 
     <section className="container-custom -mt-12">
       <AnimatedSearch />

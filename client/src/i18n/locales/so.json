@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "EthioJob Portal",
+    "appName": "OnlineJob Portal",
     "tagline": "Ku xirida Dhalinyarada Itoobiya ee Fursadaha Shaqo",
     "loading": "La rarayaa...",
     "error": "Khalad",
@@ -107,6 +107,35 @@
     "website": "Websaydhka",
     "location": "Goobta"
   },
+  "about": {
+    "title": "Ku Saabsan OnlineJob Portal",
+    "descriptionTitle": "Sharaxaada",
+    "description": "OnlineJob Portal waa goob shaqo oo casri ah oo isku xirka dadka shaqo doonka ah iyo shirkadaha shaqo bixiya. Waxay bixisaa fursado shaqo oo la xushay, talo xirfadeed, iyo agab ka caawinaya shaqo raadinta si fudud.",
+    "missionTitle": "Hadafkeenna",
+    "missionText": "U banaaneyn inaan qof kasta siinno fursad shaqo oo ku habboon, hagid cad, iyo nidaam codsi oo aan dhib lahayn. Waxaan abuurnaa nidaam shaqaaleysiineed oo lagu kalsoonaan karo si xirfadlayaashu u kori karaan iyo loo shaqeeyayaashu si kalsooni leh u shaqaaleysiin karaan.",
+    "visionTitle": "Himiladeenna",
+    "visionText": "Mustaqbalka oo fursadaha shaqo ay fududaan karaan in la helo iyo qof kasta uu la kulmi karo shaqo uu jecel yahay. Waxaan rabnaa OnlineJob Portal inuu noqdo heerka shaqaaleysiinta hufan, ka qaybgalaya, iyo waxtar leh ee dalka oo dhan.",
+  },
+  "contact": {
+    "title": "Nala Soo Xiriir",
+    "subtitle": "Wax su'aal ah ha iga haynin, fariin noo soo dir waxaana kaga soo jawaabi doonaa sida ugu dhaqsaha badan.",
+    "form": {
+      "name": "Magacaaga",
+      "email": "Email-kaaga",
+      "message": "Farriintaada",
+      "submit": "Dir Farriin"
+    },
+    "getInTouch": "Nala Soo Xiriir",
+    "info": {
+      "emailLabel": "Email",
+      "emailValue": "support@ethiojob.com",
+      "phoneLabel": "Taleefanka",
+      "phoneValue": "0962795939",
+      "addressLabel": "Cinwaanka",
+      "addressValue": "Addis Ababa, Ethiopia"
+    },
+    "successMessage": "Farriintaada si guul leh ayaa loo diray!"
+  },
   "footer": {
     "quickLinks": "Xiriirada Degdegga ah",
     "forJobSeekers": "Wixii Shaqo doonayaasha ah",
@@ -116,6 +145,6 @@
     "phone": "Taleefanka",
     "address": "Cinwaanka",
     "followUs": "Nagu soo biir",
-    "copyright": "© 2024 EthioJob Portal. Xuquuqda daabacaadu waa dhowran tahay."
+    "copyright": "© 2024 OnlineJob Portal. Xuquuqda daabacaadu waa dhowran tahay."
   }
-}
+

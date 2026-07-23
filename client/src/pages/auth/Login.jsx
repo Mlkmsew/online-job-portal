@@ -90,9 +90,14 @@ const Login = () => {
 
             {/* Forgot Password */}
             <div className="text-right">
-              <Link to="/forgot-password" className="text-sm text-primary-500 hover:underline">
-                Forgot Password?
-              </Link>
+              <div className="flex flex-col gap-2 text-right">
+                <Link to="/forgot-password" className="text-sm text-primary-500 hover:underline">
+                  Forgot Password?
+                </Link>
+                <Link to="/verify-otp" className="text-sm text-primary-500 hover:underline">
+                  Verify email with code
+                </Link>
+              </div>
             </div>
 
             {/* Submit Button */}

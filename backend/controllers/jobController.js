@@ -4,7 +4,7 @@
 const Job = require('../models/Job');
 const Company = require('../models/Company');
 const Bookmark = require('../models/Bookmark');
-const { asyncHandler, paginate } = require('../utils/helpers');
+const { asyncHandler, paginate, escapeRegex } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 const APIFeatures = require('../utils/apiFeatures');
 
@@ -21,15 +21,16 @@ exports.getJobs = asyncHandler(async (req, res) => {
   // support employmentType alias
   if (req.query.employmentType && !req.query.jobType) queryObj.jobType = req.query.employmentType;
   // workMode case-insensitive (supports remote/hybrid/on-site)
-  if (req.query.workMode) queryObj.workMode = new RegExp(`^${req.query.workMode}$`, 'i');
+  if (req.query.workMode) queryObj.workMode = new RegExp(`^${escapeRegex(req.query.workMode)}$`, 'i');
   if (req.query.experienceLevel) queryObj.experienceLevel = req.query.experienceLevel;
   if (req.query.experience) queryObj.experienceLevel = req.query.experience;
   if (req.query.education) queryObj.educationRequired = req.query.education;
   if (req.query.region) queryObj['location.region'] = req.query.region;
-  if (req.query.city) queryObj['location.city'] = new RegExp(req.query.city, 'i');
+  if (req.query.city) queryObj['location.city'] = new RegExp(escapeRegex(req.query.city), 'i');
   if (req.query.company) queryObj.company = req.query.company;
   if (req.query.companyName) {
-    const comps = await Company.find({ name: new RegExp(req.query.companyName, 'i') }).select('_id');
+    const safeCompanyName = escapeRegex(req.query.companyName);
+    const comps = await Company.find({ name: new RegExp(safeCompanyName, 'i') }).select('_id');
     const ids = comps.map((c) => c._id);
     if (ids.length) queryObj.company = { $in: ids };
   }

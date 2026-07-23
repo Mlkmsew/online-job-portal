@@ -30,6 +30,7 @@ import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import VerifyEmail from './pages/auth/VerifyEmail';
+import VerifyOTP from './pages/auth/VerifyOTP';
 
 // Job Seeker Dashboard
 import JobSeekerDashboard from './pages/dashboard/jobseeker/Dashboard';
@@ -81,6 +82,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/verify-email/:token" element={<VerifyEmail />} />
+          <Route path="/verify-otp" element={<VerifyOTP />} />
 
           {/* Job Seeker Dashboard */}
           <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['jobseeker']}><DashboardLayout /></ProtectedRoute>}>

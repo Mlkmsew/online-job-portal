@@ -1,5 +1,5 @@
 // ============================================
-// EthioJob Portal - Backend Server Entry Point
+// OnlineJob Portal - Backend Server Entry Point
 // ============================================
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
@@ -72,7 +72,7 @@ app.use('/api/', apiLimiter);
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
-    message: '🌍 EthioJob Portal API is running!',
+    message: '🌍 OnlineJob Portal API is running!',
     version: '1.0.0',
     environment: process.env.NODE_ENV,
   });
@@ -102,6 +102,16 @@ app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/employer', require('./routes/employerRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
+// Development-only debug routes
+if (process.env.NODE_ENV === 'development') {
+  try {
+    app.use('/api/debug', require('./routes/debugRoutes'));
+    console.log('🔧 Debug routes mounted at /api/debug');
+  } catch (e) {
+    console.error('Failed to mount debug routes:', e.message || e);
+  }
+}
+
 // ============================================
 // Serve Frontend in Production
 // ============================================
@@ -127,7 +137,7 @@ server.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║        🌍  ETHIOJOB PORTAL - BACKEND SERVER 🌍           ║
+║        🌍  OnlineJob Portal - BACKEND SERVER 🌍           ║
 ║                                                           ║
 ║   Environment: ${process.env.NODE_ENV?.toUpperCase() || 'DEVELOPMENT'}                                    ║
 ║   Server running on: http://localhost:${PORT}              ║
@@ -159,3 +169,4 @@ process.on('SIGTERM', () => {
 });
 
 module.exports = app;
+

@@ -56,10 +56,10 @@ const CareerGuide = () => {
           Value-Added Services
         </span>
         <h1 className="text-4xl sm:text-5xl font-black mt-4 text-gray-900 dark:text-white leading-tight">
-          Accelerate Your Career with <span className="text-teal-600">EthioJob Guides</span>
+          Accelerate Your Career with <span className="text-teal-600">OnlineJob Guides</span>
         </h1>
         <p className="text-lg text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
-          We go beyond simply listing jobs. EthioJob provides resources, guidance, and partnerships to help fresh graduates and tech professionals land their dream roles.
+          We go beyond simply listing jobs. OnlineJob provides resources, guidance, and partnerships to help fresh graduates and tech professionals land their dream roles.
         </p>
       </div>
 

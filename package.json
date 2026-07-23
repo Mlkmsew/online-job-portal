@@ -1,7 +1,7 @@
 {
   "name": "ethio-job-portal",
   "version": "1.0.0",
-  "description": "EthioJob Portal - Connecting Ethiopian Youth with Employment Opportunities",
+  "description": "OnlineJob Portal - Connecting Ethiopian Youth with Employment Opportunities",
   "main": "backend/index.js",
   "scripts": {
     "start": "node backend/index.js",
@@ -19,7 +19,7 @@
     "nodejs",
     "mongodb"
   ],
-  "author": "EthioJob Portal Team",
+  "author": "OnlineJob Portal Team",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -34,6 +34,7 @@
     "express-validator": "^7.0.1",
     "helmet": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.12.0",
     "mongodb-memory-server": "^10.1.2",
     "mongoose": "^8.24.1",
     "morgan": "^1.10.0",
@@ -41,6 +42,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.7",
+    "pdf-parse": "^1.1.4",
     "puppeteer-core": "^25.3.0",
     "socket.io": "^4.6.2",
     "uuid": "^9.0.1",

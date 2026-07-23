@@ -1,24 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../../services/api';
-import { FiFileText, FiBookmark, FiBriefcase, FiEye, FiArrowRight, FiZap, FiAward, FiClock, FiMapPin } from 'react-icons/fi';
+import { FiFileText, FiBookmark, FiBriefcase, FiArrowRight, FiZap, FiAward, FiClock, FiMapPin } from 'react-icons/fi';
 
 const JobSeekerDashboard = () => {
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [applications, setApplications] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
   const [entryJobs, setEntryJobs] = useState([]);
+  const [recommendedJobs, setRecommendedJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [appsRes, bookmarksRes, jobsRes] = await Promise.all([
+        const [dashboardRes, appsRes, bookmarksRes, jobsRes] = await Promise.all([
+          api.get('/dashboard'),
           api.get('/applications/my'),
           api.get('/bookmarks'),
-          api.get('/jobs', { params: { experienceLevel: 'Entry Level', limit: 3 } })
+          api.get('/jobs', { params: { experienceLevel: 'Entry Level', limit: 3 } }),
         ]);
+
+        const dashboardData = dashboardRes.data?.data || {};
+        setRecommendedJobs(dashboardData.recommendedJobs || []);
         setApplications(appsRes.data?.data || appsRes.data || []);
         setBookmarks(bookmarksRes.data?.data || bookmarksRes.data || []);
         setEntryJobs(jobsRes.data?.data || jobsRes.data || []);
@@ -116,15 +122,55 @@ const JobSeekerDashboard = () => {
               <span className="font-black text-white">{profileCompleteness}%</span>
             </div>
           </div>
-          <Link
-            to="/dashboard/resume"
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/resume')}
             className="bg-white text-teal-700 hover:bg-teal-50 transition-all font-extrabold py-3 px-6 rounded-xl text-center text-sm shrink-0 self-start sm:self-center shadow-lg flex items-center gap-1.5"
           >
             Create Resume Now <FiArrowRight />
-          </Link>
+          </button>
           <div className="absolute -right-16 -bottom-16 w-60 h-60 bg-white/5 rounded-full blur-xl"></div>
         </div>
       )}
+
+      {/* Block: Recommended Jobs */}
+      <div className="card p-6 bg-white dark:bg-gray-800 border border-gray-150 dark:border-gray-700 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Recommended Jobs</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Jobs matched to your resume skills with a calculated fit score.</p>
+          </div>
+          <span className="text-xs uppercase tracking-wider text-teal-600 dark:text-teal-400 font-bold">Smart Match</span>
+        </div>
+
+        {recommendedJobs.length === 0 ? (
+          <div className="text-sm text-gray-500 dark:text-gray-400">Upload your resume to receive personalized job recommendations.</div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {recommendedJobs.map((job) => (
+              <div key={job._id} className="rounded-2xl border border-gray-200 dark:border-gray-700 p-4 hover:border-teal-300 transition">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{job.title}</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{job.company?.name || 'Company'}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-teal-50 text-teal-700">{job.matchPercentage}% Match</span>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <span>{job.jobType}</span>
+                  <span>{job.skillsRequired?.length || 0} skills</span>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span>{job.location?.city || job.location?.region || 'Remote/Unknown'}</span>
+                  <Link to={`/jobs/${job._id}`} className="text-teal-600 dark:text-teal-400 font-semibold hover:underline">View Job</Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Block 3: Curated Fresh Graduate Section */}
       <div className="space-y-4">

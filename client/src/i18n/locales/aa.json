@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "EthioJob Portal",
+    "appName": "OnlineJob Portal",
     "tagline": "Itiyoppiyak Datah Taamah Farkootih Edde Kah Asgalleenih Gila",
     "loading": "Edde helekih yan...",
     "error": "Aman",
@@ -116,6 +116,7 @@
     "phone": "Phone",
     "address": "Address",
     "followUs": "Nagu soo biir",
-    "copyright": "© 2024 EthioJob Portal. All rights reserved."
+    "copyright": "© 2024 OnlineJob Portal. All rights reserved."
   }
 }
+

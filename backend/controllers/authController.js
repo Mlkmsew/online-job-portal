@@ -7,6 +7,7 @@ const User = require('../models/user');
 const { sendTokenResponse, generateAccessToken } = require('../utils/jwt');
 const { sendEmail, emailTemplates } = require('../config/email');
 const { asyncHandler } = require('../utils/helpers');
+const { parseResumeSkills } = require('../utils/resumeParser');
 const { AppError } = require('../middleware/errorHandler');
 
 // @desc    Register new user
@@ -29,19 +30,29 @@ exports.register = asyncHandler(async (req, res, next) => {
     password,
     role: role || 'jobseeker',
   });
-
-  // Generate email verification token
-  const verifyToken = user.generateEmailVerificationToken();
+  // Generate numeric OTP for email verification
+  const code = user.generateOTP();
   await user.save({ validateBeforeSave: false });
 
-  // Send verification email
-  const verifyUrl = `${process.env.CLIENT_URL}/verify-email/${verifyToken}`;
+  // Send verification OTP email
   try {
-    const template = emailTemplates.verifyEmail(user.firstName, verifyUrl);
-    await sendEmail({ to: user.email, ...template });
+    // Prefer a dedicated OTP template if available
+    if (emailTemplates.verifyOTP) {
+      const template = emailTemplates.verifyOTP(user.firstName, code);
+      await sendEmail({ to: user.email, ...template });
+    } else {
+      await sendEmail({ to: user.email, subject: 'Your verification code', text: `Your verification code: ${code}` });
+    }
   } catch (emailErr) {
     // Don't fail registration if email fails
     console.error('Email failed:', emailErr.message);
+    // Development fallback: print OTP to server console
+    try {
+      console.log('🔔 Verification email failed to send. Development fallback:');
+      console.log(`OTP code (DEV): ${code} for ${user.email}`);
+    } catch (e) {
+      // ignore logging errors
+    }
   }
 
   sendTokenResponse(user, 201, res, 'Registration successful! Please check your email to verify your account.');
@@ -67,6 +78,10 @@ exports.login = asyncHandler(async (req, res, next) => {
 
   if (user.isSuspended) {
     return next(new AppError('Your account has been suspended. Please contact support.', 403));
+  }
+
+  if (!user.isEmailVerified) {
+    return next(new AppError('Please verify your email before logging in.', 403));
   }
 
   // Update last login
@@ -146,6 +161,19 @@ exports.sendOTP = asyncHandler(async (req, res, next) => {
   try {
     await sendEmail({ to: user.email, subject: 'Your verification code', text: `Your verification code: ${code}` });
   } catch (err) {
+    console.error('OTP email failed:', err.message);
+    // Development fallback: print OTP to server console and return success in dev
+    try {
+      console.log('🔔 OTP email failed to send. Development fallback:');
+      console.log(`OTP code (DEV): ${code} for ${user.email}`);
+    } catch (e) {
+      // ignore
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      return res.status(200).json({ success: true, message: 'OTP printed to server console (development).' });
+    }
+
     return next(new AppError('Could not send OTP email.', 500));
   }
 
@@ -276,7 +304,16 @@ exports.resendVerification = asyncHandler(async (req, res, next) => {
 
   const verifyUrl = `${process.env.CLIENT_URL}/verify-email/${verifyToken}`;
   const template = emailTemplates.verifyEmail(user.firstName, verifyUrl);
-  await sendEmail({ to: user.email, ...template });
+  try {
+    await sendEmail({ to: user.email, ...template });
+  } catch (err) {
+    console.error('Resend verification email failed:', err.message);
+    console.log('Verification link (DEV):', verifyUrl);
+    if (process.env.NODE_ENV === 'development') {
+      return res.status(200).json({ success: true, message: 'Verification link printed to server console (development).' });
+    }
+    return next(new AppError('Could not send verification email.', 500));
+  }
 
   res.status(200).json({ success: true, message: 'Verification email sent. Please check your inbox.' });
 });
@@ -423,7 +460,7 @@ exports.uploadAvatar = asyncHandler(async (req, res, next) => {
 exports.uploadCV = asyncHandler(async (req, res, next) => {
   if (!req.file) return next(new AppError('Please upload a CV file.', 400));
 
-  const user = await User.findByIdAndUpdate(
+  let user = await User.findByIdAndUpdate(
     req.user.id,
     {
       cv: req.file.path,
@@ -432,6 +469,19 @@ exports.uploadCV = asyncHandler(async (req, res, next) => {
     },
     { new: true }
   );
+
+  try {
+    const { skills: extractedSkills } = await parseResumeSkills(user.cv);
+    if (extractedSkills && extractedSkills.length) {
+      const existingSkillIds = (user.skills || []).map((id) => id.toString());
+      const resumeSkillIds = extractedSkills.map((skill) => skill._id.toString());
+      const combinedSkillIds = Array.from(new Set([...existingSkillIds, ...resumeSkillIds]));
+      user.skills = combinedSkillIds;
+      await user.save();
+    }
+  } catch (error) {
+    console.error('Resume parsing failed:', error.message);
+  }
 
   res.status(200).json({ success: true, message: 'CV uploaded successfully.', cv: user.cv });
 });

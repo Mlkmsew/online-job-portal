@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "ኢትዮጆብ ፖርታል",
+    "appName": "OnlineJob Portal",
     "tagline": "የኢትዮጵያ ወጣቶችን ከስራ እድሎች ጋር ማገናኘት",
     "loading": "በመጫን ላይ...",
     "error": "ስህተት",
@@ -26,6 +26,7 @@
     "companies": "ኩባንያዎች",
     "about": "ስለ እኛ",
     "contact": "ያግኙን",
+    "careerGuide": "የሙያ መመሪያ",
     "login": "ግባ",
     "register": "ተመዝገብ",
     "logout": "ውጣ",
@@ -46,6 +47,7 @@
     "loginSuccess": "በተሳካ ሁኔታ ገብተዋል!",
     "registerSuccess": "ምዝገባ ተሳክቷል!",
     "logoutSuccess": "በተሳካ ሁኔታ ወጥተዋል",
+    "logoutFailed": "ውጣ አልተሳካም",
     "invalidCredentials": "ልክ ያልሆነ ኢሜይል ወይም የይለፍ ቃል",
     "passwordMismatch": "የይለፍ ቃሎች አይገናኙም",
     "weakPassword": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን አለበት",
@@ -69,8 +71,18 @@
     "ctaTitle": "ለመጀመር ዝግጁ ነዎት?",
     "ctaSubtitle": "በሺዎች የሚቆጠሩ የኢትዮጵያ ወጣቶች የህልማቸውን ስራ እያገኙ ይቀላቀሉ",
     "ctaButton": "ነጻ መለያ ይፍጠሩ",
-    "featureCardTitle": "የኢትዮጵያ ባለሙያዎች በዘመናዊ ቢሮ",
-    "featureCardSubtitle": "ዛሬ በጣም የሚፈልጉትን ስራዎች ያግኙ እና በሀገር ውስጥ ተለይተው የሚታወቁ ቀጣሪዎችን ያግኙ።",
+    "heroActionExplore": "ስራዎችን ይፈልጉ",
+    "heroActionCreate": "መለያ ይፍጠሩ",
+    "heroCard": "የኢትዮጵያ ወጣቶች የዘመናዊ ስራ መድረክ",
+    "faqSectionTitle": "ብዙ ጥያቄዎች",
+    "faqShort1": "Q: እንዴት እንደምን ማመልከቻ እንሰጥ? A: የCVዎን ይጨምሩ እና Apply ይጫኑ.",
+    "faqShort2": "Q: ቀጣሪዎች እንዴት እንደሚያገኙኝ? A: በኢሜይል ወይም በመተግበሪያ መልዕክት.",
+    "newsletterTitle": "እኛን ይቀላቀሉ",
+    "newsletterText": "ማሳወቂያ ስለ ስራ እና ስለ ሙያ ምክሮች ይሰጥዎታል።",
+    "newsletterEmailPlaceholder": "ኢሜይልህ",
+    "newsletterButton": "ተመዝገብ",
+    "ctaCreateAccount": "መለያ ይፍጠሩ",
+    "ctaBrowseJobs": "ስራዎችን ይመልከቱ",
     "liveJobs": "የሚኖሩ የስራ ማስተዋወቂያዎች",
     "approvedCompanies": "የተፈቀዱ ኩባንያዎች",
     "exploreByCategory": "በምድብ ያስሱ",
@@ -153,6 +165,37 @@
     "website": "ድረ-ገጽ",
     "location": "አካባቢ"
   },
+  "about": {
+    "title": "ስለ OnlineJob Portal",
+    "descriptionTitle": "መግለጫ",
+    "description": "OnlineJob Portal በስራ ገበታዎች ላይ የቀረበ የዘመናዊ ገጽታ ነው፣ የስራ ፈለጊዎችን እና የባለሙያን ተቀማጭ የሚያደርግ መድረክ። እኛ የተጠናቀቀ የስራ ዕድሎች፣ ሙያዊ መመሪያዎች እና የማዕከላዊ የገንዘብ ምንጮችን በአንድ ቦታ እንዲያገኙ እንረዳለን።",
+    "missionTitle": "የእኛ ተልዕኮ",
+    "missionText": "ለእያንዳንዱ ባለሙያ የጋራ ስራ እድል ማግኘት፣ ገንዘብ ለማሳደግ እና ሂደታዊ ትምህርት ማዘጋጀት እንቁም። እኛ ስራ ማሳያዎችን በቀላሉ ለማግኘት የሚያስችላቸውን የታማኝ እና እውነተኛ አገልግሎቶች እናቀርባለን።",
+    "visionTitle": "የእኛ ራእይ",
+    "visionText": "ሁሉም ተሳትፎ ያለው መንገድ የስራ ዕድል እንዲኖራቸው እና እያንዳንዱ ባለሙያ የሚወደውን ስራ እንዲያገናኙ ለማስቻል እንከላከፋለን።"
+  },
+  "contact": {
+    "title": "እኛን ያግኙ",
+    "subtitle": "ጥያቄ ካለዎት ልኩን ይላኩና በቅርቡ እንመልሳለን።",
+    "form": {
+      "name": "ስምህ",
+      "email": "ኢሜይልህ",
+      "message": "መልእክትህ",
+      "submit": "መልእክት አስገባ"
+    },
+    "getInTouch": "እኛን ያግኙ",
+    "info": {
+      "emailLabel": "ኢሜይል",
+      "emailValue1": "melkamsewalehegn@gamil.com",
+      "emailValue": "thebuilder6763@gamil.com",
+      "phoneLabel": "ስልክ",
+      "phoneValue1": "0962795939",
+      "phoneValue": "0967631702",
+      "addressLabel": "አድራሻ",
+      "addressValue": "አዲስ አበባ፣ ኢትዮጵያ"
+    },
+    "successMessage": "መልእክትዎ በተሳካ ሁኔታ ተልኳል!"
+  },
   "footer": {
     "quickLinks": "ፈጣን አገናኞች",
     "forJobSeekers": "ለስራ ፈላጊዎች",
@@ -162,6 +205,22 @@
     "phone": "ስልክ",
     "address": "አድራሻ",
     "followUs": "ይከተሉን",
-    "copyright": "© 2024 ኢትዮጆብ ፖርታል። ሁሉም መብቶች የተጠበቁ ናቸው።"
+    "faq": "FAQ",
+    "brandDescription": "የኢትዮጵያ ወጣቶችን ከስራ እድሎች ጋር ማገናኘት",
+    "copyright": "© 2024 OnlineJob Portal. All rights reserved."
+  },
+  "faq": {
+    "title": "ብዙ ጥያቄዎች",
+    "question1": "እንዴት መለያ እንፈጥር?",
+    "answer1": "ከመጀመሪያ ጀምሮ ዝርዝሮችህን አስገባ። ኢሜይልህን እንዲሠራ ያረጋግጥ።",
+    "question2": "OnlineJob Portal ነፃ ነው?",
+    "answer2": "አዎ። መለያ ፈጥሮ ስራ ለመመዝገብ ነፃ ነው።",
+    "question3": "እንዴት ስራ እንመዝግብ?",
+    "answer3": "ስራዎችን ይመልከቱ፣ ስራ ዝርዝር ይጫኑ፣ እና Apply Now ይጫኑ። ፕሮፋይልዎን እና CVዎን አዘጋጅቱ።",
+    "question4": "ቀጣሪዎች ስራን ነፃ መለጥ ይችላሉ?",
+    "answer4": "አዎ። ቀጣሪዎች ኩባንያ ፕሮፋይል ሲፈጥሩ እና አስተዳደሩን ሲያገኙ ስራዎችን ማስቀመጥ ይችላሉ።",
+    "question5": "ምን ያህል ጊዜ ስለሚደርስ እንደገና እንደሚከታተል?",
+    "answer5": "የሚመለሱት ጊዜ በቀጣሪዎች ላይ ይተላለፋል። በዳሽቦርድዎ የማመልከቻ ሁኔታ ይመልከቱ።"
   }
 }
+

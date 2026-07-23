@@ -1,35 +1,35 @@
 // ============================================
-// የዳታቤዝ ውቅረት - MongoDB ግንኙነት
+// Database Configuration - MongoDB Connection
 // ============================================
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
   const mongoUri = process.env.MONGO_URI;
 
-  // MONGO_URI በ .env ፋይል ውስጥ መኖሩን ያረጋግጣል
+  // Checks if MONGO_URI exists in the .env file
   if (!mongoUri) {
-    console.error('❌ MONGO_URI በ .env ፋይል ውስጥ አልተገኘም!');
+    console.error('❌ MONGO_URI is not found in the .env file!');
     process.exit(1);
   }
 
   try {
-    // ከ Atlas ጋር ለመገናኘት መሞከር
+    // Attempting to connect to Atlas
     const conn = await mongoose.connect(mongoUri);
-    console.log(`✅ MongoDB ተገናኝቷል: ${conn.connection.host}`);
+    console.log(`✅ MongoDB isconnected: ${conn.connection.host}`);
   } catch (error) {
-    // ግንኙነቱ ካልተሳካ ስህተቱን ያሳያል እና ፕሮግራሙን ያቆማል
-    console.error(`❌ የ MongoDB ግንኙነት ስህተት: ${error.message}`);
+    // If the connection fails, it shows the error and stops the program
+    console.error(`❌ MongoDB connection error: ${error.message}`);
     process.exit(1);
   }
 };
 
-// የግንኙነት ሁኔታዎችን መከታተል
+// Monitoring connection states
 mongoose.connection.on('disconnected', () => {
-  console.warn('⚠️  MongoDB ተቋርጧል');
+  console.warn('⚠️  MongoDB disconnected!');
 });
 
 mongoose.connection.on('reconnected', () => {
-  console.log('🔄 MongoDB እንደገና ተገናኝቷል');
+  console.log('🔄 MongoDB is reconnected!');
 });
 
 module.exports = connectDB;

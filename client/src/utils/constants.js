@@ -197,6 +197,8 @@ export const API_ENDPOINTS = {
     logout: '/auth/logout',
     me: '/auth/me',
     verifyEmail: '/auth/verify-email',
+    sendOTP: '/auth/send-otp',
+    verifyOTP: '/auth/verify-otp',
     forgotPassword: '/auth/forgot-password',
     resetPassword: '/auth/reset-password',
   },

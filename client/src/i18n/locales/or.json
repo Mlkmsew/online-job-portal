@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "EthioJob Portal",
+    "appName": "OnlineJob Portal",
     "tagline": "Dargaggoota Itiyoophiyaa Carraa Hojii waliin walqunnamsiisuu",
     "loading": "Fe'aa jira...",
     "error": "Dogoggora",
@@ -26,6 +26,7 @@
     "companies": "Dhaabbilee",
     "about": "Waa'ee Keenya",
     "contact": "Nu Qunnamaa",
+    "careerGuide": "Qajeelfama Hojii",
     "login": "Seeni",
     "register": "Galmaa'i",
     "logout": "Ba'i",
@@ -46,6 +47,7 @@
     "loginSuccess": "Milkaa'inaan seentan!",
     "registerSuccess": "Galmaan milkaa'ina!",
     "logoutSuccess": "Milkaa'inaan ba'tan",
+    "logoutFailed": "Ba'uun hin milkaa'in",
     "invalidCredentials": "Email ykn jecha icciitii sirrii miti",
     "passwordMismatch": "Jechoonni icciitii wal hin simatan",
     "weakPassword": "Jecha icciitii yoo xiqqaate arfii 8 ta'uu qaba",
@@ -69,6 +71,18 @@
     "ctaTitle": "Jalqabuuf Qophii Dha?",
     "ctaSubtitle": "Kumaatamaan lakkaa'aman dargaggoota Itiyoophiyaa hojii abjuu isaanii argatan waliin makamaa",
     "ctaButton": "Herrega Bilisaa Uumi",
+    "heroActionExplore": "Hojiiwwan Barbaadi",
+    "heroActionCreate": "Herrega Uumi",
+    "heroCard": "Marsariitii hojii haaraa dargaggoota Itiyoophiyaaaf",
+    "faqSectionTitle": "Gaaffiiwwan Baay'ee Gaafataman",
+    "faqShort1": "Q: Akkamitti iyyannoo dhiyeessa? A: CV kee olkaa'ii fi Apply tuqi.",
+    "faqShort2": "Q: Qacaroonni na akkamitti quunnamu? A: Email ykn ergaa app irratti." ,
+    "newsletterTitle": "Nuti waliin ta'i",
+    "newsletterText": "Beeksisa hojii fi qajeelfama hojii argadhu.",
+    "newsletterEmailPlaceholder": "Email kee",
+    "newsletterButton": "Galmaa'i",
+    "ctaCreateAccount": "Galmaa'i",
+    "ctaBrowseJobs": "Hojiiwwan Ilaali",
     "featureCardTitle": "Ogeeyyii Itiyoophiyaa biraa moderneetti",
     "featureCardSubtitle": "Hojiiwwan har'a baay'ee barbaachisan argadhuu fi qacaroota naannoo keessatti beekamoo argadhu.",
     "liveJobs": "Hojiiwwan haaraa",
@@ -153,6 +167,37 @@
     "website": "Marsariitii",
     "location": "Bakka"
   },
+  "about": {
+    "title": "Waa'ee OnlineJob Portal",
+    "descriptionTitle": "Ibsa",
+    "description": "OnlineJob Portal marsariitii hojii ifaa, salphaa, fi amanamaa dha kan namoota hojii barbaadanii fi dhaabbilee qacaranii walitti fidu. Garee keenya deegarsa hojii dameewwan adda addaa irratti dabalatee, qajeelfama muuxannoo fi mala hojii keessa jiru walitti qindeessa.",
+    "missionTitle": "Kaayyoo Keenya",
+    "missionText": "Nama hundaa hojii isaaf mijataa fi carraa hojiidhaan guddachuuf jiru akka argatu gochuudha. Sirna qacarrii amanamaa fi salphaa, tajaajila gargaarsa naamusaa, fi hubannoo seektara hojii kennuudhaan hojjattootaa fi qacaroota waliin tumsina.",
+    "visionTitle": "Mul'ata Keenya",
+    "visionText": "Biyyattii keessatti carraan hojii ifaa fi qindoomina qabu akka uumamu, namni hundi hojii isa jaalatu argatee guddachuuf akka carraa argatu. OnlineJob Portal qacarrii bu'a qabeessa, hirmaachisaa, fi ifaa biyya keessaa dabalata.",
+    "contact": {
+      "title": "Nu Qunnamaa",
+      "subtitle": "Gaaffii yoo qabduu nuuf ergi, deebii siif ni kennina.",
+      "form": {
+        "name": "Maqaa Keessaa",
+        "email": "Email Keessaa",
+        "message": "Ergaa Keessaa",
+        "submit": "Ergaa Ergi"
+      },
+      "getInTouch": "Nu Qunnamaa",
+      "info": {
+        "emailLabel": "Email",
+        "phoneLabel": "Bilbilaa",
+        "phoneValue1": "0962795939",
+        "emailValue1": "melkamsewalehegn@gamil.com",
+        "emailValue": "thebuilder6763@gamil.com",
+        "phoneValue": "0967631702",
+        "addressLabel": "Teessoo",
+        "addressValue": "Addis Ababa, Ethiopia"
+      },
+      "successMessage": "Ergaan kee milkaa'inaan ergame!"
+    }
+  },
   "footer": {
     "quickLinks": "Geessituu Saffisaa",
     "forJobSeekers": "Barbaaddota Hojiitiif",
@@ -162,6 +207,22 @@
     "phone": "Bilbilaa",
     "address": "Teessoo",
     "followUs": "Nu Hordofaa",
-    "copyright": "© 2024 EthioJob Portal. Mirgi hundi ni eegama."
+    "faq": "Gaaffii fi Deebii",
+    "brandDescription": "Dargaggoota Itiyoophiyaa Carraa Hojii waliin walqunnamsiisuu",
+    "copyright": "© 2024 OnlineJob Portal. Mirgi hundi ni eegama."
+  },
+  "faq": {
+    "title": "Gaaffiiwwan Baay’ee Gaafataman",
+    "question1": "Akkamitti herrega uumuu danda’a?",
+    "answer1": "Maqaa kee galchi, odeeffannoo kee guuti, fi email kee mirkaneessi.",
+    "question2": "OnlineJob Portal bilisaa dha?",
+    "answer2": "Eeyyee! Herrega uumuu fi hojiiwwan dhiyeessuun bilisaa dha.",
+    "question3": "Akkamitti hojii dhiyeessa?",
+    "answer3": "Hojiiwwan ilaali, tarree hojii cuqaasi, fi Apply Now cuqaasi. Prfaaayilii fi CV kee qopheessi.",
+    "question4": "Qacartoonni hojii bilisaa dhiyeessuu danda’uu?",
+    "answer4": "Eeyyee, qacartoonni proofiilii dhaabbataa uumuun fi hooggansa argachuun hojii dhiyeessuu danda’u.",
+    "question5": "Deebii argachuuf yeroo meeqa fudhata?",
+    "answer5": "Yeroon deebii qacartoota irratti hundaa’a. Haala iyyannoo kee dashboard irra ilaali."
   }
 }
+

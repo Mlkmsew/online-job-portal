@@ -22,8 +22,10 @@ const Register = () => {
     setLoading(true);
     try {
       await dispatch(registerUser(data)).unwrap();
-      toast.success('Registration successful! Please verify your email.');
-      navigate('/dashboard');
+      // Save the email so OTP page can prefill
+      try { localStorage.setItem('pendingVerificationEmail', data.email); } catch (e) {}
+      toast.success('Registration successful! Please verify your email with the code sent.');
+      navigate('/verify-otp');
     } catch (error) {
       const message =
         error?.errors?.length > 0

@@ -22,7 +22,8 @@ class APIFeatures {
 
   search(fields) {
     if (this.queryString.search) {
-      const searchRegex = new RegExp(this.queryString.search, 'i');
+      const safeSearch = this.queryString.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(safeSearch, 'i');
       const searchConditions = fields.map((field) => ({ [field]: searchRegex }));
       this.query = this.query.find({ $or: searchConditions });
     }

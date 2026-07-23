@@ -3,7 +3,7 @@
 // ============================================
 const Company = require('../models/Company');
 const Job = require('../models/Job');
-const { asyncHandler, paginate } = require('../utils/helpers');
+const { asyncHandler, paginate, escapeRegex } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 
 // @desc    Get all companies
@@ -15,9 +15,10 @@ exports.getCompanies = asyncHandler(async (req, res) => {
   if (req.query.region) query['location.region'] = req.query.region;
   if (req.query.isFeatured === 'true') query.isFeatured = true;
   if (req.query.search) {
+    const safeSearch = escapeRegex(req.query.search);
     query.$or = [
-      { name: new RegExp(req.query.search, 'i') },
-      { description: new RegExp(req.query.search, 'i') },
+      { name: new RegExp(safeSearch, 'i') },
+      { description: new RegExp(safeSearch, 'i') },
     ];
   }
 

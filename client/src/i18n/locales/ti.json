@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "ኢትዮጆብ ፖርታል",
+    "appName": "OnlineJob Portal",
     "tagline": "ንመንእሰያት ኢትዮጵያ ምስ ዕድላት ስራሕ ምትእስሳር",
     "loading": "ይጽዕን ኣሎ...",
     "error": "ጌጋ",
@@ -118,6 +118,6 @@
     "phone": "ተሌፎን",
     "address": "ኣድራሻ",
     "followUs": "ስዓቡና",
-    "copyright": "© 2024 ኢትዮጆብ ፖርታል። ኩሎም መሰላት ተሓሊሎም እዮም።"
+    "copyright": "© 2024 OnlineJob Portal. All rights reserved."
   }
 }

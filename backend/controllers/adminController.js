@@ -7,7 +7,7 @@ const Job = require('../models/Job');
 const Application = require('../models/Application');
 const Category = require('../models/Category');
 const Skill = require('../models/Skill');
-const { asyncHandler, paginate } = require('../utils/helpers');
+const { asyncHandler, paginate, escapeRegex } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 
 // ========== DASHBOARD ANALYTICS ==========
@@ -80,10 +80,11 @@ exports.getUsers = asyncHandler(async (req, res) => {
   if (req.query.isEmailVerified) query.isEmailVerified = req.query.isEmailVerified === 'true';
   if (req.query.isSuspended) query.isSuspended = req.query.isSuspended === 'true';
   if (req.query.search) {
+    const safeSearch = escapeRegex(req.query.search);
     query.$or = [
-      { firstName: new RegExp(req.query.search, 'i') },
-      { lastName: new RegExp(req.query.search, 'i') },
-      { email: new RegExp(req.query.search, 'i') },
+      { firstName: new RegExp(safeSearch, 'i') },
+      { lastName: new RegExp(safeSearch, 'i') },
+      { email: new RegExp(safeSearch, 'i') },
     ];
   }
 

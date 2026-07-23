@@ -381,7 +381,7 @@ EMAIL_PORT=587
 EMAIL_SECURE=false
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_app_password
-EMAIL_FROM=EthioJob Portal <noreply@ethiojob.com>
+EMAIL_FROM=OnlineJob Portal <noreply@ethiojob.com>
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
@@ -608,7 +608,7 @@ This project is licensed under the MIT License.
 
 ## 👨‍💻 Author
 
-**EthioJob Portal Team**
+**OnlineJob Portal Team**
 
 ---
 
@@ -631,3 +631,4 @@ For support, email support@ethiojob.com or join our community.
 ---
 
 **Made with ❤️ for Ethiopian Youth**
+

@@ -1,15 +1,18 @@
+import { useTranslation } from 'react-i18next';
+
 const FAQ = () => {
+  const { t } = useTranslation();
   const faqs = [
-    { q: 'How do I create an account?', a: 'Click on "Get Started" and fill in your details. Verify your email to activate your account.' },
-    { q: 'Is EthioJob Portal free to use?', a: 'Yes! Creating an account and applying for jobs is completely free for job seekers.' },
-    { q: 'How do I apply for a job?', a: 'Browse jobs, click on a job listing, and click "Apply Now". Make sure your profile and CV are up to date.' },
-    { q: 'Can employers post jobs for free?', a: 'Yes, employers can post jobs after creating a company profile and getting admin approval.' },
-    { q: 'How long does it take to get a response?', a: 'Response times vary by employer. You can track your application status in your dashboard.' },
+    { q: t('faq.question1'), a: t('faq.answer1') },
+    { q: t('faq.question2'), a: t('faq.answer2') },
+    { q: t('faq.question3'), a: t('faq.answer3') },
+    { q: t('faq.question4'), a: t('faq.answer4') },
+    { q: t('faq.question5'), a: t('faq.answer5') },
   ];
 
   return (
     <div className="section container-custom">
-      <h1 className="heading-2 text-center mb-12">Frequently Asked Questions</h1>
+      <h1 className="heading-2 text-center mb-12">{t('faq.title')}</h1>
       <div className="max-w-3xl mx-auto space-y-4">
         {faqs.map((faq, i) => (
           <div key={i} className="card">

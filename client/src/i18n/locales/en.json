@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "EthioJob Portal",
+    "appName": "OnlineJob Portal",
     "tagline": "Connecting Ethiopian Youth with Employment Opportunities",
     "loading": "Loading...",
     "error": "Error",
@@ -26,6 +26,7 @@
     "companies": "Companies",
     "about": "About",
     "contact": "Contact",
+    "careerGuide": "Career Guide",
     "login": "Login",
     "register": "Register",
     "logout": "Logout",
@@ -46,6 +47,7 @@
     "loginSuccess": "Login successful!",
     "registerSuccess": "Registration successful!",
     "logoutSuccess": "Logged out successfully",
+    "logoutFailed": "Logout failed",
     "invalidCredentials": "Invalid email or password",
     "passwordMismatch": "Passwords do not match",
     "weakPassword": "Password must be at least 8 characters",
@@ -69,8 +71,20 @@
     "ctaTitle": "Ready to Get Started?",
     "ctaSubtitle": "Join thousands of Ethiopian youth finding their dream jobs",
     "ctaButton": "Create Free Account",
-    "featureCardTitle": "Ethiopian professionals in a modern office",
-    "featureCardSubtitle": "Discover today’s most in-demand roles and connect with employers who value local talent.",
+    "heroActionExplore": "Explore Jobs",
+    "heroActionCreate": "Create Account",
+    "heroCard": "Modern job portal for Ethiopian youth",
+    "faqSectionTitle": "Frequently Asked Questions",
+    "faqShort1": "Q: How do I apply? A: Upload your CV and click Apply.",
+    "faqShort2": "Q: How do employers contact me? A: Via email or in-app messages.",
+    "newsletterTitle": "Join our newsletter",
+    "newsletterText": "Get job alerts and career tips.",
+    "newsletterEmailPlaceholder": "Your email",
+    "newsletterButton": "Subscribe",
+    "ctaCreateAccount": "Create Account",
+    "ctaBrowseJobs": "Browse Jobs",
+    "heroCardTitle": "Ethiopian professionals in a modern office",
+    "heroCardSubtitle": "Discover today’s most in-demand roles and connect with employers who value local talent.",
     "liveJobs": "Live job listings",
     "approvedCompanies": "Approved companies",
     "exploreByCategory": "Explore by Category",
@@ -153,6 +167,39 @@
     "website": "Website",
     "location": "Location"
   },
+  "about": {
+    "title": "About OnlineJob Portal",
+    "descriptionTitle": "Description",
+    "description": "OnlineJob Portal is a modern employment marketplace built to empower job seekers and employers with smarter, faster hiring tools. Our platform brings together local talent, curated job opportunities, and career resources in one easy-to-use experience.",
+    "missionTitle": "Our Mission",
+    "missionText": "To empower every professional with access to relevant jobs, clear career guidance, and a seamless application journey. We strive to create a trusted hiring ecosystem that helps talent grow and employers hire with confidence.",
+    "visionTitle": "Our Vision",
+    "visionText": "A future where opportunity is easy to find and every candidate can connect with work they love. We want OnlineJob Portal to set the standard for transparent, inclusive, and efficient hiring nationwide."
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Have questions? Send us a message and we will get back to you shortly.",
+    "form": {
+      "name": "Your Name",
+      "email": "Your Email",
+      "message": "Your Message",
+      "submit": "Send Message"
+    },
+    "getInTouch": "Get in Touch",
+    "info": {
+      "emailLabel": "Email",
+      "emailValue1": "melkamsewalehegn@gamil.com",
+      "emailValue2": "thebuilder6763@gamil.com",
+      "emailValue3": "jemalyimer@gmail.com",
+      "phoneLabel": "Phone",
+      "phoneValue1": "09627959392",
+      "phoneValue2": "0967631702",
+      "phoneValue3": "0978041594",
+      "addressLabel": "Address",
+      "addressValue": "Debre Berhan, Ethiopia"
+    },
+    "successMessage": "Message sent successfully!"
+  },
   "footer": {
     "quickLinks": "Quick Links",
     "forJobSeekers": "For Job Seekers",
@@ -162,6 +209,22 @@
     "phone": "Phone",
     "address": "Address",
     "followUs": "Follow Us",
-    "copyright": "© 2024 EthioJob Portal. All rights reserved."
+    "faq": "FAQ",
+    "brandDescription": "Connecting Ethiopian Youth with Employment Opportunities",
+    "copyright": "© 2024 OnlineJob Portal. All rights reserved."
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "question1": "How do I create an account?",
+    "answer1": "Click on Get Started and fill in your details. Verify your email to activate your account.",
+    "question2": "Is OnlineJob Portal free to use?",
+    "answer2": "Yes! Creating an account and applying for jobs is completely free for job seekers.",
+    "question3": "How do I apply for a job?",
+    "answer3": "Browse jobs, click on a job listing, and click Apply Now. Make sure your profile and CV are up to date.",
+    "question4": "Can employers post jobs for free?",
+    "answer4": "Yes, employers can post jobs after creating a company profile and getting admin approval.",
+    "question5": "How long does it take to get a response?",
+    "answer5": "Response times vary by employer. You can track your application status in your dashboard."
   }
 }
+

@@ -31,7 +31,7 @@ const RegisterPage = () => {
     <div className="auth-page">
       <div className="auth-card">
         <h2>Create Your Account</h2>
-        <p>Join EthioJob Portal and start applying for jobs today.</p>
+        <p>Join OnlineJob Portal and start applying for jobs today.</p>
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="input-grid">
             <label>First Name<input name="firstName" type="text" value={form.firstName} onChange={handleChange} required /></label>
@@ -53,3 +53,4 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
+

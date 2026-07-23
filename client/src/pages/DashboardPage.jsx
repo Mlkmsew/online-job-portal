@@ -2,7 +2,7 @@ const DashboardPage = () => (
   <div className="dashboard-page">
     <div className="dashboard-hero">
       <h2>Dashboard</h2>
-      <p>Welcome to your EthioJob dashboard. Track applications, manage your profile, and discover relevant opportunities.</p>
+      <p>Welcome to your OnlineJob dashboard. Track applications, manage your profile, and discover relevant opportunities.</p>
     </div>
     <div className="dashboard-grid">
       <div className="dashboard-card">
