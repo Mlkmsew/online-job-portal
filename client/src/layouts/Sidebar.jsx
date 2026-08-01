@@ -3,7 +3,7 @@
 // ============================================
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FiHome, FiUser, FiBriefcase, FiFileText, FiBookmark, FiUsers, FiSettings, FiLogOut, FiX } from 'react-icons/fi';
+import { FiHome, FiUser, FiBriefcase, FiFileText, FiBookmark, FiSearch, FiZap, FiBell, FiBookOpen, FiUsers, FiSettings, FiMail, FiBarChart2, FiLogOut, FiX } from 'react-icons/fi';
 import { logout } from '../store/slices/authSlice';
 import toast from 'react-hot-toast';
 
@@ -25,10 +25,16 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   const jobSeekerMenu = [
     { path: '/dashboard', icon: FiHome, label: 'Dashboard' },
-    { path: '/dashboard/resume', icon: FiFileText, label: 'Resume' },
-    { path: '/dashboard/profile', icon: FiUser, label: 'My Profile' },
+    { path: '/dashboard/find-jobs', icon: FiSearch, label: 'Find Jobs' },
     { path: '/dashboard/applications', icon: FiFileText, label: 'Applications' },
     { path: '/dashboard/saved-jobs', icon: FiBookmark, label: 'Saved Jobs' },
+    { path: '/dashboard/profile', icon: FiUser, label: 'My CV / Profile' },
+    { path: '/dashboard/resume', icon: FiFileText, label: 'Resume' },
+    { path: '/dashboard/skill-assessment', icon: FiZap, label: 'Skill Assessment' },
+    { path: '/dashboard/job-alerts', icon: FiBell, label: 'Job Alerts' },
+    { path: '/dashboard/messages', icon: FiMail, label: 'Messages' },
+    { path: '/dashboard/career-resources', icon: FiBookOpen, label: 'Career Resources' },
+    { path: '/dashboard/settings', icon: FiSettings, label: 'Settings' },
   ];
 
   const employerMenu = [
@@ -42,7 +48,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/admin', icon: FiHome, label: 'Dashboard' },
     { path: '/admin/users', icon: FiUsers, label: 'Manage Users' },
     { path: '/admin/companies', icon: FiBriefcase, label: 'Manage Companies' },
-    { path: '/admin/categories', icon: FiSettings, label: 'Categories' },
+    { path: '/admin/jobs', icon: FiBriefcase, label: 'Manage Jobs' },
+    { path: '/admin/categories', icon: FiSettings, label: 'Job Categories' },
+    { path: '/admin/applications', icon: FiFileText, label: 'Applications' },
+    { path: '/admin/reports', icon: FiBarChart2, label: 'Reports & Statistics' },
+    { path: '/admin/messages', icon: FiMail, label: 'Messages' },
   ];
 
   const getMenu = () => {
@@ -99,7 +109,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             {menu.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path;
+              const isRoot = item.path === '/admin' || item.path === '/dashboard' || item.path === '/employer';
+              const isActive = isRoot
+                ? location.pathname === item.path
+                : location.pathname.startsWith(item.path);
               return (
                 <Link
                   key={item.path}
@@ -107,7 +120,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition ${
                     isActive
-                      ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                      ? 'bg-emerald-100 text-emerald-700 border-l-4 border-emerald-500 shadow-sm'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >

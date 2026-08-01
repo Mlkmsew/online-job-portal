@@ -8,65 +8,7 @@ const Interview = require('../models/Interview');
 const { asyncHandler, paginate, createNotification } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 const { sendEmail, emailTemplates } = require('../config/email');
-
-// Helper to calculate AI match score
-const calculateMatchScore = (job, user) => {
-  let score = 0;
-  
-  // 1. Skill Match (up to 50 points)
-  if (job.skillsRequired && job.skillsRequired.length > 0) {
-    const jobSkillIds = job.skillsRequired.map(s => s._id ? s._id.toString() : s.toString());
-    const userSkillIds = (user.skills || []).map(s => s._id ? s._id.toString() : s.toString());
-    const matchedSkills = jobSkillIds.filter(s => userSkillIds.includes(s));
-    
-    const skillPercentage = jobSkillIds.length > 0 ? matchedSkills.length / jobSkillIds.length : 1;
-    score += skillPercentage * 50;
-  } else {
-    score += 40;
-  }
-
-  // 2. Title / Headline Match (up to 30 points)
-  const jobTitleText = (job.title || '').toLowerCase();
-  const userHeadlineText = (user.headline || '').toLowerCase();
-  const userBioText = (user.bio || '').toLowerCase();
-  
-  if (userHeadlineText) {
-    const titleWords = jobTitleText.split(/\s+/).filter(w => w.length > 3);
-    let matchedTitleWords = 0;
-    titleWords.forEach(word => {
-      if (userHeadlineText.includes(word) || userBioText.includes(word)) {
-        matchedTitleWords++;
-      }
-    });
-    if (titleWords.length > 0) {
-      score += (matchedTitleWords / titleWords.length) * 30;
-    } else {
-      score += 20;
-    }
-  }
-
-  // 3. Experience Match (up to 20 points)
-  const experienceMap = {
-    'Entry Level': ['entry', 'junior', 'fresh', '0-2', 'graduate'],
-    'Mid Level': ['mid', 'intermediate', '2-5'],
-    'Senior Level': ['senior', 'expert', 'lead', '5+'],
-  };
-  
-  const jobExp = job.experienceLevel;
-  if (jobExp && experienceMap[jobExp]) {
-    const keywords = experienceMap[jobExp];
-    const isKeywordMatch = keywords.some(k => userHeadlineText.includes(k) || userBioText.includes(k));
-    if (isKeywordMatch) {
-      score += 20;
-    } else {
-      score += 10;
-    }
-  } else {
-    score += 20;
-  }
-
-  return Math.min(100, Math.max(10, Math.round(score)));
-};
+const { calculateMatchScore } = require('../utils/matching');
 
 const getNotificationTypeForStatus = (status) => {
   const normalizedStatus = (status || '').toLowerCase();
@@ -85,10 +27,36 @@ const getNotificationTypeForStatus = (status) => {
     case 'accepted':
       return 'application_accepted';
     case 'interview':
+    case 'interview scheduled':
       return 'interview_scheduled';
     default:
       return 'application_submitted';
   }
+};
+
+const getApplicationEmployerId = (application) => {
+  if (!application) return null;
+  const employerSource = application.employer || application.job?.postedBy || application.company?.owner;
+  if (!employerSource) return null;
+  if (typeof employerSource === 'string') return employerSource;
+  if (employerSource._id) return employerSource._id.toString();
+  return employerSource.toString();
+};
+
+const isApplicationEmployer = (application, user) => {
+  const employerId = getApplicationEmployerId(application);
+  return Boolean(employerId && employerId === user.id);
+};
+
+const logRequestUser = (req, message) => {
+  console.log(`APPLICATION AUTH CHECK: ${message}`);
+  console.log('Current user:', {
+    id: req.user?.id,
+    role: req.user?.role,
+    email: req.user?.email,
+    firstName: req.user?.firstName,
+    lastName: req.user?.lastName,
+  });
 };
 
 // @desc    Apply for job
@@ -108,8 +76,32 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
   const existing = await Application.findOne({ job: jobId, applicant: req.user.id });
   if (existing) return next(new AppError('You have already applied for this job.', 400));
 
+  const userId = req.user.id || req.user._id;
   // Get full user with skills to compute AI match score
-  const user = await User.findById(req.user.id).populate('skills');
+  const user = await User.findById(userId).populate('skills');
+
+  // If a resume file was uploaded for this application, parse it and persist resume analysis
+  if (req.file) {
+    try {
+      const { skills: extractedSkills, experienceYears, education, certifications, location, text } = await parseResumeSkills(req.file.path);
+      const existingSkillIds = (user.skills || []).map((skill) => skill._id ? skill._id.toString() : skill.toString());
+      const resumeSkillIds = extractedSkills.map((skill) => skill._id.toString());
+      const combinedSkillIds = Array.from(new Set([...existingSkillIds, ...resumeSkillIds]));
+
+      user.skills = combinedSkillIds;
+      user.resumeAnalysis = {
+        skills: extractedSkills,
+        experienceYears,
+        education,
+        certifications,
+        location,
+        rawText: text,
+      };
+      await user.save({ validateBeforeSave: false });
+    } catch (error) {
+      console.error('Application resume parsing failed:', error.message);
+    }
+  }
 
   // Compute AI match score
   const matchScore = calculateMatchScore(job, user);
@@ -221,20 +213,23 @@ exports.getApplication = asyncHandler(async (req, res, next) => {
 // @route   POST /api/applications/:id/schedule-interview
 // @access  Private (Employer)
 exports.scheduleInterviewForApplication = asyncHandler(async (req, res, next) => {
+  logRequestUser(req, 'scheduleInterviewForApplication');
   const { interviewDate, interviewTime, interviewLocation, note } = req.body;
   const application = await Application.findById(req.params.id).populate('applicant job company employer');
 
   if (!application) return next(new AppError('Application not found.', 404));
-  if (application.employer.toString() !== req.user.id && req.user.role !== 'admin') {
+  if (!isApplicationEmployer(application, req.user) && req.user.role !== 'admin') {
+    console.log('Application employer id:', getApplicationEmployerId(application));
+    console.log('Application object employer field:', application.employer);
     return next(new AppError('Not authorized.', 403));
   }
 
-  application.status = 'Interview';
+  application.status = 'Interview Scheduled';
   if (interviewDate) application.interviewDate = new Date(interviewDate);
   if (interviewTime) application.interviewTime = interviewTime;
   if (interviewLocation) application.interviewLocation = interviewLocation;
   if (note) application.employerNote = note;
-  application.statusHistory.push({ status: 'Interview', note, changedBy: req.user.id });
+  application.statusHistory.push({ status: 'Interview Scheduled', note, changedBy: req.user.id });
   await application.save();
 
   const interviewDateTime = application.interviewDate
@@ -268,11 +263,14 @@ exports.scheduleInterviewForApplication = asyncHandler(async (req, res, next) =>
 // @route   PUT /api/applications/:id/status
 // @access  Private (Employer)
 exports.updateApplicationStatus = asyncHandler(async (req, res, next) => {
+  logRequestUser(req, 'updateApplicationStatus');
   const { status, note } = req.body;
-  const application = await Application.findById(req.params.id).populate('applicant job');
+  const application = await Application.findById(req.params.id).populate('applicant job company employer');
 
   if (!application) return next(new AppError('Application not found.', 404));
-  if (application.employer.toString() !== req.user.id && req.user.role !== 'admin') {
+  if (!isApplicationEmployer(application, req.user) && req.user.role !== 'admin') {
+    console.log('Application employer id:', getApplicationEmployerId(application));
+    console.log('Application object employer field:', application.employer);
     return next(new AppError('Not authorized.', 403));
   }
 
@@ -314,9 +312,14 @@ exports.withdrawApplication = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/applications/:id/bookmark
 // @access  Private (Employer)
 exports.bookmarkApplicant = asyncHandler(async (req, res, next) => {
-  const application = await Application.findById(req.params.id);
+  logRequestUser(req, 'bookmarkApplicant');
+  const application = await Application.findById(req.params.id).populate('company employer');
   if (!application) return next(new AppError('Application not found.', 404));
-  if (application.employer.toString() !== req.user.id) return next(new AppError('Not authorized.', 403));
+  if (!isApplicationEmployer(application, req.user) && req.user.role !== 'admin') {
+    console.log('Application employer id:', getApplicationEmployerId(application));
+    console.log('Application object employer field:', application.employer);
+    return next(new AppError('Not authorized.', 403));
+  }
 
   application.isBookmarked = !application.isBookmarked;
   await application.save({ validateBeforeSave: false });
@@ -328,14 +331,19 @@ exports.bookmarkApplicant = asyncHandler(async (req, res, next) => {
 // @route   GET /api/applications/:id/resume
 // @access  Private (Employer/Applicant/Admin)
 exports.downloadResume = asyncHandler(async (req, res, next) => {
-  const application = await Application.findById(req.params.id).populate('applicant');
+  logRequestUser(req, 'downloadResume');
+  const application = await Application.findById(req.params.id).populate('applicant company employer');
   if (!application) return next(new AppError('Application not found.', 404));
 
   const isApplicant = application.applicant._id.toString() === req.user.id;
-  const isEmployer = application.employer.toString() === req.user.id;
+  const isEmployer = isApplicationEmployer(application, req.user);
   const isAdmin = req.user.role === 'admin';
 
-  if (!isApplicant && !isEmployer && !isAdmin) return next(new AppError('Not authorized.', 403));
+  if (!isApplicant && !isEmployer && !isAdmin) {
+    console.log('Application employer id:', getApplicationEmployerId(application));
+    console.log('Application object employer field:', application.employer);
+    return next(new AppError('Not authorized.', 403));
+  }
 
   const url = application.resumeUrl || application.applicant.cv;
   if (!url) return next(new AppError('No resume available for this applicant.', 404));
@@ -402,9 +410,14 @@ const changeStatus = async (application, status, user, note) => {
 // @route   PUT /api/applications/:id/shortlist
 // @access  Private (Employer)
 exports.shortlistApplicant = asyncHandler(async (req, res, next) => {
-  const application = await Application.findById(req.params.id).populate('job applicant');
+  logRequestUser(req, 'shortlistApplicant');
+  const application = await Application.findById(req.params.id).populate('job applicant company employer');
   if (!application) return next(new AppError('Application not found.', 404));
-  if (application.employer.toString() !== req.user.id && req.user.role !== 'admin') return next(new AppError('Not authorized.', 403));
+  if (!isApplicationEmployer(application, req.user) && req.user.role !== 'admin') {
+    console.log('Application employer id:', getApplicationEmployerId(application));
+    console.log('Application object employer field:', application.employer);
+    return next(new AppError('Not authorized.', 403));
+  }
 
   await changeStatus(application, 'Reviewed', req.user, req.body.note);
   res.status(200).json({ success: true, message: 'Applicant shortlisted.', data: application });
@@ -414,9 +427,14 @@ exports.shortlistApplicant = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/applications/:id/hire
 // @access  Private (Employer)
 exports.hireApplicant = asyncHandler(async (req, res, next) => {
-  const application = await Application.findById(req.params.id).populate('job applicant');
+  logRequestUser(req, 'hireApplicant');
+  const application = await Application.findById(req.params.id).populate('job applicant company employer');
   if (!application) return next(new AppError('Application not found.', 404));
-  if (application.employer.toString() !== req.user.id && req.user.role !== 'admin') return next(new AppError('Not authorized.', 403));
+  if (!isApplicationEmployer(application, req.user) && req.user.role !== 'admin') {
+    console.log('Application employer id:', getApplicationEmployerId(application));
+    console.log('Application object employer field:', application.employer);
+    return next(new AppError('Not authorized.', 403));
+  }
 
   await changeStatus(application, 'Selected', req.user, req.body.note);
   res.status(200).json({ success: true, message: 'Applicant accepted/hired.', data: application });
@@ -426,9 +444,14 @@ exports.hireApplicant = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/applications/:id/reject
 // @access  Private (Employer)
 exports.rejectApplicant = asyncHandler(async (req, res, next) => {
-  const application = await Application.findById(req.params.id).populate('job applicant');
+  logRequestUser(req, 'rejectApplicant');
+  const application = await Application.findById(req.params.id).populate('job applicant company employer');
   if (!application) return next(new AppError('Application not found.', 404));
-  if (application.employer.toString() !== req.user.id && req.user.role !== 'admin') return next(new AppError('Not authorized.', 403));
+  if (!isApplicationEmployer(application, req.user) && req.user.role !== 'admin') {
+    console.log('Application employer id:', getApplicationEmployerId(application));
+    console.log('Application object employer field:', application.employer);
+    return next(new AppError('Not authorized.', 403));
+  }
 
   await changeStatus(application, 'Not Selected', req.user, req.body.note);
   res.status(200).json({ success: true, message: 'Applicant rejected.', data: application });

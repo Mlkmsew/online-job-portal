@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 const {
   register, login, logout, getMe, verifyEmail, resendVerification,
-  forgotPassword, resetPassword, updatePassword, refreshToken,
+  forgotPassword, resetPasswordWithOTP, updatePassword, refreshToken,
   updateProfile, uploadAvatar, uploadCV, uploadCertificate,
   verifyOTP, requestEmailChange, confirmEmailChange, googleLogin, githubLogin,
   sendOTP,
@@ -22,7 +22,7 @@ router.get('/verify-email/:token', verifyEmail);
 router.post('/verify-otp', verifyOTP);
 router.post('/send-otp', sendOTP);
 router.post('/forgot-password', passwordResetLimiter, forgotPasswordValidator, validate, forgotPassword);
-router.put('/reset-password/:token', passwordResetLimiter, resetPasswordValidator, validate, resetPassword);
+router.post('/reset-password', passwordResetLimiter, resetPasswordValidator, validate, resetPasswordWithOTP);
 router.post('/refresh-token', refreshToken);
 
 // Social

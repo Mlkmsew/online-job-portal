@@ -1,0 +1,144 @@
+const fs = require('fs');
+const path = require('path');
+
+const resume = {
+  title: 'Sample Resume',
+  profile: {
+    firstName: 'Melkamsew',
+    middelName: 'Alehegn',
+    lastName: '',
+    profession: 'Frontend Developer',
+    phone: '+251 9XX XXX XXX',
+    email: 'melkamsew@gmail.com',
+    streetAddress: 'Bole',
+    city: 'Addis Ababa',
+    stateProvince: 'Addis Ababa',
+    nationality: 'Ethiopian'
+  },
+  summary: { text: 'Passionate frontend developer with 3+ years building responsive, accessible web apps. Skilled in React, Vite, and modern CSS.' },
+  skills: [ { name: 'React' }, { name: 'JavaScript' }, { name: 'HTML & CSS' }, { name: 'Tailwind CSS' } ],
+  softSkills: ['Communication', 'Teamwork', 'Problem Solving'],
+  languages: ['Amharic', 'English'],
+  projects: [{ title: 'Job Portal', description: 'Built a job portal using React and Node.js' }],
+  experience: { jobTitle: 'Frontend Developer', employer: 'Acme Corp', city: 'Addis Ababa', state: '', duties: 'Built UIs and improved accessibility.' },
+  education: { degree: 'BSc Computer Science', fieldOfStudy: 'Computer Science', schoolName: 'Addis Ababa University' }
+};
+
+const technicalSkills = (resume.skills || []).map(s => `<li style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"5\" cy=\"5\" r=\"5\" fill=\"#10b981\"/></svg><span>${s.name}</span></li>`).join('');
+const softSkills = (resume.softSkills || []).map(s => `<li>${s}</li>`).join('');
+const languages = (resume.languages || []).map(l => `<li>${l}</li>`).join('');
+const projects = (resume.projects || []).map(p => `<div class=\"project-entry\"><div class=\"project-title\">${p.title}</div><p class=\"project-description\">${p.description}</p></div>`).join('');
+
+const content = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>${resume.title}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; margin: 0; color: #0f172a; background: #f8fafc; }
+    .page { max-width: 900px; margin: 24px auto; background: white; box-shadow: 0 20px 70px rgba(15, 23, 42, 0.12); display: flex; }
+    .sidebar { width: 300px; background: #0b5137; color: #f8fafc; padding: 32px 28px; display: flex; flex-direction: column; gap: 24px; }
+    .sidebar h2 { margin: 0; font-size: 26px; letter-spacing: 0.02em; font-family: 'Montserrat', system-ui, sans-serif; line-height: 1.05; }
+    .sidebar p.subtitle { color: #d1fae5; margin: 0; font-size: 14px; line-height: 1.6; }
+    .content { flex: 1; padding: 32px 36px; }
+    .topbar-title { margin: 0; font-size: 34px; letter-spacing: -0.04em; line-height: 1.05; font-family: 'Montserrat', system-ui, sans-serif; }
+    .topbar-subtitle { margin: 6px 0 0; color: #4b5563; font-size: 14px; line-height: 1.25; }
+    .section-title { font-size: 12px; font-weight: 700; color: #064e3b; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 12px; }
+    .section-text { font-size: 13px; color: #334155; line-height: 1.6; white-space: pre-line; }
+    .entry-list { margin-top: 12px; padding-left: 18px; }
+    .entry-list li { margin-bottom: 8px; font-size: 13px; color: #334155; }
+    .avatar-circle { width:72px; height:72px; border-radius:9999px; object-fit:cover; border:3px solid rgba(255,255,255,0.12); }
+    .button-print { display: inline-flex; align-items: center; justify-content: center; margin-top: 12px; padding: 10px 16px; background: #10b981; color: white; border-radius: 999px; border: none; cursor: pointer; font-size: 13px; font-weight: 700; }
+    @media print { body{background:white;margin:0} .page{box-shadow:none;margin:0} }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="sidebar">
+      <div class="sidebar-header" style="display:flex;gap:12px;align-items:center">
+        <div style="width:72px;height:72px;border-radius:9999px;background:rgba(255,255,255,0.06);border:3px solid rgba(255,255,255,0.08)"></div>
+        <div>
+          <h2>${resume.profile.firstName} ${resume.profile.middelName} ${resume.profile.lastName}</h2>
+          <p class="subtitle">${resume.profile.profession}</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Contact</div>
+        <div class="info-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><path d="M22 16.92a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18A2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.72c.12.97.33 1.92.63 2.82a2 2 0 0 1-.45 2L8.09 9.91a16 16 0 0 0 6 6l1.37-1.37a2 2 0 0 1 2-.45c.9.3 1.85.51 2.82.63A2 2 0 0 1 22 16.92z" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Phone: ${resume.profile.phone}</div>
+        <div class="info-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><path d="M4 4h16v16H4z" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="22,6 12,13 2,6" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Email: ${resume.profile.email}</div>
+        <div class="info-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 0 1 18 0z" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="3" fill="#a7f3d0"/></svg>Location: ${resume.profile.streetAddress}, ${resume.profile.city}</div>
+      </div>
+
+      <div>
+        <div class="section-title">Technical Skills</div>
+        <div class="entry-list">
+          <ul style="margin:0;padding-left:0;list-style:none;color:#f0fff5">${technicalSkills}</ul>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Soft Skills</div>
+        <ul class="entry-list">
+          ${softSkills}
+        </ul>
+      </div>
+
+      <div>
+        <div class="section-title">Languages</div>
+        <ul class="entry-list">
+          ${languages}
+        </ul>
+      </div>
+
+    </div>
+    <div class="content">
+      <div class="topbar">
+        <div>
+          <h1 class="topbar-title">${resume.profile.firstName} ${resume.profile.middelName} ${resume.profile.lastName}</h1>
+          <p class="topbar-subtitle">${resume.profile.profession}</p>
+        </div>
+        <button class="button-print" onclick="window.print()">Print / Save PDF</button>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Career Objective</div>
+        <div class="section-text">${resume.summary.text}</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Work Experience</div>
+        <div class="entry-title">
+          <span>${resume.experience.jobTitle}</span>
+          <span>${resume.experience.city}</span>
+        </div>
+        <div class="entry-subtitle">${resume.experience.employer}</div>
+        <div class="section-text">${resume.experience.duties}</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Projects</div>
+        ${projects}
+      </div>
+
+      <div class="section">
+        <div class="section-title">Education</div>
+        <div class="entry-title">
+          <span>${resume.education.degree} in ${resume.education.fieldOfStudy}</span>
+          <span></span>
+        </div>
+        <div class="entry-subtitle">${resume.education.schoolName}</div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>`;
+
+const outPath = path.join(__dirname, '..', 'sample_resume.html');
+fs.writeFileSync(outPath, content, 'utf8');
+console.log('Sample resume written to', outPath);

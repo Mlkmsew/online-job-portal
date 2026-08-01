@@ -85,7 +85,7 @@ const VerifyOTP = () => {
               disabled={loading}
               className="btn btn-secondary w-full"
             >
-              {loading ? 'Sending…' : 'Send Code'}
+              {loading ? 'Sending…' : 'Resend Code'}
             </button>
             <button
               type="button"

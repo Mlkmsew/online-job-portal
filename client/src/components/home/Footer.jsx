@@ -3,7 +3,7 @@ const Footer = () => (
     <div className="container">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <h4 className="font-semibold">EthioJob</h4>
+          <h4 className="font-semibold">Online Job</h4>
           <p className="text-sm text-gray-500">Connecting youth with work.</p>
         </div>
         <div>

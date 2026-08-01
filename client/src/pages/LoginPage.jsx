@@ -29,7 +29,7 @@ const LoginPage = () => {
     <div className="auth-page">
       <div className="auth-card">
         <h2>Welcome Back</h2>
-        <p>Login to access your EthioJob dashboard.</p>
+        <p>Login to access your OnlineJob dashboard.</p>
         <form onSubmit={handleSubmit} className="auth-form">
           <label>Email</label>
           <input name="email" type="email" value={form.email} onChange={handleChange} required />

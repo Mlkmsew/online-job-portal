@@ -38,6 +38,12 @@ import JobSeekerProfile from './pages/dashboard/jobseeker/Profile';
 import MyApplications from './pages/dashboard/jobseeker/MyApplications';
 import SavedJobs from './pages/dashboard/jobseeker/SavedJobs';
 import ResumeBuilder from './pages/dashboard/jobseeker/ResumeBuilder';
+import FindJobs from './pages/dashboard/jobseeker/FindJobs';
+import SkillAssessment from './pages/dashboard/jobseeker/SkillAssessment';
+import JobAlerts from './pages/dashboard/jobseeker/JobAlerts';
+import Messages from './pages/dashboard/jobseeker/Messages';
+import CareerResources from './pages/dashboard/jobseeker/CareerResources';
+import Settings from './pages/dashboard/jobseeker/Settings';
 
 // Employer Dashboard
 import EmployerDashboard from './pages/dashboard/employer/Dashboard';
@@ -50,7 +56,12 @@ import CompanyProfile from './pages/dashboard/employer/CompanyProfile';
 import AdminDashboard from './pages/dashboard/admin/Dashboard';
 import ManageUsers from './pages/dashboard/admin/ManageUsers';
 import ManageCompanies from './pages/dashboard/admin/ManageCompanies';
+import CreateCompany from './pages/dashboard/admin/CreateCompany';
+import AdminManageJobs from './pages/dashboard/admin/AdminManageJobs';
 import ManageCategories from './pages/dashboard/admin/ManageCategories';
+import AdminApplications from './pages/dashboard/admin/AdminApplications';
+import AdminReports from './pages/dashboard/admin/AdminReports';
+import AdminMessages from './pages/dashboard/admin/AdminMessages';
 
 // Protected Route Component
 import ProtectedRoute from './components/ProtectedRoute';
@@ -80,17 +91,23 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email/:token" element={<VerifyEmail />} />
           <Route path="/verify-otp" element={<VerifyOTP />} />
 
           {/* Job Seeker Dashboard */}
           <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['jobseeker']}><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<JobSeekerDashboard />} />
-            <Route path="resume" element={<ResumeBuilder />} />
-            <Route path="profile" element={<JobSeekerProfile />} />
+            <Route path="find-jobs" element={<FindJobs />} />
             <Route path="applications" element={<MyApplications />} />
             <Route path="saved-jobs" element={<SavedJobs />} />
+            <Route path="profile" element={<JobSeekerProfile />} />
+            <Route path="resume" element={<ResumeBuilder />} />
+            <Route path="skill-assessment" element={<SkillAssessment />} />
+            <Route path="job-alerts" element={<JobAlerts />} />
+            <Route path="messages" element={<Messages />} />
+            <Route path="career-resources" element={<CareerResources />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
 
           {/* Employer Dashboard */}
@@ -107,7 +124,12 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<ManageUsers />} />
             <Route path="companies" element={<ManageCompanies />} />
+            <Route path="companies/new" element={<CreateCompany />} />
+            <Route path="jobs" element={<AdminManageJobs />} />
             <Route path="categories" element={<ManageCategories />} />
+            <Route path="applications" element={<AdminApplications />} />
+            <Route path="reports" element={<AdminReports />} />
+            <Route path="messages" element={<AdminMessages />} />
           </Route>
 
           {/* 404 */}

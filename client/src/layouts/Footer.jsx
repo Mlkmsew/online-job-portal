@@ -16,7 +16,7 @@ const Footer = () => {
           <div>
             <div className="flex items-center space-x-2 mb-4">
               <FiBriefcase className="w-8 h-8 text-primary-500" />
-              <span className="text-2xl font-bold text-white">EthioJob</span>
+              <span className="text-2xl font-bold text-white">Online Job</span>
             </div>
             <p className="text-sm">
               {t('footer.brandDescription')}

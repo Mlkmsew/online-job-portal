@@ -40,9 +40,9 @@ const Login = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-2">
             <FiBriefcase className="w-10 h-10 text-primary-500" />
-            <span className="text-3xl font-bold text-primary-500">EthioJob</span>
+            <span className="text-3xl font-bold text-primary-500">OnlineJob portal</span>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">Welcome back! Please login to your account</p>
+          <p className="text-gray-600 dark:text-gray-400">Welcome! Please login to your account</p>
         </div>
 
         {/* Form Card */}
@@ -94,7 +94,7 @@ const Login = () => {
                 <Link to="/forgot-password" className="text-sm text-primary-500 hover:underline">
                   Forgot Password?
                 </Link>
-                <Link to="/verify-otp" className="text-sm text-primary-500 hover:underline">
+                <Link to="/forgot-password" className="text-sm text-primary-500 hover:underline">
                   Verify email with code
                 </Link>
               </div>

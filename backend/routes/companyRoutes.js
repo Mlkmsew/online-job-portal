@@ -16,7 +16,7 @@ router.get('/my/company', protect, authorize('employer', 'admin'), requireEmailV
 router.get('/:id', getCompany);
 
 router.use(protect, authorize('employer', 'admin'), requireEmailVerified);
-router.post('/', companyValidator, validate, createCompany);
+router.post('/', logoUpload.single('logo'), companyValidator, validate, createCompany);
 router.put('/:id', updateCompany);
 router.delete('/:id', deleteCompany);
 router.put('/:id/logo', uploadLimiter, logoUpload.single('logo'), uploadLogo);

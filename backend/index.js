@@ -101,6 +101,11 @@ app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/employer', require('./routes/employerRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
+app.use('/api/saved-searches', require('./routes/savedSearchRoutes'));
+app.use('/api/job-alerts', require('./routes/jobAlertRoutes'));
+app.use('/api/contact', require('./routes/contactRoutes'));
+app.post('/api/contact', require('./routes/contactRoutes'));
 
 // Development-only debug routes
 if (process.env.NODE_ENV === 'development') {

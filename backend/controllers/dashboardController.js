@@ -4,15 +4,19 @@ const Interview = require('../models/Interview');
 const { Message } = require('../models/Message');
 const Notification = require('../models/Notification');
 const Job = require('../models/Job');
+const Company = require('../models/Company');
 const Bookmark = require('../models/Bookmark');
 const Application = require('../models/Application');
+const { calculateJobMatch, calculateMatchScore } = require('../utils/matching');
 const mongoose = require('mongoose');
 
 // @desc Get job seeker dashboard
 // @route GET /api/dashboard
 // @access Private
 exports.getDashboard = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
+  const userId = req.user.id || req.user._id;
+  console.log('Dashboard API called for user:', userId);
+  console.log('Dashboard API auth header present:', Boolean(req.headers.authorization));
 
   const [user, unreadMessages, unreadNotifications, upcomingInterviews] = await Promise.all([
     User.findById(userId).select('-password'),
@@ -22,30 +26,40 @@ exports.getDashboard = asyncHandler(async (req, res) => {
     Interview.find({ applicant: userId, scheduledDate: { $gte: new Date() } }).sort({ scheduledDate: 1 }).limit(10),
   ]);
 
-  // Recommended jobs: match by skills and calculate percentage
+  // Recommended jobs: only build job recommendations once the user has a resume uploaded/analyzed
   let recommended = [];
-  const userSkillIds = (user.skills || []).map((s) => (s._id ? s._id.toString() : s.toString()));
-  if (user && userSkillIds.length) {
-    const jobs = await Job.find({ skillsRequired: { $in: userSkillIds }, status: 'active' })
-      .populate('company', 'name logo')
-      .populate('skillsRequired', 'name')
-      .sort({ createdAt: -1 })
-      .limit(16);
+  const hasResume = Boolean(
+    user.cv ||
+    (Array.isArray(user.resumeAnalysis?.skills) && user.resumeAnalysis.skills.length > 0)
+  );
 
-    recommended = jobs
-      .map((job) => {
-        const requiredIds = (job.skillsRequired || []).map((skill) => skill._id.toString());
-        const matchedCount = requiredIds.filter((skillId) => userSkillIds.includes(skillId)).length;
-        const percentage = requiredIds.length ? Math.round((matchedCount / requiredIds.length) * 100) : 0;
-        return {
-          ...job.toObject(),
-          matchPercentage: percentage,
-          matchedSkillsCount: matchedCount,
-          requiredSkillsCount: requiredIds.length,
-        };
-      })
-      .sort((a, b) => b.matchPercentage - a.matchPercentage || new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 8);
+  if (hasResume) {
+    try {
+      const jobs = await Job.find({ status: 'active', isApproved: true })
+        .populate('company', 'name logo')
+        .populate('skillsRequired', 'name');
+
+      recommended = jobs
+        .map((job) => {
+          const match = calculateJobMatch(job, user);
+          const { score, details, why } = match;
+          return {
+            ...job.toObject(),
+            matchPercentage: score,
+            matchDetails: details,
+            matchReasons: why,
+          };
+        })
+        .sort((a, b) => b.matchPercentage - a.matchPercentage || new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 8);
+    } catch (error) {
+      console.error('Dashboard recommendation generation failed:', error);
+      recommended = [];
+    }
+  }
+
+  if (!hasResume) {
+    recommended = [];
   }
 
   // Recently applied jobs
@@ -56,6 +70,17 @@ exports.getDashboard = asyncHandler(async (req, res) => {
 
   // Saved jobs
   const saved = await Bookmark.find({ user: userId }).populate('job', 'title slug company').limit(10);
+
+  // Active, approved jobs for the seeker dashboard
+  const dashboardJobs = await Job.find({
+    status: 'active',
+    isApproved: true,
+  })
+    .sort({ createdAt: -1 })
+    .limit(3)
+    .populate('company', 'name logo')
+    .populate('category', 'name');
+  console.log('Dashboard jobs fetched:', dashboardJobs.length, 'jobs');
 
   // Resume & certificates info
   const resume = { hasCV: !!user.cv, cvUrl: user.cv, cvOriginalName: user.cvOriginalName };
@@ -89,6 +114,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
     series.push({ date: key, count: found ? found.count : 0 });
   }
 
+  console.log('Dashboard response preparing jobs:', dashboardJobs.length);
   res.status(200).json({
     success: true,
     data: {
@@ -97,6 +123,9 @@ exports.getDashboard = asyncHandler(async (req, res) => {
       unreadMessages,
       unreadNotifications,
       recommendedJobs: recommended,
+      jobs: dashboardJobs,
+      dashboardJobs,
+      entryJobs: dashboardJobs,
       recentApplications,
       savedJobs: saved,
       resume,

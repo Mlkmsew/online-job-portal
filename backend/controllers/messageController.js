@@ -1,5 +1,7 @@
 const { Conversation, Message } = require('../models/Message');
+const User = require('../models/user');
 const { asyncHandler, createNotification } = require('../utils/helpers');
+const { sendEmail, emailTemplates, getClientURL } = require('../config/email');
 const { AppError } = require('../middleware/errorHandler');
 
 // @desc    Get the current user's conversations
@@ -41,7 +43,7 @@ exports.getMessages = asyncHandler(async (req, res, next) => {
 // @route   POST /api/messages
 // @access  Private
 exports.sendMessage = asyncHandler(async (req, res, next) => {
-  const { conversationId, recipientId, content, type = 'text', fileUrl, fileName } = req.body;
+  let { conversationId, recipientId, content, type = 'text', fileUrl, fileName } = req.body;
 
   if (!recipientId && !conversationId) {
     return next(new AppError('Recipient ID or conversation ID is required.', 400));
@@ -54,6 +56,9 @@ exports.sendMessage = asyncHandler(async (req, res, next) => {
   let conversation;
   if (conversationId) {
     conversation = await Conversation.findById(conversationId);
+    if (conversation && !recipientId) {
+      recipientId = conversation.participants.find((participant) => participant.toString() !== req.user.id.toString());
+    }
   } else {
     conversation = await Conversation.findOne({ participants: { $all: [req.user.id, recipientId] } });
   }
@@ -64,6 +69,22 @@ exports.sendMessage = asyncHandler(async (req, res, next) => {
       lastMessageAt: new Date(),
       unreadCount: { [recipientId]: 0, [req.user.id]: 0 },
     });
+  }
+
+  if (!recipientId) {
+    return next(new AppError('Recipient not found for this conversation.', 400));
+  }
+
+  const recipient = await User.findOne({
+    $or: [{ _id: recipientId }, { email: recipientId }],
+  }).select('firstName email isActive isSuspended');
+  if (!recipient) {
+    return next(new AppError('Recipient user not found.', 404));
+  }
+
+  const recipientObjectId = recipient._id.toString();
+  if (recipientId !== recipientObjectId) {
+    recipientId = recipientObjectId;
   }
 
   const message = await Message.create({
@@ -90,6 +111,34 @@ exports.sendMessage = asyncHandler(async (req, res, next) => {
     link: '/messages',
     data: { conversationId: conversation._id, messageId: message._id },
   });
+
+  const ioSendMessage = require('../config/socket').sendMessageToChat;
+  const socketPayload = {
+    _id: message._id,
+    conversation: conversation._id,
+    sender: req.user.id,
+    receiver: recipientId,
+    content,
+    type,
+    fileUrl,
+    fileName,
+    createdAt: message.createdAt || new Date(),
+    updatedAt: message.updatedAt || new Date(),
+  };
+  ioSendMessage(conversation._id.toString(), socketPayload);
+
+  if (recipient.email && recipient.isActive && !recipient.isSuspended) {
+    const senderName = `${req.user.firstName} ${req.user.lastName}`.trim();
+    const preview = type === 'text' ? `${content}`.slice(0, 120) : `Sent a ${type} message.`;
+    const conversationLink = `${getClientURL()}/messages?conversationId=${conversation._id}`;
+    const emailTemplate = emailTemplates.newMessageAlert(recipient.firstName || 'Friend', senderName, preview || 'You have a new message.', conversationLink);
+
+    try {
+      await sendEmail({ to: recipient.email, ...emailTemplate });
+    } catch (emailError) {
+      console.error('Failed to send message notification email:', emailError && emailError.message ? emailError.message : emailError);
+    }
+  }
 
   res.status(201).json({ success: true, message: 'Message sent.', data: { conversation, message } });
 });

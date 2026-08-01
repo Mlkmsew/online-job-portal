@@ -67,7 +67,7 @@ const ManageJobs = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Link to={`/employer/applicants/${job._id}`} className="btn btn-outline inline-flex items-center gap-2" title="View Applicants">
-                    <FiUsers /> Applicants
+                    <FiUsers />Veiw Applicants
                   </Link>
                   <Link to={`/jobs/${job._id}`} className="btn btn-ghost" title="View">
                     <FiEye />

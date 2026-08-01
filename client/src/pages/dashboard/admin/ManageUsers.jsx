@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 const ManageUsers = () => {
   const dispatch = useDispatch();
   const { users, loading } = useSelector((state) => state.admin);
+  const currentUser = useSelector((state) => state.auth.user);
+  const visibleUsers = (users || []).filter((user) => user.role !== 'admin' && user._id !== currentUser?._id);
 
   useEffect(() => {
     dispatch(fetchAdminUsers());
@@ -30,8 +32,8 @@ const ManageUsers = () => {
       {loading && <p className="text-sm text-gray-500">Loading users...</p>}
 
       <div className="grid gap-4">
-        {users.length > 0 ? (
-          users.map((user) => (
+        {visibleUsers.length > 0 ? (
+          visibleUsers.map((user) => (
             <div key={user._id} className="card flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h2 className="text-xl font-semibold">{user.firstName} {user.lastName}</h2>
@@ -41,6 +43,7 @@ const ManageUsers = () => {
               <button
                 onClick={() => handleToggleSuspension(user._id)}
                 className="btn btn-sm btn-outline"
+                disabled={user._id === currentUser?._id}
               >
                 {user.isSuspended ? 'Activate' : 'Suspend'}
               </button>

@@ -3,18 +3,21 @@
 // ============================================
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/user');
 const { sendTokenResponse, generateAccessToken } = require('../utils/jwt');
-const { sendEmail, emailTemplates } = require('../config/email');
+const { sendEmail, emailTemplates, getClientURL } = require('../config/email');
 const { asyncHandler } = require('../utils/helpers');
 const { parseResumeSkills } = require('../utils/resumeParser');
 const { AppError } = require('../middleware/errorHandler');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // @desc    Register new user
 // @route   POST /api/auth/register
 // @access  Public
 exports.register = asyncHandler(async (req, res, next) => {
-  const { firstName, lastName, email, password, role } = req.body;
+  const { firstName, lastName, email, phone, password, role } = req.body;
 
   // Check existing
   const existing = await User.findOne({ email });
@@ -27,6 +30,7 @@ exports.register = asyncHandler(async (req, res, next) => {
     firstName,
     lastName,
     email,
+    phone,
     password,
     role: role || 'jobseeker',
   });
@@ -238,13 +242,58 @@ exports.confirmEmailChange = asyncHandler(async (req, res, next) => {
 // @route   POST /api/auth/google
 // @access  Public
 exports.googleLogin = asyncHandler(async (req, res, next) => {
-  // Placeholder: expects { idToken } from client
   const { idToken } = req.body;
   if (!idToken) return next(new AppError('idToken required.', 400));
+  if (!process.env.GOOGLE_CLIENT_ID) return next(new AppError('Google client ID is not configured.', 500));
 
-  // Real implementation: verify idToken with Google and extract email, name, sub (googleId)
-  // For now, return 501 Not Implemented
-  return next(new AppError('Google login not yet implemented. Please use email login.', 501));
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch (err) {
+    return next(new AppError('Invalid Google ID token.', 401));
+  }
+
+  const { email, sub: googleId, given_name, family_name, name } = payload || {};
+  if (!email || !googleId) {
+    return next(new AppError('Google account information is incomplete.', 400));
+  }
+
+  let user = await User.findOne({ $or: [{ googleId }, { email }] });
+
+  if (user && user.googleId && user.googleId !== googleId) {
+    return next(new AppError('A different Google account is already linked to this email.', 409));
+  }
+
+  if (!user) {
+    const firstName = given_name || (name ? name.split(' ')[0] : 'Google');
+    const lastName = family_name || (name ? name.split(' ').slice(1).join(' ') : 'User');
+    const password = crypto.randomBytes(24).toString('hex');
+
+    user = await User.create({
+      firstName,
+      lastName,
+      email,
+      password,
+      googleId,
+      isEmailVerified: true,
+    });
+  } else if (!user.googleId) {
+    user.googleId = googleId;
+    user.isEmailVerified = true;
+    if (!user.firstName) user.firstName = given_name || (name ? name.split(' ')[0] : user.firstName || 'Google');
+    if (!user.lastName) user.lastName = family_name || (name ? name.split(' ').slice(1).join(' ') : user.lastName || 'User');
+    await user.save({ validateBeforeSave: false });
+  }
+
+  if (user.isSuspended) {
+    return next(new AppError('Your account has been suspended. Please contact support.', 403));
+  }
+
+  sendTokenResponse(user, 200, res, 'Google login successful!');
 });
 
 // @desc    Social login (GitHub)
@@ -259,7 +308,8 @@ exports.githubLogin = asyncHandler(async (req, res, next) => {
 // @route   GET /api/auth/me
 // @access  Private
 exports.getMe = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id)
+  const userId = req.user.id || req.user._id;
+  const user = await User.findById(userId)
     .populate('skills', 'name slug')
     .select('-password -resetPasswordToken -emailVerificationToken');
 
@@ -302,7 +352,8 @@ exports.resendVerification = asyncHandler(async (req, res, next) => {
   const verifyToken = user.generateEmailVerificationToken();
   await user.save({ validateBeforeSave: false });
 
-  const verifyUrl = `${process.env.CLIENT_URL}/verify-email/${verifyToken}`;
+  // Use centralized getClientURL to ensure proper IP resolution for mobile devices
+  const verifyUrl = `${getClientURL()}/verify-email/${verifyToken}`;
   const template = emailTemplates.verifyEmail(user.firstName, verifyUrl);
   try {
     await sendEmail({ to: user.email, ...template });
@@ -325,49 +376,56 @@ exports.forgotPassword = asyncHandler(async (req, res, next) => {
   const user = await User.findOne({ email: req.body.email });
 
   if (!user) {
-    // Don't reveal if email exists
     return res.status(200).json({
       success: true,
-      message: 'If an account with that email exists, we sent a password reset link.',
+      message: 'If an account with that email exists, we sent a verification code.',
     });
   }
 
-  const resetToken = user.generatePasswordResetToken();
+  const code = user.generateOTP();
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
   await user.save({ validateBeforeSave: false });
 
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
   try {
-    const template = emailTemplates.resetPassword(user.firstName, resetUrl);
+    const template = emailTemplates.verifyOTP(user.firstName, code);
     await sendEmail({ to: user.email, ...template });
   } catch (err) {
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
+    user.otpCode = undefined;
+    user.otpExpire = undefined;
     await user.save({ validateBeforeSave: false });
     return next(new AppError('Email could not be sent. Please try again.', 500));
   }
 
   res.status(200).json({
     success: true,
-    message: 'If an account with that email exists, we sent a password reset link.',
+    message: 'If an account with that email exists, we sent a verification code.',
   });
 });
 
-// @desc    Reset password
-// @route   PUT /api/auth/reset-password/:token
+// @desc    Reset password with OTP
+// @route   POST /api/auth/reset-password
 // @access  Public
-exports.resetPassword = asyncHandler(async (req, res, next) => {
-  const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+exports.resetPasswordWithOTP = asyncHandler(async (req, res, next) => {
+  const { email, code, password } = req.body;
 
-  const user = await User.findOne({
-    resetPasswordToken: hashedToken,
-    resetPasswordExpire: { $gt: Date.now() },
-  });
-
-  if (!user) {
-    return next(new AppError('Invalid or expired reset link.', 400));
+  if (!email || !code || !password) {
+    return next(new AppError('Email, code, and password are required.', 400));
   }
 
-  user.password = req.body.password;
+  const user = await User.findOne({ email });
+  if (!user) {
+    return next(new AppError('Invalid code or email.', 400));
+  }
+
+  const isValidCode = user.verifyOTP(code);
+  if (!isValidCode) {
+    return next(new AppError('Invalid or expired verification code.', 400));
+  }
+
+  user.password = password;
+  user.otpCode = undefined;
+  user.otpExpire = undefined;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
   await user.save();
@@ -427,7 +485,8 @@ exports.updateProfile = asyncHandler(async (req, res) => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
   });
 
-  const user = await User.findByIdAndUpdate(req.user.id, updates, {
+  const userId = req.user.id || req.user._id;
+  const user = await User.findByIdAndUpdate(userId, updates, {
     new: true,
     runValidators: true,
   }).populate('skills', 'name slug');
@@ -460,25 +519,32 @@ exports.uploadAvatar = asyncHandler(async (req, res, next) => {
 exports.uploadCV = asyncHandler(async (req, res, next) => {
   if (!req.file) return next(new AppError('Please upload a CV file.', 400));
 
-  let user = await User.findByIdAndUpdate(
-    req.user.id,
-    {
-      cv: req.file.path,
-      cvPublicId: req.file.filename,
-      cvOriginalName: req.file.originalname,
-    },
-    { new: true }
-  );
+  const userId = req.user.id || req.user._id;
+  let user = await User.findById(userId);
+  if (!user) return next(new AppError('User not found.', 404));
+
+  user.cv = req.file.path;
+  user.cvPublicId = req.file.filename;
+  user.cvOriginalName = req.file.originalname;
 
   try {
-    const { skills: extractedSkills } = await parseResumeSkills(user.cv);
-    if (extractedSkills && extractedSkills.length) {
-      const existingSkillIds = (user.skills || []).map((id) => id.toString());
-      const resumeSkillIds = extractedSkills.map((skill) => skill._id.toString());
-      const combinedSkillIds = Array.from(new Set([...existingSkillIds, ...resumeSkillIds]));
-      user.skills = combinedSkillIds;
-      await user.save();
-    }
+    const analysis = await parseResumeSkills(user.cv);
+    const extractedSkills = analysis.skills || [];
+    const existingSkillIds = (user.skills || []).map((id) => id.toString());
+    const resumeSkillIds = extractedSkills.map((skill) => skill._id.toString());
+    const combinedSkillIds = Array.from(new Set([...existingSkillIds, ...resumeSkillIds]));
+
+    user.skills = combinedSkillIds;
+    user.resumeAnalysis = {
+      skills: extractedSkills,
+      experienceYears: analysis.experienceYears,
+      education: analysis.education,
+      certifications: analysis.certifications,
+      location: analysis.location,
+      rawText: analysis.text,
+    };
+
+    await user.save({ validateBeforeSave: false });
   } catch (error) {
     console.error('Resume parsing failed:', error.message);
   }
@@ -495,8 +561,9 @@ exports.uploadCertificate = asyncHandler(async (req, res, next) => {
   const { name, issuer, issueDate } = req.body;
   const cert = { name, url: req.file.path, publicId: req.file.filename, issuer, issueDate };
 
+  const userId = req.user.id || req.user._id;
   const user = await User.findByIdAndUpdate(
-    req.user.id,
+    userId,
     { $push: { certificates: cert } },
     { new: true }
   );

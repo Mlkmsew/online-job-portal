@@ -5,10 +5,11 @@ import { useState, useEffect } from 'react';
 import { 
   FiFileText, FiPlus, FiUpload, FiEdit2, FiDownload, 
   FiPrinter, FiInfo, FiTrash2, FiX, FiSearch, FiSave, FiPlusCircle,
-  FiArrowLeft, FiArrowRight, FiTrash
+  FiArrowLeft, FiArrowRight, FiTrash, FiMail, FiPhone, FiMapPin, FiCheckCircle, FiTool, FiDatabase, FiCode, FiGlobe
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { PhoneIcon, MailIcon, LocationIcon, GlobeIcon, DotIcon } from '../../../components/icons/ResumeIcons';
 import { updateProfile } from '../../../store/slices/authSlice';
 
 // Static Resume Templates Definition
@@ -45,7 +46,7 @@ const TEMPLATES = [
   }
 ];
 
-const TABS = ['Profile', 'Experience', 'Education', 'Skills', 'Summary', 'Interests', 'Photo'];
+const TABS = ['Profile', 'Experience', 'Education', 'Projects', 'Skills', 'Summary', 'Interests', 'Photo'];
 
 // Predefined suggestion examples for Experience
 const DUTY_EXAMPLES = [
@@ -57,6 +58,8 @@ const DUTY_EXAMPLES = [
 
 const ResumeBuilder = () => {
   const dispatch = useDispatch();
+  const { user, token } = useSelector((state) => state.auth);
+  const resumeStorageKey = `ethiojob_resumes_${user?._id || user?.id || user?.email || token || 'guest'}`;
   const [view, setView] = useState('list');
   const [resumes, setResumes] = useState([]);
   const [activeResumeId, setActiveResumeId] = useState(null);
@@ -67,92 +70,147 @@ const ResumeBuilder = () => {
 
   const handleDownloadPDF = (resume) => {
     const printWindow = window.open('', '_blank');
-    const skillsList = (resume.skills || []).map(s => `<li><strong>${s.name}</strong> - ${s.level}</li>`).join('');
+    const technicalSkills = (resume.skills || []).map(s => `<li>${s.name || ''}${s.level ? ` — ${s.level}` : ''}</li>`).join('');
+    const softSkills = (resume.softSkills || []).filter(Boolean).map(skill => `<li>${skill}</li>`).join('');
+    const languages = (resume.languages || []).filter(Boolean).map(lang => `<li>${lang}</li>`).join('');
+    const projects = (resume.projects || []).filter(p => p.title || p.description).map((project) => `
+        <div class="project-entry">
+          <div class="project-title">${project.title || 'Project title'}</div>
+          <p class="project-description">${project.description || 'Project details'}</p>
+        </div>
+      `).join('');
+
     const content = `
       <html>
       <head>
-        <title>${resume.title} - CV</title>
+        <title>${resume.title || 'Resume'} - CV</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet" />
         <style>
-          body { font-family: 'Outfit', 'Inter', sans-serif; color: #1f2937; padding: 40px; line-height: 1.5; }
-          h1 { margin-bottom: 0; color: #0d9488; font-size: 28px; }
-          .profession { font-style: italic; color: #4b5563; font-size: 18px; margin-top: 5px; margin-bottom: 20px; }
-          .section { margin-top: 30px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; }
-          .section-title { font-size: 18px; font-weight: bold; color: #0d9488; margin: 0; text-transform: uppercase; }
-          .contact-info { display: flex; flex-wrap: wrap; gap: 15px; font-size: 13px; color: #4b5563; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
-          .entry { margin-top: 15px; }
-          .entry-title { font-weight: bold; font-size: 15px; display: flex; justify-content: space-between; }
-          .entry-subtitle { font-style: italic; color: #4b5563; margin-top: 3px; font-size: 13px; }
-          .duties { margin-top: 8px; white-space: pre-line; font-size: 13px; color: #374151; }
-          ul { margin-top: 8px; padding-left: 20px; }
-          li { font-size: 13px; margin-bottom: 4px; color: #374151; }
+          body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; margin: 0; color: #0f172a; background: #f8fafc; }
+          .page { max-width: 900px; margin: 24px auto; background: white; box-shadow: 0 20px 70px rgba(15, 23, 42, 0.12); display: flex; }
+          .sidebar { width: 300px; background: #0b5137; color: #f8fafc; padding: 32px 28px; display: flex; flex-direction: column; gap: 24px; }
+          .sidebar h2 { margin: 0; font-size: 24px; letter-spacing: 0.02em; font-family: 'Montserrat', system-ui, sans-serif; }
+          .topbar-title { font-family: 'Montserrat', system-ui, sans-serif; }
+          .sidebar p.subtitle { color: #d1fae5; margin: 0; font-size: 14px; line-height: 1.6; }
+          .sidebar .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 12px; color: #d1fae5; }
+          .sidebar .info-item { margin-bottom: 12px; font-size: 13px; line-height: 1.7; }
+          .sidebar .info-item span { display: block; color: #a7f3d0; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; }
+          .sidebar .badge { display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,.1); border-radius: 999px; font-size: 12px; padding: 8px 12px; margin-bottom: 8px; }
+          .content { flex: 1; padding: 32px 36px; }
+          .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+          .topbar-title { margin: 0; font-size: 34px; letter-spacing: -0.04em; line-height: 1.05; }
+          .topbar-subtitle { margin: 6px 0 0; color: #4b5563; font-size: 14px; line-height: 1.25; }
+          .section { margin-top: 28px; }
+          .section-title { font-size: 12px; font-weight: 700; color: #064e3b; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 12px; }
+          .section-text { font-size: 13px; color: #334155; line-height: 1.6; white-space: pre-line; }
+          .entry-title { display: flex; justify-content: space-between; gap: 16px; font-weight: 700; color: #0f172a; font-size: 14px; }
+          .entry-subtitle { margin-top: 4px; color: #475569; font-size: 13px; }
+          .project-title { font-weight: 700; font-size: 14px; margin-top: 14px; }
+          .project-description { margin-top: 6px; color: #334155; font-size: 13px; line-height: 1.7; white-space: pre-line; }
+          .entry-list { margin-top: 12px; padding-left: 18px; }
+          .entry-list li { margin-bottom: 8px; font-size: 13px; color: #334155; }
+          .contact-item { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+          .contact-item strong { min-width: 80px; font-size: 12px; color: #a7f3d0; text-transform: uppercase; letter-spacing: 0.14em; }
+          .photo { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 9999px; margin-top: 12px; background: rgba(255,255,255,.12); border: 4px solid rgba(255,255,255,0.08); }
+          .sidebar-header { display:flex; gap:12px; align-items:center }
+          .avatar-circle { width:72px; height:72px; border-radius:9999px; object-fit:cover; border:3px solid rgba(255,255,255,0.12); }
+          .button-print { display: inline-flex; align-items: center; justify-content: center; margin-top: 12px; padding: 10px 16px; background: #10b981; color: white; border-radius: 999px; border: none; cursor: pointer; font-size: 13px; font-weight: 700; }
           @media print {
-            body { padding: 20px; }
-            button { display: none; }
+            body { background: white; margin: 0; }
+            .page { box-shadow: none; margin: 0; }
+            .button-print { display: none; }
           }
         </style>
       </head>
       <body>
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-          <div>
-            <h1>${resume.profile?.firstName || ''} ${resume.profile?.middelName || ''} ${resume.profile?.lastName || ''}</h1>
-            <div class="profession">${resume.profile?.profession || ''}</div>
+        <div class="page">
+          <div class="sidebar">
+            <div class="sidebar-header">
+              ${resume.photo?.dataUrl ? `<img src="${resume.photo.dataUrl}" alt="Photo" class="avatar-circle" />` : `<div style="width:72px;height:72px;border-radius:9999px;background:rgba(255,255,255,0.06);border:3px solid rgba(255,255,255,0.08)"></div>`}
+              <div>
+                <h2>${resume.profile?.firstName || ''} ${resume.profile?.middelName || ''} ${resume.profile?.lastName || ''}</h2>
+                <p class="subtitle">${resume.profile?.profession || 'Professional Title'}</p>
+              </div>
+            </div>
+
+            <div>
+              <div class="section-title">Contact</div>
+                <div class="info-item">${/* phone */ ''}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><path d="M22 16.92a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18A2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.72c.12.97.33 1.92.63 2.82a2 2 0 0 1-.45 2L8.09 9.91a16 16 0 0 0 6 6l1.37-1.37a2 2 0 0 1 2-.45c.9.3 1.85.51 2.82.63A2 2 0 0 1 22 16.92z" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Phone</span>: ${resume.profile?.phone || 'N/A'}</div>
+                <div class="info-item">${/* email */ ''}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><path d="M4 4h16v16H4z" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="22,6 12,13 2,6" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Email</span>: ${resume.profile?.email || 'N/A'}</div>
+                <div class="info-item">${/* location */ ''}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 0 1 18 0z" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="3" fill="#a7f3d0"/></svg><span>Location</span>: ${resume.profile?.streetAddress || ''}${resume.profile?.city ? `, ${resume.profile.city}` : ''}${resume.profile?.stateProvince ? `, ${resume.profile.stateProvince}` : ''}</div>
+                ${resume.profile?.nationality ? `<div class="info-item">${/* globe */ ''}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><circle cx="12" cy="12" r="10" stroke="#a7f3d0" stroke-width="1.2"/><path d="M2 12h20" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round"/><path d="M12 2a15 15 0 0 1 0 20" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round"/></svg><span>Nationality</span>: ${resume.profile.nationality}</div>` : ''}
+            </div>
+
+            <div>
+              <div class="section-title">Technical Skills</div>
+              <div class="entry-list">
+                ${renderTechnicalSkillsForPDF(resume)}
+              </div>
+            </div>
+
+            <div>
+              <div class="section-title">Soft Skills</div>
+              <ul class="entry-list">
+                ${softSkills || '<li>No soft skills listed.</li>'}
+              </ul>
+            </div>
+
+            <div>
+              <div class="section-title">Languages</div>
+              <ul class="entry-list">
+                ${languages || '<li>No languages listed.</li>'}
+              </ul>
+            </div>
+
+            ${resume.photo?.dataUrl ? `<img src="${resume.photo.dataUrl}" alt="Photo" class="photo" />` : ''}
           </div>
-          <button onclick="window.print()" style="background: #0d9488; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer;">
-            Print / Save PDF
-          </button>
-        </div>
 
-        <div class="contact-info">
-          <span>📞 Phone: ${resume.profile?.phone || 'N/A'}</span>
-          <span>✉️ Email: ${resume.profile?.email || 'N/A'}</span>
-          <span>📍 Address: ${resume.profile?.streetAddress || ''}, ${resume.profile?.city || ''}</span>
-          ${resume.profile?.nationality ? `<span>🌐 Nationality: ${resume.profile.nationality}</span>` : ''}
-        </div>
+          <div class="content">
+            <div class="topbar">
+              <div>
+                <h1 class="topbar-title">${resume.profile?.firstName || ''} ${resume.profile?.middelName || ''} ${resume.profile?.lastName || ''}</h1>
+                <p class="topbar-subtitle">${resume.profile?.profession || 'Professional Summary Subtitle'}</p>
+              </div>
+              <button class="button-print" onclick="window.print()">Print / Save PDF</button>
+            </div>
 
-        <div class="section">
-          <h2 class="section-title">Professional Summary</h2>
-        </div>
-        <p style="font-size: 13px; margin-top: 10px; color: #374151;">
-          Dedicated and results-oriented professional eager to contribute skills and background in a dynamic environment. Experienced in solving problems, delivering standard operations, and collaborating in team settings.
-        </p>
+            <div class="section">
+              <div class="section-title">Career Objective</div>
+              <div class="section-text">${resume.summary?.text || 'Write a short career objective that highlights your goals, value to employers, and key strengths.'}</div>
+            </div>
 
-        <div class="section">
-          <h2 class="section-title">Work Experience</h2>
-        </div>
-        <div class="entry">
-          <div class="entry-title">
-            <span>${resume.experience?.jobTitle || 'Job Title'}</span>
-            <span>${resume.experience?.startDate || ''} - ${resume.experience?.currentWork ? 'Present' : (resume.experience?.endDate || '')}</span>
+            <div class="section">
+              <div class="section-title">Work Experience</div>
+              <div class="entry-title">
+                <span>${resume.experience?.jobTitle || 'Job Title'}</span>
+                <span>${resume.experience?.startDate || ''} - ${resume.experience?.currentWork ? 'Present' : (resume.experience?.endDate || '')}</span>
+              </div>
+              <div class="entry-subtitle">${resume.experience?.employer || 'Employer'}${resume.experience?.city ? ` • ${resume.experience.city}` : ''}${resume.experience?.state ? `, ${resume.experience.state}` : ''}</div>
+              <div class="section-text">${resume.experience?.duties || 'Describe your main responsibilities and achievements in this position.'}</div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">Projects</div>
+              ${projects || '<p class="section-text">Add a project to highlight your hands-on experience.</p>'}
+            </div>
+
+            <div class="section">
+              <div class="section-title">Education</div>
+              <div class="entry-title">
+                <span>${resume.education?.degree || 'Degree'} in ${resume.education?.fieldOfStudy || 'Field of Study'}</span>
+                <span>${resume.education?.startDate || ''} - ${resume.education?.currentStudy ? 'Present' : (resume.education?.endDate || '')}</span>
+              </div>
+              <div class="entry-subtitle">${resume.education?.schoolName || 'School Name'}${resume.education?.city ? ` • ${resume.education.city}` : ''}${resume.education?.state ? `, ${resume.education.state}` : ''}</div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">Interests</div>
+              <div class="section-text">${resume.interests?.text || 'List a few interests that demonstrate your personality and work style.'}</div>
+            </div>
           </div>
-          <div class="entry-subtitle">${resume.experience?.employer || 'Employer'} - ${resume.experience?.city || ''}, ${resume.experience?.state || ''}</div>
-          <div class="duties">${resume.experience?.duties || 'No duties entered.'}</div>
         </div>
-
-        <div class="section">
-          <h2 class="section-title">Education</h2>
-        </div>
-        <div class="entry">
-          <div class="entry-title">
-            <span>${resume.education?.degree || 'Degree'} in ${resume.education?.fieldOfStudy || 'Field'}</span>
-            <span>${resume.education?.startDate || ''} - ${resume.education?.currentStudy ? 'Present' : (resume.education?.endDate || '')}</span>
-          </div>
-          <div class="entry-subtitle">${resume.education?.schoolName || 'School'} - ${resume.education?.city || ''}, ${resume.education?.state || ''}</div>
-        </div>
-
-        <div class="section">
-          <h2 class="section-title">Skills & Technologies</h2>
-        </div>
-        <ul>
-          ${skillsList || '<li>No skills listed.</li>'}
-        </ul>
-        
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 300);
-          }
-        </script>
       </body>
       </html>
     `;
@@ -163,69 +221,42 @@ const ResumeBuilder = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [exampleSearch, setExampleSearch] = useState('');
 
-  // Load resumes from localStorage on mount
+  // Load resumes from storage scoped to the current authenticated user.
   useEffect(() => {
-    const stored = localStorage.getItem('ethiojob_resumes');
-    if (stored) {
-      setResumes(JSON.parse(stored));
-    } else {
-      const defaultResume = [{
-        id: 'default_cv_id',
-        title: 'Mycv',
-        score: 70,
-        template: 'graphic',
-        profile: {
-          firstName: 'Melkamsew',
-          middelName: 'Alehegn',
-          lastName: '',
-          gender: 'Select',
-          dateOfBirth: '',
-          maritalStatus: 'Select',
-          profession: '',
-          streetAddress: '',
-          city: '',
-          stateProvince: '',
-          nationality: '',
-          passportNumber: '',
-          phone: '',
-          email: 'melkamsew@gmail.com'
-        },
-        experience: {
-          jobTitle: '',
-          employer: '',
-          city: '',
-          state: '',
-          startDate: '',
-          endDate: '',
-          currentWork: false,
-          duties: ''
-        },
-        education: {
-          schoolName: '',
-          city: '',
-          state: '',
-          degree: 'Select',
-          fieldOfStudy: '',
-          startDate: '',
-          endDate: '',
-          currentStudy: false
-        },
-        skills: [
-          { name: 'Word Processing Software', level: 'Expert' },
-          { name: 'Data Entry', level: 'Intermediate' }
-        ],
-        summary: { text: '' },
-        interests: { text: '' },
-        photo: null
-      }];
-      setResumes(defaultResume);
-      localStorage.setItem('ethiojob_resumes', JSON.stringify(defaultResume));
+    try {
+      const stored = localStorage.getItem(resumeStorageKey);
+      const legacyStored = localStorage.getItem('ethiojob_resumes');
+
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setResumes(Array.isArray(parsed) ? parsed : []);
+      } else if (legacyStored) {
+        const parsed = JSON.parse(legacyStored);
+        const migratedResumes = Array.isArray(parsed) ? parsed : [];
+        setResumes(migratedResumes);
+        localStorage.setItem(resumeStorageKey, JSON.stringify(migratedResumes));
+        localStorage.removeItem('ethiojob_resumes');
+      } else {
+        setResumes([]);
+        localStorage.setItem(resumeStorageKey, JSON.stringify([]));
+      }
+    } catch (error) {
+      console.error('Failed to load resumes from storage:', error);
+      setResumes([]);
+      localStorage.setItem(resumeStorageKey, JSON.stringify([]));
     }
-  }, []);
+
+    setActiveResumeId(null);
+    setView('list');
+    setSaveMessage('');
+    setNewResumeTitle('');
+    setIsTitleModalOpen(false);
+    setIsTemplateModalOpen(false);
+  }, [resumeStorageKey]);
 
   const saveToStorage = (updatedResumes) => {
     setResumes(updatedResumes);
-    localStorage.setItem('ethiojob_resumes', JSON.stringify(updatedResumes));
+    localStorage.setItem(resumeStorageKey, JSON.stringify(updatedResumes));
   };
 
   const handleOpenTitleModal = () => {
@@ -297,7 +328,10 @@ const ResumeBuilder = () => {
         endDate: '',
         currentStudy: false
       },
+      projects: [{ title: '', description: '' }],
       skills: [{ name: '', level: 'Select' }],
+      softSkills: ['', '', ''],
+      languages: ['', ''],
       summary: { text: '' },
       interests: { text: '' },
       photo: null
@@ -331,21 +365,10 @@ const ResumeBuilder = () => {
     if (e) e.preventDefault();
     if (!activeResume) return;
 
+    // Persist current resumes state to localStorage
+    saveToStorage(resumes);
     setSaveMessage('Saved successfully');
     toast.success('Saved successfully');
-
-    try {
-      const payload = {
-        firstName: activeResume.profile?.firstName || undefined,
-        lastName: activeResume.profile?.lastName || undefined,
-        headline: activeResume.profile?.profession || undefined,
-        phone: activeResume.profile?.phone || undefined,
-        bio: `Education: ${activeResume.education?.degree || ''} from ${activeResume.education?.schoolName || ''}. Experience: Worked as ${activeResume.experience?.jobTitle || ''} at ${activeResume.experience?.employer || ''}.`,
-      };
-      await dispatch(updateProfile(payload)).unwrap();
-    } catch (err) {
-      console.error('Failed to sync profile:', err);
-    }
   };
 
   const handleNextTab = () => {
@@ -436,6 +459,105 @@ const ResumeBuilder = () => {
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
         return { ...r, skills: [...(r.skills || []), { name: '', level: 'Select' }] };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleSoftSkillChange = (index, value) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const newSoftSkills = [...(r.softSkills || [])];
+        newSoftSkills[index] = value;
+        return { ...r, softSkills: newSoftSkills };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleLanguageChange = (index, value) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const newLanguages = [...(r.languages || [])];
+        newLanguages[index] = value;
+        return { ...r, languages: newLanguages };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleAddSoftSkill = () => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        return { ...r, softSkills: [...(r.softSkills || []), ''] };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleAddLanguage = () => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        return { ...r, languages: [...(r.languages || []), ''] };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleRemoveSoftSkill = (index) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const newSoftSkills = (r.softSkills || []).filter((_, idx) => idx !== index);
+        return { ...r, softSkills: newSoftSkills };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleRemoveLanguage = (index) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const newLanguages = (r.languages || []).filter((_, idx) => idx !== index);
+        return { ...r, languages: newLanguages };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleProjectChange = (index, field, value) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const newProjects = [...(r.projects || [])];
+        newProjects[index] = { ...newProjects[index], [field]: value };
+        return { ...r, projects: newProjects };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleAddProject = () => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        return { ...r, projects: [...(r.projects || []), { title: '', description: '' }] };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleRemoveProject = (index) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const newProjects = (r.projects || []).filter((_, idx) => idx !== index);
+        return { ...r, projects: newProjects };
       }
       return r;
     });
@@ -534,6 +656,66 @@ const ResumeBuilder = () => {
     t.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Helper: categorize technical skills into named groups for display
+  const categorizeSkills = (skills = []) => {
+    const groups = {
+      'Web Development': [],
+      'Programming Languages': [],
+      'Database': [],
+      'Tools & Technologies': [],
+      Other: []
+    };
+
+    const web = ['html','css','javascript','react','vue','angular','next','nuxt'];
+    const langs = ['python','java','php','c#','c++','c','ruby','go','rust','typescript'];
+    const dbs = ['mysql','postgresql','postgres','mongodb','sqlite','mssql','oracle'];
+    const tools = ['git','github','vscode','docker','xamp','xampp','gitlab','jenkins','aws','azure','firebase'];
+
+    skills.forEach(s => {
+      const name = (s.name || '').toLowerCase();
+      if (web.some(w => name.includes(w))) groups['Web Development'].push(s.name);
+      else if (langs.some(l => name.includes(l))) groups['Programming Languages'].push(s.name);
+      else if (dbs.some(d => name.includes(d))) groups['Database'].push(s.name);
+      else if (tools.some(t => name.includes(t))) groups['Tools & Technologies'].push(s.name);
+      else groups.Other.push(s.name || s);
+    });
+
+    return groups;
+  };
+
+  const renderTechnicalSkills = (resume) => {
+    const groups = categorizeSkills(resume.skills || []);
+    return (
+      <div className="space-y-3">
+        {Object.entries(groups).map(([title, items]) => (
+          items.length > 0 && (
+            <div key={title}>
+              <div className="text-xs font-semibold uppercase text-teal-100">{title}</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {items.map((it, idx) => (
+                  <span key={idx} className="rounded-full bg-white/10 px-3 py-1 text-xs flex items-center gap-2">
+                    <FiCheckCircle className="w-3 h-3 text-white/80" />
+                    <span>{it}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        ))}
+      </div>
+    );
+  };
+
+  // PDF helper returning HTML string for categorized skills
+  const renderTechnicalSkillsForPDF = (resume) => {
+    const groups = categorizeSkills(resume.skills || []);
+    return Object.entries(groups).map(([title, items]) => {
+      if (!items.length) return '';
+      const list = items.map(i => `<li style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"5\" cy=\"5\" r=\"5\" fill=\"#10b981\"/></svg><span>${i}</span></li>`).join('');
+      return `<div style=\"margin-bottom:10px\"><strong style=\"display:block;font-size:12px;color:#e6fff2;margin-bottom:6px\">${title}</strong><ul style=\"margin:0;padding-left:0;color:#f0fff5;list-style:none\">${list}</ul></div>`;
+    }).join('') || '<div style="color:#f0fff5">No technical skills listed.</div>';
+  };
+
   const renderTemplatePreview = (resume) => {
     const templateId = resume?.template || 'general_ats';
     const fullName = `${resume.profile?.firstName || ''} ${resume.profile?.middelName || ''} ${resume.profile?.lastName || ''}`.trim() || 'Your Name';
@@ -543,16 +725,16 @@ const ResumeBuilder = () => {
         <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-slate-900 to-slate-700 p-6 text-white shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-2xl font-bold">{fullName}</h3>
-              <p className="text-sm text-slate-300 mt-1">{resume.profile?.profession || 'Your Profession'}</p>
+              <h3 className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, system-ui, sans-serif', lineHeight: 1.05 }}>{fullName}</h3>
+              <p className="text-sm text-slate-300 mt-1" style={{ fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.3 }}>{resume.profile?.profession || 'Your Profession'}</p>
             </div>
             {resume.photo?.dataUrl && (
               <img src={resume.photo.dataUrl} alt="Profile" className="h-20 w-20 rounded-full border-4 border-white/20 object-cover" />
             )}
           </div>
-          <div className="mt-6 grid gap-3 text-sm text-slate-200">
-            <p><span className="font-semibold text-white">Email:</span> {resume.profile?.email || 'N/A'}</p>
-            <p><span className="font-semibold text-white">Phone:</span> {resume.profile?.phone || 'N/A'}</p>
+            <div className="mt-6 grid gap-3 text-sm text-slate-200">
+            <p className="flex items-center gap-2"><MailIcon className="text-white" /><span className="font-semibold text-white">Email:</span> {resume.profile?.email || 'N/A'}</p>
+            <p className="flex items-center gap-2"><PhoneIcon className="text-white" /><span className="font-semibold text-white">Phone:</span> {resume.profile?.phone || 'N/A'}</p>
           </div>
           <div className="mt-6 space-y-4">
             <section>
@@ -581,8 +763,8 @@ const ResumeBuilder = () => {
       return (
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="rounded-lg bg-indigo-600 p-4 text-white">
-            <h3 className="text-2xl font-bold">{fullName}</h3>
-            <p className="text-sm text-indigo-100">{resume.profile?.profession || 'Your Profession'}</p>
+            <h3 className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, system-ui, sans-serif', lineHeight: 1.05 }}>{fullName}</h3>
+            <p className="text-sm text-indigo-100" style={{ fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.25 }}>{resume.profile?.profession || 'Your Profession'}</p>
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
             <div className="space-y-4">
@@ -597,22 +779,151 @@ const ResumeBuilder = () => {
               </section>
             </div>
             <div className="space-y-4 rounded-lg bg-gray-50 p-4">
-              <div className="text-sm text-gray-600">
-                <p><span className="font-semibold">Email:</span> {resume.profile?.email || 'N/A'}</p>
-                <p><span className="font-semibold">Phone:</span> {resume.profile?.phone || 'N/A'}</p>
+              <div className="text-sm text-gray-600 space-y-2">
+                <p className="flex items-center gap-2"><MailIcon className="text-slate-700" /><strong className="font-semibold">Email:</strong> {resume.profile?.email || 'N/A'}</p>
+                <p className="flex items-center gap-2"><PhoneIcon className="text-slate-700" /><strong className="font-semibold">Phone:</strong> {resume.profile?.phone || 'N/A'}</p>
               </div>
               <section>
                 <h4 className="text-sm font-semibold uppercase text-indigo-600">Skills</h4>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {(resume.skills || []).filter(Boolean).map((skill, idx) => (
-                    <span key={idx} className="rounded-full bg-indigo-100 px-3 py-1 text-xs text-indigo-700">{skill.name || 'Skill'}</span>
-                  ))}
-                </div>
+                {(resume.skills || []).filter(Boolean).map((skill, idx) => (
+                  <span key={idx} className="rounded-full bg-indigo-100 px-3 py-1 text-xs text-indigo-700 flex items-center gap-2"><FiCheckCircle className="w-3 h-3" />{skill.name || 'Skill'}</span>
+                ))}
+              </div>
               </section>
               <section>
                 <h4 className="text-sm font-semibold uppercase text-indigo-600">Interests</h4>
                 <p className="mt-2 text-sm text-gray-600 whitespace-pre-line">{resume.interests?.text || 'No interests added yet.'}</p>
               </section>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (templateId === 'professional') {
+      return (
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="border-b pb-4">
+            <h3 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, system-ui, sans-serif', fontWeight: 700 }}>{fullName}</h3>
+            <p className="text-sm text-primary-600 mt-1" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>{resume.profile?.profession || 'Your Profession'}</p>
+            <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-600" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+              <div className="flex items-center gap-2"><PhoneIcon className="text-slate-700" />{resume.profile?.phone || 'N/A'}</div>
+              <div className="flex items-center gap-2"><MailIcon className="text-slate-700" />{resume.profile?.email || 'N/A'}</div>
+              <div className="flex items-center gap-2"><LocationIcon className="text-slate-700" />{resume.profile?.city || ''}{resume.profile?.state ? `, ${resume.profile.state}` : ''}</div>
+            </div>
+          </div>
+          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-xl overflow-hidden shadow-sm border border-slate-700 text-white">
+              <div className="grid md:grid-cols_[0.9fr_0.65fr]">
+              <div className="p-6 space-y-6">
+                <div>
+                  <h3 className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'Montserrat, system-ui, sans-serif', lineHeight: 1.02 }}>{fullName}</h3>
+                    <p className="mt-2 text-sm text-slate-300" style={{ fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.25 }}>{resume.profile?.profession || 'Professional Title'}</p>
+                </div>
+
+                <section>
+                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-300">Career Objective</h4>
+                  <p className="mt-3 text-sm leading-7 text-slate-700 whitespace-pre-line">{resume.summary?.text || 'Write a short career objective that highlights your goals and value to employers.'}</p>
+                </section>
+
+                <section>
+                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-300">Work Experience</h4>
+                  <div className="mt-3">
+                    <p className="font-semibold text-white">{resume.experience?.jobTitle || 'Job Title'}</p>
+                    <p className="text-sm text-slate-300">{resume.experience?.employer || 'Employer'} • {resume.experience?.city || 'City'}, {resume.experience?.state || 'State'}</p>
+                    <p className="mt-2 text-sm text-slate-200 whitespace-pre-line">{resume.experience?.duties || 'Describe your primary responsibilities and accomplishments in this role.'}</p>
+                  </div>
+                </section>
+
+                <section>
+                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-300">Projects</h4>
+                  <div className="mt-3 space-y-4">
+                    {(resume.projects || []).filter(p => p.title || p.description).map((project, idx) => (
+                      <div key={idx}>
+                        <p className="font-semibold text-white">{project.title || 'Project title'}</p>
+                        <p className="mt-1 text-sm text-slate-300 whitespace-pre-line">{project.description || 'Brief project description.'}</p>
+                      </div>
+                    ))}
+                    {!((resume.projects || []).filter(p => p.title || p.description).length) && (
+                      <p className="text-sm text-slate-300">Add your most important projects to showcase real-world experience.</p>
+                    )}
+                  </div>
+                </section>
+
+                <section>
+                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-300">Education</h4>
+                  <div className="mt-3">
+                    <p className="font-semibold text-white">{resume.education?.degree || 'Degree'} in {resume.education?.fieldOfStudy || 'Field of Study'}</p>
+                    <p className="text-sm text-slate-300">{resume.education?.schoolName || 'School Name'} • {resume.education?.startDate || 'Start'} - {resume.education?.currentStudy ? 'Present' : (resume.education?.endDate || 'End')}</p>
+                  </div>
+                </section>
+              </div>
+
+              <div className="" style={{background:'#0b5137',padding:'24px',color:'#f0fff5',borderLeft:'1px solid rgba(255,255,255,0.04)'}}>
+                <div className="flex items-start gap-3">
+                  {resume.photo?.dataUrl ? (
+                    <img src={resume.photo.dataUrl} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-white/10" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-white/10 border-2 border-white/10" />
+                  )}
+                  <div>
+                    <h4 className="text-lg font-bold">{resume.profile?.firstName || ''} {resume.profile?.middelName || ''} {resume.profile?.lastName || ''}</h4>
+                    <p className="text-sm mt-1">{resume.profile?.profession || ''}</p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h4 className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-100">Contact</h4>
+                  <div className="mt-3 space-y-2 text-sm">
+                    <p className="flex items-center gap-2"><FiMail className="w-4 h-4 text-teal-200" /><strong className="text-teal-100">Email:</strong> <span className="ml-1">{resume.profile?.email || 'N/A'}</span></p>
+                    <p className="flex items-center gap-2"><FiPhone className="w-4 h-4 text-teal-200" /><strong className="text-teal-100">Phone:</strong> <span className="ml-1">{resume.profile?.phone || 'N/A'}</span></p>
+                    <p className="flex items-center gap-2"><FiMapPin className="w-4 h-4 text-teal-200" /><strong className="text-teal-100">Location:</strong> <span className="ml-1">{resume.profile?.city || resume.profile?.streetAddress || 'N/A'}</span></p>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <h4 className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-100">Technical Skills</h4>
+                  <div className="mt-3">
+                    {renderTechnicalSkills(resume)}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-200">Contact</h4>
+                  <div className="mt-4 space-y-3 text-sm text-slate-200">
+                    <p><span className="font-semibold text-teal-300">Email:</span> {resume.profile?.email || 'N/A'}</p>
+                    <p><span className="font-semibold text-teal-300">Phone:</span> {resume.profile?.phone || 'N/A'}</p>
+                    <p><span className="font-semibold text-teal-300">Location:</span> {resume.profile?.streetAddress || ''}{resume.profile?.city ? `, ${resume.profile.city}` : ''}</p>
+                  </div>
+                </div>
+
+                <section>
+                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-200">Skills</h4>
+                  <div className="mt-4 space-y-2 text-sm text-slate-200">
+                    {(resume.skills || []).filter(Boolean).map((skill, idx) => (
+                      <p key={idx} className="rounded-lg bg-white/10 px-3 py-2">{skill.name || 'Skill'}{skill.level ? ` — ${skill.level}` : ''}</p>
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-200">Soft Skills</h4>
+                  <div className="mt-4 space-y-2 text-sm text-slate-200">
+                    {(resume.softSkills || []).filter(Boolean).map((skill, idx) => (
+                      <p key={idx} className="rounded-lg bg-white/10 px-3 py-2">{skill}</p>
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-200">Languages</h4>
+                  <div className="mt-4 space-y-2 text-sm text-slate-200">
+                    {(resume.languages || []).filter(Boolean).map((language, idx) => (
+                      <p key={idx} className="rounded-lg bg-white/10 px-3 py-2">{language}</p>
+                    ))}
+                  </div>
+                </section>
+
+                {resume.photo?.dataUrl && false}
+              </div>
             </div>
           </div>
         </div>
@@ -661,7 +972,6 @@ const ResumeBuilder = () => {
       </div>
     );
   };
-
   return (
     <div className="space-y-6">
       {view === 'list' && (
@@ -678,35 +988,44 @@ const ResumeBuilder = () => {
             </button>
           </div>
 
-          {/* Action buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div 
-              onClick={handleOpenTitleModal}
-              className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition group"
-            >
-              <div className="w-12 h-12 rounded-lg bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <FiPlus className="w-6 h-6 text-primary-500" />
+          {/* My Saved CVs Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <FiDatabase className="w-6 h-6 text-primary-500" />
+                  My Saved CVs
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {resumes.length === 0 
+                    ? 'You haven\'t created any CVs yet. Start by creating a new one!'
+                    : `${resumes.length} CV${resumes.length !== 1 ? 's' : ''} saved`}
+                </p>
               </div>
-              <span className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-1">
-                Create New CV <FiEdit2 className="w-4 h-4 text-gray-400" />
-              </span>
-              <p className="text-sm text-gray-500 mt-1">Start Fresh</p>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-6 flex flex-col items-center justify-center cursor-pointer hover:border-secondary transition group">
-              <div className="w-12 h-12 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <FiUpload className="w-6 h-6 text-secondary-500" />
-              </div>
-              <span className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-1">
-                Import <FiUpload className="w-4 h-4 text-gray-400" />
-              </span>
-              <p className="text-sm text-gray-500 mt-1">Use Current CV</p>
-            </div>
-          </div>
-
-          {/* Resume Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {resumes.map((resume) => (
+            {/* Resume Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {resumes.length === 0 ? (
+                <div className="col-span-full">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-12 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 rounded-lg bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-4">
+                      <FiFileText className="w-8 h-8 text-primary-500" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No CVs Created Yet</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 max-w-md">
+                      Create your first CV to get started. You can create multiple CVs tailored to different job applications.
+                    </p>
+                    <button
+                      onClick={handleOpenTitleModal}
+                      className="btn btn-primary inline-flex items-center gap-2"
+                    >
+                      <FiPlus className="w-4 h-4" /> Create Your First CV
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                resumes.map((resume) => (
               <div key={resume.id} className="card p-5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-4">
                 {/* Resume Structure Thumbnail */}
                 <div className="w-24 h-32 rounded border bg-gray-50 dark:bg-gray-700 flex items-center justify-center shrink-0 relative overflow-hidden shadow-inner">
@@ -759,7 +1078,35 @@ const ResumeBuilder = () => {
                   </div>
                 </div>
               </div>
-            ))}
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div 
+              onClick={handleOpenTitleModal}
+              className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition group"
+            >
+              <div className="w-12 h-12 rounded-lg bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <FiPlus className="w-6 h-6 text-primary-500" />
+              </div>
+              <span className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-1">
+                Create New CV <FiEdit2 className="w-4 h-4 text-gray-400" />
+              </span>
+              <p className="text-sm text-gray-500 mt-1">Start Fresh</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-6 flex flex-col items-center justify-center cursor-pointer hover:border-secondary transition group">
+              <div className="w-12 h-12 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <FiUpload className="w-6 h-6 text-secondary-500" />
+              </div>
+              <span className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-1">
+                Import <FiUpload className="w-4 h-4 text-gray-400" />
+              </span>
+              <p className="text-sm text-gray-500 mt-1">Use Current CV</p>
+            </div>
           </div>
         </div>
       )}
@@ -1245,6 +1592,63 @@ const ResumeBuilder = () => {
               </div>
             )}
 
+            {/* PROJECTS TAB */}
+            {activeTab === 'Projects' && (
+              <div className="space-y-6">
+                <div className="bg-sky-500 text-white rounded-xl p-4 shadow-sm">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    💡 Add your key projects <span className="font-normal">| Describe what you built and the impact of each project in concise bullet form.</span>
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {(activeResume.projects || []).map((project, idx) => (
+                    <div key={idx} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1.5">Project Title</label>
+                          <input
+                            type="text"
+                            value={project.title}
+                            onChange={(e) => handleProjectChange(idx, 'title', e.target.value)}
+                            className="input"
+                            placeholder="Project title"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium mb-1.5">Project Description</label>
+                        <textarea
+                          rows="5"
+                          value={project.description}
+                          onChange={(e) => handleProjectChange(idx, 'description', e.target.value)}
+                          className="textarea w-full"
+                          placeholder="Describe the project and your role, using bullet points if possible."
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveProject(idx)}
+                        className="mt-4 inline-flex items-center gap-2 text-sm text-red-600 hover:text-red-700"
+                      >
+                        <FiTrash className="w-4 h-4" /> Remove project
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={handleAddProject}
+                    className="text-indigo-600 dark:text-indigo-400 text-sm font-bold flex items-center gap-1.5 hover:underline py-2"
+                  >
+                    <FiPlusCircle /> Add Another Project
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* SKILLS TAB (Screenshot 4) */}
             {activeTab === 'Skills' && (
               <div className="space-y-6">
@@ -1256,29 +1660,16 @@ const ResumeBuilder = () => {
 
                 <div className="space-y-4">
                   {(activeResume.skills || []).map((skill, index) => (
-                    <div key={index} className="flex items-center gap-4 animate-fade-in">
+                    <div key={index} className="flex items-center gap-3 animate-fade-in">
                       <div className="flex-1">
-                        <label className="block text-xs font-semibold mb-1 text-gray-500">Skills</label>
+                        <label className="block text-xs font-semibold mb-1 text-gray-500">Technical Skill</label>
                         <input 
                           type="text" 
                           value={skill.name}
                           onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
                           className="input"
-                          placeholder="Skill / Technology Name"
+                          placeholder="e.g. React, Node.js, SQL"
                         />
-                      </div>
-                      <div className="w-48">
-                        <label className="block text-xs font-semibold mb-1 text-gray-500">Level</label>
-                        <select
-                          value={skill.level}
-                          onChange={(e) => handleSkillChange(index, 'level', e.target.value)}
-                          className="select"
-                        >
-                          <option value="Select">Select</option>
-                          <option value="Beginner">Beginner</option>
-                          <option value="Intermediate">Intermediate</option>
-                          <option value="Expert">Expert</option>
-                        </select>
                       </div>
                       <button
                         type="button"
@@ -1296,8 +1687,76 @@ const ResumeBuilder = () => {
                     onClick={handleAddSkill}
                     className="text-indigo-600 dark:text-indigo-400 text-sm font-bold flex items-center gap-1.5 hover:underline py-2"
                   >
-                    <FiPlusCircle /> Add More Skills
+                    <FiPlusCircle /> Add Technical Skill
                   </button>
+                </div>
+
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-semibold uppercase tracking-[0.15em] text-gray-700 dark:text-gray-200">Soft Skills</h4>
+                      <button
+                        type="button"
+                        onClick={handleAddSoftSkill}
+                        className="text-indigo-600 dark:text-indigo-400 text-xs font-semibold"
+                      >
+                        + Add
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {(activeResume.softSkills || []).map((skill, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <input
+                            type="text"
+                            value={skill}
+                            onChange={(e) => handleSoftSkillChange(index, e.target.value)}
+                            className="input"
+                            placeholder="e.g. Problem solving"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSoftSkill(index)}
+                            className="text-red-500 hover:text-red-600"
+                          >
+                            <FiTrash className="w-5 h-5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-semibold uppercase tracking-[0.15em] text-gray-700 dark:text-gray-200">Languages</h4>
+                      <button
+                        type="button"
+                        onClick={handleAddLanguage}
+                        className="text-indigo-600 dark:text-indigo-400 text-xs font-semibold"
+                      >
+                        + Add
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {(activeResume.languages || []).map((language, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <input
+                            type="text"
+                            value={language}
+                            onChange={(e) => handleLanguageChange(index, e.target.value)}
+                            className="input"
+                            placeholder="e.g. English — Fluent"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveLanguage(index)}
+                            className="text-red-500 hover:text-red-600"
+                          >
+                            <FiTrash className="w-5 h-5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

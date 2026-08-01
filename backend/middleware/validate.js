@@ -18,13 +18,42 @@ const validate = (req, res, next) => {
 
 // ---- Auth Validators ----
 const registerValidator = [
-  body('firstName').trim().notEmpty().withMessage('First name is required').isLength({ max: 50 }),
-  body('lastName').trim().notEmpty().withMessage('Last name is required').isLength({ max: 50 }),
+  body('firstName')
+    .trim()
+    .notEmpty()
+    .withMessage('First name is required')
+    .isLength({ max: 50 })
+    .matches(/^[A-Za-z]+$/)
+    .withMessage('First name must contain only letters'),
+  body('lastName')
+    .trim()
+    .notEmpty()
+    .withMessage('Last name is required')
+    .isLength({ max: 50 })
+    .matches(/^[A-Za-z]+$/)
+    .withMessage('Last name must contain only letters'),
   body('email').trim().isEmail().withMessage('Please provide a valid email').normalizeEmail(),
+body('phone')
+    .trim()
+    .notEmpty()
+    .withMessage('Phone number is required')
+    .customSanitizer((value) => {
+      const cleaned = String(value || '').replace(/[^0-9+]/g, '');
+      if (!cleaned) return cleaned;
+      if (cleaned.startsWith('+251')) return cleaned;
+      if (cleaned.startsWith('251')) return `+${cleaned}`;
+      if (cleaned.startsWith('0')) return `+251${cleaned.slice(1)}`;
+      return `+251${cleaned}`;
+    })
+    .matches(/^\+251[0-9]{9}$/)
+    .withMessage('Phone number must be a valid Ethiopian number with 9 digits after +251'),
+
   body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
-    .matches(/(?=.*[0-9])(?=.*[a-zA-Z])/)
+    .notEmpty()
+    .withMessage('Password is required')
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters')
+    .matches(/^(?=.*[A-Za-z])(?=.*\d)/)
     .withMessage('Password must contain at least one letter and one number'),
   body('role').optional().isIn(['jobseeker', 'employer']).withMessage('Invalid role'),
 ];
@@ -39,6 +68,8 @@ const forgotPasswordValidator = [
 ];
 
 const resetPasswordValidator = [
+  body('email').optional({ values: 'falsy' }).trim().isEmail().withMessage('Please provide a valid email').normalizeEmail(),
+  body('code').optional({ values: 'falsy' }).trim().isLength({ min: 6, max: 6 }).withMessage('Verification code must be 6 digits'),
   body('password')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters')
@@ -62,8 +93,13 @@ const jobValidator = [
 // ---- Company Validators ----
 const companyValidator = [
   body('name').trim().notEmpty().withMessage('Company name is required'),
-  body('description').optional().isLength({ max: 5000 }),
+  body('description')
+    .optional()
+    .trim()
+    .isLength({ max: 5000 })
+    .withMessage('Description must be at most 5000 characters'),
   body('industry').optional().notEmpty(),
+  body('logo').optional().notEmpty().withMessage('Company logo is required'),
 ];
 
 // ---- Application Validators ----

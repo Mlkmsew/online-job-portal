@@ -9,7 +9,8 @@ const ManageUsers = () => {
     const fetch = async () => {
       try {
         const res = await api.get('/admin/users');
-        setUsers(Array.isArray(res.data) ? res.data : res.data?.data || []);
+        const allUsers = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        setUsers(allUsers.filter((user) => user.role !== 'admin'));
       } catch (err) {
         console.error(err);
       } finally {

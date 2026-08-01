@@ -8,7 +8,24 @@ const RegisterPage = () => {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    if (e.target.name === 'phone') {
+      const digits = e.target.value.replace(/\D/g, '');
+      const normalized = digits ? `+251${digits.replace(/^251/, '').replace(/^0/, '')}` : '';
+      setForm({ ...form, phone: normalized });
+      return;
+    }
+
+    if (e.target.name === 'firstName' || e.target.name === 'lastName') {
+      setForm({
+        ...form,
+        [e.target.name]: e.target.value.replace(/[^A-Za-z]/g, ''),
+      });
+      return;
+    }
+
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,7 +55,7 @@ const RegisterPage = () => {
             <label>Last Name<input name="lastName" type="text" value={form.lastName} onChange={handleChange} required /></label>
           </div>
           <label>Email<input name="email" type="email" value={form.email} onChange={handleChange} required /></label>
-          <label>Phone<input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="+251 9XX XXX XXX" required /></label>
+          <label>Phone<input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="+2519XXXXXXXX" required /></label>
           <label>Password<input name="password" type="password" value={form.password} onChange={handleChange} required /></label>
           <label>Confirm Password<input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} required /></label>
           {error && <div className="form-error">{error}</div>}

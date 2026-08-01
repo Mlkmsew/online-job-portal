@@ -22,6 +22,7 @@ const MyApplications = () => {
       case 'Reviewed':
         return 'bg-blue-100 text-blue-800 border border-blue-200';
       case 'Interview Scheduled':
+      case 'Interview':
         return 'bg-amber-100 text-amber-800 border border-amber-200';
       case 'Selected':
         return 'bg-green-100 text-green-800 border border-green-200';
@@ -42,7 +43,7 @@ const MyApplications = () => {
   const getStatusStepIndex = (status) => {
     if (status === 'Submitted') return 0;
     if (status === 'Reviewed') return 1;
-    if (status === 'Interview Scheduled') return 2;
+    if (status === 'Interview Scheduled' || status === 'Interview') return 2;
     if (status === 'Selected' || status === 'Not Selected') return 3;
     return 0;
   };

@@ -58,6 +58,14 @@ exports.createCompany = asyncHandler(async (req, res, next) => {
     return next(new AppError('You already own a company. Contact support if you need to manage multiple companies.', 400));
   }
 
+  if (!req.file && !req.body.logo) {
+    return next(new AppError('Please upload a company logo.', 400));
+  }
+
+  if (req.file?.path) {
+    req.body.logo = req.file.path;
+  }
+
   req.body.owner = req.user.id;
   const company = await Company.create(req.body);
   res.status(201).json({ success: true, message: 'Company created! Waiting for admin approval.', data: company });

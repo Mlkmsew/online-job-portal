@@ -2,13 +2,14 @@
 // Forgot Password Page
 // ============================================
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { FiMail, FiBriefcase } from 'react-icons/fi';
 
 const ForgotPassword = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -18,9 +19,10 @@ const ForgotPassword = () => {
     try {
       await api.post('/auth/forgot-password', data);
       setSent(true);
-      toast.success('Password reset email sent!');
+      toast.success('Verification code sent to your email.');
+      navigate('/reset-password', { state: { email: data.email }, replace: true });
     } catch (error) {
-      toast.error('Failed to send email');
+      toast.error(error.response?.data?.message || 'Failed to send verification code');
     } finally {
       setLoading(false);
     }
@@ -31,7 +33,7 @@ const ForgotPassword = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <FiBriefcase className="w-10 h-10 text-primary-500 mx-auto mb-2" />
-          <h1 className="text-3xl font-bold text-primary-500">EthioJob</h1>
+          <h1 className="text-3xl font-bold text-primary-500">OnlineJob Portal</h1>
         </div>
 
         <div className="card">
@@ -40,7 +42,7 @@ const ForgotPassword = () => {
           {!sent ? (
             <>
               <p className="text-center text-gray-600 mb-6">
-                Enter your email address and we'll send you a link to reset your password.
+                Enter your email address and we&apos;ll send you a 6-digit verification code to reset your password.
               </p>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -59,14 +61,14 @@ const ForgotPassword = () => {
                 </div>
 
                 <button type="submit" disabled={loading} className="btn btn-primary w-full">
-                  {loading ? 'Sending...' : 'Send Reset Link'}
+                  {loading ? 'Sending...' : 'Send Verification Code'}
                 </button>
               </form>
             </>
           ) : (
             <div className="text-center">
-              <p className="text-green-600 mb-4">✅ Reset link sent! Check your email.</p>
-              <p className="text-sm text-gray-600">Didn't receive it? Check your spam folder.</p>
+              <p className="text-green-600 mb-4">✅ Verification code sent! Redirecting you to the reset form.</p>
+              <p className="text-sm text-gray-600">Didn&apos;t receive it? Check your spam folder.</p>
             </div>
           )}
 

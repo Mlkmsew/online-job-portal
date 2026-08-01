@@ -6,7 +6,7 @@ const router = express.Router();
 const {
   getDashboardStats, getUsers, getUserById, updateUser, suspendUser, deleteUser,
   getCompanies, approveCompany, verifyCompany, featureCompany,
-  getJobs, approveJob, featureJob,
+  getJobs, approveJob, rejectJob, featureJob,
   getCategories, createCategory, updateCategory, deleteCategory,
   getSkills, createSkill, updateSkill, deleteSkill,
 } = require('../controllers/adminController');
@@ -33,6 +33,7 @@ router.put('/companies/:id/feature', featureCompany);
 // Jobs
 router.get('/jobs', getJobs);
 router.put('/jobs/:id/approve', approveJob);
+router.put('/jobs/:id/reject', rejectJob);
 router.put('/jobs/:id/feature', featureJob);
 
 // Categories

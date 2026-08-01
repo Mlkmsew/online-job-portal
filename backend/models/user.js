@@ -23,6 +23,16 @@ const userSchema = new mongoose.Schema(
         location: Object,
         skills: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Skill' }],
         certificates: [{ name: String, url: String, publicId: String, issuer: String, issueDate: Date }],
+        experience: String,
+        education: [String],
+        resumeAnalysis: {
+            skills: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Skill' }],
+            education: [String],
+            experienceYears: Number,
+            location: String,
+            certifications: [String],
+            rawText: String,
+        },
 
         // Status & security
         isActive: { type: Boolean, default: true },

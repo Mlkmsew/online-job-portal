@@ -21,6 +21,7 @@ const JobDetails = () => {
   // Application form state
   const [showApply, setShowApply] = useState(false);
   const isJobSeeker = user?.role === 'jobseeker';
+  const isAdmin = user?.role === 'admin';
   const [coverLetter, setCoverLetter] = useState('');
   const [useProfileCV, setUseProfileCV] = useState(Boolean(user?.cv));
   const [file, setFile] = useState(null);
@@ -274,6 +275,10 @@ const JobDetails = () => {
                 >
                   Login to Apply
                 </button>
+              ) : isAdmin ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+                  Admin view only. Application actions are hidden for moderation.
+                </div>
               ) : user?.role === 'employer' ? null : (
                 !showApply ? (
                   <button 
@@ -369,7 +374,25 @@ const JobDetails = () => {
         <div className="space-y-6">
           {/* Company Brief Card */}
           <div className="card">
-            <h3 className="text-lg font-bold mb-4">About the Company</h3>
+            <div className="flex items-start gap-4 mb-4">
+              <div className="h-16 w-16 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                {job.company?.logo ? (
+                  <img
+                    src={job.company.logo}
+                    alt={`${job.company.name} logo`}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-gray-100 text-sm text-gray-500">
+                    No logo
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">About the Company</h3>
+                <p className="text-sm text-gray-500">{job.company?.name || 'Company Details Not Available'}</p>
+              </div>
+            </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
               {job.company?.description || 'No description available for this company.'}
             </p>

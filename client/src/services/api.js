@@ -25,6 +25,13 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+const clearAuthStorage = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('ethiojob_resumes');
+  sessionStorage.clear();
+};
+
 // Response interceptor
 api.interceptors.response.use(
   (response) => response,
@@ -32,8 +39,7 @@ api.interceptors.response.use(
     const message = error.response?.data?.message || error.message || 'Something went wrong';
     
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      clearAuthStorage();
       window.location.href = '/login';
       toast.error('Session expired. Please login again.');
     } else {

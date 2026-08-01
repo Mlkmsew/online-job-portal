@@ -27,13 +27,6 @@ exports.getJobs = asyncHandler(async (req, res) => {
   if (req.query.education) queryObj.educationRequired = req.query.education;
   if (req.query.region) queryObj['location.region'] = req.query.region;
   if (req.query.city) queryObj['location.city'] = new RegExp(escapeRegex(req.query.city), 'i');
-  if (req.query.company) queryObj.company = req.query.company;
-  if (req.query.companyName) {
-    const safeCompanyName = escapeRegex(req.query.companyName);
-    const comps = await Company.find({ name: new RegExp(safeCompanyName, 'i') }).select('_id');
-    const ids = comps.map((c) => c._id);
-    if (ids.length) queryObj.company = { $in: ids };
-  }
   if (req.query.isFeatured === 'true') queryObj.isFeatured = true;
   if (req.query.isRemote === 'true') queryObj.isRemote = true;
   if (req.query.disabilityFriendly === 'true') queryObj['accessibility.disabilityFriendly'] = true;
@@ -41,13 +34,32 @@ exports.getJobs = asyncHandler(async (req, res) => {
   // Internship quick filter
   if (req.query.internship === 'true') queryObj.jobType = 'Internship';
 
-  // Company type filter: accepts comma-separated values like 'Government,NGO,Private'
+  // Company name/type filtering for public job search
+  const companyQuery = {};
+  let companyFilterUsed = false;
+  if (req.query.company) {
+    companyQuery._id = req.query.company;
+    companyFilterUsed = true;
+  }
+  if (req.query.companyName) {
+    const safeCompanyName = escapeRegex(req.query.companyName);
+    companyQuery.name = new RegExp(safeCompanyName, 'i');
+    companyFilterUsed = true;
+  }
   if (req.query.companyType) {
     const types = req.query.companyType.split(',').map((t) => t.trim()).filter(Boolean);
     if (types.length) {
-      const comps = await Company.find({ companyType: { $in: types } }).select('_id');
-      const ids = comps.map((c) => c._id);
-      if (ids.length) queryObj.company = { $in: ids };
+      companyQuery.companyType = { $in: types };
+      companyFilterUsed = true;
+    }
+  }
+
+  if (companyFilterUsed) {
+    const companyIds = await Company.distinct('_id', companyQuery);
+    if (companyIds.length) {
+      queryObj.company = { $in: companyIds };
+    } else {
+      queryObj.company = { $in: [] };
     }
   }
 
@@ -132,6 +144,15 @@ exports.getJob = asyncHandler(async (req, res, next) => {
 
   if (!job) return next(new AppError('Job not found.', 404));
 
+  const isOwner = req.user && job.postedBy && (
+    (job.postedBy._id && job.postedBy._id.toString() === req.user.id) ||
+    job.postedBy.toString() === req.user.id
+  );
+  const publicCanView = job.status === 'active' && job.isApproved && job.company?.isApproved && job.company?.isActive;
+  const canView = publicCanView || req.user?.role === 'admin' || isOwner;
+
+  if (!canView) return next(new AppError('Job not found.', 404));
+
   // Increment views
   job.views += 1;
   await job.save({ validateBeforeSave: false });
@@ -158,6 +179,7 @@ exports.createJob = asyncHandler(async (req, res, next) => {
   }
 
   req.body.postedBy = req.user.id;
+  req.body.isApproved = false;
   // Normalize accessibility payload if provided
   if (req.body.accessibility) {
     req.body.accessibility = {

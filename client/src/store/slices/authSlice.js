@@ -4,6 +4,13 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api';
 
+const clearAuthStorage = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('ethiojob_resumes');
+  sessionStorage.clear();
+};
+
 const getSafeUser = () => {
   try {
     const storedUser = localStorage.getItem('user');
@@ -64,7 +71,9 @@ export const updateProfile = createAsyncThunk('auth/updateProfile', async (data,
 
 export const uploadCV = createAsyncThunk('auth/uploadCV', async (formData, { rejectWithValue }) => {
   try {
-    const response = await api.put('/auth/upload-cv', formData);
+    const response = await api.put('/auth/upload-cv', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   } catch (error) {
     return rejectWithValue(error.response?.data?.message);
@@ -93,8 +102,7 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      clearAuthStorage();
     },
   },
   extraReducers: (builder) => {
@@ -153,8 +161,13 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        clearAuthStorage();
+      })
+      .addCase(logout.rejected, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        clearAuthStorage();
       });
   },
 });

@@ -7,7 +7,6 @@ import FeaturedJobs from '../components/home/FeaturedJobs';
 import LatestJobs from '../components/home/LatestJobs';
 import TopCompanies from '../components/home/TopCompanies';
 import SuccessStories from '../components/home/SuccessStories';
-import Statistics from '../components/home/Statistics';
 import Testimonials from '../components/home/Testimonials';
 import CareerBlog from '../components/home/CareerBlog';
 import FAQ from '../components/home/FAQ';
@@ -45,7 +44,6 @@ const HomePage = () => {
       <LatestJobs />
       <TopCompanies />
       <SuccessStories />
-      <Statistics />
       <Testimonials />
       <CareerBlog />
       <FAQ />
@@ -56,5 +54,5 @@ const HomePage = () => {
     <Footer />
   </main>
 );
-
+};
 export default HomePage;

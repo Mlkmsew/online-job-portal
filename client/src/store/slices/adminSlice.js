@@ -29,9 +29,9 @@ export const fetchAdminUsers = createAsyncThunk('admin/fetchUsers', async (_, { 
   }
 });
 
-export const fetchAdminCompanies = createAsyncThunk('admin/fetchCompanies', async (_, { rejectWithValue }) => {
+export const fetchAdminCompanies = createAsyncThunk('admin/fetchCompanies', async (filters = {}, { rejectWithValue }) => {
   try {
-    const response = await api.get('/admin/companies');
+    const response = await api.get('/admin/companies', { params: filters });
     return response.data;
   } catch (error) {
     return rejectWithValue(error.response?.data?.message || error.message || 'Failed to load companies');

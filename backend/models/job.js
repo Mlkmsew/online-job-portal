@@ -86,7 +86,7 @@ const jobSchema = new mongoose.Schema(
     tags: [String],
 
     // Admin
-    isApproved: { type: Boolean, default: true },
+    isApproved: { type: Boolean, default: false },
     adminNote: { type: String },
     // Accessibility / Inclusive Hiring
     accessibility: {

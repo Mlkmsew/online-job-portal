@@ -112,7 +112,7 @@
 
   /* Section */
   .section {
-    @apply py-12 md:py-20;
+    @apply py-4 md:py-6;
   }
 
   /* Heading */

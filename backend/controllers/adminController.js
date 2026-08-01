@@ -12,13 +12,15 @@ const { AppError } = require('../middleware/errorHandler');
 
 // ========== DASHBOARD ANALYTICS ==========
 exports.getDashboardStats = asyncHandler(async (req, res) => {
-  const [totalUsers, totalEmployers, totalJobs, totalApplications, totalCompanies] = await Promise.all([
-    User.countDocuments({ role: 'jobseeker' }),
+  const [regularUsersCount, totalEmployers, totalJobs, totalApplications, totalCompanies] = await Promise.all([
+    User.countDocuments({ role: { $in: ['jobseeker', 'employer'] } }),
     User.countDocuments({ role: 'employer' }),
     Job.countDocuments(),
     Application.countDocuments(),
     Company.countDocuments(),
   ]);
+
+  const totalUsers = regularUsersCount;
 
   const activeJobs = await Job.countDocuments({ status: 'active' });
   const pendingCompanies = await Company.countDocuments({ isApproved: false });
@@ -122,11 +124,53 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
 // ========== COMPANY MANAGEMENT ==========
 exports.getCompanies = asyncHandler(async (req, res) => {
   const query = {};
-  if (req.query.isApproved !== undefined) query.isApproved = req.query.isApproved === 'true';
+  if (req.query.search) {
+    const safeSearch = escapeRegex(req.query.search);
+    query.$or = [
+      { name: new RegExp(safeSearch, 'i') },
+      { industry: new RegExp(safeSearch, 'i') },
+      { email: new RegExp(safeSearch, 'i') },
+      { website: new RegExp(safeSearch, 'i') },
+    ];
+  }
+
+  if (req.query.industry) query.industry = req.query.industry;
+
+  if (req.query.status) {
+    if (req.query.status === 'Approved') {
+      query.isApproved = true;
+    } else if (req.query.status === 'Pending') {
+      query.$and = [{ isApproved: false }, { $or: [{ isActive: { $exists: false } }, { isActive: true }] }];
+    } else if (req.query.status === 'Rejected') {
+      query.isApproved = false;
+      query.isActive = false;
+    }
+  }
+
   if (req.query.isVerified !== undefined) query.isVerified = req.query.isVerified === 'true';
 
   const { results, pagination } = await paginate(Company, query, req.query, ['owner']);
-  res.status(200).json({ success: true, count: results.length, pagination, data: results });
+  const companyIds = results.map((company) => company._id);
+  const jobs = await Job.find({ company: { $in: companyIds } })
+    .select('title status isApproved company applicantsCount')
+    .sort({ createdAt: -1 });
+
+  const jobsByCompany = jobs.reduce((acc, job) => {
+    const companyId = job.company?.toString();
+    if (!companyId) return acc;
+    if (!acc[companyId]) acc[companyId] = [];
+    acc[companyId].push(job);
+    return acc;
+  }, {});
+
+  const companiesWithJobs = results.map((company) => {
+    const companyObj = company.toObject();
+    const companyId = companyObj._id?.toString();
+    companyObj.jobs = companyId ? jobsByCompany[companyId] || [] : [];
+    return companyObj;
+  });
+
+  res.status(200).json({ success: true, count: companiesWithJobs.length, pagination, data: companiesWithJobs });
 });
 
 exports.approveCompany = asyncHandler(async (req, res, next) => {
@@ -166,9 +210,19 @@ exports.getJobs = asyncHandler(async (req, res) => {
 exports.approveJob = asyncHandler(async (req, res, next) => {
   const job = await Job.findById(req.params.id);
   if (!job) return next(new AppError('Job not found.', 404));
-  job.isApproved = !job.isApproved;
+  job.isApproved = true;
+  job.adminNote = req.body?.adminNote || 'Approved by admin.';
   await job.save({ validateBeforeSave: false });
-  res.status(200).json({ success: true, message: `Job ${job.isApproved ? 'approved' : 'unapproved'}.` });
+  res.status(200).json({ success: true, message: 'Job approved.' });
+});
+
+exports.rejectJob = asyncHandler(async (req, res, next) => {
+  const job = await Job.findById(req.params.id);
+  if (!job) return next(new AppError('Job not found.', 404));
+  job.isApproved = false;
+  job.adminNote = req.body?.adminNote || 'Rejected by admin.';
+  await job.save({ validateBeforeSave: false });
+  res.status(200).json({ success: true, message: 'Job rejected.' });
 });
 
 exports.featureJob = asyncHandler(async (req, res, next) => {

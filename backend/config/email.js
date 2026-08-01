@@ -2,6 +2,7 @@
 // Email Configuration - Nodemailer
 // ============================================
 const nodemailer = require('nodemailer');
+const { resolveClientURL } = require('../utils/getLocalIP');
 
 // Create reusable transporter
 const transporter = nodemailer.createTransport({
@@ -62,6 +63,16 @@ const sendEmail = async (options) => {
     }
     throw error;
   }
+};
+
+/**
+ * Get the resolved CLIENT_URL
+ * Automatically detects local network IP if localhost is configured
+ * This ensures password reset and verification links work on mobile devices
+ * @returns {string} The resolved client URL with proper IP address
+ */
+const getClientURL = () => {
+  return resolveClientURL(process.env.CLIENT_URL);
 };
 
 // Email templates
@@ -157,10 +168,55 @@ const emailTemplates = {
             <h2>Hello, ${name}!</h2>
             <p>We received a request to reset your password. Click the button below to create a new password:</p>
             <a href="${resetUrl}" class="btn">🔑 Reset Password</a>
+            <p>If the button does not work, copy and paste this link into your browser:</p>
+            <p><a href="${resetUrl}" style="word-break: break-all; color: #0f766e;">${resetUrl}</a></p>
             <p>This link expires in <strong>10 minutes</strong>. If you didn't request a password reset, please ignore this email and your password will remain unchanged.</p>
           </div>
           <div class="footer">
             <p>© 2024 OnlineJob Portal. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  }),
+
+  newMessageAlert: (recipientName, senderName, preview, conversationLink) => ({
+    subject: `New message from ${senderName} - OnlineJob Portal`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; background: #F8FAFC; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+          .header { background: linear-gradient(135deg, #0F766E, #14B8A6); padding: 40px 30px; text-align: center; color: white; }
+          .header h1 { margin: 0; font-size: 28px; }
+          .body { padding: 40px 30px; color: #334155; }
+          .body h2 { margin-top: 0; }
+          .preview { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin: 20px 0; color: #1F2937; }
+          .button { display: inline-block; padding: 14px 28px; background: #0F766E; color: #fff; border-radius: 10px; text-decoration: none; font-weight: 600; }
+          .footer { background: #F1F5F9; padding: 20px 30px; text-align: center; color: #64748B; font-size: 13px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📩 New Message Received</h1>
+          </div>
+          <div class="body">
+            <h2>Hello ${recipientName},</h2>
+            <p>You have received a new message from <strong>${senderName}</strong>.</p>
+            <div class="preview">
+              <p style="margin: 0 0 8px; color: #475569;"><strong>Message preview</strong></p>
+              <p style="margin: 0; color: #0F172A;">${preview}</p>
+            </div>
+            <p>Click the button below to view the conversation and reply instantly.</p>
+            <a href="${conversationLink}" class="button">View Conversation</a>
+          </div>
+          <div class="footer">
+            <p>If you do not want to receive these notifications, you can update your notification preferences in your profile.</p>
           </div>
         </div>
       </body>
@@ -239,5 +295,5 @@ const emailTemplates = {
   }),
 };
 
-module.exports = { sendEmail, emailTemplates };
+module.exports = { sendEmail, emailTemplates, getClientURL };
 

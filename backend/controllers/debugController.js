@@ -1,4 +1,4 @@
-const { sendEmail, emailTemplates } = require('../config/email');
+const { sendEmail, emailTemplates, getClientURL } = require('../config/email');
 
 // POST /api/debug/send-test-email
 exports.sendTestEmail = async (req, res) => {
@@ -7,7 +7,8 @@ exports.sendTestEmail = async (req, res) => {
 
   try {
     if (mode === 'verify') {
-      const verifyUrl = `${process.env.CLIENT_URL}/verify-email/TEST_TOKEN_${Date.now()}`;
+      // Use centralized getClientURL to ensure proper IP resolution for mobile devices
+      const verifyUrl = `${getClientURL()}/verify-email/TEST_TOKEN_${Date.now()}`;
       const template = emailTemplates.verifyEmail('Dev User', verifyUrl);
       const info = await sendEmail({ to, ...template });
       return res.status(200).json({ success: true, message: 'Test verification email sent.', info });

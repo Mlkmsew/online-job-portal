@@ -11,6 +11,7 @@ const CompanyProfile = () => {
   const dispatch = useDispatch();
   const { company, loading } = useSelector((state) => state.employer);
   const [creating, setCreating] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     defaultValues: {
@@ -29,9 +30,28 @@ const CompanyProfile = () => {
   }, [dispatch]);
 
   const onSubmit = async (data) => {
+    if (!logoFile) {
+      toast.error('Please upload a company logo before submitting.');
+      return;
+    }
+
     setCreating(true);
     try {
-      await api.post('/companies', data);
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (typeof value === 'object' && !Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value);
+          }
+        }
+      });
+      formData.append('logo', logoFile);
+
+      await api.post('/companies', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       toast.success('Company profile submitted for approval!');
       dispatch(fetchEmployerCompany());
     } catch (err) {
@@ -158,15 +178,12 @@ const CompanyProfile = () => {
 
               <div>
                 <label className="block text-sm font-semibold mb-1">Company Size</label>
-                <select {...register('companySize')} className="select">
-                  <option value="1-10">1-10 employees</option>
-                  <option value="11-50">11-50 employees</option>
-                  <option value="51-200">51-200 employees</option>
-                  <option value="201-500">201-500 employees</option>
-                  <option value="501-1000">501-1000 employees</option>
-                  <option value="1001-5000">1001-5000 employees</option>
-                  <option value="5000+">5000+ employees</option>
-                </select>
+                <input
+                  type="text"
+                  {...register('companySize')}
+                  className="input"
+                  placeholder="e.g. 50 employees or 100-200"
+                />
               </div>
             </div>
 
@@ -220,10 +237,24 @@ const CompanyProfile = () => {
                 <label className="block text-sm font-semibold mb-1">Phone Number</label>
                 <input
                   type="tel"
-                  {...register('phone')}
+                  {...register('phone', {
+                    required: 'Phone number is required',
+                    pattern: {
+                      value: /^\+251[0-9]{9}$/,
+                      message: 'Please enter a valid phone number',
+                    },
+                    setValueAs: (value) => {
+                      const digits = String(value || '').replace(/\D/g, '');
+                      if (!digits) return '';
+                      if (digits.startsWith('251')) return `+${digits}`;
+                      if (digits.startsWith('0')) return `+251${digits.slice(1)}`;
+                      return `+251${digits}`;
+                    },
+                  })}
                   className="input"
-                  placeholder="e.g. +251 911 123456"
+                  placeholder="e.g. +251911123456"
                 />
+                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
               </div>
             </div>
 
@@ -238,14 +269,26 @@ const CompanyProfile = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1">About / Bio</label>
+              <label className="block text-sm font-semibold mb-1">Description</label>
               <textarea
-                {...register('description', { required: 'Company bio is required' })}
+                {...register('description')}
                 className="textarea"
                 rows="5"
                 placeholder="Describe your company culture, mission, and products..."
               />
               {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-1">Company Logo</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-2">Please upload a clear company logo. This is required for your profile.</p>
             </div>
 
             <div className="pt-4">

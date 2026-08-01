@@ -9,40 +9,77 @@ const JobSeekerDashboard = () => {
   const { user } = useSelector((state) => state.auth);
   const [applications, setApplications] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
-  const [entryJobs, setEntryJobs] = useState([]);
-  const [recommendedJobs, setRecommendedJobs] = useState([]);
+  const [dashboardJobs, setDashboardJobs] = useState([]);
+  const [recommendedJobs, setRecommendedJobs] = useState(null);
+  const [upcomingInterviews, setUpcomingInterviews] = useState([]);
+  const [resumeHasCV, setResumeHasCV] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [dashboardRes, appsRes, bookmarksRes, jobsRes] = await Promise.all([
-          api.get('/dashboard'),
-          api.get('/applications/my'),
-          api.get('/bookmarks'),
-          api.get('/jobs', { params: { experienceLevel: 'Entry Level', limit: 3 } }),
-        ]);
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      console.log('Fetching dashboard data, auth token present:', Boolean(localStorage.getItem('token')));
+      const [dashboardRes, appsRes, bookmarksRes] = await Promise.all([
+        api.get('/dashboard'),
+        api.get('/applications/my'),
+        api.get('/bookmarks'),
+      ]);
+      console.log('Dashboard API raw response:', dashboardRes.status, dashboardRes.data);
 
-        const dashboardData = dashboardRes.data?.data || {};
-        setRecommendedJobs(dashboardData.recommendedJobs || []);
-        setApplications(appsRes.data?.data || appsRes.data || []);
-        setBookmarks(bookmarksRes.data?.data || bookmarksRes.data || []);
-        setEntryJobs(jobsRes.data?.data || jobsRes.data || []);
-      } catch (err) {
-        console.error('Error fetching dashboard stats:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const dashboardData = dashboardRes.data?.data || {};
+      setRecommendedJobs(Array.isArray(dashboardData.recommendedJobs) ? dashboardData.recommendedJobs : []);
+      const jobsData = Array.isArray(dashboardData.jobs)
+        ? dashboardData.jobs
+        : Array.isArray(dashboardData.dashboardJobs)
+          ? dashboardData.dashboardJobs
+          : Array.isArray(dashboardData.entryJobs)
+            ? dashboardData.entryJobs
+            : [];
+      console.log('Dashboard jobs data length:', jobsData.length);
+      setDashboardJobs(jobsData);
+      setUpcomingInterviews(Array.isArray(dashboardData.upcomingInterviews) ? dashboardData.upcomingInterviews : []);
+      setResumeHasCV(Boolean(dashboardData.resume?.hasCV || user?.cv));
+      setApplications(appsRes.data?.data || appsRes.data || []);
+      setBookmarks(bookmarksRes.data?.data || bookmarksRes.data || []);
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err.response?.status, err.response?.data || err.message || err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Refetch when the user's CV changes so recommendations appear after upload
+  useEffect(() => {
+    if (user?.cv) {
+      fetchDashboardData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.cv]);
 
   // Sub-counter breakdown calculations
   const activeAppsCount = applications.filter((app) => ['Submitted', 'Reviewed'].includes(app.status) || app.status === 'pending').length;
-  const interviewsCount = applications.filter((app) => app.status === 'Interview Scheduled' || app.status === 'interview').length;
+  const interviewsCount = upcomingInterviews.length || applications.filter((app) => ['Interview Scheduled', 'Interview', 'interview'].includes(app.status)).length;
   const archivedCount = applications.filter((app) => ['Selected', 'Not Selected', 'accepted', 'rejected'].includes(app.status)).length;
 
   const profileCompleteness = user?.profileCompleteness || 55;
+
+  const getMatchBadgeClass = (score) => {
+    if (score >= 80) {
+      return 'bg-teal-50 text-teal-700';
+    }
+    if (score >= 60) {
+      return 'bg-emerald-50 text-emerald-700';
+    }
+    if (score >= 40) {
+      return 'bg-yellow-50 text-yellow-700';
+    }
+    return 'bg-rose-50 text-rose-700';
+  };
 
   return (
     <div className="space-y-8 pb-10">
@@ -143,8 +180,14 @@ const JobSeekerDashboard = () => {
           <span className="text-xs uppercase tracking-wider text-teal-600 dark:text-teal-400 font-bold">Smart Match</span>
         </div>
 
-        {recommendedJobs.length === 0 ? (
-          <div className="text-sm text-gray-500 dark:text-gray-400">Upload your resume to receive personalized job recommendations.</div>
+        {loading || recommendedJobs === null ? (
+          <div className="text-sm text-gray-500 dark:text-gray-400">Loading recommended jobs...</div>
+        ) : recommendedJobs.length === 0 ? (
+          !resumeHasCV ? (
+            <div className="text-sm text-gray-500 dark:text-gray-400">Create or upload your resume to enable job recommendations.</div>
+          ) : (
+            <div className="text-sm text-gray-500 dark:text-gray-400">We couldn't find recommended jobs for your profile yet. Try updating your resume or check back later.</div>
+          )
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {recommendedJobs.map((job) => (
@@ -155,7 +198,9 @@ const JobSeekerDashboard = () => {
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{job.company?.name || 'Company'}</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-teal-50 text-teal-700">{job.matchPercentage}% Match</span>
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getMatchBadgeClass(job.matchPercentage)}`}>
+                      {job.matchPercentage}% Match
+                    </span>
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
@@ -176,17 +221,17 @@ const JobSeekerDashboard = () => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Entry-Level Opportunities</h3>
-            <p className="text-xs text-gray-450 dark:text-gray-400 font-medium">No experience required. Handpicked jobs for fresh graduates.</p>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Latest Opportunities</h3>
+            <p className="text-xs text-gray-450 dark:text-gray-400 font-medium">Active and approved job postings across all experience levels.</p>
           </div>
-          <Link to="/jobs?experienceLevel=Entry Level" className="text-teal-600 dark:text-teal-400 text-sm font-bold flex items-center gap-1 hover:underline">
+          <Link to="/jobs" className="text-teal-600 dark:text-teal-400 text-sm font-bold flex items-center gap-1 hover:underline">
             View All <FiArrowRight />
           </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {entryJobs.length > 0 ? (
-            entryJobs.map((job) => (
+          {dashboardJobs.length > 0 ? (
+            dashboardJobs.map((job) => (
               <div key={job._id} className="card p-5 border border-gray-150 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col justify-between hover:border-teal-200 transition-all duration-200">
                 <div>
                   <h4 className="font-bold text-gray-900 dark:text-white line-clamp-1 hover:text-teal-600 transition">
@@ -218,7 +263,7 @@ const JobSeekerDashboard = () => {
             ))
           ) : (
             <div className="col-span-full card py-10 text-center border-dashed border border-gray-250 dark:border-gray-700 bg-gray-50/50">
-              <p className="text-sm text-gray-500">No entry-level listings active currently. Check back later!</p>
+              <p className="text-sm text-gray-500">No active jobs available currently. Check back later!</p>
             </div>
           )}
         </div>

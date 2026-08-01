@@ -60,6 +60,11 @@ const Home = () => {
     { label: t('home.companies'), value: stats.totalCompanies.toLocaleString() },
   ];
 
+  const featureCardTitle = t('home.featureCardTitle', { defaultValue: 'Build a stronger career in Ethiopia' });
+  const featureCardSubtitle = t('home.featureCardSubtitle', {
+    defaultValue: 'Discover credible employers, browse fresh opportunities, and take the next step in your professional journey.',
+  });
+
   const handleSearch = (event) => {
     event.preventDefault();
     const query = keyword.trim();
@@ -75,9 +80,9 @@ const Home = () => {
   };
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-2 md:space-y-3">
       <section className="relative overflow-hidden bg-gradient-to-br from-primary-700 via-primary-800 to-slate-950 text-white">
-        <div className="container-custom relative py-20 lg:py-24">
+        <div className="container-custom relative py-10 lg:py-14">
           <div className="grid gap-10 xl:grid-cols-[1.2fr_0.9fr] items-center">
             <div className="max-w-2xl">
               <span className="inline-flex items-center rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-white/80">
@@ -146,9 +151,9 @@ const Home = () => {
                   <div className="h-full rounded-[1.75rem] bg-slate-900/75 p-6 text-white flex flex-col justify-between">
                     <div className="space-y-4">
                       <div className="h-10 w-10 rounded-2xl bg-white/10" />
-                      <h2 className="text-2xl font-semibold">{t('home.featureCardTitle')}</h2>
+                      <h2 className="text-2xl font-semibold">{featureCardTitle}</h2>
                       <p className="text-sm text-white/70 max-w-xl">
-                        {t('home.featureCardSubtitle')}
+                        {featureCardSubtitle}
                       </p>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -270,8 +275,6 @@ const Home = () => {
           </div>
         </div>
       </section>
-
-      <Statistics />
     </div>
   );
 };

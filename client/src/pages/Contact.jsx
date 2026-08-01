@@ -2,15 +2,21 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
+import api from '../services/api';
 
 const Contact = () => {
   const { t } = useTranslation();
   const { register, handleSubmit, reset } = useForm();
 
-  const onSubmit = (data) => {
-    console.log(data);
-    toast.success(t('contact.successMessage'));
-    reset();
+  const onSubmit = async (data) => {
+    try {
+      await api.post('/contact', data);
+      toast.success(t('contact.successMessage'));
+      reset();
+    } catch (error) {
+      const message = error?.response?.data?.message || 'Unable to send your message right now.';
+      toast.error(message);
+    }
   };
 
   return (
@@ -33,18 +39,18 @@ const Contact = () => {
               <FiMail className="w-6 h-6 text-primary-500 mt-1" />
               <div>
                 <p className="font-semibold">{t('contact.info.emailLabel')}</p>
-                <p className="text-gray-600">{t('contact.info.emailValue1')}</p>
-                <p className="text-gray-600">{t('contact.info.emailValue2')}</p>
-                <p className="text-gray-600">{t('contact.info.emailValue3')}</p>
+                <p className="text-gray-600">melkamsewalehegn@gmail.com</p>
+                <p className="text-gray-600">thebuilder6763@gmail.com</p>
+                <p className="text-gray-600">yimer5759@gmail.com</p>
               </div>
             </div>
             <div className="flex items-start space-x-4">
               <FiPhone className="w-6 h-6 text-primary-500 mt-1" />
               <div>
                 <p className="font-semibold">{t('contact.info.phoneLabel')}</p>
-                <p className="text-gray-600">{t('contact.info.phoneValue1')}</p>
-                <p className="text-gray-600">{t('contact.info.phoneValue2')}</p>
-                <p className="text-gray-600">{t('contact.info.phoneValue3')}</p>
+                <p className="text-gray-600">+251 911 123 456</p>
+                <p className="text-gray-600">+251 911 123 457</p>
+                <p className="text-gray-600">+251 911 123 458</p>
               </div>
             </div>
             <div className="flex items-start space-x-4">
