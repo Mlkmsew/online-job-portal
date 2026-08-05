@@ -52,18 +52,83 @@ exports.getCompany = asyncHandler(async (req, res, next) => {
 // @route   POST /api/companies
 // @access  Private (Employer)
 exports.createCompany = asyncHandler(async (req, res, next) => {
+  const normalizeNestedBodyObject = (field) => {
+    if (typeof req.body[field] === 'string') {
+      try {
+        req.body[field] = JSON.parse(req.body[field]);
+      } catch {
+        req.body[field] = req.body[field];
+      }
+    }
+  };
+
+  normalizeNestedBodyObject('location');
+  normalizeNestedBodyObject('socialLinks');
+  normalizeNestedBodyObject('recruiter');
+
   // Check if user already owns a company
   const existing = await Company.findOne({ owner: req.user.id });
   if (existing && req.user.role !== 'admin') {
     return next(new AppError('You already own a company. Contact support if you need to manage multiple companies.', 400));
   }
 
-  if (!req.file && !req.body.logo) {
+  const files = (function normalizeFiles(filesInput) {
+    if (!filesInput) return {};
+
+    let fileEntries = [];
+    if (Array.isArray(filesInput)) {
+      fileEntries = filesInput;
+    } else if (filesInput && typeof filesInput === 'object') {
+      fileEntries = Object.values(filesInput).flatMap((fileOrArray) => (Array.isArray(fileOrArray) ? fileOrArray : [fileOrArray]));
+    }
+
+    if (!Array.isArray(fileEntries)) return {};
+
+    return fileEntries.reduce((acc, file) => {
+      if (!file || typeof file !== 'object' || !file.fieldname) return acc;
+      if (!acc[file.fieldname]) acc[file.fieldname] = [];
+      acc[file.fieldname].push(file);
+      return acc;
+    }, {});
+  })(req.files);
+
+  const normalizeMedia = (field) => {
+    if (files[field]?.[0]) return files[field][0].path;
+    const value = req.body[field];
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') return value.url || value.path || '';
+    return '';
+  };
+
+  req.body.logo = normalizeMedia('logo');
+  req.body.coverImage = normalizeMedia('coverImage');
+
+  if (!req.body.logo) {
     return next(new AppError('Please upload a company logo.', 400));
   }
 
-  if (req.file?.path) {
-    req.body.logo = req.file.path;
+  if (files.logo?.[0]) {
+    req.body.logoPublicId = files.logo[0].filename;
+  }
+
+  if (files.coverImage?.[0]) {
+    req.body.coverImagePublicId = files.coverImage[0].filename;
+  }
+
+  if (files.businessLicense?.[0]) {
+    req.body.businessLicense = files.businessLicense[0].path;
+    req.body.businessLicensePublicId = files.businessLicense[0].filename;
+  }
+
+  if (files.tinCertificate?.[0]) {
+    req.body.tinCertificate = files.tinCertificate[0].path;
+    req.body.tinCertificatePublicId = files.tinCertificate[0].filename;
+  }
+
+  if (files.companyRegistration?.[0]) {
+    req.body.companyRegistration = files.companyRegistration[0].path;
+    req.body.companyRegistrationPublicId = files.companyRegistration[0].filename;
   }
 
   req.body.owner = req.user.id;
@@ -75,6 +140,20 @@ exports.createCompany = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/companies/:id
 // @access  Private (Owner/Admin)
 exports.updateCompany = asyncHandler(async (req, res, next) => {
+  const normalizeNestedBodyObject = (field) => {
+    if (typeof req.body[field] === 'string') {
+      try {
+        req.body[field] = JSON.parse(req.body[field]);
+      } catch {
+        req.body[field] = req.body[field];
+      }
+    }
+  };
+
+  normalizeNestedBodyObject('location');
+  normalizeNestedBodyObject('socialLinks');
+  normalizeNestedBodyObject('recruiter');
+
   let company = await Company.findById(req.params.id);
   if (!company) return next(new AppError('Company not found.', 404));
 
@@ -82,10 +161,27 @@ exports.updateCompany = asyncHandler(async (req, res, next) => {
     return next(new AppError('Not authorized.', 403));
   }
 
+  const sanitizeMediaField = (field) => {
+    const value = req.body[field];
+    if (value && typeof value === 'object') {
+      const cleaned = typeof value.url === 'string' ? value.url : typeof value.path === 'string' ? value.path : '';
+      if (cleaned) {
+        req.body[field] = cleaned;
+      } else {
+        delete req.body[field];
+      }
+    }
+  };
+
+  sanitizeMediaField('logo');
+  sanitizeMediaField('coverImage');
+
   const allowedFields = [
     'name', 'description', 'shortDescription', 'tagline', 'industry', 'companySize',
     'foundedYear', 'companyType', 'website', 'email', 'phone', 'location',
-    'socialLinks', 'benefits', 'techStack',
+    'socialLinks', 'recruiter', 'benefits', 'techStack', 'logo', 'logoPublicId', 'coverImage', 'coverImagePublicId',
+    'businessLicense', 'businessLicensePublicId', 'tinCertificate', 'tinCertificatePublicId',
+    'companyRegistration', 'companyRegistrationPublicId', 'registrationNumber',
   ];
   const updates = {};
   allowedFields.forEach((f) => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });

@@ -61,6 +61,17 @@ const userSchema = new mongoose.Schema(
         profileViews: { type: Number, default: 0 },
         profileCompleteness: { type: Number, default: 0 },
         lastLogin: Date,
+
+        settings: {
+            account: { type: Object, default: {} },
+            companyProfile: { type: Object, default: {} },
+            notifications: { type: Object, default: {} },
+            privacy: { type: Object, default: {} },
+            companyPreferences: { type: Object, default: {} },
+            notificationPreferences: { type: Object, default: {} },
+            appearance: { type: Object, default: {} },
+            theme: { type: String, default: 'Light' },
+        },
     },
     { timestamps: true }
 );

@@ -67,14 +67,14 @@ const ManageJobs = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Link to={`/employer/applicants/${job._id}`} className="btn btn-outline inline-flex items-center gap-2" title="View Applicants">
-                    <FiUsers />Veiw Applicants
+                    <FiUsers />View Applicants
                   </Link>
                   <Link to={`/jobs/${job._id}`} className="btn btn-ghost" title="View">
                     <FiEye />
                   </Link>
-                  <button className="btn btn-ghost" title="Edit">
+                  <Link to={`/employer/post-job/${job._id}`} className="btn btn-ghost inline-flex items-center gap-2" title="Edit">
                     <FiEdit2 />
-                  </button>
+                  </Link>
                   <button onClick={() => handleDelete(job._id)} className="btn btn-ghost text-red-500" title="Delete">
                     <FiTrash2 />
                   </button>

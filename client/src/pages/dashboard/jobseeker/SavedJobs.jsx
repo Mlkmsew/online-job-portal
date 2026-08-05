@@ -75,25 +75,25 @@ const SavedJobs = () => {
 
   return (
     <div className="max-w-5xl mx-auto pb-10">
-      <h1 className="text-3xl font-black mb-8 text-gray-900 dark:text-white">Saved Jobs</h1>
+      <h1 className="text-3xl font-black mb-8 text-slate-900 dark:text-white">Saved Jobs</h1>
 
       {loading ? (
         <div className="flex justify-center items-center py-20">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600"></div>
         </div>
       ) : bookmarks.length === 0 ? (
-        <div className="card text-center py-16 px-6 border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-850">
-          <FiBriefcase className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-gray-800 dark:text-white">No saved jobs yet</h3>
-          <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-sm mx-auto mb-6">
-            Bookmark job listings while browsing to save them for later applications.
+        <div className="card text-center py-16 px-6 border-dashed border-gray-300 dark:border-gray-700 bg-slate-50 dark:bg-slate-900">
+          <FiBriefcase className="w-16 h-16 text-slate-300 dark:text-slate-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white">No saved jobs yet</h3>
+          <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-sm mx-auto mb-6">
+            Bookmark jobs while browsing to keep them handy and apply later.
           </p>
-          <Link to="/jobs" className="btn btn-primary bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-6 rounded-xl">
+          <Link to="/jobs" className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-700">
             Browse Opportunities
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {bookmarks.map((bookmark) => {
             const job = bookmark.job;
             if (!job) return null;

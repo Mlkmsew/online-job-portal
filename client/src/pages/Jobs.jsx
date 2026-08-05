@@ -1,25 +1,43 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import Select from 'react-select';
+import { useSelector } from 'react-redux';
 import api from '../services/api';
-import { getSavedSearches, createSavedSearch, updateSavedSearch, deleteSavedSearch, toggleSavedSearchNotification, getJobAlerts, createJobAlert, updateJobAlert, deleteJobAlert } from '../services/jobSearchService';
 import { toast } from 'react-hot-toast';
-import { FiMapPin, FiBriefcase, FiClock, FiSearch, FiSliders, FiDollarSign, FiFilter, FiX } from 'react-icons/fi';
+import {
+  FiMapPin,
+  FiBriefcase,
+  FiClock,
+  FiSearch,
+  FiSliders,
+  FiDollarSign,
+  FiX,
+  FiBookmark,
+} from 'react-icons/fi';
 import { REGIONS, REGION_CITIES } from '../constants/locations';
-import { useTranslation } from 'react-i18next';
+
+const JOB_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'];
+const EXPERIENCE_LEVELS = ['Entry Level', 'Mid Level', 'Senior Level', 'Lead'];
+const EDUCATION_LEVELS = ['No Requirement', 'High School', 'Diploma', 'Bachelor', 'Master', 'PhD', 'Professional Certificate'];
+const DATE_POSTED_OPTIONS = [
+  { value: '', label: 'Any time' },
+  { value: '1', label: 'Today' },
+  { value: '3', label: 'Last 3 days' },
+  { value: '7', label: 'Last 7 days' },
+  { value: '30', label: 'Last 30 days' },
+];
 
 const Jobs = () => {
-  const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+
   const [jobs, setJobs] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [savedJobMap, setSavedJobMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [savedSearches, setSavedSearches] = useState([]);
-  const [jobAlerts, setJobAlerts] = useState([]);
-  const [showSavedSearchManager, setShowSavedSearchManager] = useState(false);
-  const [showAlertManager, setShowAlertManager] = useState(false);
 
-  // Search & Filter States
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
@@ -29,13 +47,30 @@ const Jobs = () => {
   const [experienceLevel, setExperienceLevel] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [companyType, setCompanyType] = useState('');
-  const [internshipOnly, setInternshipOnly] = useState(false);
-  const [deadlineWithinDays, setDeadlineWithinDays] = useState('');
+  const [educationLevel, setEducationLevel] = useState('');
+  const [datePosted, setDatePosted] = useState('');
   const [minSalary, setMinSalary] = useState('');
   const [maxSalary, setMaxSalary] = useState('');
-  const [sort, setSort] = useState('newest');
+  const [selectedSkills, setSelectedSkills] = useState([]);
+  const [sort, setSort] = useState('relevance');
+  const [page, setPage] = useState(1);
+  const [totalJobs, setTotalJobs] = useState(0);
+  const [pages, setPages] = useState(0);
+  const [hasPrevPage, setHasPrevPage] = useState(false);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const limit = 12;
 
-  // Seed filters from the incoming route query string
+  const skillOptions = useMemo(
+    () => skills.map((skill) => ({ value: skill._id, label: skill.name })),
+    [skills]
+  );
+
+  const selectedSkillOptions = useMemo(
+    () => skillOptions.filter((option) => selectedSkills.includes(option.value)),
+    [selectedSkills, skillOptions]
+  );
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     setSearch(params.get('search') || '');
@@ -47,100 +82,77 @@ const Jobs = () => {
     setExperienceLevel(params.get('experience') || '');
     setCompanyName(params.get('companyName') || '');
     setCompanyType(params.get('companyType') || '');
-    setDeadlineWithinDays(params.get('deadlineWithinDays') || '');
+    setEducationLevel(params.get('education') || '');
+    setDatePosted(params.get('postedWithinDays') || '');
     setMinSalary(params.get('minSalary') || '');
     setMaxSalary(params.get('maxSalary') || '');
+    setSelectedSkills(params.get('skills') ? params.get('skills').split(',').filter(Boolean) : []);
+    setSort(params.get('sort') || 'relevance');
+    setPage(parseInt(params.get('page') || '1', 10));
   }, [location.search]);
 
-  // Fetch Categories
   useEffect(() => {
-    const fetchCategories = async () => {
+    const loadCategories = async () => {
       try {
         const res = await api.get('/categories');
         setCategories(Array.isArray(res.data) ? res.data : res.data?.data || []);
-      } catch (err) {
-        console.error('Failed to fetch categories:', err);
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    const loadSavedSearches = async () => {
-      try {
-        const res = await getSavedSearches();
-        setSavedSearches(res.data?.data || []);
-      } catch (err) {
-        console.error('Failed to fetch saved searches:', err);
-      }
-    };
-
-    const loadJobAlerts = async () => {
-      try {
-        const res = await getJobAlerts();
-        setJobAlerts(res.data?.data || []);
-      } catch (err) {
-        console.error('Failed to fetch job alerts:', err);
-      }
-    };
-
-    loadSavedSearches();
-    loadJobAlerts();
-  }, []);
-
-  // Fetch Jobs
-  useEffect(() => {
-    const fetchJobs = async () => {
-      setLoading(true);
-      try {
-        const params = {
-          sort,
-        };
-        if (search) params.search = search;
-        if (companyName) params.companyName = companyName;
-        if (selectedCategory) params.category = selectedCategory;
-        if (selectedRegion) params.region = selectedRegion;
-        if (selectedCity) params.city = selectedCity;
-        if (jobType) params.jobType = jobType;
-        if (workMode) params.workMode = workMode;
-        if (companyType) params.companyType = companyType;
-        if (internshipOnly) params.internship = 'true';
-        if (deadlineWithinDays) params.deadlineWithinDays = deadlineWithinDays;
-        if (experienceLevel) params.experienceLevel = experienceLevel;
-        if (minSalary) params.minSalary = minSalary;
-        if (maxSalary) params.maxSalary = maxSalary;
-
-        const res = await api.get('/jobs', { params });
-        setJobs(Array.isArray(res.data) ? res.data : res.data?.data || []);
       } catch (error) {
-        console.error('Failed to fetch jobs:', error);
-      } finally {
-        setLoading(false);
+        console.error('Failed to load categories:', error);
       }
     };
 
-    // Debounce API calls slightly if searching
-    const delayDebounce = setTimeout(() => {
-      fetchJobs();
-    }, 300);
+    const loadSkills = async () => {
+      try {
+        const res = await api.get('/skills');
+        setSkills(res.data?.data || []);
+      } catch (error) {
+        console.error('Failed to load skills:', error);
+      }
+    };
 
-    return () => clearTimeout(delayDebounce);
-  }, [
-    search,
-    selectedCategory,
-    selectedRegion,
-    selectedCity,
-    jobType,
-    workMode,
-    experienceLevel,
-    minSalary,
-    maxSalary,
-    sort,
-    companyName,
-    companyType,
-    internshipOnly,
-    deadlineWithinDays,
-  ]);
+    loadCategories();
+    loadSkills();
+  }, []);
+
+  useEffect(() => {
+    // no-op placeholder for future enhancements
+  }, []);
+
+  useEffect(() => {
+    const loadBookmarks = async () => {
+      if (!isAuthenticated) {
+        setSavedJobMap({});
+        return;
+      }
+      try {
+        const res = await api.get('/bookmarks', { params: { limit: 200 } });
+        const bookmarks = res.data?.data || [];
+        const map = {};
+        bookmarks.forEach((bookmark) => {
+          if (bookmark.job?._id) map[bookmark.job._id] = bookmark._id;
+        });
+        setSavedJobMap(map);
+      } catch (error) {
+        console.error('Failed to load bookmarks:', error);
+      }
+    };
+
+    loadBookmarks();
+  }, [isAuthenticated]);
+
+  const userSkills = useMemo(() => {
+    const rawSkills = [
+      ...(Array.isArray(user?.skills) ? user.skills : []),
+      ...(Array.isArray(user?.resumeAnalysis?.skills) ? user.resumeAnalysis.skills : []),
+    ];
+    return Array.from(
+      new Set(
+        rawSkills
+          .map((skill) => (typeof skill === 'string' ? skill.trim().toLowerCase() : skill?.name?.trim().toLowerCase() || ''))
+          .filter(Boolean)
+      )
+    );
+  }, [user]);
 
   const getCurrentSearchQuery = () => ({
     search,
@@ -152,14 +164,16 @@ const Jobs = () => {
     experience: experienceLevel,
     companyName,
     companyType,
-    internshipOnly,
-    deadlineWithinDays,
+    education: educationLevel,
+    postedWithinDays: datePosted,
     minSalary,
     maxSalary,
+    skills: selectedSkills.join(','),
     sort,
+    page,
   });
 
-  const handleResetFilters = () => {
+  const resetFilters = () => {
     setSearch('');
     setSelectedCategory('');
     setSelectedRegion('');
@@ -169,12 +183,63 @@ const Jobs = () => {
     setExperienceLevel('');
     setCompanyName('');
     setCompanyType('');
-    setInternshipOnly(false);
-    setDeadlineWithinDays('');
+    setEducationLevel('');
+    setDatePosted('');
     setMinSalary('');
     setMaxSalary('');
-    setSort('newest');
+    setSelectedSkills([]);
+    setSort('relevance');
+    setPage(1);
   };
+
+  const handleResetFilters = () => {
+    resetFilters();
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (selectedCategory) params.set('category', selectedCategory);
+    if (selectedRegion) params.set('region', selectedRegion);
+    if (selectedCity) params.set('city', selectedCity);
+    if (jobType) params.set('jobType', jobType);
+    if (workMode) params.set('workMode', workMode);
+    if (experienceLevel) params.set('experience', experienceLevel);
+    if (companyName) params.set('companyName', companyName);
+    if (companyType) params.set('companyType', companyType);
+    if (educationLevel) params.set('education', educationLevel);
+    if (datePosted) params.set('postedWithinDays', datePosted);
+    if (minSalary) params.set('minSalary', minSalary);
+    if (maxSalary) params.set('maxSalary', maxSalary);
+    if (selectedSkills.length) params.set('skills', selectedSkills.join(','));
+    if (sort && sort !== 'relevance') params.set('sort', sort);
+    if (page > 1) params.set('page', page.toString());
+
+    const nextSearch = params.toString();
+    if (nextSearch !== location.search.replace(/^[?]/, '')) {
+      navigate({ pathname: location.pathname, search: nextSearch }, { replace: true });
+    }
+  }, [
+    search,
+    selectedCategory,
+    selectedRegion,
+    selectedCity,
+    jobType,
+    workMode,
+    experienceLevel,
+    companyName,
+    companyType,
+    educationLevel,
+    datePosted,
+    minSalary,
+    maxSalary,
+    selectedSkills,
+    sort,
+    page,
+    location.pathname,
+    location.search,
+    navigate,
+  ]);
 
   const handleApplySavedSearch = (savedSearch) => {
     const q = savedSearch.query || {};
@@ -187,107 +252,120 @@ const Jobs = () => {
     setExperienceLevel(q.experience || '');
     setCompanyName(q.companyName || '');
     setCompanyType(q.companyType || '');
-    setInternshipOnly(q.internshipOnly || false);
-    setDeadlineWithinDays(q.deadlineWithinDays || '');
+    setEducationLevel(q.education || '');
+    setDatePosted(q.postedWithinDays || '');
     setMinSalary(q.minSalary || '');
     setMaxSalary(q.maxSalary || '');
-    setSort(q.sort || 'newest');
+    setSelectedSkills((q.skills || '').split(',').filter(Boolean));
+    setSort(q.sort || 'relevance');
+    setPage(q.page ? parseInt(q.page, 10) : 1);
     toast.success(`Applied saved search: ${savedSearch.name}`);
   };
 
-  const refreshSavedSearches = async () => {
+
+  const calculateMatchScore = (job) => {
+    if (!Array.isArray(userSkills) || userSkills.length === 0) return null;
+    if (!Array.isArray(job.skillsRequired) || job.skillsRequired.length === 0) return null;
+
+    const requiredSkillNames = job.skillsRequired
+      .map((skill) => (skill?.name || '').trim().toLowerCase())
+      .filter(Boolean);
+
+    if (!requiredSkillNames.length) return null;
+
+    const matchedSkills = requiredSkillNames.filter((skill) => userSkills.includes(skill));
+    return Math.round((matchedSkills.length / requiredSkillNames.length) * 100);
+  };
+
+  const fetchJobs = async () => {
+    setLoading(true);
     try {
-      const res = await getSavedSearches();
-      setSavedSearches(res.data?.data || []);
-    } catch (err) {
-      console.error('Failed to refresh saved searches:', err);
+        const params = { page, limit };
+      if (sort && sort !== 'relevance') params.sort = sort;
+      if (search) params.search = search;
+      if (companyName) params.companyName = companyName;
+      if (companyType) params.companyType = companyType;
+      if (selectedCategory) params.category = selectedCategory;
+      if (selectedRegion) params.region = selectedRegion;
+      if (selectedCity) params.city = selectedCity;
+      if (jobType) params.jobType = jobType;
+      if (workMode) params.workMode = workMode;
+      if (experienceLevel) params.experience = experienceLevel;
+      if (educationLevel) params.education = educationLevel;
+      if (datePosted) params.postedWithinDays = datePosted;
+      if (minSalary) params.minSalary = minSalary;
+      if (maxSalary) params.maxSalary = maxSalary;
+      if (selectedSkills.length) params.skills = selectedSkills.join(',');
+
+      const res = await api.get('/jobs', { params });
+      const payload = res.data;
+      const normalizedJobs = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+      setJobs(normalizedJobs);
+      setTotalJobs(payload.pagination?.total ?? payload.count ?? normalizedJobs.length);
+      setPages(payload.pagination?.pages ?? 0);
+      setHasPrevPage(!!payload.pagination?.hasPrev);
+      setHasNextPage(!!payload.pagination?.hasNext);
+    } catch (error) {
+      console.error('Failed to fetch jobs:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const refreshJobAlerts = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchJobs();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [
+    search,
+    selectedCategory,
+    selectedRegion,
+    selectedCity,
+    jobType,
+    workMode,
+    experienceLevel,
+    educationLevel,
+    datePosted,
+    minSalary,
+    maxSalary,
+    selectedSkills,
+    sort,
+    page,
+    companyName,
+    companyType,
+  ]);
+
+  const handleToggleBookmark = async (job) => {
+    if (!isAuthenticated) {
+      toast.error('Please login to save jobs.');
+      navigate('/login');
+      return;
+    }
+
+    const existingBookmarkId = savedJobMap[job._id];
     try {
-      const res = await getJobAlerts();
-      setJobAlerts(res.data?.data || []);
-    } catch (err) {
-      console.error('Failed to refresh job alerts:', err);
+      if (existingBookmarkId) {
+        await api.delete(`/bookmarks/${existingBookmarkId}`);
+        setSavedJobMap((prev) => {
+          const next = { ...prev };
+          delete next[job._id];
+          return next;
+        });
+        toast.success('Removed saved job.');
+      } else {
+        const res = await api.post('/bookmarks', { job: job._id });
+        const bookmarkId = res.data?.data?._id;
+        if (bookmarkId) {
+          setSavedJobMap((prev) => ({ ...prev, [job._id]: bookmarkId }));
+        }
+        toast.success('Job saved successfully.');
+      }
+    } catch (error) {
+      console.error('Failed to update saved job:', error);
     }
   };
 
-  const handleSaveNewSearch = async () => {
-    const name = window.prompt('Save current search as:');
-    if (!name) return;
-    try {
-      await createSavedSearch({ name, query: getCurrentSearchQuery(), notifyOnNewJobs: false });
-      toast.success('Saved search created.');
-      await refreshSavedSearches();
-    } catch (err) {
-      console.error('Failed to save search:', err);
-    }
-  };
-
-  const handleToggleSavedSearchNotification = async (searchItem) => {
-    try {
-      const res = await toggleSavedSearchNotification(searchItem._id);
-      setSavedSearches((prev) => prev.map((item) => (item._id === searchItem._id ? res.data.data : item)));
-      toast.success(`Notifications ${res.data.data.notifyOnNewJobs ? 'enabled' : 'disabled'} for ${searchItem.name}`);
-    } catch (err) {
-      console.error('Failed to toggle saved search notifications:', err);
-    }
-  };
-
-  const handleCreateJobAlert = async () => {
-    const title = window.prompt('Create a new job alert name:');
-    if (!title) return;
-    try {
-      await createJobAlert({
-        title,
-        region: selectedRegion || '',
-        city: selectedCity || '',
-        jobType: jobType || '',
-        keywords: search || '',
-        frequency: 'daily',
-        active: true,
-      });
-      toast.success('Job alert created.');
-      await refreshJobAlerts();
-    } catch (err) {
-      console.error('Failed to create job alert:', err);
-    }
-  };
-
-  const handleToggleJobAlert = async (alertItem) => {
-    try {
-      const res = await updateJobAlert(alertItem._id, { active: !alertItem.active });
-      setJobAlerts((prev) => prev.map((item) => (item._id === alertItem._id ? res.data.data : item)));
-      toast.success(`${res.data.data.active ? 'Enabled' : 'Disabled'} alert: ${alertItem.title}`);
-    } catch (err) {
-      console.error('Failed to update job alert:', err);
-    }
-  };
-
-  const handleDeleteSavedSearch = async (id) => {
-    if (!window.confirm('Delete this saved search?')) return;
-    try {
-      await deleteSavedSearch(id);
-      toast.success('Saved search deleted.');
-      await refreshSavedSearches();
-    } catch (err) {
-      console.error('Failed to delete saved search:', err);
-    }
-  };
-
-  const handleDeleteJobAlert = async (id) => {
-    if (!window.confirm('Delete this alert?')) return;
-    try {
-      await deleteJobAlert(id);
-      toast.success('Job alert deleted.');
-      await refreshJobAlerts();
-    } catch (err) {
-      console.error('Failed to delete job alert:', err);
-    }
-  };
-
-  // Get cities based on selected region
   const availableCities = selectedRegion ? REGION_CITIES[selectedRegion] || [] : [];
 
   return (
@@ -296,36 +374,21 @@ const Jobs = () => {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-black text-gray-900 dark:text-white">Find Jobs</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Explore job opportunities, save searches, and stay notified when the right role opens.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
-            >
-              <FiX className="w-4 h-4" /> Reset
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowMobileFilters(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
-            >
-              <FiSliders className="w-4 h-4" /> Filters
-            </button>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Explore job opportunities and apply to roles that fit your profile.</p>
           </div>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.8fr_1fr]">
+        <div className="grid gap-6">
           <main className="space-y-6">
             <div className="rounded-[32px] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <div className="grid gap-4 lg:grid-cols-[1fr_0.7fr_0.9fr]">
-                <div className="relative">
+              {/* Essentials row: Search, Category, Job Type */}
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="relative md:col-span-2">
                   <FiSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                     placeholder="Search jobs, companies or skills"
                     className="input pl-11"
                   />
@@ -334,7 +397,7 @@ const Jobs = () => {
                   <label className="sr-only">Category</label>
                   <select
                     value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
                     className="select"
                   >
                     <option value="">All Categories</option>
@@ -344,119 +407,217 @@ const Jobs = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="sr-only">Type</label>
+                  <label className="sr-only">Job type</label>
                   <select
                     value={jobType}
-                    onChange={(e) => setJobType(e.target.value)}
+                    onChange={(e) => { setJobType(e.target.value); setPage(1); }}
                     className="select"
                   >
                     <option value="">All Job Types</option>
-                    <option value="Full-time">Full-time</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Internship">Internship</option>
-                    <option value="Freelance">Freelance</option>
+                    {JOB_TYPES.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm text-gray-500">{jobs.length.toLocaleString()} jobs available</div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={handleResetFilters}
-                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              {/* Compact second row: Work mode + Region/City */}
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="sr-only">Work mode</label>
+                  <select
+                    value={workMode}
+                    onChange={(e) => { setWorkMode(e.target.value); setPage(1); }}
+                    className="select w-full"
                   >
-                    Reset
-                  </button>
-                  <button
-                    onClick={() => setShowMobileFilters(false)}
-                    className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-                  >
-                    Search Jobs
-                  </button>
+                    <option value="">Any mode</option>
+                    <option value="on-site">On-site</option>
+                    <option value="remote">Remote</option>
+                    <option value="hybrid">Hybrid</option>
+                  </select>
                 </div>
+                <div>
+                  <label className="sr-only">Region</label>
+                  <select
+                    value={selectedRegion}
+                    onChange={(e) => { setSelectedRegion(e.target.value); setSelectedCity(''); setPage(1); }}
+                    className="select w-full"
+                  >
+                    <option value="">All regions</option>
+                    {REGIONS.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="sr-only">City</label>
+                  <select
+                    value={selectedCity}
+                    onChange={(e) => { setSelectedCity(e.target.value); setPage(1); }}
+                    className="select w-full"
+                  >
+                    <option value="">All cities</option>
+                    {availableCities.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Advanced filters toggle & total */}
+              <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((s) => !s)}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700"
+                >
+                  <FiSliders className="h-4 w-4 text-gray-500" />
+                  {showAdvanced ? 'Hide advanced filters' : 'More filters'}
+                </button>
+                <div className="text-sm text-gray-500">{totalJobs.toLocaleString()} jobs found</div>
+              </div>
+
+              {showAdvanced && (
+                <div className="mt-4 space-y-4">
+                  <div className="grid gap-4 lg:grid-cols-3">
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Company</label>
+                      <input
+                        value={companyName}
+                        onChange={(e) => { setCompanyName(e.target.value); setPage(1); }}
+                        className="input w-full"
+                        placeholder="Company name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Company type</label>
+                      <select
+                        value={companyType}
+                        onChange={(e) => { setCompanyType(e.target.value); setPage(1); }}
+                        className="select w-full"
+                      >
+                        <option value="">All company types</option>
+                        <option value="Private">Private</option>
+                        <option value="Government">Government</option>
+                        <option value="NGO">NGO</option>
+                        <option value="Startup">Startup</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Sort by</label>
+                      <select
+                        value={sort}
+                        onChange={(e) => { setSort(e.target.value); setPage(1); }}
+                        className="select w-full"
+                      >
+                        <option value="relevance">Sort by relevance</option>
+                        <option value="newest">Newest first</option>
+                        <option value="salaryHighToLow">Salary high to low</option>
+                        <option value="salaryLowToHigh">Salary low to high</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 lg:grid-cols-4">
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Education</label>
+                      <select
+                        value={educationLevel}
+                        onChange={(e) => { setEducationLevel(e.target.value); setPage(1); }}
+                        className="select w-full"
+                      >
+                        <option value="">Any education level</option>
+                        {EDUCATION_LEVELS.map((level) => (
+                          <option key={level} value={level}>{level}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Experience</label>
+                      <select
+                        value={experienceLevel}
+                        onChange={(e) => { setExperienceLevel(e.target.value); setPage(1); }}
+                        className="select w-full"
+                      >
+                        <option value="">Any experience level</option>
+                        {EXPERIENCE_LEVELS.map((level) => (
+                          <option key={level} value={level}>{level}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-2">Date posted</label>
+                      <select
+                        value={datePosted}
+                        onChange={(e) => { setDatePosted(e.target.value); setPage(1); }}
+                        className="select w-full"
+                      >
+                        {DATE_POSTED_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">Min salary</label>
+                        <input
+                          type="number"
+                          value={minSalary}
+                          onChange={(e) => { setMinSalary(e.target.value); setPage(1); }}
+                          className="input w-full"
+                          placeholder="ETB"
+                          min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-2">Max salary</label>
+                        <input
+                          type="number"
+                          value={maxSalary}
+                          onChange={(e) => { setMaxSalary(e.target.value); setPage(1); }}
+                          className="input w-full"
+                          placeholder="ETB"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Skills</label>
+                    <Select
+                      value={selectedSkillOptions}
+                      onChange={(selected) => { setSelectedSkills((selected || []).map((item) => item.value)); setPage(1); }}
+                      options={skillOptions}
+                      isMulti
+                      placeholder="Select skills"
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Bottom actions: Clear + Apply, aligned to the right */}
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  onClick={resetFilters}
+                  className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  Clear filters
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPage(1);
+                    fetchJobs();
+                  }}
+                  className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                >
+                  Apply filters
+                </button>
               </div>
             </div>
 
-            {showMobileFilters && (
-              <div className="block lg:hidden rounded-[32px] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold">Filters</h2>
-                  <button
-                    onClick={() => setShowMobileFilters(false)}
-                    className="rounded-full p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                  >
-                    <FiX className="h-5 w-5" />
-                  </button>
-                </div>
-
-                <div className="grid gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">Region</label>
-                    <select
-                      value={selectedRegion}
-                      onChange={(e) => {
-                        setSelectedRegion(e.target.value);
-                        setSelectedCity('');
-                      }}
-                      className="select"
-                    >
-                      <option value="">All Regions</option>
-                      {REGIONS.map((region) => (
-                        <option key={region} value={region}>{region}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">City</label>
-                    <select
-                      value={selectedCity}
-                      onChange={(e) => setSelectedCity(e.target.value)}
-                      className="select"
-                      disabled={!selectedRegion}
-                    >
-                      <option value="">All Cities</option>
-                      {availableCities.map((city) => (
-                        <option key={city} value={city}>{city}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">Company</label>
-                    <input
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      className="input"
-                      placeholder="Company name"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <select
-                      value={companyType}
-                      onChange={(e) => setCompanyType(e.target.value)}
-                      className="select"
-                    >
-                      <option value="">Company type</option>
-                      <option value="Private">Private</option>
-                      <option value="Government">Government</option>
-                      <option value="NGO">NGO</option>
-                      <option value="Startup">Startup</option>
-                    </select>
-                    <select
-                      value={workMode}
-                      onChange={(e) => setWorkMode(e.target.value)}
-                      className="select"
-                    >
-                      <option value="">Work mode</option>
-                      <option value="on-site">On-site</option>
-                      <option value="remote">Remote</option>
-                      <option value="hybrid">Hybrid</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {loading ? (
               <div className="space-y-4">
@@ -475,203 +636,146 @@ const Jobs = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {jobs.map((job) => (
-                  <Link
-                    key={job._id}
-                    to={`/jobs/${job._id}`}
-                    className="group block rounded-[32px] border border-gray-200 bg-white p-6 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-emerald-600"
-                  >
-                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap items-center gap-3">
-                          <h3 className="text-xl font-bold text-gray-900 dark:text-white">{job.title}</h3>
-                          {job.isFeatured && (
-                            <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">Featured</span>
-                          )}
-                        </div>
-                        <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{job.company?.name}</p>
-                        <div className="flex flex-wrap gap-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-800">
-                            <FiMapPin className="h-4 w-4" />
-                            {job.location?.city ? `${job.location.city}, ${job.location.region}` : job.location?.region || 'Remote'}
-                          </span>
-                          <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-800">
-                            <FiBriefcase className="h-4 w-4" />
-                            {job.jobType}
-                          </span>
-                          {job.salary?.min && job.salary?.max && (
-                            <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 dark:bg-gray-800">
-                              <FiDollarSign className="h-4 w-4" />
-                              {job.salary.min.toLocaleString()} - {job.salary.max.toLocaleString()} ETB
+                {jobs.map((job) => {
+                  const matchScore = calculateMatchScore(job);
+                  return (
+                    <div key={job._id} className="rounded-[32px] border border-gray-200 bg-white p-6 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-emerald-600">
+                      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="space-y-4 lg:max-w-[65%]">
+                          <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800">
+                              {job.company?.logo ? (
+                                <img src={job.company.logo} alt={job.company.name} className="h-10 w-10 rounded-2xl object-cover" />
+                              ) : (
+                                <span className="text-xl font-bold text-emerald-600">{job.company?.name?.charAt(0) || 'C'}</span>
+                              )}
+                            </div>
+                            <div>
+                              <Link to={`/jobs/${job._id}`} className="text-xl font-bold text-gray-900 dark:text-white hover:text-emerald-600 transition">
+                                {job.title}
+                              </Link>
+                              <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mt-1">{job.company?.name || 'Company'}</p>
+                            </div>
+                          </div>
+                          <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-2 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                              <FiMapPin className="h-4 w-4" />
+                              {job.location?.city ? `${job.location.city}, ${job.location.region}` : job.location?.region || 'Remote'}
                             </span>
-                          )}
+                            <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-2 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                              <FiBriefcase className="h-4 w-4" />
+                              {job.jobType}
+                            </span>
+                            {job.experienceLevel && (
+                              <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-2 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                <FiClock className="h-4 w-4" />
+                                {job.experienceLevel}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm leading-6 text-gray-600 dark:text-gray-300">
+                            {job.description?.length > 180 ? `${job.description.slice(0, 180)}...` : job.description}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {(Array.isArray(job.skills?.technical) && job.skills.technical.length > 0
+                              ? job.skills.technical.slice(0, 5)
+                              : Array.isArray(job.skillsRequired)
+                                ? job.skillsRequired.slice(0, 5).map((skill) => skill.name)
+                                : []
+                            ).map((skill, skillIndex) => (
+                              <span key={`${skill}-${skillIndex}`} className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                {skill}
+                              </span>
+                            ))}
+                            {Array.isArray(job.benefits) && job.benefits.slice(0, 3).map((benefit) => (
+                              <span key={benefit} className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200">
+                                {benefit}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex flex-col items-start gap-3 lg:items-end">
-                        <span className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">{job.category?.name || 'General'}</span>
-                        <div className="flex flex-wrap gap-2">
-                          {job.skillsRequired?.slice(0, 3).map((skill) => (
-                            <span key={skill._id} className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-300">{skill.name}</span>
-                          ))}
+                        <div className="flex flex-col gap-4 lg:w-[280px]">
+                          <div className="space-y-3 rounded-3xl border border-gray-100 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-950">
+                            <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                              <span>Posted</span>
+                              <span>{new Date(job.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm font-semibold text-gray-900 dark:text-white">
+                              <span>Salary</span>
+                              <span>
+                                {job.salary?.min && job.salary?.max
+                                  ? `${job.salary.min.toLocaleString()} - ${job.salary.max.toLocaleString()} ETB`
+                                  : 'Negotiable'}
+                              </span>
+                            </div>
+                          </div>
+
+                          {matchScore !== null && (
+                            <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-center text-sm font-semibold text-emerald-700">
+                              AI Match: {matchScore}%
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleToggleBookmark(job)}
+                            className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition ${savedJobMap[job._id] ? 'bg-emerald-700 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200'}`}
+                          >
+                            <FiBookmark className="h-4 w-4" />
+                            {savedJobMap[job._id] ? 'Saved' : 'Save Job'}
+                          </button>
+                          <Link
+                            to={`/jobs/${job._id}`}
+                            className="inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
+                          >
+                            Apply Now
+                          </Link>
+                          <Link
+                            to={`/jobs/${job._id}`}
+                            className="inline-flex w-full items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200"
+                          >
+                            View Details
+                          </Link>
                         </div>
-                        {job.applicationDeadline && (
-                          <span className="text-sm text-red-500 flex items-center gap-1">
-                            <FiClock /> Expires {new Date(job.applicationDeadline).toLocaleDateString()}
-                          </span>
-                        )}
-                        <span className="inline-flex rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition group-hover:bg-emerald-700">
-                          View Details
-                        </span>
                       </div>
                     </div>
-                  </Link>
-                ))}
+                  );
+                })}
+
+                {pages > 1 && (
+                  <div className="flex flex-wrap items-center justify-center gap-3 rounded-[32px] border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <button
+                      type="button"
+                      disabled={!hasPrevPage}
+                      onClick={() => setPage((current) => Math.max(1, current - 1))}
+                      className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-950"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: pages }, (_, index) => index + 1).map((pageNumber) => (
+                      <button
+                        key={pageNumber}
+                        type="button"
+                        onClick={() => setPage(pageNumber)}
+                        className={`rounded-full px-4 py-2 text-sm font-semibold ${pageNumber === page ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-950 dark:text-gray-300'}`}
+                      >
+                        {pageNumber}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      disabled={!hasNextPage}
+                      onClick={() => setPage((current) => Math.min(pages, current + 1))}
+                      className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-950"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </main>
-
-          <aside className="space-y-4">
-            <div className="rounded-[32px] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <div>
-                  <h2 className="text-base font-bold text-gray-900 dark:text-white">Saved Searches</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Quickly return to searches you use most.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSavedSearchManager((prev) => !prev)}
-                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
-                >
-                  {showSavedSearchManager ? 'Close' : 'Manage'}
-                </button>
-              </div>
-              <div className="space-y-3">
-                {savedSearches.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-950">
-                    No saved searches yet. Create one to reuse your filters quickly.
-                  </div>
-                ) : (
-                  savedSearches.map((item) => (
-                    <button
-                      key={item._id}
-                      type="button"
-                      onClick={() => handleApplySavedSearch(item)}
-                      className="group w-full rounded-3xl border border-gray-100 bg-gray-50 p-4 text-left transition hover:border-emerald-300 dark:border-gray-700 dark:bg-gray-950"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-white">{item.name}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{item.query?.search || 'Saved filter'}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleSavedSearchNotification(item);
-                            }}
-                            className={`h-9 w-9 rounded-full ${item.notifyOnNewJobs ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'} transition`}
-                          >
-                            🔔
-                          </button>
-                          {showSavedSearchManager && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteSavedSearch(item._id);
-                              }}
-                              className="text-sm text-red-600 hover:text-red-800"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleSaveNewSearch}
-                className="mt-4 w-full rounded-full bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
-              >
-                + Save new search
-              </button>
-            </div>
-
-            <div className="rounded-[32px] border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <div>
-                  <h2 className="text-base font-bold text-gray-900 dark:text-white">Job Alerts</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Get notified when relevant roles are posted.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowAlertManager((prev) => !prev)}
-                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
-                >
-                  {showAlertManager ? 'Close' : 'Manage'}
-                </button>
-              </div>
-              <div className="space-y-3">
-                {jobAlerts.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-950">
-                    No alerts configured yet. Create one to receive updates.
-                  </div>
-                ) : (
-                  jobAlerts.map((alert) => (
-                    <div
-                      key={alert._id}
-                      className="flex items-center justify-between rounded-3xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-950"
-                    >
-                      <div>
-                        <p className="font-semibold text-gray-900 dark:text-white">{alert.title}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {alert.jobType || 'Any role'}{alert.region ? ` • ${alert.region}` : ''}{alert.city ? ` • ${alert.city}` : ''}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleJobAlert(alert)}
-                          className={`h-9 w-20 rounded-full text-sm font-semibold transition ${alert.active ? 'bg-emerald-600 text-white' : 'bg-gray-300 text-gray-700'}`}
-                        >
-                          {alert.active ? 'On' : 'Off'}
-                        </button>
-                        {showAlertManager && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteJobAlert(alert._id)}
-                            className="text-sm text-red-600 hover:text-red-800"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleCreateJobAlert}
-                className="mt-4 w-full rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
-              >
-                + Create new alert
-              </button>
-            </div>
-
-            <div className="rounded-[32px] border border-gray-200 bg-emerald-50 p-6 shadow-sm dark:border-gray-800 dark:bg-emerald-950/20">
-              <h2 className="text-base font-bold text-emerald-900 dark:text-emerald-100">Boost your profile</h2>
-              <p className="mt-3 text-sm text-emerald-900 dark:text-emerald-200">Complete your profile and add skills to improve matching and visibility.</p>
-              <button className="mt-4 w-full rounded-full bg-white px-4 py-3 text-sm font-semibold text-emerald-700 hover:bg-gray-100">
-                Complete profile
-              </button>
-            </div>
-          </aside>
         </div>
       </div>
     </div>

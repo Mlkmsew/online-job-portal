@@ -7,7 +7,7 @@ const {
   getCompanies, getCompany, createCompany, updateCompany, deleteCompany, uploadLogo, getMyCompany,
 } = require('../controllers/companyController');
 const { protect, authorize, requireEmailVerified } = require('../middleware/auth');
-const { uploadLogo: logoUpload } = require('../config/cloudinary');
+const { uploadLogo: logoUpload, uploadCompany } = require('../config/cloudinary');
 const { companyValidator, validate } = require('../middleware/validate');
 const { uploadLimiter } = require('../middleware/rateLimiter');
 
@@ -16,8 +16,16 @@ router.get('/my/company', protect, authorize('employer', 'admin'), requireEmailV
 router.get('/:id', getCompany);
 
 router.use(protect, authorize('employer', 'admin'), requireEmailVerified);
-router.post('/', logoUpload.single('logo'), companyValidator, validate, createCompany);
-router.put('/:id', updateCompany);
+const companyUploadFields = [
+  { name: 'logo', maxCount: 1 },
+  { name: 'coverImage', maxCount: 1 },
+  { name: 'businessLicense', maxCount: 1 },
+  { name: 'tinCertificate', maxCount: 1 },
+  { name: 'companyRegistration', maxCount: 1 },
+  { name: 'gallery', maxCount: 10 },
+];
+router.post('/', uploadCompany.fields(companyUploadFields), companyValidator, validate, createCompany);
+router.put('/:id', uploadCompany.fields(companyUploadFields), updateCompany);
 router.delete('/:id', deleteCompany);
 router.put('/:id/logo', uploadLimiter, logoUpload.single('logo'), uploadLogo);
 

@@ -3,6 +3,7 @@
 // ============================================
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api';
+import authService from '../../services/authService';
 
 const clearAuthStorage = () => {
   localStorage.removeItem('token');
@@ -11,11 +12,17 @@ const clearAuthStorage = () => {
   sessionStorage.clear();
 };
 
+const normalizeRole = (role) => (typeof role === 'string' ? role.toLowerCase().trim() : role);
+const normalizeUser = (user) => {
+  if (!user) return null;
+  return { ...user, role: normalizeRole(user.role) };
+};
+
 const getSafeUser = () => {
   try {
     const storedUser = localStorage.getItem('user');
     if (storedUser && storedUser !== 'undefined') {
-      return JSON.parse(storedUser);
+      return normalizeUser(JSON.parse(storedUser));
     }
   } catch (error) {
     console.error('Failed to parse user from localStorage:', error);
@@ -27,8 +34,8 @@ const getSafeUser = () => {
 const initialState = {
   user: getSafeUser(),
   token: localStorage.getItem('token') || null,
-  isAuthenticated: !!localStorage.getItem('token'),
-  loading: false,
+  isAuthenticated: false,
+  loading: true,
   error: null,
 };
 
@@ -48,6 +55,22 @@ export const login = createAsyncThunk('auth/login', async (credentials, { reject
     return response.data;
   } catch (error) {
     return rejectWithValue(error.response?.data || error.message || 'Login failed');
+  }
+});
+
+export const initializeAuth = createAsyncThunk('auth/initializeAuth', async (_, { rejectWithValue }) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    clearAuthStorage();
+    return { user: null, token: null };
+  }
+
+  try {
+    const currentUser = await authService.getMe();
+    return { user: currentUser, token };
+  } catch (error) {
+    clearAuthStorage();
+    return rejectWithValue(error.response?.data?.message || error.message || 'Authentication initialization failed');
   }
 });
 
@@ -98,6 +121,10 @@ const authSlice = createSlice({
       localStorage.setItem('token', action.payload.accessToken);
       localStorage.setItem('user', JSON.stringify(action.payload.user));
     },
+    setUser: (state, action) => {
+      state.user = { ...(state.user || {}), ...action.payload };
+      localStorage.setItem('user', JSON.stringify(state.user));
+    },
     logoutUser: (state) => {
       state.user = null;
       state.token = null;
@@ -114,11 +141,11 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
+        state.user = normalizeUser(action.payload.user);
         state.token = action.payload.accessToken;
         state.isAuthenticated = true;
         localStorage.setItem('token', action.payload.accessToken);
-        localStorage.setItem('user', JSON.stringify(action.payload.user));
+        localStorage.setItem('user', JSON.stringify(state.user));
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
@@ -131,25 +158,40 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
+        state.user = normalizeUser(action.payload.user);
         state.token = action.payload.accessToken;
         state.isAuthenticated = true;
         localStorage.setItem('token', action.payload.accessToken);
-        localStorage.setItem('user', JSON.stringify(action.payload.user));
+        localStorage.setItem('user', JSON.stringify(state.user));
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+      .addCase(initializeAuth.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(initializeAuth.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = normalizeUser(action.payload.user);
+        state.token = action.payload.token;
+        state.isAuthenticated = Boolean(action.payload.user && action.payload.token);
+      })
+      .addCase(initializeAuth.rejected, (state) => {
+        state.loading = false;
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+      })
       // Get Current User
       .addCase(getCurrentUser.fulfilled, (state, action) => {
-        state.user = action.payload.data;
-        localStorage.setItem('user', JSON.stringify(action.payload.data));
+        state.user = normalizeUser(action.payload.data);
+        localStorage.setItem('user', JSON.stringify(state.user));
       })
       // Update Profile
       .addCase(updateProfile.fulfilled, (state, action) => {
-        state.user = action.payload.data;
-        localStorage.setItem('user', JSON.stringify(action.payload.data));
+        state.user = normalizeUser(action.payload.data);
+        localStorage.setItem('user', JSON.stringify(state.user));
       })
       // Upload CV
       .addCase(uploadCV.fulfilled, (state, action) => {
@@ -172,5 +214,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setCredentials, logoutUser } = authSlice.actions;
+export const { clearError, setCredentials, setUser, logoutUser } = authSlice.actions;
 export default authSlice.reducer;

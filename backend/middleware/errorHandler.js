@@ -52,16 +52,21 @@ const errorHandler = (err, req, res, next) => {
     statusCode = 400;
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    return res.status(statusCode).json({
-      success: false,
-      message,
-      error: err,
-      stack: err.stack,
-    });
+  // Unsupported file type from custom fileFilter
+  if (err.code === 'UNSUPPORTED_FILE_TYPE') {
+    message = 'Only PDF, DOC, or DOCX files are allowed.';
+    statusCode = 400;
   }
 
-  res.status(statusCode).json({ success: false, message });
+  const payload = { success: false, message };
+  if (err.code) payload.code = err.code;
+
+  if (process.env.NODE_ENV === 'development') {
+    payload.error = err;
+    payload.stack = err.stack;
+  }
+
+  return res.status(statusCode).json(payload);
 };
 
 const notFound = (req, res, next) => {

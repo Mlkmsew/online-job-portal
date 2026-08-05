@@ -65,6 +65,15 @@ export const approveCompany = createAsyncThunk('admin/approveCompany', async (co
   }
 });
 
+export const rejectCompany = createAsyncThunk('admin/rejectCompany', async ({ companyId, reason }, { rejectWithValue }) => {
+  try {
+    const response = await api.put(`/admin/companies/${companyId}/reject`, { reason });
+    return { companyId, message: response.message };
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || error.message || 'Failed to reject company');
+  }
+});
+
 export const verifyCompany = createAsyncThunk('admin/verifyCompany', async (companyId, { rejectWithValue }) => {
   try {
     const response = await api.put(`/admin/companies/${companyId}/verify`);
@@ -152,7 +161,15 @@ const adminSlice = createSlice({
       .addCase(approveCompany.fulfilled, (state, action) => {
         const index = state.companies.findIndex((company) => company._id === action.payload.companyId);
         if (index !== -1) {
-          state.companies[index].isApproved = !state.companies[index].isApproved;
+          state.companies[index].isApproved = true;
+          state.companies[index].isActive = true;
+        }
+      })
+      .addCase(rejectCompany.fulfilled, (state, action) => {
+        const index = state.companies.findIndex((company) => company._id === action.payload.companyId);
+        if (index !== -1) {
+          state.companies[index].isApproved = false;
+          state.companies[index].isActive = false;
         }
       })
       .addCase(verifyCompany.fulfilled, (state, action) => {

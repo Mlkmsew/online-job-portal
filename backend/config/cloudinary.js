@@ -4,6 +4,7 @@
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
+const path = require('path');
 
 // Configure cloudinary credentials
 cloudinary.config({
@@ -32,13 +33,32 @@ const logoStorage = new CloudinaryStorage({
   },
 });
 
+// Storage for company assets uploaded during profile creation
+const companyStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    const field = file.fieldname;
+    const folderMap = {
+      logo: 'ethiojob/companies/logos',
+      coverImage: 'ethiojob/companies/covers',
+      businessLicense: 'ethiojob/company-documents',
+      tinCertificate: 'ethiojob/company-documents',
+      companyRegistration: 'ethiojob/company-documents',
+    };
+    return {
+      folder: folderMap[field] || 'ethiojob/company-assets',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'svg', 'pdf', 'doc', 'docx'],
+      resource_type: 'auto',
+    };
+  },
+});
+
 // Storage for CVs / resumes (PDF)
 const cvStorage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'ethiojob/cvs',
-    allowed_formats: ['pdf', 'doc', 'docx'],
-    resource_type: 'raw',
+    resource_type: 'auto',
   },
 });
 
@@ -63,9 +83,31 @@ const uploadLogo = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
+const uploadCompany = multer({
+  storage: companyStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
+
 const uploadCV = multer({
   storage: cvStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    const allowedExts = ['.pdf', '.doc', '.docx'];
+    const ext = path.extname(file.originalname || '').toLowerCase();
+
+    if (allowedMimes.includes(file.mimetype) || allowedExts.includes(ext)) {
+      return cb(null, true);
+    }
+
+    const err = new Error('Unsupported resume file format. Allowed: PDF, DOC, DOCX.');
+    err.code = 'UNSUPPORTED_FILE_TYPE';
+    return cb(err, false);
+  },
 });
 
 const uploadCert = multer({
@@ -77,6 +119,7 @@ module.exports = {
   cloudinary,
   uploadAvatar,
   uploadLogo,
+  uploadCompany,
   uploadCV,
   uploadCert,
 };

@@ -47,6 +47,10 @@ const interviewSchema = new mongoose.Schema(
     feedback: { type: String },
     result: { type: String, enum: ['pass', 'fail', 'pending', 'hold'] },
     rating: { type: Number, min: 1, max: 5 },
+    strengths: { type: String },
+    weaknesses: { type: String },
+    recommendation: { type: String },
+    finalDecision: { type: String },
   },
   { timestamps: true }
 );

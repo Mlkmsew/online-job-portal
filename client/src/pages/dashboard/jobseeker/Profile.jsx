@@ -9,11 +9,11 @@ const JobSeekerProfile = () => {
   const { user, loading } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
     headline: user?.headline || '',
-    phone: user?.phone || '',
     bio: user?.bio || '',
+    skills: user?.skills || '',
+    experience: user?.experience || '',
+    education: user?.education || '',
   });
 
   const [cvFile, setCvFile] = useState(null);
@@ -36,6 +36,24 @@ const JobSeekerProfile = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      const allowedMimes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ];
+      const allowedExts = ['.pdf', '.doc', '.docx'];
+      const ext = file.name?.split('.').pop()?.toLowerCase();
+
+      if (!allowedMimes.includes(file.type) && !allowedExts.includes('.' + ext)) {
+        toast.error('Only PDF, DOC, or DOCX files are allowed.');
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('File too large. Maximum 10MB allowed.');
+        return;
+      }
+
       setCvFile(file);
     }
   };
@@ -51,7 +69,12 @@ const JobSeekerProfile = () => {
       toast.success('CV uploaded successfully!');
       setCvFile(null);
     } catch (err) {
-      toast.error(err || 'Failed to upload CV.');
+      const apiCode = err?.response?.data?.code;
+      if (apiCode === 'UNSUPPORTED_FILE_TYPE') {
+        toast.error('Only PDF, DOC, or DOCX files are allowed.');
+      } else {
+        toast.error(err?.message || 'Failed to upload CV. Please try again.');
+      }
     }
   };
 
@@ -61,52 +84,18 @@ const JobSeekerProfile = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Column: Personal Info Form */}
+        {/* Left Column: Professional Profile Form */}
         <div className="lg:col-span-2 space-y-6">
           <div className="card">
-            <h2 className="text-xl font-semibold mb-6 border-b pb-4">Personal Details</h2>
+            <h2 className="text-xl font-semibold mb-6 border-b pb-4">Professional Profile</h2>
             <form onSubmit={handleProfileSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">First Name</label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    className="input"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Last Name</label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    className="input"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
               <div>
-                <label className="block text-sm font-medium mb-1">Headline (e.g., Senior Software Engineer)</label>
+                <label className="block text-sm font-medium mb-1">Professional Headline</label>
                 <input
                   type="text"
                   name="headline"
                   className="input"
                   value={formData.headline}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Phone Number</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  className="input"
-                  value={formData.phone}
                   onChange={handleChange}
                 />
               </div>
@@ -118,6 +107,42 @@ const JobSeekerProfile = () => {
                   rows="4"
                   className="textarea"
                   value={formData.bio}
+                  onChange={handleChange}
+                ></textarea>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Skills</label>
+                <input
+                  type="text"
+                  name="skills"
+                  className="input"
+                  placeholder="e.g., React, Node.js, Product Management"
+                  value={formData.skills}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Experience</label>
+                <textarea
+                  name="experience"
+                  rows="3"
+                  className="textarea"
+                  placeholder="e.g., 5 years in software development..."
+                  value={formData.experience}
+                  onChange={handleChange}
+                ></textarea>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Education</label>
+                <textarea
+                  name="education"
+                  rows="3"
+                  className="textarea"
+                  placeholder="e.g., BSc Computer Science, XYZ University"
+                  value={formData.education}
                   onChange={handleChange}
                 ></textarea>
               </div>
@@ -158,7 +183,7 @@ const JobSeekerProfile = () => {
                 ref={fileInputRef} 
                 onChange={handleFileChange} 
                 className="hidden" 
-                accept=".pdf,.doc,.docx"
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               />
               
               <FiUploadCloud className="mx-auto text-4xl text-gray-400 mb-3" />

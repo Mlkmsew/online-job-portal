@@ -176,9 +176,28 @@ exports.getCompanies = asyncHandler(async (req, res) => {
 exports.approveCompany = asyncHandler(async (req, res, next) => {
   const company = await Company.findById(req.params.id);
   if (!company) return next(new AppError('Company not found.', 404));
-  company.isApproved = !company.isApproved;
+  company.isApproved = true;
+  company.isActive = true;
+  company.rejectionReason = '';
   await company.save({ validateBeforeSave: false });
-  res.status(200).json({ success: true, message: `Company ${company.isApproved ? 'approved' : 'unapproved'}.` });
+  res.status(200).json({ success: true, message: 'Company approved.' });
+});
+
+exports.rejectCompany = asyncHandler(async (req, res, next) => {
+  const company = await Company.findById(req.params.id);
+  if (!company) return next(new AppError('Company not found.', 404));
+
+  const rejectionReason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+  if (!rejectionReason) {
+    return next(new AppError('A rejection reason is required.', 400));
+  }
+
+  company.isApproved = false;
+  company.isActive = false;
+  company.rejectionReason = rejectionReason;
+  await company.save({ validateBeforeSave: false });
+
+  res.status(200).json({ success: true, message: 'Company rejected.' });
 });
 
 exports.verifyCompany = asyncHandler(async (req, res, next) => {

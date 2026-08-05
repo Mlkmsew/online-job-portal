@@ -3,7 +3,7 @@
 // ============================================
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FiHome, FiUser, FiBriefcase, FiFileText, FiBookmark, FiSearch, FiZap, FiBell, FiBookOpen, FiUsers, FiSettings, FiMail, FiBarChart2, FiLogOut, FiX } from 'react-icons/fi';
+import { FiHome, FiUser, FiBriefcase, FiFileText, FiBookmark, FiSearch, FiZap, FiBell, FiBookOpen, FiUsers, FiSettings, FiMail, FiBarChart2, FiCalendar, FiLogOut, FiX } from 'react-icons/fi';
 import { logout } from '../store/slices/authSlice';
 import toast from 'react-hot-toast';
 
@@ -30,18 +30,20 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/dashboard/saved-jobs', icon: FiBookmark, label: 'Saved Jobs' },
     { path: '/dashboard/profile', icon: FiUser, label: 'My CV / Profile' },
     { path: '/dashboard/resume', icon: FiFileText, label: 'Resume' },
-    { path: '/dashboard/skill-assessment', icon: FiZap, label: 'Skill Assessment' },
     { path: '/dashboard/job-alerts', icon: FiBell, label: 'Job Alerts' },
     { path: '/dashboard/messages', icon: FiMail, label: 'Messages' },
-    { path: '/dashboard/career-resources', icon: FiBookOpen, label: 'Career Resources' },
     { path: '/dashboard/settings', icon: FiSettings, label: 'Settings' },
   ];
 
   const employerMenu = [
     { path: '/employer', icon: FiHome, label: 'Dashboard' },
     { path: '/employer/post-job', icon: FiBriefcase, label: 'Post Job' },
-    { path: '/employer/jobs', icon: FiBriefcase, label: 'Manage Jobs' },
+    { path: '/employer/jobs', icon: FiFileText, label: 'Manage Jobs' },
+    { path: '/employer/applicants', icon: FiBookOpen, label: 'Applicant' },
+    { path: '/employer/interviews', icon: FiCalendar, label: 'Interviews' },
     { path: '/employer/company', icon: FiSettings, label: 'Company Profile' },
+    { path: '/employer/messages', icon: FiMail, label: 'Messages' },
+    { path: '/employer/settings', icon: FiSettings, label: 'Settings' },
   ];
 
   const adminMenu = [
@@ -62,6 +64,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   };
 
   const menu = getMenu();
+  const portalLabel = user?.role === 'admin' ? 'Admin Portal' : user?.role === 'employer' ? 'Employer Portal' : 'Job Seeker Portal';
+  const dashboardTitle = user?.role === 'admin' ? 'Admin Dashboard' : user?.role === 'employer' ? 'Employer Dashboard' : 'Job Seeker Dashboard';
+  const roleLabel = user?.role === 'admin' ? 'Admin' : user?.role === 'employer' ? 'Employer' : 'Job Seeker';
 
   return (
     <>
@@ -75,32 +80,42 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out ${
+        className={`fixed md:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b dark:border-gray-700">
-            <h2 className="text-xl font-bold text-primary-500">
-              {user?.role === 'admin' ? 'Admin Panel' : user?.role === 'employer' ? 'Employer' : 'Dashboard'}
-            </h2>
-            <button onClick={() => setIsOpen(false)} className="md:hidden">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-emerald-500">{portalLabel}</p>
+              <h2 className="mt-2 text-2xl font-bold text-slate-900">{dashboardTitle}</h2>
+            </div>
+            <button onClick={() => setIsOpen(false)} className="md:hidden text-slate-500 hover:text-slate-800">
               <FiX className="w-6 h-6" />
             </button>
           </div>
 
           {/* User Info */}
-          <div className="p-6 border-b dark:border-gray-700">
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                <span className="text-primary-600 font-semibold text-lg">
-                  {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                </span>
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="rounded-3xl bg-emerald-50 dark:bg-emerald-900/50 p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-900 text-emerald-200 shadow-sm overflow-hidden">
+                {user?.avatar ? (
+                  <img src={user.avatar} alt={roleLabel} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-lg font-semibold">
+                    {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                  </span>
+                )}
               </div>
-              <div>
-                <p className="font-semibold">{user?.firstName} {user?.lastName}</p>
-                <p className="text-sm text-gray-500">{user?.email}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-100 truncate">{user?.firstName} {user?.lastName}</p>
+                  <p className="mt-1 text-xs text-slate-400 truncate">{user?.email}</p>
+                  <span className="mt-3 inline-flex rounded-full bg-slate-900 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300 shadow-sm">
+                    {roleLabel}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -118,21 +133,28 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   key={item.path}
                   to={item.path}
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition ${
+                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                     isActive
-                      ? 'bg-emerald-100 text-emerald-700 border-l-4 border-emerald-500 shadow-sm'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? 'bg-emerald-50 text-emerald-800 shadow-sm border-l-4 border-emerald-500'
+                      : 'text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}
+
+            <div className="mt-6 pt-4 border-t border-gray-100">
+              <Link to="/help" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                <FiMail className="w-5 h-5" />
+                <span>Help & Support</span>
+              </Link>
+            </div>
           </nav>
 
           {/* Logout */}
-          <div className="p-4 border-t dark:border-gray-700">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={handleLogout}
               className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition"

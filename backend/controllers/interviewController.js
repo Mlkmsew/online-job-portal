@@ -29,6 +29,25 @@ exports.getInterviews = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, count: results.length, pagination, data: results });
 });
 
+// @desc    Get interview by ID
+// @route   GET /api/interviews/:id
+// @access  Private
+exports.getInterviewById = asyncHandler(async (req, res, next) => {
+  const interview = await Interview.findById(req.params.id)
+    .populate('applicant', 'firstName lastName avatar email phone location')
+    .populate('employer', 'firstName lastName avatar email')
+    .populate('job', 'title')
+    .populate('company', 'name');
+
+  if (!interview) return next(new AppError('Interview not found.', 404));
+
+  if (req.user.role !== 'admin' && interview.employer?._id?.toString() !== req.user.id && interview.applicant?._id?.toString() !== req.user.id) {
+    return next(new AppError('Not authorized to view this interview.', 403));
+  }
+
+  res.status(200).json({ success: true, data: interview });
+});
+
 // @desc    Schedule a new interview
 // @route   POST /api/interviews
 // @access  Private (Employer/Admin)
@@ -104,6 +123,11 @@ exports.updateInterview = asyncHandler(async (req, res, next) => {
     'status',
     'feedback',
     'result',
+    'rating',
+    'strengths',
+    'weaknesses',
+    'recommendation',
+    'finalDecision',
   ];
 
   fields.forEach((field) => {

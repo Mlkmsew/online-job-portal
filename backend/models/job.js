@@ -11,7 +11,11 @@ const jobSchema = new mongoose.Schema(
     description: { type: String, required: [true, 'Job description is required'], maxlength: 10000 },
     requirements: { type: String, maxlength: 5000 },
     responsibilities: { type: String, maxlength: 5000 },
-    benefits: { type: String, maxlength: 3000 },
+    benefits: { type: [String], default: [] },
+    skills: {
+      technical: { type: [String], default: [] },
+      soft: { type: [String], default: [] },
+    },
 
     // Relationships
     company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },

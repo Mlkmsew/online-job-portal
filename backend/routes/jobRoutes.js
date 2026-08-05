@@ -17,7 +17,7 @@ router.get('/:id', optionalAuth, getJob);
 
 router.use(protect, authorize('employer', 'admin'), requireEmailVerified);
 router.post('/', jobValidator, validate, createJob);
-router.put('/:id', updateJob);
+router.put('/:id', jobValidator, validate, updateJob);
 router.delete('/:id', deleteJob);
 router.put('/:id/close', closeJob);
 

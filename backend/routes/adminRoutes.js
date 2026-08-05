@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getDashboardStats, getUsers, getUserById, updateUser, suspendUser, deleteUser,
-  getCompanies, approveCompany, verifyCompany, featureCompany,
+  getCompanies, approveCompany, rejectCompany, verifyCompany, featureCompany,
   getJobs, approveJob, rejectJob, featureJob,
   getCategories, createCategory, updateCategory, deleteCategory,
   getSkills, createSkill, updateSkill, deleteSkill,
@@ -27,6 +27,7 @@ router.delete('/users/:id', deleteUser);
 // Companies
 router.get('/companies', getCompanies);
 router.put('/companies/:id/approve', approveCompany);
+router.put('/companies/:id/reject', rejectCompany);
 router.put('/companies/:id/verify', verifyCompany);
 router.put('/companies/:id/feature', featureCompany);
 

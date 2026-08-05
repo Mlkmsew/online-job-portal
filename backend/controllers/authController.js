@@ -498,6 +498,34 @@ exports.updateProfile = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, message: 'Profile updated successfully.', data: user });
 });
 
+// @desc    Update user settings preferences
+// @route   PUT /api/auth/update-settings
+// @access  Private
+exports.updateSettings = asyncHandler(async (req, res, next) => {
+  const { settings } = req.body || {};
+  if (!settings || typeof settings !== 'object') {
+    return next(new AppError('Settings payload is required.', 400));
+  }
+
+  const user = await User.findById(req.user.id || req.user._id);
+  if (!user) {
+    return next(new AppError('User not found.', 404));
+  }
+
+  user.settings = {
+    ...(user.settings || {}),
+    ...settings,
+  };
+
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json({
+    success: true,
+    message: 'Settings updated successfully.',
+    data: user.settings,
+  });
+});
+
 // @desc    Upload avatar
 // @route   PUT /api/auth/upload-avatar
 // @access  Private

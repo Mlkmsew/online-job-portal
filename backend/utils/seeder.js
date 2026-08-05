@@ -195,6 +195,7 @@ const seedDatabase = async () => {
         location: { region: 'Addis Ababa', city: 'Addis Ababa' },
         applicationDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         status: 'active',
+        isApproved: true,
         isFeatured: true,
         tags: ['JavaScript', 'React', 'Node.js', 'MongoDB', 'Full Stack'],
       },
@@ -215,6 +216,7 @@ const seedDatabase = async () => {
         location: { region: 'Oromia', city: 'Adama' },
         applicationDeadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
         status: 'active',
+        isApproved: true,
       },
       {
         title: 'Marketing Manager',
@@ -232,6 +234,7 @@ const seedDatabase = async () => {
         location: { region: 'Addis Ababa', city: 'Addis Ababa' },
         applicationDeadline: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
         status: 'active',
+        isApproved: true,
       },
     ];
 

@@ -18,18 +18,19 @@ const MyApplications = () => {
   const getStatusBadgeStyle = (status) => {
     switch (status) {
       case 'Submitted':
-        return 'bg-gray-100 text-gray-850 border border-gray-200';
+        return 'bg-slate-100 text-slate-700 border border-slate-200';
       case 'Reviewed':
         return 'bg-blue-100 text-blue-800 border border-blue-200';
       case 'Interview Scheduled':
       case 'Interview':
         return 'bg-amber-100 text-amber-800 border border-amber-200';
       case 'Selected':
-        return 'bg-green-100 text-green-800 border border-green-200';
+        return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
       case 'Not Selected':
-        return 'bg-red-100 text-red-800 border border-red-200';
+      case 'Rejected':
+        return 'bg-rose-100 text-rose-800 border border-rose-200';
       default:
-        return 'bg-gray-100 text-gray-800 border border-gray-200';
+        return 'bg-slate-100 text-slate-700 border border-slate-200';
     }
   };
 

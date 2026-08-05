@@ -1,10 +1,12 @@
 // ============================================
 // Main App Component - Routing Configuration
 // ============================================
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Provider } from 'react-redux';
+import { Provider, useDispatch } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import store from './store/store';
+import { initializeAuth } from './store/slices/authSlice';
 import './i18n/config'; // Initialize i18next
 import ChatWidget from './components/chat/ChatWidget'; // Real-time chat
 import { AccessibilityProvider } from './context/AccessibilityContext';
@@ -17,6 +19,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import Home from './pages/Home';
 import Jobs from './pages/Jobs';
 import JobDetails from './pages/JobDetails';
+import JobApply from './pages/JobApply';
 import Companies from './pages/Companies';
 import CompanyDetails from './pages/CompanyDetails';
 import About from './pages/About';
@@ -44,11 +47,17 @@ import JobAlerts from './pages/dashboard/jobseeker/JobAlerts';
 import Messages from './pages/dashboard/jobseeker/Messages';
 import CareerResources from './pages/dashboard/jobseeker/CareerResources';
 import Settings from './pages/dashboard/jobseeker/Settings';
+import ChangePassword from './pages/dashboard/jobseeker/ChangePassword';
 
 // Employer Dashboard
 import EmployerDashboard from './pages/dashboard/employer/Dashboard';
 import PostJob from './pages/dashboard/employer/PostJob';
 import ManageJobs from './pages/dashboard/employer/ManageJobs';
+import EmployerApplications from './pages/dashboard/employer/EmployerApplications';
+import EmployerInterviews from './pages/dashboard/employer/EmployerInterviews';
+import InterviewDetails from './pages/dashboard/employer/InterviewDetails';
+import EmployerMessages from './pages/dashboard/employer/EmployerMessages';
+import EmployerSettings from './pages/dashboard/employer/EmployerSettings';
 import ViewApplicants from './pages/dashboard/employer/ViewApplicants';
 import CompanyProfile from './pages/dashboard/employer/CompanyProfile';
 
@@ -66,10 +75,15 @@ import AdminMessages from './pages/dashboard/admin/AdminMessages';
 // Protected Route Component
 import ProtectedRoute from './components/ProtectedRoute';
 
-function App() {
+const AppRoutes = () => {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(initializeAuth());
+  }, [dispatch]);
+
   return (
-    <Provider store={store}>
-      <AccessibilityProvider>
+    <AccessibilityProvider>
       <Router>
         <Toaster position="top-right" />
         <ChatWidget /> {/* Floating chat widget */}
@@ -79,6 +93,7 @@ function App() {
             <Route index element={<Home />} />
             <Route path="jobs" element={<Jobs />} />
             <Route path="jobs/:id" element={<JobDetails />} />
+            <Route path="jobs/:id/apply" element={<JobApply />} />
             <Route path="companies" element={<Companies />} />
             <Route path="companies/:id" element={<CompanyDetails />} />
             <Route path="about" element={<About />} />
@@ -108,13 +123,21 @@ function App() {
             <Route path="messages" element={<Messages />} />
             <Route path="career-resources" element={<CareerResources />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="settings/change-password" element={<ChangePassword />} />
           </Route>
 
           {/* Employer Dashboard */}
           <Route path="/employer" element={<ProtectedRoute allowedRoles={['employer']}><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<EmployerDashboard />} />
             <Route path="post-job" element={<PostJob />} />
+            <Route path="post-job/:id" element={<PostJob />} />
             <Route path="jobs" element={<ManageJobs />} />
+            <Route path="applications" element={<Navigate to="/employer/applicants" replace />} />
+            <Route path="interviews" element={<EmployerInterviews />} />
+            <Route path="interviews/:id" element={<InterviewDetails />} />
+            <Route path="messages" element={<EmployerMessages />} />
+            <Route path="settings" element={<EmployerSettings />} />
+            <Route path="applicants" element={<ViewApplicants />} />
             <Route path="applicants/:jobId" element={<ViewApplicants />} />
             <Route path="company" element={<CompanyProfile />} />
           </Route>
@@ -136,7 +159,14 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
-      </AccessibilityProvider>
+    </AccessibilityProvider>
+  );
+};
+
+function App() {
+  return (
+    <Provider store={store}>
+      <AppRoutes />
     </Provider>
   );
 }

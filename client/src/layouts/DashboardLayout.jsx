@@ -10,14 +10,14 @@ const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-white text-slate-900">
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="bg-white dark:bg-gray-800 shadow-sm px-6 py-4">
+        <header className="bg-white shadow-sm px-6 py-4 border-b border-gray-200">
           <button
             onClick={() => setSidebarOpen(true)}
             className="md:hidden text-gray-700 dark:text-gray-300"

@@ -209,7 +209,14 @@ const Messages = () => {
                         <h3 className="font-semibold text-gray-900 dark:text-white">{participant?.firstName} {participant?.lastName}</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate max-w-[320px]">{lastMessage}</p>
                       </div>
-                      <span className="text-xs font-semibold text-teal-700 bg-teal-50 rounded-full px-3 py-1">{conversation.unreadCount?.get(currentUserId) > 0 ? 'Unread' : 'Read'}</span>
+                      <span className="text-xs font-semibold text-teal-700 bg-teal-50 rounded-full px-3 py-1">
+                  {(() => {
+                    const count = conversation.unreadCount;
+                    if (typeof count === 'number') return count > 0 ? 'Unread' : 'Read';
+                    if (count?.get) return count.get(currentUserId) > 0 ? 'Unread' : 'Read';
+                    return count?.[currentUserId] > 0 ? 'Unread' : 'Read';
+                  })()}
+                </span>
                     </div>
                   </button>
                 );

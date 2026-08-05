@@ -88,6 +88,24 @@ const jobValidator = [
     .withMessage('Invalid job type'),
   body('location.region').notEmpty().withMessage('Region is required'),
   body('applicationDeadline').notEmpty().isISO8601().withMessage('Valid deadline is required'),
+  body('skills.technical')
+    .isArray({ min: 1 })
+    .withMessage('At least one technical skill is required'),
+  body('skills.technical.*')
+    .trim()
+    .notEmpty()
+    .withMessage('Technical skills must not be blank'),
+  body('skills.soft')
+    .optional()
+    .isArray()
+    .withMessage('Soft skills must be an array'),
+  body('skills.soft.*')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Soft skills must not be blank'),
+  body('benefits').optional().isArray().withMessage('Benefits must be an array'),
+  body('benefits.*').optional().isString().trim().notEmpty().withMessage('Each benefit must be a valid string'),
 ];
 
 // ---- Company Validators ----

@@ -6,7 +6,7 @@ const router = express.Router();
 const {
   register, login, logout, getMe, verifyEmail, resendVerification,
   forgotPassword, resetPasswordWithOTP, updatePassword, refreshToken,
-  updateProfile, uploadAvatar, uploadCV, uploadCertificate,
+  updateProfile, updateSettings, uploadAvatar, uploadCV, uploadCertificate,
   verifyOTP, requestEmailChange, confirmEmailChange, googleLogin, githubLogin,
   sendOTP,
 } = require('../controllers/authController');
@@ -38,6 +38,7 @@ router.post('/request-email-change', requestEmailChange);
 router.post('/confirm-email-change', confirmEmailChange);
 router.put('/update-password', updatePassword);
 router.put('/update-profile', updateProfile);
+router.put('/update-settings', updateSettings);
 router.put('/upload-avatar', uploadLimiter, avatarUpload.single('avatar'), uploadAvatar);
 router.put('/upload-cv', uploadLimiter, cvUpload.single('cv'), uploadCV);
 router.post('/upload-certificate', uploadLimiter, uploadCert.single('certificate'), uploadCertificate);

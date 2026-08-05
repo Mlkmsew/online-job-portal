@@ -8,6 +8,7 @@ const Company = require('../models/Company');
 const Bookmark = require('../models/Bookmark');
 const Application = require('../models/Application');
 const { calculateJobMatch, calculateMatchScore } = require('../utils/matching');
+const { canRecommendJobs } = require('../utils/dashboardHelpers');
 const mongoose = require('mongoose');
 
 // @desc Get job seeker dashboard
@@ -26,14 +27,11 @@ exports.getDashboard = asyncHandler(async (req, res) => {
     Interview.find({ applicant: userId, scheduledDate: { $gte: new Date() } }).sort({ scheduledDate: 1 }).limit(10),
   ]);
 
-  // Recommended jobs: only build job recommendations once the user has a resume uploaded/analyzed
+  // Recommended jobs: build recommendations when the user has profile skills or a resume available.
   let recommended = [];
-  const hasResume = Boolean(
-    user.cv ||
-    (Array.isArray(user.resumeAnalysis?.skills) && user.resumeAnalysis.skills.length > 0)
-  );
+  const canRecommend = canRecommendJobs(user);
 
-  if (hasResume) {
+  if (canRecommend) {
     try {
       const jobs = await Job.find({ status: 'active', isApproved: true })
         .populate('company', 'name logo')
@@ -58,7 +56,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
     }
   }
 
-  if (!hasResume) {
+  if (!canRecommend) {
     recommended = [];
   }
 

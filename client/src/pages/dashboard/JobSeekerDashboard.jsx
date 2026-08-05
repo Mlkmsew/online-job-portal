@@ -37,6 +37,22 @@ const JobSeekerDashboard = () => {
 
   const handleUploadCV = async (file) => {
     if (!file) return;
+    const allowedMimes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    const allowedExts = ['.pdf', '.doc', '.docx'];
+    const ext = file.name?.split('.').pop()?.toLowerCase();
+
+    if (!allowedMimes.includes(file.type) && !allowedExts.includes('.' + ext)) {
+      toast.error('Only PDF, DOC, or DOCX files are allowed.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File too large. Maximum 10MB allowed.');
+      return;
+    }
     const form = new FormData();
     form.append('cv', file);
     setUploading(true);
@@ -145,7 +161,7 @@ const JobSeekerDashboard = () => {
             ) : (
               <div className="text-sm text-gray-500 mb-2">No CV uploaded.</div>
             )}
-            <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => handleUploadCV(e.target.files[0])} disabled={uploading} />
+            <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => handleUploadCV(e.target.files[0])} disabled={uploading} />
           </div>
         </aside>
       </div>

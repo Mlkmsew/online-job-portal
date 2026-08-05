@@ -15,8 +15,14 @@ const companySchema = new mongoose.Schema(
     // Media
     logo: { type: String, default: '' },
     logoPublicId: { type: String },
-    coverImage: { type: String },
+    coverImage: { type: String, default: '' },
     coverImagePublicId: { type: String },
+    businessLicense: { type: String },
+    businessLicensePublicId: { type: String },
+    tinCertificate: { type: String },
+    tinCertificatePublicId: { type: String },
+    companyRegistration: { type: String },
+    companyRegistrationPublicId: { type: String },
 
     // Industry & Size
     industry: { type: String },
@@ -47,9 +53,16 @@ const companySchema = new mongoose.Schema(
     // Social
     socialLinks: {
       linkedin: { type: String },
-      twitter: { type: String },
       facebook: { type: String },
+      telegram: { type: String },
       instagram: { type: String },
+    },
+
+    recruiter: {
+      hrManagerName: { type: String },
+      position: { type: String },
+      email: { type: String },
+      phone: { type: String },
     },
 
     // Ownership
@@ -61,6 +74,7 @@ const companySchema = new mongoose.Schema(
     isApproved: { type: Boolean, default: false },
     isFeatured: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    rejectionReason: { type: String, default: '' },
 
     // Stats
     totalJobs: { type: Number, default: 0 },

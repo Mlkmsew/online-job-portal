@@ -8,6 +8,19 @@ const { asyncHandler, paginate, escapeRegex } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 const APIFeatures = require('../utils/apiFeatures');
 
+const normalizeStringArray = (value) => {
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.flatMap(normalizeStringArray);
+};
+
 // @desc    Get all jobs with filters
 // @route   GET /api/jobs
 // @access  Public
@@ -35,7 +48,7 @@ exports.getJobs = asyncHandler(async (req, res) => {
   if (req.query.internship === 'true') queryObj.jobType = 'Internship';
 
   // Company name/type filtering for public job search
-  const companyQuery = {};
+  const companyQuery = { isApproved: true, isActive: true };
   let companyFilterUsed = false;
   if (req.query.company) {
     companyQuery._id = req.query.company;
@@ -54,13 +67,11 @@ exports.getJobs = asyncHandler(async (req, res) => {
     }
   }
 
-  if (companyFilterUsed) {
-    const companyIds = await Company.distinct('_id', companyQuery);
-    if (companyIds.length) {
-      queryObj.company = { $in: companyIds };
-    } else {
-      queryObj.company = { $in: [] };
-    }
+  const companyIds = await Company.distinct('_id', companyQuery);
+  if (companyIds.length) {
+    queryObj.company = { $in: companyIds };
+  } else {
+    queryObj.company = { $in: [] };
   }
 
   // Deadline within days: jobs expiring within next N days
@@ -70,6 +81,16 @@ exports.getJobs = asyncHandler(async (req, res) => {
       const now = new Date();
       const then = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
       queryObj.applicationDeadline = { $lte: then };
+    }
+  }
+
+  // Jobs posted within the last N days
+  if (req.query.postedWithinDays) {
+    const days = parseInt(req.query.postedWithinDays, 10);
+    if (!isNaN(days) && days > 0) {
+      const now = new Date();
+      const threshold = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+      queryObj.createdAt = { $gte: threshold };
     }
   }
 
@@ -180,6 +201,31 @@ exports.createJob = asyncHandler(async (req, res, next) => {
 
   req.body.postedBy = req.user.id;
   req.body.isApproved = false;
+  if (req.body.benefits !== undefined) {
+    req.body.benefits = normalizeStringArray(req.body.benefits);
+  }
+  // Normalize skills payload if provided
+  if (req.body.skills) {
+    const skills = {
+      technical: [],
+      soft: [],
+    };
+    if (Array.isArray(req.body.skills.technical)) {
+      skills.technical = req.body.skills.technical
+        .filter(Boolean)
+        .map((item) => item.toString().trim())
+        .filter(Boolean);
+    }
+    if (Array.isArray(req.body.skills.soft)) {
+      skills.soft = req.body.skills.soft
+        .filter(Boolean)
+        .map((item) => item.toString().trim())
+        .filter(Boolean);
+    }
+    req.body.skills = skills;
+  } else {
+    req.body.skills = { technical: [], soft: [] };
+  }
   // Normalize accessibility payload if provided
   if (req.body.accessibility) {
     req.body.accessibility = {
@@ -210,6 +256,29 @@ exports.updateJob = asyncHandler(async (req, res, next) => {
     return next(new AppError('Not authorized.', 403));
   }
 
+  if (req.body.benefits !== undefined) {
+    req.body.benefits = normalizeStringArray(req.body.benefits);
+  }
+  // Normalize skills payload if provided
+  if (req.body.skills) {
+    const skills = {
+      technical: [],
+      soft: [],
+    };
+    if (Array.isArray(req.body.skills.technical)) {
+      skills.technical = req.body.skills.technical
+        .filter(Boolean)
+        .map((item) => item.toString().trim())
+        .filter(Boolean);
+    }
+    if (Array.isArray(req.body.skills.soft)) {
+      skills.soft = req.body.skills.soft
+        .filter(Boolean)
+        .map((item) => item.toString().trim())
+        .filter(Boolean);
+    }
+    req.body.skills = skills;
+  }
   // Normalize accessibility payload if provided
   if (req.body.accessibility) {
     req.body.accessibility = {
