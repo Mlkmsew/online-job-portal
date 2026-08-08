@@ -1,230 +1,544 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import api from '../../../services/api';
 import { fetchMyApplications } from '../../../store/slices/applicationSlice';
 import { formatRelativeTime } from '../../../utils/helpers';
-import { FiCheckCircle, FiClock, FiFileText, FiCalendar, FiXCircle, FiInfo, FiMapPin } from 'react-icons/fi';
+import toast from 'react-hot-toast';
+import {
+  FiCheckCircle,
+  FiClock,
+  FiFileText,
+  FiCalendar,
+  FiInfo,
+  FiSearch,
+  FiVideo,
+  FiDownload,
+  FiMail,
+  FiLink,
+  FiHome,
+  FiBookmark,
+  FiUser,
+  FiBell,
+  FiMessageCircle,
+  FiSettings,
+  FiHelpCircle,
+  FiMapPin,
+  FiLogOut,
+} from 'react-icons/fi';
 
 const MyApplications = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { applications, loading, error } = useSelector((state) => state.applications);
+  const { user } = useSelector((state) => state.auth);
   const [selectedApp, setSelectedApp] = useState(null);
+  const [selectedInterview, setSelectedInterview] = useState(null);
+  const [interviewLoading, setInterviewLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const safeApplications = Array.isArray(applications) ? applications : [];
+
+  useEffect(() => {
+    if (safeApplications.length === 0) {
+      setSelectedApp(null);
+      return;
+    }
+
+    if (!selectedApp) {
+      setSelectedApp(safeApplications[0]);
+      return;
+    }
+
+    const refreshedApp = safeApplications.find((app) => app._id === selectedApp._id);
+    if (!refreshedApp) {
+      setSelectedApp(safeApplications[0]);
+    } else if (refreshedApp !== selectedApp) {
+      setSelectedApp(refreshedApp);
+    }
+  }, [safeApplications, selectedApp]);
 
   useEffect(() => {
     dispatch(fetchMyApplications());
   }, [dispatch]);
 
-  // Visual status configurations
-  const getStatusBadgeStyle = (status) => {
-    switch (status) {
-      case 'Submitted':
-        return 'bg-slate-100 text-slate-700 border border-slate-200';
-      case 'Reviewed':
-        return 'bg-blue-100 text-blue-800 border border-blue-200';
-      case 'Interview Scheduled':
-      case 'Interview':
-        return 'bg-amber-100 text-amber-800 border border-amber-200';
-      case 'Selected':
-        return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
-      case 'Not Selected':
-      case 'Rejected':
-        return 'bg-rose-100 text-rose-800 border border-rose-200';
-      default:
-        return 'bg-slate-100 text-slate-700 border border-slate-200';
+  useEffect(() => {
+    let isActive = true;
+    const applicationId = selectedApp?._id;
+
+    if (!applicationId) {
+      setSelectedInterview(null);
+      return;
     }
-  };
 
-  const steps = [
-    { label: 'Submitted', key: 'Submitted', color: 'text-gray-400' },
-    { label: 'Reviewed', key: 'Reviewed', color: 'text-blue-500' },
-    { label: 'Interview Scheduled', key: 'Interview Scheduled', color: 'text-amber-500' },
-    { label: 'Decision', key: 'Decision', color: 'text-green-600' },
-  ];
+    const fetchInterviewForApplication = async () => {
+      setInterviewLoading(true);
+      setSelectedInterview(null);
 
-  const getStatusStepIndex = (status) => {
-    if (status === 'Submitted') return 0;
-    if (status === 'Reviewed') return 1;
-    if (status === 'Interview Scheduled' || status === 'Interview') return 2;
-    if (status === 'Selected' || status === 'Not Selected') return 3;
+      try {
+        const response = await api.get('/interviews', { params: { application: applicationId } });
+        const interviews = Array.isArray(response.data?.data)
+          ? response.data.data
+          : Array.isArray(response.data)
+            ? response.data
+            : [];
+
+        if (!isActive) return;
+        setSelectedInterview(interviews.length > 0 ? interviews[0] : null);
+      } catch (err) {
+        console.error('Failed to fetch interview for application:', err);
+        if (!isActive) return;
+        setSelectedInterview(null);
+      } finally {
+        if (isActive) setInterviewLoading(false);
+      }
+    };
+
+    fetchInterviewForApplication();
+
+    return () => {
+      isActive = false;
+    };
+  }, [selectedApp]);
+
+  const filteredApplications = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return safeApplications;
+
+    return safeApplications.filter((app) => {
+      return (
+        app.job?.title?.toLowerCase().includes(term) ||
+        app.company?.name?.toLowerCase().includes(term) ||
+        app.status?.toLowerCase().includes(term)
+      );
+    });
+  }, [safeApplications, searchTerm]);
+
+  const getStepIndex = (status) => {
+    const normalized = `${status || ''}`.toLowerCase();
+    if (normalized.includes('submitted')) return 0;
+    if (normalized.includes('review')) return 1;
+    if (normalized.includes('shortlist')) return 2;
+    if (normalized.includes('interview scheduled') || normalized === 'interview') return 3;
+    if (normalized.includes('completed')) return 4;
+    if (normalized.includes('offer')) return 5;
+    if (normalized.includes('hired') || normalized.includes('selected')) return 6;
     return 0;
   };
 
+  const getStatusPill = (status) => {
+    const normalized = `${status || ''}`.toLowerCase();
+    if (normalized.includes('interview')) return 'bg-sky-50 text-sky-700';
+    if (normalized.includes('selected') || normalized.includes('hired') || normalized.includes('offer')) return 'bg-emerald-50 text-emerald-700';
+    if (normalized.includes('rejected') || normalized.includes('not selected')) return 'bg-rose-50 text-rose-700';
+    return 'bg-slate-100 text-slate-600';
+  };
+
+  const getInterviewDate = (app) => {
+    return app.interviewDate ? new Date(app.interviewDate) : null;
+  };
+
+  const selectedInterviewDate = selectedInterview?.scheduledDate ? new Date(selectedInterview.scheduledDate) : null;
+  const interviewCountdown = selectedInterviewDate ? Math.max(selectedInterviewDate - new Date(), 0) : 0;
+  const countdownDays = Math.floor(interviewCountdown / (1000 * 60 * 60 * 24));
+  const countdownHours = Math.floor((interviewCountdown / (1000 * 60 * 60)) % 24);
+
+  const allowedInterviewStatuses = ['scheduled', 'confirmed', 'rescheduled', 'completed', 'cancelled'];
+  const showInterviewPanel = Boolean(
+    selectedInterview && selectedInterview.status && allowedInterviewStatuses.includes(`${selectedInterview.status}`.toLowerCase()),
+  );
+  const showNoInterviewYet = Boolean(
+    selectedApp &&
+      !selectedInterview &&
+      ['submitted', 'under review', 'shortlisted', 'pending', 'applied'].some((status) =>
+        `${selectedApp.status || ''}`.toLowerCase().includes(status),
+      ),
+  );
+
+  const formatDate = (date) => {
+    if (!date) return 'TBD';
+    try {
+      const parsed = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
+      if (!parsed || Number.isNaN(parsed.getTime())) return 'TBD';
+      return parsed.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+    } catch {
+      return 'TBD';
+    }
+  };
+
+  const formatInterviewTime = (value) => {
+    if (value === undefined || value === null || value === '') return 'TBD';
+    const raw = typeof value === 'string' ? value.trim() : `${value}`.trim();
+    if (!raw || raw === 'null' || raw === 'undefined') return 'TBD';
+    if (/^\d{1,2}:\d{2}(\s?(am|pm))?$/i.test(raw) || /^\d{1,2}\s?(am|pm)$/i.test(raw)) {
+      return raw.toUpperCase();
+    }
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+    return raw;
+  };
+
+  const normalizeInterviewType = (type) => {
+    const raw = `${type || ''}`.trim().toLowerCase();
+    if (raw.includes('phone')) return 'Phone';
+    if (raw.includes('in-person') || raw.includes('in person') || raw.includes('onsite')) return 'In-person';
+    if (raw.includes('zoom') || raw.includes('meet') || raw.includes('video') || raw.includes('online')) return 'Online';
+    return type || 'TBD';
+  };
+
+  const getPlatformLabel = (link) => {
+    if (!link) return '';
+    const normalized = `${link}`.toLowerCase();
+    if (normalized.includes('google.com')) return 'Google Meet';
+    if (normalized.includes('zoom.us') || normalized.includes('zoom.com')) return 'Zoom';
+    if (normalized.includes('teams.microsoft.com') || normalized.includes('microsoft.com')) return 'Microsoft Teams';
+    return 'Online Meeting';
+  };
+
+  const selectedCompany = selectedApp?.company?.name || 'Company';
+  const selectedJob = selectedApp?.job?.title || 'Role';
+  const selectedMeetingLink = selectedInterview?.meetingLink || '';
+  const selectedMeetingLocation = selectedInterview?.location || '';
+  const selectedInterviewType = normalizeInterviewType(selectedInterview?.type);
+  const selectedInterviewTime = selectedInterview?.interviewTime
+    ? formatInterviewTime(selectedInterview.interviewTime)
+    : formatInterviewTime(selectedInterview?.scheduledDate);
+  const selectedNotes = selectedInterview?.note || selectedApp?.employerNote || '';
+  const selectedDocuments = Array.isArray(selectedInterview?.requiredDocuments) ? selectedInterview.requiredDocuments : [];
+  const selectedPhoneNumber = selectedInterview?.phoneNumber || selectedInterview?.contactNumber || '';
+  const selectedMeetingPlatform = selectedInterviewType === 'Online' ? getPlatformLabel(selectedMeetingLink) : '';
+
+  const applicationStages = [
+    'Submitted',
+    'Under Review',
+    'Shortlisted',
+    'Interview Scheduled',
+    'Completed',
+    'Offer Sent',
+    'Hired',
+  ];
+
+  const activeStageIndex = applicationStages.findIndex((item) => item.toLowerCase() === (selectedApp?.status || '').toLowerCase());
+  const currentStageIndex = activeStageIndex >= 0 ? activeStageIndex : 3;
+
+  const applicationGuide = [
+    { label: 'Interview Scheduled', description: 'You have been scheduled for an interview.', tone: 'blue' },
+    { label: 'Completed', description: 'Your interview has been completed.', tone: 'slate' },
+    { label: 'Offer Sent', description: 'The employer has sent you a job offer.', tone: 'emerald' },
+    { label: 'Hired', description: 'Congratulations! You have been hired.', tone: 'green' },
+    { label: 'Rejected', description: 'You were not selected for this position.', tone: 'rose' },
+    { label: 'Not Selected', description: 'The recruitment process has ended without selection.', tone: 'slate' },
+  ];
+
+  const finalStageLabel = ['rejected', 'not selected'].some((value) =>
+    `${selectedApp?.status || ''}`.toLowerCase().includes(value),
+  )
+    ? selectedApp?.status
+    : 'Hired';
+
+  const timelineStages = [
+    'Submitted',
+    'Under Review',
+    'Shortlisted',
+    'Interview Scheduled',
+    'Completed',
+    'Offer Sent',
+    finalStageLabel,
+  ];
+
+  const activeTimelineIndex = Math.min(getStepIndex(selectedApp?.status), timelineStages.length - 1);
+
   return (
-    <div className="max-w-5xl mx-auto pb-10">
-      <h1 className="text-3xl font-black mb-8 text-gray-900 dark:text-white">My Applications</h1>
+    <div className="min-h-[calc(100vh-64px)]">
+      <div className="mb-8 rounded-[18px] bg-white p-6 shadow-sm border border-slate-200">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">My Applications</h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600">Track your applications and interview progress in one place.</p>
+          </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600"></div>
+          <div className="relative w-full max-w-md">
+            <FiSearch className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 text-slate-400 -translate-y-1/2" />
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search applications..."
+              className="w-full rounded-full border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+          </div>
         </div>
-      ) : error ? (
-        <div className="card text-center py-16 px-6 border border-dashed border-red-200 bg-white dark:bg-gray-800">
-          <FiInfo className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-gray-800 dark:text-white">We could not load your applications</h3>
-          <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-sm mx-auto">{error}</p>
-        </div>
-      ) : safeApplications.length === 0 ? (
-        <div className="card text-center py-16 px-6 border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-850">
-          <FiFileText className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-gray-800 dark:text-white">No applications yet</h3>
-          <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-sm mx-auto">
-            You haven't submitted any job applications. Start exploring active opportunities to launch your career!
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-6">
-          {safeApplications.map((app) => {
-            const currentStepIdx = getStatusStepIndex(app.status);
-            const isRejected = app.status === 'Not Selected';
+      </div>
 
-            return (
-              <div
-                key={app._id}
-                className="card p-6 shadow-sm border border-gray-150 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:shadow-md transition-shadow duration-200"
-              >
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{app.job?.title || 'Job Posting'}</h3>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${getStatusBadgeStyle(app.status)}`}>
-                      {app.status}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-300 font-medium">{app.company?.name || 'Company Name'}</p>
-                  <p className="text-xs text-gray-400">Applied {formatRelativeTime(app.appliedAt)}</p>
-
-                  {/* Visual Stepper */}
-                  <div className="pt-4 max-w-md hidden sm:block">
-                    <div className="flex items-center justify-between relative">
-                      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700 -translate-y-1/2 z-0"></div>
-                      {steps.map((step, idx) => {
-                        const isCompleted = idx <= currentStepIdx;
-                        const isDecisionStep = step.key === 'Decision';
-                        
-                        let stepBg = 'bg-gray-200 dark:bg-gray-700 text-gray-400';
-                        if (isCompleted) {
-                          if (isDecisionStep && isRejected) {
-                            stepBg = 'bg-red-500 text-white';
-                          } else {
-                            stepBg = 'bg-teal-500 text-white';
-                          }
-                        }
-
-                        return (
-                          <div key={idx} className="flex flex-col items-center relative z-10">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${stepBg}`}>
-                              {isDecisionStep && isRejected && isCompleted ? '✗' : idx + 1}
-                            </div>
-                            <span className="text-[10px] font-semibold text-gray-500 mt-1.5">
-                              {isDecisionStep && isRejected && isCompleted ? 'Not Selected' : isDecisionStep && isCompleted ? 'Selected' : step.label}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
-                  {app.matchScore !== undefined && (
-                    <div className="bg-teal-50 dark:bg-teal-950/20 text-teal-600 dark:text-teal-400 px-3 py-1 rounded-lg text-sm font-black">
-                      ⚡ {app.matchScore}% Match
-                    </div>
-                  )}
-                  <button
-                    onClick={() => setSelectedApp(app)}
-                    className="btn btn-outline border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white px-4 py-2 text-sm font-bold flex items-center gap-1.5"
-                  >
-                    <FiInfo /> View Details
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* View Details Modal */}
-      {selectedApp && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden animate-slide-down">
-            <div className="p-6 border-b dark:border-gray-700 flex justify-between items-center">
+      <div className="grid gap-6 xl:grid-cols-[1.75fr_1fr]">
+        <section className="space-y-6">
+          <div className="rounded-[18px] bg-white p-6 shadow-sm border border-slate-200">
+            <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
               <div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedApp.job?.title}</h3>
-                <p className="text-gray-500 dark:text-gray-400 mt-1">{selectedApp.company?.name}</p>
+                <p className="text-sm font-semibold text-slate-500">Application backlog</p>
+                <h2 className="text-2xl font-semibold text-slate-900">{filteredApplications.length} applications in review</h2>
               </div>
-              <button
-                onClick={() => setSelectedApp(null)}
-                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600"
-              >
-                <FiXCircle className="w-7 h-7" />
-              </button>
+              <div className="inline-flex items-center rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm">
+                <FiCalendar className="mr-2 h-4 w-4" /> Interview Scheduled
+              </div>
             </div>
 
-            <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
-              {/* Administrative Notes */}
-              {selectedApp.employerNote && (
-                <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 text-amber-900 dark:text-amber-300">
-                  <h4 className="font-bold text-sm flex items-center gap-1.5 mb-1">
-                    <FiMapPin className="text-amber-500" /> Administrative Notes & Details
-                  </h4>
-                  <p className="text-sm">{selectedApp.employerNote}</p>
-                </div>
-              )}
+            <div className="grid gap-4 mt-6">
+              {filteredApplications.map((app) => {
+                const stepIndex = getStepIndex(app.status);
+                const interviewDate = getInterviewDate(app);
 
-              {/* Status Timeline History */}
-              <div>
-                <h4 className="font-extrabold text-sm uppercase tracking-wider text-gray-400 mb-4">Application History & Timeline</h4>
-                {selectedApp.statusHistory && selectedApp.statusHistory.length > 0 ? (
-                  <div className="relative border-l border-gray-200 dark:border-gray-700 ml-3 space-y-6">
-                    {selectedApp.statusHistory.map((history, idx) => (
-                      <div key={idx} className="relative pl-6">
-                        <div className="absolute -left-1.5 top-1.5 w-3.5 h-3.5 rounded-full bg-teal-500 border border-white dark:border-gray-800"></div>
-                        <div className="flex flex-wrap justify-between items-center gap-2">
-                          <span className={`text-sm font-bold px-2 py-0.5 rounded ${getStatusBadgeStyle(history.status)}`}>
-                            {history.status}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {new Date(history.changedAt).toLocaleString()}
-                          </span>
+                return (
+                  <div
+                    key={app._id}
+                    onClick={() => setSelectedApp(app)}
+                    className={`group cursor-pointer rounded-[18px] border p-6 transition-shadow duration-200 ${selectedApp?._id === app._id ? 'border-blue-300 shadow-lg' : 'border-slate-200 hover:shadow-md'}`}
+                  >
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-100 text-xl font-semibold text-slate-700">
+                          {app.company?.name?.charAt(0) || 'G'}
                         </div>
-                        {history.note && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1.5 italic">
-                            "{history.note}"
-                          </p>
-                        )}
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">{app.company?.name || 'Company'}</p>
+                          <h3 className="text-xl font-semibold text-slate-900 truncate">{app.job?.title || 'Frontend Developer'}</h3>
+                          <p className="mt-2 text-sm text-slate-500">{app.company?.name || 'Company Name'}</p>
+                        </div>
                       </div>
-                    ))}
+
+                      <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+                        <span>Applied {formatRelativeTime(app.appliedAt)}</span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-slate-600">
+                          <FiCalendar className="h-4 w-4" /> {interviewDate ? formatDate(interviewDate) : 'Date TBA'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 grid gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${getStatusPill(app.status)}`}>
+                          {app.status || 'Pending'}
+                        </span>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-3xl bg-slate-50 p-4">
+                          <p className="text-sm font-semibold text-slate-500">Interview Date</p>
+                          <p className="mt-2 text-base font-semibold text-slate-900">{interviewDate ? formatDate(interviewDate) : 'TBD'}</p>
+                        </div>
+                        <div className="rounded-3xl bg-slate-50 p-4">
+                          <p className="text-sm font-semibold text-slate-500">Interview Time</p>
+                          <p className="mt-2 text-base font-semibold text-slate-900">{formatInterviewTime(app.interviewTime || app.interviewDate)}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedApp(app)}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <FiInfo className="h-4 w-4" /> View Application
+                      </button>
+                      {(app.status === 'Interview Scheduled' || app.status === 'Interview') && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const response = await api.get('/interviews', { params: { application: app._id } });
+                              const interviews = Array.isArray(response.data?.data)
+                                ? response.data.data
+                                : Array.isArray(response.data)
+                                ? response.data
+                                : [];
+                              const interview = interviews[0];
+                              if (!interview) {
+                                toast.error('Interview details not found.');
+                                return;
+                              }
+                              navigate(`/dashboard/interviews/${interview._id}`);
+                            } catch (err) {
+                              console.error(err);
+                              toast.error('Unable to find interview details.');
+                            }
+                          }}
+                          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                        >
+                          <FiVideo className="h-4 w-4" /> View Interview
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => toast.success('Download started')}
+                        className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                      >
+                        <FiDownload className="h-4 w-4" /> Download Invite
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <aside className="space-y-6">
+          {selectedApp && (
+            <>
+              <div className="rounded-[18px] bg-white p-6 shadow-sm border border-slate-200">
+                {interviewLoading ? (
+                  <div className="min-h-[200px] flex items-center justify-center">
+                    <p className="text-sm text-slate-500">Loading interview details...</p>
+                  </div>
+                ) : showInterviewPanel ? (
+                  <>
+                    <div className="rounded-[18px] bg-blue-50 p-5">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-700">Interview Status</p>
+                          <h3 className="mt-2 text-xl font-semibold text-slate-900">
+                            {selectedInterview.status === 'completed'
+                              ? 'Interview Completed'
+                              : selectedInterview.status === 'cancelled'
+                                ? 'Interview Cancelled'
+                                : 'Your interview has been scheduled.'}
+                          </h3>
+                        </div>
+                        <div className="inline-flex items-center rounded-full bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm">
+                          <FiCalendar className="h-4 w-4" /> {selectedInterview.status.charAt(0).toUpperCase() + selectedInterview.status.slice(1)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 space-y-4">
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-slate-500">Company</p>
+                        <p className="text-base font-semibold text-slate-900">{selectedCompany}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-slate-500">Position</p>
+                        <p className="text-base font-semibold text-slate-900">{selectedJob}</p>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-3xl bg-slate-50 p-4">
+                          <p className="text-sm font-semibold text-slate-500">Interview Date</p>
+                          <p className="mt-2 text-base font-semibold text-slate-900">{formatDate(selectedInterviewDate)}</p>
+                          <p className="text-sm text-slate-500">
+                            {selectedInterviewDate ? new Date(selectedInterviewDate).toLocaleDateString(undefined, { weekday: 'long' }) : ''}
+                          </p>
+                        </div>
+                        <div className="rounded-3xl bg-slate-50 p-4">
+                          <p className="text-sm font-semibold text-slate-500">Time</p>
+                          <p className="mt-2 text-base font-semibold text-slate-900">{selectedInterviewTime}</p>
+                          <p className="mt-2 text-base font-semibold text-slate-900">{selectedMeetingPlatform}</p>
+                        </div>
+                      </div>
+
+                      {selectedMeetingLink ? (
+                        <div className="rounded-3xl bg-slate-50 p-4">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                            <FiLink className="h-4 w-4" /> Meeting Link
+                          </div>
+                          <a href={selectedMeetingLink} target="_blank" rel="noreferrer" className="mt-2 block text-sm text-blue-700 underline break-all">
+                            {selectedMeetingLink}
+                          </a>
+                        </div>
+                      ) : selectedMeetingLocation ? (
+                        <div className="rounded-3xl bg-slate-50 p-4">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                            <FiMapPin className="h-4 w-4" /> Location
+                          </div>
+                          <p className="mt-2 text-sm text-slate-700 break-all">{selectedMeetingLocation}</p>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-6 space-y-4">
+                      {selectedNotes ? (
+                        <div>
+                          <p className="text-sm font-semibold text-slate-500">Employer Notes</p>
+                          <p className="mt-2 text-sm leading-7 text-slate-700">{selectedNotes}</p>
+                        </div>
+                      ) : null}
+
+                      {selectedDocuments.length > 0 ? (
+                        <div>
+                          <p className="text-sm font-semibold text-slate-500">Documents Required</p>
+                          <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                            {selectedDocuments.map((doc) => (
+                              <li key={doc} className="flex items-center gap-2">
+                                <FiCheckCircle className="h-4 w-4 text-slate-400" />
+                                {doc}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-6 grid gap-3">
+                      {selectedMeetingLink ? (
+                        <button
+                          type="button"
+                          onClick={() => window.open(selectedMeetingLink, '_blank', 'noopener,noreferrer')}
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                        >
+                          <FiVideo className="h-4 w-4" /> Join Meeting
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => toast.success('Added to calendar')}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <FiCalendar className="h-4 w-4" /> Add to Calendar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toast('Reschedule request sent')}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <FiClock className="h-4 w-4" /> Reschedule Request
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toast('Message sent to employer')}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <FiMail className="h-4 w-4" /> Contact Employer
+                      </button>
+                    </div>
+                  </>
+                ) : showNoInterviewYet ? (
+                  <div className="rounded-[18px] bg-slate-50 p-6 text-center">
+                    <p className="text-sm font-semibold text-slate-700">No interview has been scheduled yet.</p>
+                    <p className="mt-2 text-sm text-slate-500">We’ll update you once an interview is created for this application.</p>
                   </div>
                 ) : (
-                  <div className="relative pl-6 border-l border-gray-200 dark:border-gray-700 ml-3">
-                    <div className="absolute -left-1.5 top-1.5 w-3.5 h-3.5 rounded-full bg-teal-500 border border-white dark:border-gray-800"></div>
-                    <div className="flex justify-between items-center">
-                      <span className={`text-sm font-bold px-2 py-0.5 rounded ${getStatusBadgeStyle('Submitted')}`}>
-                        Submitted
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {new Date(selectedApp.appliedAt).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1.5">
-                      Your application has been received by the employer and is awaiting review.
-                    </p>
+                  <div className="rounded-[18px] bg-slate-50 p-6 text-center">
+                    <p className="text-sm font-semibold text-slate-700">Interview details are not available.</p>
                   </div>
                 )}
               </div>
-            </div>
 
-            <div className="p-6 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 flex justify-end">
-              <button
-                onClick={() => setSelectedApp(null)}
-                className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-6 rounded-xl transition shadow"
-              >
-                Close Details
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              {showInterviewPanel ? (
+                <div className="rounded-[18px] bg-white p-6 shadow-sm border border-slate-200">
+                  <div className="flex items-center gap-3 rounded-3xl bg-slate-100 px-4 py-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-blue-600 text-white">
+                      <FiClock className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-500">Interview starts in</p>
+                      <p className="mt-1 text-2xl font-semibold text-slate-900">{countdownDays} Days {countdownHours} Hours</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </>
+          )}
+        </aside>
+      </div>
     </div>
   );
 };

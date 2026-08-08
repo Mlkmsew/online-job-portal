@@ -40,7 +40,8 @@ describe('EmployerInterviews', () => {
   it('renders interviews and opens the scheduling modal', async () => {
     renderWithRouter(<EmployerInterviews />);
 
-    expect(await screen.findByText('Frontend Developer')).toBeInTheDocument();
+    const frontendRole = await screen.findAllByText(/frontend developer/i);
+    expect(frontendRole.length).toBeGreaterThan(0);
     expect(screen.getByText('Upcoming')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: /schedule new interview/i }));
@@ -76,7 +77,8 @@ describe('EmployerInterviews', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /completed/i }));
 
-    expect(await screen.findByText('Product Designer')).toBeInTheDocument();
+    const designerRole = await screen.findAllByText(/product designer/i);
+    expect(designerRole.length).toBeGreaterThan(0);
     expect(screen.getAllByText(/hired/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/rating/i)).toBeInTheDocument();
 
@@ -88,7 +90,8 @@ describe('EmployerInterviews', () => {
   it('launches the pre-interview workflow from a scheduled interview card', async () => {
     renderWithRouter(<EmployerInterviews />);
 
-    expect(await screen.findByText('Frontend Developer')).toBeInTheDocument();
+    const frontendRole = await screen.findAllByText(/frontend developer/i);
+    expect(frontendRole.length).toBeGreaterThan(0);
     await userEvent.click(screen.getByRole('button', { name: /start interview/i }));
 
     expect(await screen.findByRole('heading', { name: /start interview/i })).toBeInTheDocument();

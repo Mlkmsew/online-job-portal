@@ -475,9 +475,10 @@ exports.refreshToken = asyncHandler(async (req, res, next) => {
 // @access  Private
 exports.updateProfile = asyncHandler(async (req, res) => {
   const allowedFields = [
-    'firstName', 'lastName', 'phone', 'headline', 'bio', 'dateOfBirth',
-    'gender', 'location', 'skills', 'languages', 'education', 'experience',
-    'portfolio', 'socialLinks', 'jobPreferences',
+    'firstName', 'lastName', 'phone', 'headline', 'currentRole', 'bio', 'dateOfBirth',
+    'gender', 'location', 'skills', 'skillNames', 'languages', 'education', 'educationDetails', 'experience', 'experienceDetails',
+    'experienceYears', 'salaryExpectation', 'availability', 'portfolio', 'socialLinks', 'jobPreferences',
+    'certificates', 'avatar', 'avatarPublicId',
   ];
 
   const updates = {};
@@ -485,11 +486,21 @@ exports.updateProfile = asyncHandler(async (req, res) => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
   });
 
+  // If avatar is being set to empty string, delete the field from DB entirely
+  let unsetFields = {};
+  if (updates.avatar === '' || updates.avatar === null) {
+    delete updates.avatar;
+    delete updates.avatarPublicId;
+    unsetFields.avatar = '';
+    unsetFields.avatarPublicId = '';
+  }
+
   const userId = req.user.id || req.user._id;
-  const user = await User.findByIdAndUpdate(userId, updates, {
-    new: true,
-    runValidators: true,
-  }).populate('skills', 'name slug');
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set: updates, ...(Object.keys(unsetFields).length ? { $unset: unsetFields } : {}) },
+    { new: true, runValidators: true }
+  ).populate('skills', 'name slug');
 
   // Recalculate completeness
   user.calculateProfileCompleteness();
@@ -512,11 +523,40 @@ exports.updateSettings = asyncHandler(async (req, res, next) => {
     return next(new AppError('User not found.', 404));
   }
 
+  const currentSettings = user.settings || {};
+  const currentNotifications = currentSettings.notifications || {};
+
+  if (settings.notifications && typeof settings.notifications === 'object') {
+    const inputNotifs = settings.notifications;
+
+    const email_alerts = inputNotifs.email_alerts !== undefined ? Boolean(inputNotifs.email_alerts) : inputNotifs.email !== undefined ? Boolean(inputNotifs.email) : currentNotifications.email_alerts ?? currentNotifications.email ?? true;
+    const in_app_notifications = inputNotifs.in_app_notifications !== undefined ? Boolean(inputNotifs.in_app_notifications) : inputNotifs.inapp !== undefined ? Boolean(inputNotifs.inapp) : currentNotifications.in_app_notifications ?? currentNotifications.inapp ?? true;
+    const job_match_alerts = inputNotifs.job_match_alerts !== undefined ? Boolean(inputNotifs.job_match_alerts) : inputNotifs.match !== undefined ? Boolean(inputNotifs.match) : currentNotifications.job_match_alerts ?? currentNotifications.match ?? true;
+    const application_status = inputNotifs.application_status !== undefined ? Boolean(inputNotifs.application_status) : inputNotifs.application !== undefined ? Boolean(inputNotifs.application) : currentNotifications.application_status ?? currentNotifications.application ?? true;
+    const interview_reminders = inputNotifs.interview_reminders !== undefined ? Boolean(inputNotifs.interview_reminders) : inputNotifs.interview !== undefined ? Boolean(inputNotifs.interview) : currentNotifications.interview_reminders ?? currentNotifications.interview ?? true;
+
+    settings.notifications = {
+      ...currentNotifications,
+      ...inputNotifs,
+      email_alerts,
+      email: email_alerts,
+      in_app_notifications,
+      inapp: in_app_notifications,
+      job_match_alerts,
+      match: job_match_alerts,
+      application_status,
+      application: application_status,
+      interview_reminders,
+      interview: interview_reminders,
+    };
+  }
+
   user.settings = {
-    ...(user.settings || {}),
+    ...currentSettings,
     ...settings,
   };
 
+  user.markModified('settings');
   await user.save({ validateBeforeSave: false });
 
   res.status(200).json({
@@ -524,6 +564,38 @@ exports.updateSettings = asyncHandler(async (req, res, next) => {
     message: 'Settings updated successfully.',
     data: user.settings,
   });
+});
+
+// @desc    Deactivate current account
+// @route   PUT /api/auth/deactivate-account
+// @access  Private
+exports.deactivateAccount = asyncHandler(async (req, res, next) => {
+  const userId = req.user.id || req.user._id;
+  const user = await User.findById(userId);
+  if (!user) return next(new AppError('User not found.', 404));
+
+  user.isActive = false;
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json({ success: true, message: 'Account deactivated successfully.' });
+});
+
+// @desc    Delete current account
+// @route   DELETE /api/auth/delete-account
+// @access  Private
+exports.deleteAccount = asyncHandler(async (req, res, next) => {
+  const userId = req.user.id || req.user._id;
+  const user = await User.findById(userId);
+  if (!user) return next(new AppError('User not found.', 404));
+
+  if (user.role === 'employer') {
+    const Company = require('../models/Company');
+    await Company.updateMany({ owner: user._id }, { isActive: false });
+  }
+
+  await user.deleteOne();
+
+  res.status(200).json({ success: true, message: 'Account deleted permanently.' });
 });
 
 // @desc    Upload avatar
@@ -538,7 +610,43 @@ exports.uploadAvatar = asyncHandler(async (req, res, next) => {
     { new: true }
   );
 
-  res.status(200).json({ success: true, message: 'Avatar updated.', avatar: user.avatar });
+  if (user) {
+    user.calculateProfileCompleteness();
+    await user.save({ validateBeforeSave: false });
+  }
+
+  res.status(200).json({ success: true, message: 'Avatar updated.', avatar: user.avatar, data: user });
+});
+
+// @desc    Delete avatar
+// @route   DELETE /api/auth/upload-avatar
+// @access  Private
+exports.deleteAvatar = asyncHandler(async (req, res, next) => {
+  const userId = req.user.id || req.user._id;
+  const existingUser = await User.findById(userId);
+  if (!existingUser) return next(new AppError('User not found.', 404));
+
+  // Delete from Cloudinary if public ID exists
+  if (existingUser.avatarPublicId) {
+    try {
+      const cloudinary = require('cloudinary').v2;
+      await cloudinary.uploader.destroy(existingUser.avatarPublicId);
+    } catch (err) {
+      console.warn('Cloudinary avatar deletion failed (non-fatal):', err.message);
+    }
+  }
+
+  // Remove avatar fields from DB
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $unset: { avatar: '', avatarPublicId: '' } },
+    { new: true }
+  ).populate('skills', 'name slug');
+
+  user.calculateProfileCompleteness();
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json({ success: true, message: 'Profile photo removed.', data: user });
 });
 
 // @desc    Upload CV
@@ -571,30 +679,35 @@ exports.uploadCV = asyncHandler(async (req, res, next) => {
       location: analysis.location,
       rawText: analysis.text,
     };
-
+    user.calculateProfileCompleteness();
     await user.save({ validateBeforeSave: false });
   } catch (error) {
     console.error('Resume parsing failed:', error.message);
+    await user.save({ validateBeforeSave: false });
   }
 
-  res.status(200).json({ success: true, message: 'CV uploaded successfully.', cv: user.cv });
+  res.status(200).json({ success: true, message: 'CV uploaded.', data: user });
 });
 
 // @desc    Upload certificate
 // @route   POST /api/auth/upload-certificate
 // @access  Private
 exports.uploadCertificate = asyncHandler(async (req, res, next) => {
-  if (!req.file) return next(new AppError('Please upload a certificate.', 400));
+  if (!req.file) return next(new AppError('Please upload a certificate file.', 400));
 
-  const { name, issuer, issueDate } = req.body;
-  const cert = { name, url: req.file.path, publicId: req.file.filename, issuer, issueDate };
+  const user = await User.findById(req.user.id || req.user._id);
+  if (!user) return next(new AppError('User not found.', 404));
 
-  const userId = req.user.id || req.user._id;
-  const user = await User.findByIdAndUpdate(
-    userId,
-    { $push: { certificates: cert } },
-    { new: true }
-  );
+  const certificate = {
+    name: req.file.originalname,
+    url: req.file.path,
+    publicId: req.file.filename,
+    issuer: req.body.issuer || 'Unknown',
+    issueDate: req.body.issueDate ? new Date(req.body.issueDate) : undefined,
+  };
 
-  res.status(200).json({ success: true, message: 'Certificate uploaded.', data: user.certificates });
+  user.certificates = [...(user.certificates || []), certificate];
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json({ success: true, message: 'Certificate uploaded successfully.', data: user.certificates });
 });

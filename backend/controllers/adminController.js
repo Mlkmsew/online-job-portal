@@ -7,6 +7,7 @@ const Job = require('../models/Job');
 const Application = require('../models/Application');
 const Category = require('../models/Category');
 const Skill = require('../models/Skill');
+const Notification = require('../models/Notification');
 const { asyncHandler, paginate, escapeRegex } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 
@@ -227,18 +228,71 @@ exports.getJobs = asyncHandler(async (req, res) => {
 });
 
 exports.approveJob = asyncHandler(async (req, res, next) => {
-  const job = await Job.findById(req.params.id);
+  const job = await Job.findById(req.params.id).populate('company', 'name');
   if (!job) return next(new AppError('Job not found.', 404));
+
+  const wasAlreadyApproved = job.isApproved;
+
+  // Mark as approved & published
   job.isApproved = true;
+  job.status = 'published';
+  if (!wasAlreadyApproved) {
+    job.publishedAt = new Date();
+  }
   job.adminNote = req.body?.adminNote || 'Approved by admin.';
   await job.save({ validateBeforeSave: false });
-  res.status(200).json({ success: true, message: 'Job approved.' });
+
+  // Fan-out new_job notifications — only on first approval.
+  // insertMany with ordered:false means MongoDB silently skips documents that
+  // violate the unique (recipient, type, data.jobId) index, so calling this
+  // endpoint a second time never creates duplicates.
+  if (!wasAlreadyApproved) {
+    try {
+      const jobseekers = await User.find(
+        { role: 'jobseeker', isSuspended: { $ne: true } },
+        { _id: 1 }
+      ).lean();
+
+      if (jobseekers.length > 0) {
+        const companyName = job.company?.name || 'A company';
+        const locationStr =
+          [job.location?.city, job.location?.region].filter(Boolean).join(', ') || 'Ethiopia';
+
+        const notifications = jobseekers.map((seeker) => ({
+          recipient: seeker._id,
+          type: 'new_job',
+          title: 'New Job Posted',
+          message: 'A new job has been approved and published.',
+          link: `/jobs/${job._id}`,
+          data: {
+            jobId: job._id,
+            jobTitle: job.title,
+            companyName,
+            location: locationStr,
+            jobType: job.jobType,
+          },
+        }));
+
+        // ordered:false → continues inserting even if some docs hit the unique index
+        await Notification.insertMany(notifications, { ordered: false });
+      }
+    } catch (notifErr) {
+      // Code 11000 = duplicate key — expected on retry, safe to ignore
+      if (notifErr.code !== 11000 && notifErr.writeErrors?.some((e) => e.code !== 11000)) {
+        console.error('Job alert fan-out error:', notifErr.message);
+      }
+    }
+  }
+
+  res.status(200).json({ success: true, message: 'Job approved and published.' });
 });
 
 exports.rejectJob = asyncHandler(async (req, res, next) => {
   const job = await Job.findById(req.params.id);
   if (!job) return next(new AppError('Job not found.', 404));
   job.isApproved = false;
+  job.status = 'pending';
+  job.publishedAt = undefined;
   job.adminNote = req.body?.adminNote || 'Rejected by admin.';
   await job.save({ validateBeforeSave: false });
   res.status(200).json({ success: true, message: 'Job rejected.' });

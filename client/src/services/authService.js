@@ -26,13 +26,17 @@ const updateProfile = async (data) => {
 };
 
 const uploadCV = async (formData) => {
-  // Do not use the default JSON Content-Type for file uploads.
-  // Let the browser set the multipart boundary by omitting Content-Type,
-  // or explicitly set multipart/form-data when using axios.
-  const response = await axiosInstance.put('/auth/upload-cv', formData, {
+  const response = await api.put('/auth/upload-cv', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data;
 };
 
-export default { register, login, logout, getMe, updateProfile, uploadCV };
+const uploadAvatar = async (formData) => {
+  const response = await api.put('/auth/upload-avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export default { register, login, logout, getMe, updateProfile, uploadCV, uploadAvatar };

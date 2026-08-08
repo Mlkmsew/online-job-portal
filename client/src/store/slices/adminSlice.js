@@ -5,8 +5,10 @@ const initialState = {
   stats: null,
   users: [],
   companies: [],
+  jobs: [],
   categories: [],
   loading: false,
+  jobsLoading: false,
   error: null,
   pagination: null,
 };
@@ -44,6 +46,33 @@ export const fetchAdminCategories = createAsyncThunk('admin/fetchCategories', as
     return response.data;
   } catch (error) {
     return rejectWithValue(error.response?.data?.message || error.message || 'Failed to load categories');
+  }
+});
+
+export const fetchAdminJobs = createAsyncThunk('admin/fetchJobs', async (filters = {}, { rejectWithValue }) => {
+  try {
+    const response = await api.get('/admin/jobs', { params: filters });
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || error.message || 'Failed to load jobs');
+  }
+});
+
+export const approveAdminJob = createAsyncThunk('admin/approveJob', async ({ jobId, adminNote }, { rejectWithValue }) => {
+  try {
+    await api.put(`/admin/jobs/${jobId}/approve`, { adminNote });
+    return { jobId };
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || error.message || 'Failed to approve job');
+  }
+});
+
+export const rejectAdminJob = createAsyncThunk('admin/rejectJob', async ({ jobId, adminNote }, { rejectWithValue }) => {
+  try {
+    await api.put(`/admin/jobs/${jobId}/reject`, { adminNote });
+    return { jobId };
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || error.message || 'Failed to reject job');
   }
 });
 
@@ -180,6 +209,33 @@ const adminSlice = createSlice({
       })
       .addCase(createCategory.fulfilled, (state, action) => {
         state.categories.unshift(action.payload);
+      })
+      // ── Jobs ──
+      .addCase(fetchAdminJobs.pending, (state) => {
+        state.jobsLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdminJobs.fulfilled, (state, action) => {
+        state.jobsLoading = false;
+        state.jobs = action.payload.data || [];
+      })
+      .addCase(fetchAdminJobs.rejected, (state, action) => {
+        state.jobsLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(approveAdminJob.fulfilled, (state, action) => {
+        const idx = state.jobs.findIndex((j) => j._id === action.payload.jobId);
+        if (idx !== -1) {
+          state.jobs[idx].isApproved = true;
+          state.jobs[idx].status = 'published';
+        }
+      })
+      .addCase(rejectAdminJob.fulfilled, (state, action) => {
+        const idx = state.jobs.findIndex((j) => j._id === action.payload.jobId);
+        if (idx !== -1) {
+          state.jobs[idx].isApproved = false;
+          state.jobs[idx].status = 'pending';
+        }
       });
   },
 });

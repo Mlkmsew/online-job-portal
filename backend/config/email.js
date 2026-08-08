@@ -5,13 +5,23 @@ const nodemailer = require('nodemailer');
 const { resolveClientURL } = require('../utils/getLocalIP');
 
 // Create reusable transporter
+const emailHost = process.env.EMAIL_HOST?.trim();
+const emailPort = parseInt(process.env.EMAIL_PORT, 10) || 587;
+const emailSecure = process.env.EMAIL_SECURE === 'true';
+const emailUser = process.env.EMAIL_USER?.trim();
+const emailPass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
+
+if (!emailHost || !emailUser || !emailPass) {
+  console.error('❌ Email configuration is incomplete. Please set EMAIL_HOST, EMAIL_USER, and EMAIL_PASS in backend/.env.');
+}
+
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT) || 587,
-  secure: process.env.EMAIL_SECURE === 'true',
+  host: emailHost,
+  port: emailPort,
+  secure: emailSecure,
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: emailUser,
+    pass: emailPass,
   },
   tls: {
     // Allow self-signed certs for some SMTP providers in dev environments

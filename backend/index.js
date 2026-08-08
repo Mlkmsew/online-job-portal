@@ -1,6 +1,7 @@
 // ============================================
 // OnlineJob Portal - Backend Server Entry Point
 // ============================================
+const fs = require('fs');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const express = require('express');
@@ -119,6 +120,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/saved-searches', require('./routes/savedSearchRoutes'));
 app.use('/api/job-alerts', require('./routes/jobAlertRoutes'));
+app.use('/api/interviews', require('./routes/interviewRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.post('/api/contact', require('./routes/contactRoutes'));
 
@@ -136,11 +138,15 @@ if (process.env.NODE_ENV === 'development') {
 // Serve Frontend in Production
 // ============================================
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '..', 'client', 'dist')));
-
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
-  });
+  const staticPath = path.join(__dirname, '..', 'client', 'dist');
+  if (fs.existsSync(staticPath)) {
+    app.use(express.static(staticPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(staticPath, 'index.html'));
+    });
+  } else {
+    console.warn('Production client build not found. Skipping static asset serving.');
+  }
 }
 
 // ============================================
@@ -168,6 +174,12 @@ server.listen(PORT, () => {
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
   `);
+
+  // Start background interview reminder interval (runs every 5 minutes)
+  const { checkAndSendInterviewReminders } = require('./controllers/interviewController');
+  setInterval(() => {
+    checkAndSendInterviewReminders().catch((e) => console.error('Interview reminder runner error:', e.message));
+  }, 5 * 60 * 1000);
 });
 
 // ============================================

@@ -43,5 +43,10 @@ const notificationSchema = new mongoose.Schema(
 
 notificationSchema.index({ recipient: 1, isRead: 1 });
 notificationSchema.index({ createdAt: -1 });
+// Prevent duplicate new_job notifications for the same jobseeker + job
+notificationSchema.index(
+  { recipient: 1, type: 1, 'data.jobId': 1 },
+  { unique: true, sparse: true, partialFilterExpression: { type: 'new_job' } }
+);
 
 module.exports = mongoose.model('Notification', notificationSchema);

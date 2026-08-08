@@ -20,12 +20,16 @@ console.log(checkField('EMAIL_USER'));
 console.log(checkField('EMAIL_FROM'));
 console.log(checkField('EMAIL_PASS'));
 
-const pass = env.EMAIL_PASS || '';
-const hasLeadingOrTrailing = pass.length > 0 && (pass !== pass.trim());
-const hasInnerSpaces = pass.includes(' ');
+const rawPass = env.EMAIL_PASS || '';
+const pass = rawPass.replace(/\s+/g, '');
+const hasLeadingOrTrailing = rawPass.length > 0 && (rawPass !== rawPass.trim());
+const hasInnerSpaces = rawPass.includes(' ');
 
 console.log('EMAIL_PASS has leading/trailing spaces:', hasLeadingOrTrailing);
 console.log('EMAIL_PASS contains space characters:', hasInnerSpaces);
+if (rawPass !== pass) {
+  console.log('INFO: EMAIL_PASS whitespace removed before SMTP auth.');
+}
 
 // Create transporter
 const transporter = nodemailer.createTransport({

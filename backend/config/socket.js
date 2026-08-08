@@ -137,6 +137,18 @@ const sendMessageToChat = (chatId, message) => {
   }
 };
 
+const sendUpdatedMessageToChat = (chatId, message) => {
+  if (io) {
+    io.to(chatId).emit('message-updated', message);
+  }
+};
+
+const sendDeletedMessageToChat = (chatId, messageId) => {
+  if (io) {
+    io.to(chatId).emit('message-deleted', { _id: messageId, conversation: chatId });
+  }
+};
+
 // Broadcast to all users
 const broadcastToAll = (event, data) => {
   if (io) {
@@ -158,6 +170,8 @@ module.exports = {
   initializeSocket,
   sendNotification,
   sendMessageToChat,
+  sendUpdatedMessageToChat,
+  sendDeletedMessageToChat,
   broadcastToAll,
   getOnlineUsersCount,
   isUserOnline,

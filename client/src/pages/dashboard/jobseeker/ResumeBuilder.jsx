@@ -5,48 +5,19 @@ import { useState, useEffect } from 'react';
 import { 
   FiFileText, FiPlus, FiUpload, FiEdit2, FiDownload, 
   FiPrinter, FiInfo, FiTrash2, FiX, FiSearch, FiSave, FiPlusCircle,
-  FiArrowLeft, FiArrowRight, FiTrash, FiMail, FiPhone, FiMapPin, FiCheckCircle, FiTool, FiDatabase, FiCode, FiGlobe
+  FiArrowLeft, FiArrowRight, FiTrash, FiMail, FiPhone, FiMapPin, FiCheckCircle, FiTool, FiDatabase, FiCode, FiGlobe,
+  FiCloud, FiChevronDown, FiChevronUp, FiMoreHorizontal, FiRotateCcw, FiRotateCw, FiBookOpen, FiBriefcase, FiSmile, FiImage, FiType, FiLayers, FiUser, FiGrid, FiMenu
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { PhoneIcon, MailIcon, LocationIcon, GlobeIcon, DotIcon } from '../../../components/icons/ResumeIcons';
 import { updateProfile } from '../../../store/slices/authSlice';
-
-// Static Resume Templates Definition
-const TEMPLATES = [
-  {
-    id: 'general_ats',
-    name: 'GENERAL ATS',
-    image: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?q=80&w=300&auto=format&fit=crop',
-  },
-  {
-    id: 'fresh_man',
-    name: 'FRESH MAN',
-    image: 'https://images.unsplash.com/photo-1626379616459-b2ce1d9decbc?q=80&w=300&auto=format&fit=crop',
-  },
-  {
-    id: 'graphic',
-    name: 'GRAPHIC',
-    image: 'https://images.unsplash.com/photo-1590608897129-79da98d15969?q=80&w=300&auto=format&fit=crop',
-  },
-  {
-    id: 'james_mark',
-    name: 'JAMES MARK',
-    image: 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?q=80&w=300&auto=format&fit=crop',
-  },
-  {
-    id: 'mark_brown',
-    name: 'MARK BROWN',
-    image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=300&auto=format&fit=crop',
-  },
-  {
-    id: 'professional',
-    name: 'PROFESSIONAL',
-    image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=300&auto=format&fit=crop',
-  }
-];
-
-const TABS = ['Profile', 'Experience', 'Education', 'Projects', 'Skills', 'Summary', 'Interests', 'Photo'];
+import TemplateBadge from '../../../components/resume/templates/TemplateBadge';
+import TemplateSearch from '../../../components/resume/templates/TemplateSearch';
+import TemplateFilter from '../../../components/resume/templates/TemplateFilter';
+import TemplateToolbar from '../../../components/resume/templates/TemplateToolbar';
+import TemplateCard from '../../../components/resume/templates/TemplateCard';
+import { getTemplateDefinition, getTemplateDefinitions, getTemplateComponent, resolveTemplateId } from '../../../components/resume/templates/config';
 
 // Predefined suggestion examples for Experience
 const DUTY_EXAMPLES = [
@@ -54,6 +25,57 @@ const DUTY_EXAMPLES = [
   'Resolved conflicts and negotiated agreements between parties in order to reach win-win solutions to disagreements and clarify misunderstandings',
   'Presented metric reporting and [Timeframe] account reviews to [Type] team and clients',
   'Developed, updated and maintained database of existing and potential customers in [Software]'
+];
+
+const SKILL_SUGGESTION_POOL = [
+  'Communication',
+  'Teamwork',
+  'Problem Solving',
+  'Time Management',
+  'Adaptability',
+  'Leadership',
+  'Critical Thinking',
+  'Research',
+  'Organization',
+  'Creativity'
+];
+
+const TECHNICAL_SKILL_SUGGESTION_POOL = [
+  'JavaScript',
+  'React',
+  'Node.js',
+  'HTML/CSS',
+  'SQL',
+  'Python',
+  'Git',
+  'Docker',
+  'REST APIs',
+  'TypeScript'
+];
+
+const SOFT_SKILL_SUGGESTION_POOL = [
+  'Communication',
+  'Teamwork',
+  'Problem Solving',
+  'Time Management',
+  'Adaptability',
+  'Leadership',
+  'Critical Thinking',
+  'Organization',
+  'Creativity'
+];
+
+const LANGUAGE_SUGGESTION_POOL = [
+  'English',
+  'Spanish',
+  'Mandarin Chinese',
+  'French',
+  'German',
+  'Arabic',
+  'Portuguese',
+  'Hindi',
+  'Russian',
+  'Japanese'
 ];
 
 const ResumeBuilder = () => {
@@ -67,12 +89,99 @@ const ResumeBuilder = () => {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [newResumeTitle, setNewResumeTitle] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
+  const [expandedSections, setExpandedSections] = useState({
+    personal: true,
+    education: true,
+    employment: true,
+    skills: true,
+    languages: true,
+    hobbies: true
+  });
+  const [optionalFields, setOptionalFields] = useState({
+    dateOfBirth: false,
+    placeOfBirth: false,
+    driverLicense: false,
+    gender: false,
+    nationality: false,
+    civilStatus: false,
+    website: false,
+    linkedIn: false,
+    customField: false
+  });
+  const [isPhotoEditorOpen, setIsPhotoEditorOpen] = useState(false);
+  const [skillEditorIndex, setSkillEditorIndex] = useState(null);
+  const [languageEditorIndex, setLanguageEditorIndex] = useState(null);
+  const [technicalSkillSuggestions, setTechnicalSkillSuggestions] = useState(['JavaScript', 'React', 'Node.js', 'HTML/CSS', 'SQL']);
+  const [softSkillSuggestions, setSoftSkillSuggestions] = useState(['Communication', 'Teamwork', 'Problem Solving', 'Time Management', 'Adaptability']);
+  const [languageSuggestions, setLanguageSuggestions] = useState(['English', 'Spanish', 'Mandarin Chinese', 'French', 'German']);
+  const [isSkillsCollapsed, setIsSkillsCollapsed] = useState(false);
+  const [photoEditorSrc, setPhotoEditorSrc] = useState(null);
+  const [photoEditorFileName, setPhotoEditorFileName] = useState('');
+  const [photoEditorZoom, setPhotoEditorZoom] = useState(1);
+  const [photoEditorRotate, setPhotoEditorRotate] = useState(0);
+
+  const createInitialResume = (title, templateId = 'modern-ats') => ({
+    id: `resume_${Date.now()}`,
+    title: title || 'Untitled Resume',
+    score: 0,
+    status: 'draft',
+    template: templateId,
+    profile: {
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      gender: '',
+      dateOfBirth: '',
+      maritalStatus: '',
+      profession: '',
+      streetAddress: '',
+      city: '',
+      stateProvince: '',
+      nationality: '',
+      passportNumber: '',
+      phone: '',
+      email: '',
+      website: '',
+      linkedIn: '',
+      customField: ''
+    },
+    experience: {
+      jobTitle: '',
+      employer: '',
+      city: '',
+      state: '',
+      startDate: '',
+      endDate: '',
+      currentWork: false,
+      duties: ''
+    },
+    education: {
+      schoolName: '',
+      city: '',
+      state: '',
+      degree: '',
+      fieldOfStudy: '',
+      startDate: '',
+      endDate: '',
+      currentStudy: false
+    },
+    projects: [{ title: '', description: '' }],
+    skills: [{ name: '' }],
+    softSkills: [''],
+    languages: [{ name: '', level: 'Select', isDone: false }],
+    summary: { text: '' },
+    interests: { text: '' },
+    photo: null
+  });
 
   const handleDownloadPDF = (resume) => {
     const printWindow = window.open('', '_blank');
     const technicalSkills = (resume.skills || []).map(s => `<li>${s.name || ''}${s.level ? ` — ${s.level}` : ''}</li>`).join('');
     const softSkills = (resume.softSkills || []).filter(Boolean).map(skill => `<li>${skill}</li>`).join('');
-    const languages = (resume.languages || []).filter(Boolean).map(lang => `<li>${lang}</li>`).join('');
+const languages = (resume.languages || []).filter(Boolean).map(lang => {
+    if (typeof lang === 'object') return `${lang.name || ''}${lang.level && lang.level !== 'Select' ? ` — ${lang.level}` : ''}`.trim();
+    return lang;
+  }).filter(Boolean).map(lang => `<li>${lang}</li>`).join('');
     const projects = (resume.projects || []).filter(p => p.title || p.description).map((project) => `
         <div class="project-entry">
           <div class="project-title">${project.title || 'Project title'}</div>
@@ -130,7 +239,7 @@ const ResumeBuilder = () => {
             <div class="sidebar-header">
               ${resume.photo?.dataUrl ? `<img src="${resume.photo.dataUrl}" alt="Photo" class="avatar-circle" />` : `<div style="width:72px;height:72px;border-radius:9999px;background:rgba(255,255,255,0.06);border:3px solid rgba(255,255,255,0.08)"></div>`}
               <div>
-                <h2>${resume.profile?.firstName || ''} ${resume.profile?.middelName || ''} ${resume.profile?.lastName || ''}</h2>
+                 <h2>${[resume.profile?.firstName, resume.profile?.middleName, resume.profile?.lastName].filter(Boolean).join(' ') || ''}</h2>
                 <p class="subtitle">${resume.profile?.profession || 'Professional Title'}</p>
               </div>
             </div>
@@ -170,7 +279,7 @@ const ResumeBuilder = () => {
           <div class="content">
             <div class="topbar">
               <div>
-                <h1 class="topbar-title">${resume.profile?.firstName || ''} ${resume.profile?.middelName || ''} ${resume.profile?.lastName || ''}</h1>
+                <h1 class="topbar-title">${[resume.profile?.firstName, resume.profile?.middleName, resume.profile?.lastName].filter(Boolean).join(' ') || ''}</h1>
                 <p class="topbar-subtitle">${resume.profile?.profession || 'Professional Summary Subtitle'}</p>
               </div>
               <button class="button-print" onclick="window.print()">Print / Save PDF</button>
@@ -217,9 +326,14 @@ const ResumeBuilder = () => {
     printWindow.document.write(content);
     printWindow.document.close();
   };
+  const TABS = ['Profile', 'Experience', 'Education', 'Projects', 'Skills', 'Languages', 'Summary'];
   const [activeTab, setActiveTab] = useState('Profile');
   const [searchQuery, setSearchQuery] = useState('');
   const [exampleSearch, setExampleSearch] = useState('');
+  const [templateFilter, setTemplateFilter] = useState('all');
+  const [templateSort, setTemplateSort] = useState('popular');
+  const [page, setPage] = useState(1);
+  const templates = getTemplateDefinitions();
 
   // Load resumes from storage scoped to the current authenticated user.
   useEffect(() => {
@@ -270,80 +384,38 @@ const ResumeBuilder = () => {
       toast.error('Please enter a resume title');
       return;
     }
-    setIsTitleModalOpen(false);
-    setIsTemplateModalOpen(true);
-  };
 
-  const handleSelectTemplate = (templateId) => {
-    if (activeResume) {
-      const updated = resumes.map((resume) =>
-        resume.id === activeResume.id ? { ...resume, template: templateId } : resume
-      );
-      saveToStorage(updated);
-      setIsTemplateModalOpen(false);
-      setView('editor');
-      setActiveTab('Profile');
-      toast.success(`Template ${templateId} selected`);
-      return;
-    }
-
-    const newResume = {
-      id: `resume_${Date.now()}`,
-      title: newResumeTitle,
-      score: 10,
-      template: templateId,
-      profile: {
-        firstName: '',
-        middelName: '',
-        lastName: '',
-        gender: 'Select',
-        dateOfBirth: '',
-        maritalStatus: 'Select',
-        profession: '',
-        streetAddress: '',
-        city: '',
-        stateProvince: '',
-        nationality: '',
-        passportNumber: '',
-        phone: '',
-        email: ''
-      },
-      experience: {
-        jobTitle: '',
-        employer: '',
-        city: '',
-        state: '',
-        startDate: '',
-        endDate: '',
-        currentWork: false,
-        duties: ''
-      },
-      education: {
-        schoolName: '',
-        city: '',
-        state: '',
-        degree: 'Select',
-        fieldOfStudy: '',
-        startDate: '',
-        endDate: '',
-        currentStudy: false
-      },
-      projects: [{ title: '', description: '' }],
-      skills: [{ name: '', level: 'Select' }],
-      softSkills: ['', '', ''],
-      languages: ['', ''],
-      summary: { text: '' },
-      interests: { text: '' },
-      photo: null
-    };
-
+    const newResume = createInitialResume(newResumeTitle.trim(), 'modern-ats');
     const updated = [...resumes, newResume];
     saveToStorage(updated);
-    
+
     setActiveResumeId(newResume.id);
+    setIsTitleModalOpen(false);
     setIsTemplateModalOpen(false);
     setView('editor');
     setActiveTab('Profile');
+    setSaveMessage('');
+    toast.success('CV created successfully');
+  };
+
+  const handleSelectTemplate = (templateId) => {
+    const resolvedTemplateId = resolveTemplateId(templateId);
+    if (activeResume) {
+      const updated = resumes.map((resume) =>
+        resume.id === activeResume.id ? { ...resume, template: resolvedTemplateId } : resume
+      );
+      saveToStorage(updated);
+      setIsTemplateModalOpen(false);
+      toast.success(`Template ${resolvedTemplateId} selected`);
+      return;
+    }
+
+    const newResume = createInitialResume(newResumeTitle || 'Untitled Resume', resolvedTemplateId);
+    const updated = [...resumes, newResume];
+    saveToStorage(updated);
+
+    setActiveResumeId(newResume.id);
+    setIsTemplateModalOpen(false);
     toast.success(`Template ${templateId} selected`);
   };
 
@@ -404,6 +476,15 @@ const ResumeBuilder = () => {
     setSaveMessage('');
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
+        if (section === 'skills' && field === 'value') {
+          return { ...r, skills: value };
+        }
+        if (section === 'softSkills' && field === 'value') {
+          return { ...r, softSkills: value };
+        }
+        if (section === 'languages' && field === 'value') {
+          return { ...r, languages: value };
+        }
         return {
           ...r,
           [section]: {
@@ -417,29 +498,86 @@ const ResumeBuilder = () => {
     saveToStorage(updated);
   };
 
+  const openPhotoEditor = (sourceUrl, fileName) => {
+    setPhotoEditorSrc(sourceUrl);
+    setPhotoEditorFileName(fileName || 'profile-photo.png');
+    setPhotoEditorZoom(1);
+    setPhotoEditorRotate(0);
+    setIsPhotoEditorOpen(true);
+  };
+
   const handlePhotoUpload = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = () => {
-      setSaveMessage('');
+      openPhotoEditor(reader.result, file.name);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCancelPhotoEditor = () => {
+    setIsPhotoEditorOpen(false);
+    setPhotoEditorSrc(null);
+    setPhotoEditorFileName('');
+    setPhotoEditorZoom(1);
+    setPhotoEditorRotate(0);
+  };
+
+  const handleConfirmPhotoEditor = () => {
+    if (!photoEditorSrc) {
+      handleCancelPhotoEditor();
+      return;
+    }
+
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => {
+      const sourceWidth = image.width * photoEditorZoom;
+      const sourceHeight = image.height * photoEditorZoom;
+      const angle = (photoEditorRotate * Math.PI) / 180;
+      const cos = Math.abs(Math.cos(angle));
+      const sin = Math.abs(Math.sin(angle));
+      const canvasWidth = Math.round(sourceWidth * cos + sourceHeight * sin);
+      const canvasHeight = Math.round(sourceWidth * sin + sourceHeight * cos);
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      const ctx = canvas.getContext('2d');
+
+      ctx.translate(canvasWidth / 2, canvasHeight / 2);
+      ctx.rotate(angle);
+      ctx.drawImage(image, -sourceWidth / 2, -sourceHeight / 2, sourceWidth, sourceHeight);
+
+      const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
       const updated = resumes.map(r => {
         if (r.id === activeResumeId) {
           return {
             ...r,
             photo: {
-              fileName: file.name,
-              dataUrl: reader.result
+              fileName: photoEditorFileName,
+              dataUrl: croppedDataUrl
             }
           };
         }
         return r;
       });
+
       saveToStorage(updated);
-      toast.success('Photo uploaded');
+      setIsPhotoEditorOpen(false);
+      setPhotoEditorSrc(null);
+      setPhotoEditorFileName('');
+      setPhotoEditorZoom(1);
+      setPhotoEditorRotate(0);
+      toast.success('Photo updated');
     };
-    reader.readAsDataURL(file);
+    image.src = photoEditorSrc;
+  };
+
+  const openPhotoEditorFromCurrentPhoto = () => {
+    if (!activeResume?.photo?.dataUrl) return;
+    openPhotoEditor(activeResume.photo.dataUrl, activeResume.photo.fileName || 'profile-photo.png');
   };
 
   // Skills dynamic list update
@@ -458,11 +596,124 @@ const ResumeBuilder = () => {
   const handleAddSkill = () => {
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
-        return { ...r, skills: [...(r.skills || []), { name: '', level: 'Select' }] };
+        const newSkills = [...(r.skills || []), { name: '', level: 'Select', isDone: false }];
+        return { ...r, skills: newSkills };
       }
       return r;
     });
     saveToStorage(updated);
+    setSkillEditorIndex((activeResume?.skills || []).length);
+  };
+
+  const handleToggleSkillDone = (index) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const newSkills = [...(r.skills || [])];
+        newSkills[index] = { ...newSkills[index], isDone: !newSkills[index]?.isDone };
+        return { ...r, skills: newSkills };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleSelectSuggestedSkill = (skillName) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const normalized = skillName.trim();
+        const existing = (r.skills || []).some((skill) => skill.name?.toLowerCase() === normalized.toLowerCase());
+        if (existing) return r;
+        return { ...r, skills: [...(r.skills || []), { name: normalized, level: 'Select', isDone: false }] };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+    setSkillEditorIndex((activeResume?.skills || []).length);
+  };
+
+  const handleGenerateTechnicalSkillSuggestions = () => {
+    const nextSuggestions = TECHNICAL_SKILL_SUGGESTION_POOL
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 5);
+    setTechnicalSkillSuggestions(nextSuggestions);
+  };
+
+  const handleGenerateSoftSkillSuggestions = () => {
+    const nextSuggestions = SOFT_SKILL_SUGGESTION_POOL
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 5);
+    setSoftSkillSuggestions(nextSuggestions);
+  };
+
+  const handleSelectSuggestedSoftSkill = (skillName) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const normalized = skillName.trim();
+        const existing = (r.softSkills || []).some((skill) => skill?.toLowerCase() === normalized.toLowerCase());
+        if (existing) return r;
+        return { ...r, softSkills: [...(r.softSkills || []), normalized] };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleLanguageInputChange = (index, field, value) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const newLanguages = [...(r.languages || [])];
+        const current = newLanguages[index] || { name: '', level: 'Select', isDone: false };
+        newLanguages[index] = { ...current, [field]: value };
+        return { ...r, languages: newLanguages };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleAddLanguage = () => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        return { ...r, languages: [...(r.languages || []), { name: '', level: 'Select', isDone: false }] };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+    setLanguageEditorIndex((activeResume?.languages || []).length);
+  };
+
+  const handleToggleLanguageDone = (index) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const newLanguages = [...(r.languages || [])];
+        const current = newLanguages[index] || { name: '', level: 'Select', isDone: false };
+        newLanguages[index] = { ...current, isDone: !current.isDone };
+        return { ...r, languages: newLanguages };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleSelectSuggestedLanguage = (languageName) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const normalized = languageName.trim();
+        const existing = (r.languages || []).some((language) => (language?.name || language || '').toLowerCase() === normalized.toLowerCase());
+        if (existing) return r;
+        return { ...r, languages: [...(r.languages || []), { name: normalized, level: 'Select', isDone: false }] };
+      }
+      return r;
+    });
+    saveToStorage(updated);
+    setLanguageEditorIndex((activeResume?.languages || []).length);
+  };
+
+  const handleGenerateLanguageSuggestions = () => {
+    const nextSuggestions = LANGUAGE_SUGGESTION_POOL
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 5);
+    setLanguageSuggestions(nextSuggestions);
   };
 
   const handleSoftSkillChange = (index, value) => {
@@ -477,32 +728,10 @@ const ResumeBuilder = () => {
     saveToStorage(updated);
   };
 
-  const handleLanguageChange = (index, value) => {
-    const updated = resumes.map(r => {
-      if (r.id === activeResumeId) {
-        const newLanguages = [...(r.languages || [])];
-        newLanguages[index] = value;
-        return { ...r, languages: newLanguages };
-      }
-      return r;
-    });
-    saveToStorage(updated);
-  };
-
   const handleAddSoftSkill = () => {
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
         return { ...r, softSkills: [...(r.softSkills || []), ''] };
-      }
-      return r;
-    });
-    saveToStorage(updated);
-  };
-
-  const handleAddLanguage = () => {
-    const updated = resumes.map(r => {
-      if (r.id === activeResumeId) {
-        return { ...r, languages: [...(r.languages || []), ''] };
       }
       return r;
     });
@@ -652,10 +881,30 @@ const ResumeBuilder = () => {
     }
   };
 
-  const filteredTemplates = TEMPLATES.filter(t => 
-    t.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTemplates = templates.filter((template) => {
+    const query = searchQuery.toLowerCase();
+    const matchesQuery = !query || template.name.toLowerCase().includes(query) || template.description.toLowerCase().includes(query);
+    const matchesFilter = templateFilter === 'all' ||
+      template.category === templateFilter ||
+      template.style === templateFilter ||
+      (templateFilter === 'academic' && template.bestFor?.toLowerCase().includes('academic')) ||
+      (templateFilter === 'ats' && template.atsReady);
+    return matchesQuery && matchesFilter;
+  }).sort((a, b) => {
+    switch (templateSort) {
+      case 'newest':
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      case 'ats':
+        return b.atsScore - a.atsScore;
+      case 'alphabetical':
+        return a.name.localeCompare(b.name);
+      case 'popular':
+      default:
+        return (b.popularity || 0) - (a.popularity || 0);
+    }
+  });
 
+  const visibleTemplates = filteredTemplates.slice(0, page * 6);
   // Helper: categorize technical skills into named groups for display
   const categorizeSkills = (skills = []) => {
     const groups = {
@@ -716,9 +965,165 @@ const ResumeBuilder = () => {
     }).join('') || '<div style="color:#f0fff5">No technical skills listed.</div>';
   };
 
+  const renderLivePreview = (resume) => {
+    // If a template is selected on the resume, render its component directly for 1:1 preview
+    const templateId = resolveTemplateId(resume?.template || 'modern-ats');
+    const TemplateComponent = getTemplateComponent(templateId);
+    if (TemplateComponent) {
+      const templateDefinition = getTemplateDefinition(templateId);
+      const accentColor = templateDefinition?.accent || 'blue';
+      return (
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="p-3">
+            <TemplateComponent resume={resume} color={accentColor} />
+          </div>
+        </div>
+      );
+    }
+
+    const fullName = [resume.profile?.firstName, resume.profile?.middleName, resume.profile?.lastName].filter(Boolean).join(' ');
+    const profession = resume.profile?.profession?.trim();
+    const hasSummary = Boolean(resume.summary?.text?.trim());
+    const hasExperience = Boolean(resume.experience?.jobTitle?.trim() || resume.experience?.employer?.trim());
+    const hasEducation = Boolean(resume.education?.degree?.trim() || resume.education?.fieldOfStudy?.trim());
+    const hasContact = Boolean(resume.profile?.email?.trim() || resume.profile?.phone?.trim());
+    const hasSkills = (resume.skills || []).some(skill => skill?.name?.trim());
+    const hasSoftSkills = (resume.softSkills || []).some(skill => skill?.trim());
+    const hasLanguages = (resume.languages || []).some((language) => {
+      if (!language) return false;
+      return typeof language === 'object'
+        ? Boolean(language.name?.trim())
+        : Boolean(String(language).trim());
+    });
+    const hasInterests = Boolean(resume.interests?.text?.trim());
+    const hasPhoto = Boolean(resume.photo?.dataUrl);
+
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="grid min-h-[320px] md:grid-cols-[280px_1fr]">
+          <div className="flex flex-col justify-between bg-sky-700 p-6 text-white">
+            <div>
+              <h3 className="text-2xl font-bold">Resume</h3>
+            </div>
+            <div className="flex justify-center">
+              {hasPhoto ? (
+                <div className="h-40 w-40 overflow-hidden rounded-full border-4 border-white bg-white">
+                  <img src={resume.photo.dataUrl} alt="Profile" className="h-full w-full object-cover" />
+                </div>
+              ) : (
+                <div className="h-40 w-40 rounded-full border-4 border-white/20 bg-white/20" />
+              )}
+            </div>
+          </div>
+
+          <div className="p-6">
+            {(fullName || profession) && (
+              <div className="mb-6 border-b border-gray-200 pb-4">
+                {fullName && <h3 className="text-2xl font-bold text-gray-900">{fullName}</h3>}
+                {profession && <p className="text-sm text-primary-600 mt-1">{profession}</p>}
+              </div>
+            )}
+
+            <div className="grid gap-4 md:grid-cols-[1fr_0.8fr]">
+              <div className="space-y-4">
+                {hasSummary && (
+                  <section>
+                    <h4 className="text-sm font-semibold uppercase text-gray-600">Summary</h4>
+                    <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{resume.summary.text}</p>
+                  </section>
+                )}
+
+                {hasExperience && (
+                  <section>
+                    <h4 className="text-sm font-semibold uppercase text-gray-600">Experience</h4>
+                    {resume.experience?.jobTitle && <p className="mt-2 font-semibold">{resume.experience.jobTitle}</p>}
+                    {resume.experience?.employer && <p className="text-sm text-gray-600">{resume.experience.employer}</p>}
+                  </section>
+                )}
+
+                {hasEducation && (
+                  <section>
+                    <h4 className="text-sm font-semibold uppercase text-gray-600">Education</h4>
+                    <p className="mt-2 text-sm text-gray-700">
+                      {resume.education?.degree ? resume.education.degree : ''}
+                      {resume.education?.degree && resume.education?.fieldOfStudy ? ' in ' : ''}
+                      {resume.education?.fieldOfStudy || ''}
+                    </p>
+                  </section>
+                )}
+              </div>
+
+              {(hasContact || hasSkills || hasInterests) && (
+                <div className="space-y-4 rounded-lg bg-gray-50 p-4">
+                  {hasContact && (
+                    <>
+                      {resume.profile?.email && <p className="text-sm text-gray-700"><span className="font-semibold">Email:</span> {resume.profile.email}</p>}
+                      {resume.profile?.phone && <p className="text-sm text-gray-700"><span className="font-semibold">Phone:</span> {resume.profile.phone}</p>}
+                    </>
+                  )}
+
+                  {hasSkills && (
+                    <section>
+                      <h4 className="text-sm font-semibold uppercase text-gray-600">Technical Skills</h4>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {(resume.skills || []).filter(skill => skill?.name?.trim()).map((skill, idx) => (
+                          <span key={idx} className="rounded-full bg-gray-200 px-3 py-1 text-xs text-gray-700">{skill.name}</span>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {hasSoftSkills && (
+                    <section>
+                      <h4 className="text-sm font-semibold uppercase text-gray-600">Soft Skills</h4>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {(resume.softSkills || []).filter(skill => skill?.trim()).map((skill, idx) => (
+                          <span key={idx} className="rounded-full bg-gray-200 px-3 py-1 text-xs text-gray-700">{skill}</span>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {hasLanguages && (
+                    <section>
+                      <h4 className="text-sm font-semibold uppercase text-gray-600">Languages</h4>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {(resume.languages || [])
+                          .filter((language) => {
+                            if (!language) return false;
+                            if (typeof language === 'object') return Boolean(language.name?.trim());
+                            return Boolean(String(language).trim());
+                          })
+                          .map((language, idx) => {
+                            const label = typeof language === 'object'
+                              ? `${language.name || ''}${language.level && language.level !== 'Select' ? ` — ${language.level}` : ''}`.trim()
+                              : String(language);
+                            return (
+                              <span key={idx} className="rounded-full bg-gray-200 px-3 py-1 text-xs text-gray-700">{label}</span>
+                            );
+                          })}
+                      </div>
+                    </section>
+                  )}
+
+                  {hasInterests && (
+                    <section>
+                      <h4 className="text-sm font-semibold uppercase text-gray-600">Interests</h4>
+                      <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{resume.interests.text}</p>
+                    </section>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderTemplatePreview = (resume) => {
     const templateId = resume?.template || 'general_ats';
-    const fullName = `${resume.profile?.firstName || ''} ${resume.profile?.middelName || ''} ${resume.profile?.lastName || ''}`.trim() || 'Your Name';
+    const fullName = [resume.profile?.firstName, resume.profile?.middleName, resume.profile?.lastName].filter(Boolean).join(' ');
 
     if (templateId === 'fresh_man') {
       return (
@@ -867,7 +1272,7 @@ const ResumeBuilder = () => {
                     <div className="w-20 h-20 rounded-full bg-white/10 border-2 border-white/10" />
                   )}
                   <div>
-                    <h4 className="text-lg font-bold">{resume.profile?.firstName || ''} {resume.profile?.middelName || ''} {resume.profile?.lastName || ''}</h4>
+                    <h4 className="text-lg font-bold">{fullName}</h4>
                     <p className="text-sm mt-1">{resume.profile?.profession || ''}</p>
                   </div>
                 </div>
@@ -930,44 +1335,80 @@ const ResumeBuilder = () => {
       );
     }
 
+    const hasSummary = Boolean(resume.summary?.text?.trim());
+    const hasExperience = Boolean(resume.experience?.jobTitle?.trim() || resume.experience?.employer?.trim());
+    const hasEducation = Boolean(resume.education?.degree?.trim() || resume.education?.fieldOfStudy?.trim());
+    const hasContact = Boolean(resume.profile?.email?.trim() || resume.profile?.phone?.trim());
+    const hasSkills = (resume.skills || []).some(skill => skill?.name?.trim());
+    const hasInterests = Boolean(resume.interests?.text?.trim());
+    const profession = resume.profile?.profession?.trim();
+
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="border-b pb-4">
-          <h3 className="text-2xl font-bold text-gray-900">{fullName}</h3>
-          <p className="text-sm text-primary-600 mt-1">{resume.profile?.profession || 'Your Profession'}</p>
-        </div>
+        {(fullName || profession) && (
+          <div className="border-b pb-4">
+            <h3 className="text-2xl font-bold text-gray-900">{fullName || ''}</h3>
+            {profession && <p className="text-sm text-primary-600 mt-1">{profession}</p>}
+          </div>
+        )}
+
         <div className="mt-6 grid gap-4 md:grid-cols-[1fr_0.8fr]">
           <div className="space-y-4">
-            <section>
-              <h4 className="text-sm font-semibold uppercase text-gray-600">Summary</h4>
-              <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{resume.summary?.text || 'Add a professional summary.'}</p>
-            </section>
-            <section>
-              <h4 className="text-sm font-semibold uppercase text-gray-600">Experience</h4>
-              <p className="mt-2 font-semibold">{resume.experience?.jobTitle || 'Job Title'}</p>
-              <p className="text-sm text-gray-600">{resume.experience?.employer || 'Employer'}</p>
-            </section>
-            <section>
-              <h4 className="text-sm font-semibold uppercase text-gray-600">Education</h4>
-              <p className="mt-2 text-sm text-gray-700">{resume.education?.degree || 'Degree'} in {resume.education?.fieldOfStudy || 'Field of Study'}</p>
-            </section>
+            {hasSummary && (
+              <section>
+                <h4 className="text-sm font-semibold uppercase text-gray-600">Summary</h4>
+                <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{resume.summary.text}</p>
+              </section>
+            )}
+
+            {hasExperience && (
+              <section>
+                <h4 className="text-sm font-semibold uppercase text-gray-600">Experience</h4>
+                {resume.experience?.jobTitle && <p className="mt-2 font-semibold">{resume.experience.jobTitle}</p>}
+                {resume.experience?.employer && <p className="text-sm text-gray-600">{resume.experience.employer}</p>}
+              </section>
+            )}
+
+            {hasEducation && (
+              <section>
+                <h4 className="text-sm font-semibold uppercase text-gray-600">Education</h4>
+                <p className="mt-2 text-sm text-gray-700">
+                  {resume.education?.degree ? resume.education.degree : ''}
+                  {resume.education?.degree && resume.education?.fieldOfStudy ? ' in ' : ''}
+                  {resume.education?.fieldOfStudy || ''}
+                </p>
+              </section>
+            )}
           </div>
-          <div className="space-y-4 rounded-lg bg-gray-50 p-4">
-            <p className="text-sm text-gray-700"><span className="font-semibold">Email:</span> {resume.profile?.email || 'N/A'}</p>
-            <p className="text-sm text-gray-700"><span className="font-semibold">Phone:</span> {resume.profile?.phone || 'N/A'}</p>
-            <section>
-              <h4 className="text-sm font-semibold uppercase text-gray-600">Skills</h4>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(resume.skills || []).filter(Boolean).map((skill, idx) => (
-                  <span key={idx} className="rounded-full bg-gray-200 px-3 py-1 text-xs text-gray-700">{skill.name || 'Skill'}</span>
-                ))}
-              </div>
-            </section>
-            <section>
-              <h4 className="text-sm font-semibold uppercase text-gray-600">Interests</h4>
-              <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{resume.interests?.text || 'No interests added yet.'}</p>
-            </section>
-          </div>
+
+          {(hasContact || hasSkills || hasInterests) && (
+            <div className="space-y-4 rounded-lg bg-gray-50 p-4">
+              {hasContact && (
+                <>
+                  {resume.profile?.email && <p className="text-sm text-gray-700"><span className="font-semibold">Email:</span> {resume.profile.email}</p>}
+                  {resume.profile?.phone && <p className="text-sm text-gray-700"><span className="font-semibold">Phone:</span> {resume.profile.phone}</p>}
+                </>
+              )}
+
+              {hasSkills && (
+                <section>
+                  <h4 className="text-sm font-semibold uppercase text-gray-600">Skills</h4>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {(resume.skills || []).filter(skill => skill?.name?.trim()).map((skill, idx) => (
+                      <span key={idx} className="rounded-full bg-gray-200 px-3 py-1 text-xs text-gray-700">{skill.name}</span>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {hasInterests && (
+                <section>
+                  <h4 className="text-sm font-semibold uppercase text-gray-600">Interests</h4>
+                  <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{resume.interests.text}</p>
+                </section>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -983,12 +1424,10 @@ const ResumeBuilder = () => {
                 💡 PRO TIP: <span className="font-normal">It's important to <span className="font-semibold underline">create a custom resume</span> tailored to each job application to increase your chances of success!</span>
               </p>
             </div>
-            <button className="bg-white/20 hover:bg-white/30 text-white font-medium text-xs py-1.5 px-3 rounded-full transition-all shrink-0 ml-4">
+            <div className="bg-white/20 hover:bg-white/30 text-white font-medium text-xs py-1.5 px-3 rounded-full transition-all shrink-0 ml-4 flex items-center gap-2">
               Crafts
-            </button>
+            </div>
           </div>
-
-          {/* My Saved CVs Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -1024,9 +1463,9 @@ const ResumeBuilder = () => {
                     </button>
                   </div>
                 </div>
-              ) : (
-                resumes.map((resume) => (
-              <div key={resume.id} className="card p-5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-4">
+                ) : (
+                  resumes.map((resume) => (
+                    <div key={resume.id} className="card p-5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-4">
                 {/* Resume Structure Thumbnail */}
                 <div className="w-24 h-32 rounded border bg-gray-50 dark:bg-gray-700 flex items-center justify-center shrink-0 relative overflow-hidden shadow-inner">
                   {renderCVStructure(resume.template)}
@@ -1141,7 +1580,9 @@ const ResumeBuilder = () => {
             </div>
 
             <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-6 bg-gray-50 dark:bg-gray-900/40">
-              {renderTemplatePreview(activeResume)}
+              <div className="resume-preview-scaled">
+                {renderLivePreview(activeResume)}
+              </div>
             </div>
           </div>
         </div>
@@ -1150,17 +1591,16 @@ const ResumeBuilder = () => {
       {/* Resume Form Editor */}
       {view === 'editor' && activeResume && (
         <div className="space-y-6 animate-slide-up">
-          {/* Tabbed Menu Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b dark:border-gray-700 pb-2">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-2 dark:border-gray-700">
             <div className="flex flex-wrap gap-2">
               {TABS.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
-                    activeTab === tab 
-                      ? 'bg-indigo-600 text-white' 
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                    activeTab === tab
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'
                   }`}
                 >
                   {tab}
@@ -1168,215 +1608,311 @@ const ResumeBuilder = () => {
               ))}
             </div>
 
-            {/* Extra Section buttons */}
             <div className="flex gap-2">
-              <button 
+              <button
                 type="button"
                 onClick={() => toast.success('Section addition prompt coming soon')}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                className="flex items-center gap-1.5 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white transition-all shadow-sm hover:bg-red-600"
               >
                 <FiPlusCircle /> Add Section
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={() => toast.success('AI Resume optimization activated')}
-                className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                className="flex items-center gap-1.5 rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-white transition-all shadow-sm hover:bg-gray-900"
               >
                 🧠 Ask AI
               </button>
             </div>
           </div>
 
-          {/* Form Content card */}
-          <div className="card p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-            
-            {/* PROFILE TAB */}
+          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-6">
+              <div className="card border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
             {activeTab === 'Profile' && (
-              <div className="space-y-6">
-                <div className="bg-sky-500 text-white rounded-xl p-4 shadow-sm">
-                  <p className="text-sm font-medium flex items-center gap-2">
-                    💡 What's the best way for Employers to contact you? <span className="font-normal">We suggest including an email and phone number.</span>
-                  </p>
-                </div>
+              <div className="space-y-5">
+                <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedSections((current) => ({ ...current, personal: !current.personal }))}
+                    className="flex w-full items-center justify-between rounded-[16px] border border-slate-200 bg-slate-50 px-4 py-3"
+                  >
+                    <span className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                      <FiUser className="h-4 w-4 text-sky-600" /> Personal details
+                    </span>
+                    <FiChevronDown className={`h-4 w-4 text-slate-500 transition ${expandedSections.personal ? 'rotate-180' : ''}`} />
+                  </button>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">First Name</label>
-                    <input 
-                      type="text" 
-                      value={activeResume.profile?.firstName || ''}
-                      onChange={(e) => handleFieldChange('profile', 'firstName', e.target.value)}
-                      className="input"
-                    />
-                  </div>
+                  {expandedSections.personal && (
+                    <div className="mt-5 space-y-5">
+                      <div className="rounded-[16px] border border-slate-200 bg-slate-50 p-4">
+                        <div className="grid gap-4 md:grid-cols-[auto_1fr] md:items-center">
+                          <label className="group relative flex h-40 w-40 cursor-pointer items-center justify-center overflow-hidden rounded-[24px] border border-white bg-slate-100 transition hover:border-slate-300 hover:bg-slate-50">
+                            <input type="file" accept="image/*" onChange={handlePhotoUpload} className="sr-only" />
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Middel Name (Optional)</label>
-                    <input 
-                      type="text" 
-                      value={activeResume.profile?.middelName || ''}
-                      onChange={(e) => handleFieldChange('profile', 'middelName', e.target.value)}
-                      className="input"
-                    />
-                  </div>
+                            {activeResume.photo?.dataUrl ? (
+                              <img src={activeResume.photo.dataUrl} alt="Profile" className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="flex flex-col items-center justify-center gap-3 text-center text-slate-500">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm text-slate-400">
+                                  <FiImage className="h-6 w-6" />
+                                </div>
+                                <p className="text-sm font-semibold text-slate-900">Photo</p>
+                              </div>
+                            )}
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Last Name</label>
-                    <input 
-                      type="text" 
-                      value={activeResume.profile?.lastName || ''}
-                      onChange={(e) => handleFieldChange('profile', 'lastName', e.target.value)}
-                      className="input"
-                    />
-                  </div>
+                            <div className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-xs text-slate-400">
+                              {activeResume.photo?.dataUrl ? 'Change photo' : ''}
+                            </div>
+                          </label>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Gender (Optional)</label>
-                    <select
-                      value={activeResume.profile?.gender || 'Select'}
-                      onChange={(e) => handleFieldChange('profile', 'gender', e.target.value)}
-                      className="select"
-                    >
-                      <option value="Select">Select</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">Profile Picture</p>
+                            </div>
+                            <p className="text-sm font-medium text-slate-600">{activeResume.photo?.fileName || 'No photo selected'}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">First name</label>
+                          <input
+                            type="text"
+                            value={activeResume.profile?.firstName || ''}
+                            onChange={(e) => handleFieldChange('profile', 'firstName', e.target.value)}
+                            className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">Middle name</label>
+                          <input
+                            type="text"
+                            value={activeResume.profile?.middleName || ''}
+                            onChange={(e) => handleFieldChange('profile', 'middleName', e.target.value)}
+                            className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">Last name</label>
+                          <input
+                            type="text"
+                            value={activeResume.profile?.lastName || ''}
+                            onChange={(e) => handleFieldChange('profile', 'lastName', e.target.value)}
+                            className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                          />
+                        </div>
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Date of Birth (Optional)</label>
-                    <input 
-                      type="date" 
-                      value={activeResume.profile?.dateOfBirth || ''}
-                      onChange={(e) => handleFieldChange('profile', 'dateOfBirth', e.target.value)}
-                      className="input"
-                    />
-                  </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="md:col-span-2">
+                          <label className="mb-2 block text-sm font-medium text-slate-700">Desired job position</label>
+                          <input
+                            type="text"
+                            value={activeResume.profile?.profession || ''}
+                            onChange={(e) => handleFieldChange('profile', 'profession', e.target.value)}
+                            className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="mb-2 block text-sm font-medium text-slate-700">Professional summary</label>
+                          <textarea
+                            rows="4"
+                            value={activeResume.summary?.text || ''}
+                            onChange={(e) => handleFieldChange('summary', 'text', e.target.value)}
+                            className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">Email address</label>
+                          <input
+                            type="email"
+                            value={activeResume.profile?.email || ''}
+                            onChange={(e) => handleFieldChange('profile', 'email', e.target.value)}
+                            className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">Phone number</label>
+                          <input
+                            type="tel"
+                            value={activeResume.profile?.phone || ''}
+                            onChange={(e) => handleFieldChange('profile', 'phone', e.target.value)}
+                            className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">Address</label>
+                          <input
+                            type="text"
+                            value={activeResume.profile?.streetAddress || ''}
+                            onChange={(e) => handleFieldChange('profile', 'streetAddress', e.target.value)}
+                            className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">City</label>
+                          <input
+                            type="text"
+                            value={activeResume.profile?.city || ''}
+                            onChange={(e) => handleFieldChange('profile', 'city', e.target.value)}
+                            className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                          />
+                        </div>
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Marital Status (Optional)</label>
-                    <select
-                      value={activeResume.profile?.maritalStatus || 'Select'}
-                      onChange={(e) => handleFieldChange('profile', 'maritalStatus', e.target.value)}
-                      className="select"
-                    >
-                      <option value="Select">Select</option>
-                      <option value="Single">Single</option>
-                      <option value="Married">Married</option>
-                      <option value="Divorced">Divorced</option>
-                      <option value="Widowed">Widowed</option>
-                    </select>
-                  </div>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { key: 'dateOfBirth', label: 'Date of birth' },
+                          { key: 'placeOfBirth', label: 'Place of birth' },
+                          { key: 'driverLicense', label: "Driver's license" },
+                          { key: 'gender', label: 'Gender' },
+                          { key: 'nationality', label: 'Nationality' },
+                          { key: 'civilStatus', label: 'Civil status' },
+                          { key: 'website', label: 'Website' },
+                          { key: 'linkedIn', label: 'LinkedIn' },
+                          { key: 'customField', label: 'Custom field' }
+                        ].map((field) => {
+                          const active = optionalFields[field.key] || Boolean(activeResume.profile?.[field.key]);
+                          return (
+                            <button
+                              key={field.key}
+                              type="button"
+                              onClick={() => setOptionalFields((current) => ({ ...current, [field.key]: !current[field.key] }))}
+                              className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                                active
+                                  ? 'border-sky-500 bg-sky-50 text-sky-700'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:border-sky-300'
+                              }`}
+                            >
+                              + {field.label}
+                            </button>
+                          );
+                        })}
+                      </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Profession</label>
-                    <input 
-                      type="text" 
-                      placeholder="eg. Sr. Accountant"
-                      value={activeResume.profile?.profession || ''}
-                      onChange={(e) => handleFieldChange('profile', 'profession', e.target.value)}
-                      className="input"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Street Address</label>
-                    <input 
-                      type="text" 
-                      value={activeResume.profile?.streetAddress || ''}
-                      onChange={(e) => handleFieldChange('profile', 'streetAddress', e.target.value)}
-                      className="input"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">City</label>
-                    <input 
-                      type="text" 
-                      value={activeResume.profile?.city || ''}
-                      onChange={(e) => handleFieldChange('profile', 'city', e.target.value)}
-                      className="input"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">State/Province</label>
-                    <input 
-                      type="text" 
-                      value={activeResume.profile?.stateProvince || ''}
-                      onChange={(e) => handleFieldChange('profile', 'stateProvince', e.target.value)}
-                      className="input"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Nationality (Optional)</label>
-                    <select
-                      value={activeResume.profile?.nationality || ''}
-                      onChange={(e) => handleFieldChange('profile', 'nationality', e.target.value)}
-                      className="select"
-                    >
-                      <option value="">Select Country</option>
-                      <option value="Ethiopia">Ethiopia</option>
-                      <option value="Kenya">Kenya</option>
-                      <option value="Sudan">Sudan</option>
-                      <option value="Eritrea">Eritrea</option>
-                      <option value="Somalia">Somalia</option>
-                      <option value="United States">United States</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Passport number (Optional)</label>
-                    <input 
-                      type="text" 
-                      value={activeResume.profile?.passportNumber || ''}
-                      onChange={(e) => handleFieldChange('profile', 'passportNumber', e.target.value)}
-                      className="input"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Phone</label>
-                    <input 
-                      type="tel" 
-                      value={activeResume.profile?.phone || ''}
-                      onChange={(e) => handleFieldChange('profile', 'phone', e.target.value)}
-                      className="input"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Email</label>
-                    <input 
-                      type="email" 
-                      value={activeResume.profile?.email || ''}
-                      onChange={(e) => handleFieldChange('profile', 'email', e.target.value)}
-                      className="input"
-                    />
-                  </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {optionalFields.dateOfBirth || activeResume.profile?.dateOfBirth ? (
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Date of birth</label>
+                            <input
+                              type="date"
+                              value={activeResume.profile?.dateOfBirth || ''}
+                              onChange={(e) => handleFieldChange('profile', 'dateOfBirth', e.target.value)}
+                              className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                            />
+                          </div>
+                        ) : null}
+                        {optionalFields.placeOfBirth || activeResume.profile?.placeOfBirth ? (
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Place of birth</label>
+                            <input
+                              type="text"
+                              value={activeResume.profile?.placeOfBirth || ''}
+                              onChange={(e) => handleFieldChange('profile', 'placeOfBirth', e.target.value)}
+                              className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                            />
+                          </div>
+                        ) : null}
+                        {optionalFields.driverLicense || activeResume.profile?.driverLicense ? (
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Driver's license</label>
+                            <input
+                              type="text"
+                              value={activeResume.profile?.driverLicense || ''}
+                              onChange={(e) => handleFieldChange('profile', 'driverLicense', e.target.value)}
+                              className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                            />
+                          </div>
+                        ) : null}
+                        {optionalFields.gender || activeResume.profile?.gender ? (
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Gender</label>
+                            <input
+                              type="text"
+                              value={activeResume.profile?.gender || ''}
+                              onChange={(e) => handleFieldChange('profile', 'gender', e.target.value)}
+                              className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                            />
+                          </div>
+                        ) : null}
+                        {optionalFields.nationality || activeResume.profile?.nationality ? (
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Nationality</label>
+                            <input
+                              type="text"
+                              value={activeResume.profile?.nationality || ''}
+                              onChange={(e) => handleFieldChange('profile', 'nationality', e.target.value)}
+                              className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                            />
+                          </div>
+                        ) : null}
+                        {optionalFields.civilStatus || activeResume.profile?.civilStatus ? (
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Civil status</label>
+                            <input
+                              type="text"
+                              value={activeResume.profile?.civilStatus || ''}
+                              onChange={(e) => handleFieldChange('profile', 'civilStatus', e.target.value)}
+                              className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                            />
+                          </div>
+                        ) : null}
+                        {optionalFields.website || activeResume.profile?.website ? (
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Website</label>
+                            <input
+                              type="text"
+                              value={activeResume.profile?.website || ''}
+                              onChange={(e) => handleFieldChange('profile', 'website', e.target.value)}
+                              className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                            />
+                          </div>
+                        ) : null}
+                        {optionalFields.linkedIn || activeResume.profile?.linkedIn ? (
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">LinkedIn</label>
+                            <input
+                              type="text"
+                              value={activeResume.profile?.linkedIn || ''}
+                              onChange={(e) => handleFieldChange('profile', 'linkedIn', e.target.value)}
+                              className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                            />
+                          </div>
+                        ) : null}
+                        {optionalFields.customField || activeResume.profile?.customField ? (
+                          <div className="md:col-span-2">
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Custom field</label>
+                            <input
+                              type="text"
+                              value={activeResume.profile?.customField || ''}
+                              onChange={(e) => handleFieldChange('profile', 'customField', e.target.value)}
+                              className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* EXPERIENCE TAB (Screenshot 2) */}
             {activeTab === 'Experience' && (
               <div className="space-y-6">
-                <div className="bg-sky-500 text-white rounded-xl p-4 shadow-sm">
+                <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
                   <p className="text-sm font-medium flex items-center gap-2">
                     💡 Now, let's fill out your work history <span className="font-normal">| Here's what you need to know: Employers scan your resume for six seconds to decide if you're a match. We'll suggest bullet points that make a great impression.</span>
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Left Form */}
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Job Title</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={activeResume.experience?.jobTitle || ''}
                           onChange={(e) => handleFieldChange('experience', 'jobTitle', e.target.value)}
                           className="input"
@@ -1384,8 +1920,8 @@ const ResumeBuilder = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Employer</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={activeResume.experience?.employer || ''}
                           onChange={(e) => handleFieldChange('experience', 'employer', e.target.value)}
                           className="input"
@@ -1393,8 +1929,8 @@ const ResumeBuilder = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1.5">City</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={activeResume.experience?.city || ''}
                           onChange={(e) => handleFieldChange('experience', 'city', e.target.value)}
                           className="input"
@@ -1402,8 +1938,8 @@ const ResumeBuilder = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1.5">State</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={activeResume.experience?.state || ''}
                           onChange={(e) => handleFieldChange('experience', 'state', e.target.value)}
                           className="input"
@@ -1411,8 +1947,8 @@ const ResumeBuilder = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1.5">Start Date</label>
-                        <input 
-                          type="date" 
+                        <input
+                          type="date"
                           value={activeResume.experience?.startDate || ''}
                           onChange={(e) => handleFieldChange('experience', 'startDate', e.target.value)}
                           className="input"
@@ -1420,8 +1956,8 @@ const ResumeBuilder = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1.5">End Date</label>
-                        <input 
-                          type="date" 
+                        <input
+                          type="date"
                           disabled={activeResume.experience?.currentWork}
                           value={activeResume.experience?.currentWork ? '' : (activeResume.experience?.endDate || '')}
                           onChange={(e) => handleFieldChange('experience', 'endDate', e.target.value)}
@@ -1431,65 +1967,60 @@ const ResumeBuilder = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         id="currentWork"
                         checked={activeResume.experience?.currentWork || false}
                         onChange={(e) => handleFieldChange('experience', 'currentWork', e.target.checked)}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                       />
                       <label htmlFor="currentWork" className="text-sm text-gray-700 dark:text-gray-300">I currently work here</label>
                     </div>
 
-                    {/* Duties Text Editor Mockup */}
-                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                      <div className="bg-gray-50 dark:bg-gray-800 p-2.5 border-b dark:border-gray-700 flex items-center justify-between">
-                        <button 
+                    <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between border-b bg-gray-50 p-2.5 dark:border-gray-700 dark:bg-gray-800">
+                        <button
                           type="button"
                           onClick={() => toast.success('AI generation helper activated')}
-                          className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-3 rounded flex items-center gap-1 shadow-sm"
+                          className="flex items-center gap-1 rounded bg-red-500 px-3 py-1 text-xs font-bold text-white shadow-sm hover:bg-red-600"
                         >
                           🧠 Ask AI for Assistance
                         </button>
                         <div className="text-[10px] text-gray-400">
-                          PRO TIP: Ask AI any question about your job duties <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded font-extrabold uppercase ml-1">Jobs</span>
+                          PRO TIP: Ask AI any question about your job duties <span className="ml-1 rounded bg-blue-600 px-1.5 py-0.5 font-extrabold uppercase text-white">Jobs</span>
                         </div>
-                      </div>
-                      <div className="bg-gray-100 dark:bg-gray-900 px-3 py-1 flex items-center gap-3 border-b dark:border-gray-700 text-xs text-gray-600 font-bold">
-                        <span>B</span> <span>I</span> <span>U</span> <span className="text-gray-300">|</span> <span>List</span> <span>Align</span>
                       </div>
                       <textarea
                         rows="6"
                         placeholder="Enter Job Responsibilities"
                         value={activeResume.experience?.duties || ''}
                         onChange={(e) => handleFieldChange('experience', 'duties', e.target.value)}
-                        className="w-full p-4 text-sm focus:outline-none dark:bg-gray-800 border-none resize-none"
+                        className="w-full resize-none border-none bg-white p-4 text-sm focus:outline-none dark:bg-gray-800"
                       />
                     </div>
                   </div>
 
-                  {/* Right Suggestions Examples Panel */}
-                  <div className="border dark:border-gray-700 rounded-xl overflow-hidden bg-indigo-50/30 dark:bg-gray-900/40 p-4 flex flex-col h-[400px]">
-                    <h3 className="font-bold text-base text-indigo-900 dark:text-indigo-400 mb-2">Showing examples for:</h3>
-                    <input 
-                      type="text" 
+                  <div className="flex h-[400px] flex-col overflow-hidden rounded-xl border bg-indigo-50/30 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+                    <h3 className="mb-2 text-base font-bold text-indigo-900 dark:text-indigo-400">Showing examples for:</h3>
+                    <input
+                      type="text"
                       placeholder="Ex: Cashier.."
                       value={exampleSearch}
                       onChange={(e) => setExampleSearch(e.target.value)}
-                      className="input mb-4 text-sm bg-white dark:bg-gray-800"
+                      className="input mb-4 bg-white text-sm dark:bg-gray-800"
                     />
 
-                    <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                    <div className="flex-1 space-y-3 overflow-y-auto pr-1">
                       {DUTY_EXAMPLES.map((ex, idx) => (
-                        <div key={idx} className="p-3 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg flex items-start gap-2 shadow-sm">
+                        <div key={idx} className="flex items-start gap-2 rounded-lg border bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                           <button
                             type="button"
                             onClick={() => handleAddDutyExample(ex)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-5 h-5 flex items-center justify-center shrink-0 mt-0.5"
+                            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-700"
                           >
-                            <FiPlus className="w-3.5 h-3.5" />
+                            <FiPlus className="h-3.5 w-3.5" />
                           </button>
-                          <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">{ex}</p>
+                          <p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">{ex}</p>
                         </div>
                       ))}
                     </div>
@@ -1498,20 +2029,19 @@ const ResumeBuilder = () => {
               </div>
             )}
 
-            {/* EDUCATION TAB (Screenshot 3) */}
             {activeTab === 'Education' && (
               <div className="space-y-6">
-                <div className="bg-sky-500 text-white rounded-xl p-4 shadow-sm">
+                <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
                   <p className="text-sm font-medium flex items-center gap-2">
                     💡 Tell us about your education <span className="font-normal">| Include every school, even if you're still there or didn't graduate.</span>
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
                     <label className="block text-sm font-medium mb-1.5">School Name</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={activeResume.education?.schoolName || ''}
                       onChange={(e) => handleFieldChange('education', 'schoolName', e.target.value)}
                       className="input"
@@ -1519,8 +2049,8 @@ const ResumeBuilder = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5">City</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={activeResume.education?.city || ''}
                       onChange={(e) => handleFieldChange('education', 'city', e.target.value)}
                       className="input"
@@ -1528,8 +2058,8 @@ const ResumeBuilder = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5">State</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={activeResume.education?.state || ''}
                       onChange={(e) => handleFieldChange('education', 'state', e.target.value)}
                       className="input"
@@ -1551,8 +2081,8 @@ const ResumeBuilder = () => {
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium mb-1.5">Field of Study</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={activeResume.education?.fieldOfStudy || ''}
                       onChange={(e) => handleFieldChange('education', 'fieldOfStudy', e.target.value)}
                       className="input"
@@ -1560,8 +2090,8 @@ const ResumeBuilder = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5">Graduation Start Date</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={activeResume.education?.startDate || ''}
                       onChange={(e) => handleFieldChange('education', 'startDate', e.target.value)}
                       className="input"
@@ -1569,8 +2099,8 @@ const ResumeBuilder = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5">Graduation End Date</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       disabled={activeResume.education?.currentStudy}
                       value={activeResume.education?.currentStudy ? '' : (activeResume.education?.endDate || '')}
                       onChange={(e) => handleFieldChange('education', 'endDate', e.target.value)}
@@ -1580,22 +2110,21 @@ const ResumeBuilder = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     id="currentStudy"
                     checked={activeResume.education?.currentStudy || false}
                     onChange={(e) => handleFieldChange('education', 'currentStudy', e.target.checked)}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
                   <label htmlFor="currentStudy" className="text-sm text-gray-700 dark:text-gray-300">I currently study here</label>
                 </div>
               </div>
             )}
 
-            {/* PROJECTS TAB */}
             {activeTab === 'Projects' && (
               <div className="space-y-6">
-                <div className="bg-sky-500 text-white rounded-xl p-4 shadow-sm">
+                <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
                   <p className="text-sm font-medium flex items-center gap-2">
                     💡 Add your key projects <span className="font-normal">| Describe what you built and the impact of each project in concise bullet form.</span>
                   </p>
@@ -1603,8 +2132,8 @@ const ResumeBuilder = () => {
 
                 <div className="space-y-4">
                   {(activeResume.projects || []).map((project, idx) => (
-                    <div key={idx} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div key={idx} className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
                           <label className="block text-sm font-medium mb-1.5">Project Title</label>
                           <input
@@ -1633,7 +2162,7 @@ const ResumeBuilder = () => {
                         onClick={() => handleRemoveProject(idx)}
                         className="mt-4 inline-flex items-center gap-2 text-sm text-red-600 hover:text-red-700"
                       >
-                        <FiTrash className="w-4 h-4" /> Remove project
+                        <FiTrash className="h-4 w-4" /> Remove project
                       </button>
                     </div>
                   ))}
@@ -1641,7 +2170,7 @@ const ResumeBuilder = () => {
                   <button
                     type="button"
                     onClick={handleAddProject}
-                    className="text-indigo-600 dark:text-indigo-400 text-sm font-bold flex items-center gap-1.5 hover:underline py-2"
+                    className="flex items-center gap-1.5 py-2 text-sm font-bold text-indigo-600 hover:underline dark:text-indigo-400"
                   >
                     <FiPlusCircle /> Add Another Project
                   </button>
@@ -1649,122 +2178,392 @@ const ResumeBuilder = () => {
               </div>
             )}
 
-            {/* SKILLS TAB (Screenshot 4) */}
             {activeTab === 'Skills' && (
               <div className="space-y-6">
-                <div className="bg-sky-500 text-white rounded-xl p-4 shadow-sm">
-                  <p className="text-sm font-medium flex items-center gap-2">
-                    💡 Next, let's take care of your skills <span className="font-normal">| Here's what you need to know: Employers scan skills for relevant keywords. Enter 4-6 skills that are most relevant to your desired job.</span>
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  {(activeResume.skills || []).map((skill, index) => (
-                    <div key={index} className="flex items-center gap-3 animate-fade-in">
-                      <div className="flex-1">
-                        <label className="block text-xs font-semibold mb-1 text-gray-500">Technical Skill</label>
-                        <input 
-                          type="text" 
-                          value={skill.name}
-                          onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
-                          className="input"
-                          placeholder="e.g. React, Node.js, SQL"
-                        />
+                <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                        <FiMenu className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Skills</p>
+                        <h3 className="text-lg font-semibold text-slate-900">Manage your key abilities</h3>
                       </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => handleRemoveSkill(index)}
-                        className="bg-red-50 hover:bg-red-100 text-red-500 p-2.5 rounded-lg border border-red-200 mt-5 self-end transition"
-                        title="Remove Skill"
+                        onClick={() => setIsSkillsCollapsed((current) => !current)}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                       >
-                        <FiTrash className="w-5 h-5" />
+                        {isSkillsCollapsed ? 'Expand' : 'Collapse'}
                       </button>
-                    </div>
-                  ))}
-
-                  <button
-                    type="button"
-                    onClick={handleAddSkill}
-                    className="text-indigo-600 dark:text-indigo-400 text-sm font-bold flex items-center gap-1.5 hover:underline py-2"
-                  >
-                    <FiPlusCircle /> Add Technical Skill
-                  </button>
-                </div>
-
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-sm font-semibold uppercase tracking-[0.15em] text-gray-700 dark:text-gray-200">Soft Skills</h4>
                       <button
                         type="button"
-                        onClick={handleAddSoftSkill}
-                        className="text-indigo-600 dark:text-indigo-400 text-xs font-semibold"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                        aria-label="More options"
                       >
-                        + Add
+                        <FiMoreHorizontal className="h-5 w-5" />
                       </button>
-                    </div>
-                    <div className="space-y-3">
-                      {(activeResume.softSkills || []).map((skill, index) => (
-                        <div key={index} className="flex items-center gap-3">
-                          <input
-                            type="text"
-                            value={skill}
-                            onChange={(e) => handleSoftSkillChange(index, e.target.value)}
-                            className="input"
-                            placeholder="e.g. Problem solving"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSoftSkill(index)}
-                            className="text-red-500 hover:text-red-600"
-                          >
-                            <FiTrash className="w-5 h-5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-900">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-sm font-semibold uppercase tracking-[0.15em] text-gray-700 dark:text-gray-200">Languages</h4>
-                      <button
-                        type="button"
-                        onClick={handleAddLanguage}
-                        className="text-indigo-600 dark:text-indigo-400 text-xs font-semibold"
-                      >
-                        + Add
-                      </button>
-                    </div>
-                    <div className="space-y-3">
-                      {(activeResume.languages || []).map((language, index) => (
-                        <div key={index} className="flex items-center gap-3">
-                          <input
-                            type="text"
-                            value={language}
-                            onChange={(e) => handleLanguageChange(index, e.target.value)}
-                            className="input"
-                            placeholder="e.g. English — Fluent"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveLanguage(index)}
-                            className="text-red-500 hover:text-red-600"
-                          >
-                            <FiTrash className="w-5 h-5" />
-                          </button>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 </div>
+
+                {!isSkillsCollapsed && (
+                  <div className="space-y-4">
+                    <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="grid gap-4 lg:grid-cols-[1.7fr_auto] lg:items-end">
+                      <div className="grid gap-4 lg:grid-cols-[1.45fr_1fr]">
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Skill</label>
+                          <input
+                            type="text"
+                            value={(activeResume.skills?.[skillEditorIndex]?.name) || ''}
+                            onChange={(e) => {
+                              if (skillEditorIndex === null) return;
+                              handleSkillChange(skillEditorIndex, 'name', e.target.value);
+                            }}
+                            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
+                            placeholder="Enter a skill"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Level</label>
+                          <select
+                            value={(activeResume.skills?.[skillEditorIndex]?.level) || 'Select'}
+                            onChange={(e) => {
+                              if (skillEditorIndex === null) return;
+                              handleSkillChange(skillEditorIndex, 'level', e.target.value);
+                            }}
+                            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
+                          >
+                            <option value="Select">Make a choice</option>
+                            <option value="Beginner">Beginner</option>
+                            <option value="Intermediate">Intermediate</option>
+                            <option value="Advanced">Advanced</option>
+                            <option value="Expert">Expert</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (skillEditorIndex !== null) {
+                              handleToggleSkillDone(skillEditorIndex);
+                              setSkillEditorIndex(null);
+                            }
+                          }}
+                          className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                        >
+                          Done
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (skillEditorIndex !== null) {
+                              handleRemoveSkill(skillEditorIndex);
+                              setSkillEditorIndex(null);
+                            }
+                          }}
+                          className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                          title="Delete skill"
+                        >
+                          <FiTrash className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                      <div className="mt-6 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                          <p className="text-sm font-semibold text-slate-900">Suggested skills</p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {technicalSkillSuggestions.map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => handleSelectSuggestedSkill(suggestion)}
+                                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                              >
+                                <FiPlusCircle className="h-4 w-4 text-slate-400" />
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 justify-end">
+                          <button
+                            type="button"
+                            onClick={handleAddSkill}
+                            className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
+                          >
+                            <FiPlusCircle className="mr-2 h-4 w-4" /> Add skill
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleGenerateTechnicalSkillSuggestions}
+                            className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                          >
+                            AI Suggestions
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleGenerateTechnicalSkillSuggestions}
+                            className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                            aria-label="Regenerate suggestions"
+                          >
+                            <FiRotateCcw className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-3">
+                        {(activeResume.skills || []).map((skill, index) => (
+                          <div key={index} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+                                <label className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Skill</label>
+                                <input
+                                  type="text"
+                                  value={skill.name}
+                                  onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
+                                  className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
+                                  placeholder="Skill name"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+                                <label className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Level</label>
+                                <select
+                                  value={skill.level || 'Select'}
+                                  onChange={(e) => handleSkillChange(index, 'level', e.target.value)}
+                                  className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
+                                >
+                                  <option value="Select">Make a choice</option>
+                                  <option value="Beginner">Beginner</option>
+                                  <option value="Intermediate">Intermediate</option>
+                                  <option value="Advanced">Advanced</option>
+                                  <option value="Expert">Expert</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSkillEditorIndex(index);
+                                  handleToggleSkillDone(index);
+                                }}
+                                className={`inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition ${skill.isDone ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                              >
+                                {skill.isDone ? 'Completed' : 'Done'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSkill(index)}
+                                className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                                aria-label="Delete skill"
+                              >
+                                <FiTrash className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Soft skills</p>
+                            <h4 className="mt-1 text-sm font-semibold text-slate-900">Add your interpersonal strengths</h4>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleAddSoftSkill}
+                            className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                          >
+                            <FiPlusCircle className="mr-2 h-4 w-4" /> Add soft skill
+                          </button>
+                        </div>
+
+                        <div className="mt-4 space-y-3">
+                          {(activeResume.softSkills || []).map((softSkill, softIndex) => (
+                            <div key={softIndex} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+                              <input
+                                type="text"
+                                value={softSkill}
+                                onChange={(e) => handleSoftSkillChange(softIndex, e.target.value)}
+                                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
+                                placeholder="Soft skill name"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSoftSkill(softIndex)}
+                                className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                                aria-label="Delete soft skill"
+                              >
+                                <FiTrash className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                          <p className="text-sm font-semibold text-slate-900">Suggested soft skills</p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {softSkillSuggestions.map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => handleSelectSuggestedSoftSkill(suggestion)}
+                                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                              >
+                                <FiPlusCircle className="h-4 w-4 text-slate-400" />
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="mt-4 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={handleGenerateSoftSkillSuggestions}
+                              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                            >
+                              Refresh soft suggestions
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    </div>
+                )}
               </div>
             )}
 
-            {/* SUMMARY TAB */}
+                {activeTab === 'Languages' && (
+                  <div className="space-y-6">
+                    <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                            <FiGlobe className="h-5 w-5" />
+                          </span>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Languages</p>
+                            <h3 className="text-lg font-semibold text-slate-900">Track your spoken and written fluency</h3>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddLanguage}
+                          className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                        >
+                          <FiPlusCircle className="mr-2 h-4 w-4" /> Add language
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {(activeResume.languages || []).length === 0 ? (
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-600">
+                          No languages added yet. Use the button above or choose from suggested languages.
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {(activeResume.languages || []).map((language, index) => (
+                            <div key={index} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                              <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+                                <div className="grid gap-4 md:grid-cols-[1fr_0.85fr]">
+                                  <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Language</label>
+                                    <input
+                                      type="text"
+                                      value={(language?.name) || ''}
+                                      onChange={(e) => handleLanguageInputChange(index, 'name', e.target.value)}
+                                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
+                                      placeholder="Language name"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Proficiency</label>
+                                    <select
+                                      value={(language?.level) || 'Select'}
+                                      onChange={(e) => handleLanguageInputChange(index, 'level', e.target.value)}
+                                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
+                                    >
+                                      <option value="Select">Select level</option>
+                                      <option value="Beginner">Beginner</option>
+                                      <option value="Intermediate">Intermediate</option>
+                                      <option value="Advanced">Advanced</option>
+                                      <option value="Expert">Expert</option>
+                                    </select>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 justify-end">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleLanguageDone(index)}
+                                    className={`inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition ${language?.isDone ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                                  >
+                                    {language?.isDone ? 'Completed' : 'Done'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveLanguage(index)}
+                                    className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                                    aria-label="Delete language"
+                                  >
+                                    <FiTrash className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="text-sm font-semibold text-slate-900">Suggested languages</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {languageSuggestions.map((suggestion) => (
+                            <button
+                              key={suggestion}
+                              type="button"
+                              onClick={() => handleSelectSuggestedLanguage(suggestion)}
+                              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                            >
+                              <FiPlusCircle className="h-4 w-4 text-slate-400" />
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-4 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={handleGenerateLanguageSuggestions}
+                            className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                          >
+                            Refresh language suggestions
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
             {activeTab === 'Summary' && (
               <div className="space-y-6">
-                <div className="bg-sky-500 text-white rounded-xl p-4 shadow-sm">
+                <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
                   <p className="text-sm font-medium">Add a short professional summary that highlights your strengths and career goals.</p>
                 </div>
 
@@ -1781,10 +2580,9 @@ const ResumeBuilder = () => {
               </div>
             )}
 
-            {/* INTERESTS TAB */}
             {activeTab === 'Interests' && (
               <div className="space-y-6">
-                <div className="bg-sky-500 text-white rounded-xl p-4 shadow-sm">
+                <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
                   <p className="text-sm font-medium">Mention personal interests that can add personality to your resume.</p>
                 </div>
 
@@ -1801,72 +2599,289 @@ const ResumeBuilder = () => {
               </div>
             )}
 
-            {/* PHOTO TAB */}
             {activeTab === 'Photo' && (
               <div className="space-y-6">
-                <div className="bg-sky-500 text-white rounded-xl p-4 shadow-sm">
+                <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
                   <p className="text-sm font-medium">Upload a profile photo to include in your resume preview.</p>
                 </div>
 
-                <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center">
+                <label className="group relative block rounded-xl border border-dashed border-gray-300 p-6 text-center transition hover:border-slate-400 hover:bg-slate-50">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handlePhotoUpload}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                    className="sr-only"
                   />
-                  {activeResume.photo?.dataUrl && (
-                    <div className="mt-4 flex justify-center">
-                      <img
-                        src={activeResume.photo.dataUrl}
-                        alt="Resume preview photo"
-                        className="h-32 w-32 rounded-full object-cover border-4 border-indigo-100"
-                      />
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm text-slate-400">
+                      <FiImage className="h-6 w-6" />
                     </div>
-                  )}
-                </div>
+                    <p className="text-sm font-semibold text-slate-900">Upload a photo</p>
+                    <p className="max-w-[20rem] text-xs leading-5 text-slate-500">Click here to select a profile image that will appear in your resume preview.</p>
+                  </div>
+                </label>
+
+                {activeResume.photo?.dataUrl && (
+                  <div className="mt-4 flex justify-center">
+                    <img
+                      src={activeResume.photo.dataUrl}
+                      alt="Resume preview photo"
+                      className="h-32 w-32 rounded-full border-4 border-indigo-100 object-cover"
+                    />
+                  </div>
+                )}
               </div>
             )}
 
             {!['Profile', 'Experience', 'Education', 'Skills', 'Summary', 'Interests', 'Photo'].includes(activeTab) && (
-              <div className="text-center py-10">
-                <FiFileText className="w-16 h-16 text-gray-300 mx-auto mb-3" />
-                <h3 className="font-semibold text-lg">{activeTab} Section Editor</h3>
-                <p className="text-gray-500 text-sm mt-1">Fill out your {activeTab.toLowerCase()} entries here. These will render in your template.</p>
+              <div className="py-10 text-center">
+                <FiFileText className="mx-auto mb-3 h-16 w-16 text-gray-300" />
+                <h3 className="text-lg font-semibold">{activeTab} Section Editor</h3>
+                <p className="mt-1 text-sm text-gray-500">Fill out your {activeTab.toLowerCase()} entries here. These will render in your template.</p>
               </div>
             )}
 
-            {/* Form Actions Footer Navigation (Previous, Save, Next) */}
-            <div className="flex justify-between items-center pt-6 border-t dark:border-gray-700 mt-8">
-              <button 
-                type="button" 
+            <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6 dark:border-gray-700">
+              <button
+                type="button"
                 onClick={handlePrevTab}
                 disabled={activeTab === 'Profile'}
-                className="btn btn-primary bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5"
+                className="btn btn-primary flex items-center gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-30"
               >
                 <FiArrowLeft /> Previous
               </button>
-              
+
               <div className="flex items-center gap-3">
-                {saveMessage && (
-                  <span className="text-sm text-green-600 font-medium">{saveMessage}</span>
-                )}
-                <button 
+                {saveMessage && <span className="text-sm font-medium text-green-600">{saveMessage}</span>}
+                <button
                   type="button"
                   onClick={handleSaveForm}
-                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-2.5 px-6 rounded-lg flex items-center gap-1.5 transition shadow"
+                  className="flex items-center gap-1.5 rounded-lg bg-green-500 px-6 py-2.5 font-bold text-white shadow transition hover:bg-green-600"
                 >
                   <FiSave /> Save
                 </button>
               </div>
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={handleNextTab}
-                className="btn btn-primary bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5"
+                className="btn btn-primary flex items-center gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700"
               >
                 {activeTab === TABS[TABS.length - 1] ? 'Finish' : 'Next'} <FiArrowRight />
               </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="xl:sticky xl:top-6 self-start min-w-0">
+          <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm min-w-0 dark:border-gray-700 dark:bg-gray-800">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Live preview</p>
+                <h3 className="text-base font-semibold text-slate-900 dark:text-white">Your CV updates instantly</h3>
+              </div>
+              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+                Live
+              </span>
+            </div>
+            <div className="max-h-[780px] overflow-auto rounded-[18px] border border-slate-200 bg-slate-50 p-3 min-w-0 dark:border-gray-700 dark:bg-gray-900/50">
+              <div className="resume-preview-scaled pt-6 overflow-hidden relative">
+                {renderLivePreview(activeResume)}
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+              <div className="flex flex-row items-center justify-between gap-3">
+                <button type="button" onClick={() => setIsTemplateModalOpen((current) => !current)} className="inline-flex items-center gap-2 rounded-full border border-indigo-500 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100">
+                  <FiGrid className="h-4 w-4" />
+                  Templates
+                  {isTemplateModalOpen ? <FiChevronUp className="h-4 w-4" /> : <FiChevronDown className="h-4 w-4" />}
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button type="button" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition hover:bg-slate-100">
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em]">Aa</span>
+                    Arial
+                  </button>
+                  <button type="button" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white p-2 text-slate-700 shadow-sm transition hover:bg-slate-100">
+                    <FiType className="h-4 w-4" />
+                  </button>
+                  <button type="button" className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white p-2 text-slate-700 shadow-sm transition hover:bg-slate-100">
+                    <FiTool className="h-4 w-4" />
+                  </button>
+                  <span className="inline-flex h-3.5 w-3.5 rounded-full bg-sky-500 ring-2 ring-white shadow-sm" />
+                </div>
+              </div>
+
+              {isTemplateModalOpen && (
+                <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50 p-3 shadow-sm min-w-0">
+                  <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Choose template</p>
+                      <h4 className="text-sm font-semibold text-slate-900">Select a resume layout</h4>
+                    </div>
+                    <button type="button" onClick={() => setIsTemplateModalOpen(false)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                      <FiChevronUp className="h-4 w-4" /> Close
+                    </button>
+                  </div>
+
+                  <div className="w-full max-w-full overflow-hidden box-border min-w-0">
+                    <div className="w-full max-w-full overflow-x-auto overflow-y-hidden box-border min-w-0 template-gallery-scroll">
+                      <div className="flex flex-nowrap w-max min-w-full gap-4 pb-3 pr-2">
+                        {templates.map((template) => {
+                          const isSelected = activeResume?.template === template.id;
+                          const TemplateComponent = template.component;
+                          return (
+                            <div
+                              key={template.id}
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => handleSelectTemplate(template.id)}
+                              onKeyDown={(event) => event.key === 'Enter' && handleSelectTemplate(template.id)}
+                              className={`min-w-[220px] md:min-w-[260px] xl:min-w-[300px] max-w-[300px] flex-shrink-0 rounded-[20px] border bg-white p-3 transition duration-200 ${isSelected ? 'border-indigo-500 bg-indigo-50 shadow-[0_16px_48px_rgba(99,102,241,0.12)]' : 'border-slate-200 hover:border-slate-400 hover:shadow-sm'} cursor-pointer`}
+                            >
+                              <div className="thumbnail-container">
+                                <TemplateComponent resume={activeResume || {}} color={template.accent} compact />
+                                {isSelected && (
+                                  <span className="absolute right-3 top-3 inline-flex items-center rounded-full bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white">Selected</span>
+                                )}
+                              </div>
+
+                              <div className="mt-3 text-center">
+                                <p className="text-sm font-semibold text-slate-900">{template.name}</p>
+                                <p className="mt-1 text-xs text-slate-500">{template.badge}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+
+      {isPhotoEditorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4">
+          <div className="w-full max-w-4xl overflow-hidden rounded-[28px] border border-slate-700 bg-slate-900 shadow-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700 px-6 py-4">
+              <div>
+                <h2 className="text-xl font-semibold text-white">Edit profile photo</h2>
+                <p className="text-sm text-slate-400">Preview your photo, apply zoom and rotation, then confirm.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelPhotoEditor}
+                className="rounded-full border border-slate-700 bg-slate-800 p-2 text-slate-300 transition hover:border-slate-500 hover:text-white"
+              >
+                <FiX className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid gap-6 p-6 md:grid-cols-[1.5fr_0.9fr]">
+              <div className="flex min-h-[340px] items-center justify-center rounded-[24px] bg-slate-800 p-4">
+                {photoEditorSrc ? (
+                  <div className="relative h-[320px] w-full overflow-hidden rounded-[24px] bg-slate-900">
+                    <img
+                      src={photoEditorSrc}
+                      alt="Profile editor preview"
+                      className="absolute inset-0 h-full w-full object-cover"
+                      style={{
+                        transform: `scale(${photoEditorZoom}) rotate(${photoEditorRotate}deg)`,
+                        transformOrigin: 'center center'
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center text-slate-400">No image loaded. Please choose a photo again.</div>
+                )}
+              </div>
+
+              <div className="space-y-6 rounded-[24px] border border-slate-700 bg-slate-950 p-5">
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-white">Photo file</p>
+                  <p className="text-sm text-slate-400">{photoEditorFileName || 'profile-photo.png'}</p>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold text-white">Zoom</label>
+                  <input
+                    type="range"
+                    min="0.8"
+                    max="2"
+                    step="0.05"
+                    value={photoEditorZoom}
+                    onChange={(e) => setPhotoEditorZoom(parseFloat(e.target.value))}
+                    className="w-full accent-sky-500"
+                  />
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>0.8x</span>
+                    <span>{photoEditorZoom.toFixed(2)}x</span>
+                    <span>2x</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold text-white">Rotate</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPhotoEditorRotate((current) => current - 90)}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-700 bg-slate-800 text-slate-300 transition hover:border-slate-500 hover:text-white"
+                    >
+                      <FiRotateCcw className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhotoEditorRotate((current) => current + 90)}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-700 bg-slate-800 text-slate-300 transition hover:border-slate-500 hover:text-white"
+                    >
+                      <FiRotateCw className="h-5 w-5" />
+                    </button>
+                    <input
+                      type="range"
+                      min="-180"
+                      max="180"
+                      step="1"
+                      value={photoEditorRotate}
+                      onChange={(e) => setPhotoEditorRotate(parseInt(e.target.value, 10))}
+                      className="w-full accent-sky-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>-180°</span>
+                    <span>{photoEditorRotate}°</span>
+                    <span>180°</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3 rounded-3xl border border-slate-700 bg-slate-900 p-4">
+                  <p className="text-sm font-semibold text-white">Preview notes</p>
+                  <p className="text-sm text-slate-400">Use zoom to fit your face and rotate if your photo is tilted. The final image will be saved into your resume preview.</p>
+                </div>
+
+                <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={handleCancelPhotoEditor}
+                    className="rounded-full border border-slate-700 bg-slate-800 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmPhotoEditor}
+                    className="rounded-full bg-sky-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-600"
+                  >
+                    Confirm Photo
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1925,75 +2940,6 @@ const ResumeBuilder = () => {
       )}
 
       {/* Step 3: Choose Template Modal */}
-      {isTemplateModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-4xl shadow-xl overflow-hidden my-8 animate-slide-down">
-            <div className="p-6 border-b dark:border-gray-700 relative text-center">
-              <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">Choose a Resume Template</h2>
-              <p className="text-sm text-gray-500 mt-1">This Template will be use for your personal resume.</p>
-              <button 
-                onClick={() => setIsTemplateModalOpen(false)}
-                className="absolute right-6 top-6 text-gray-400 hover:text-gray-600"
-              >
-                <FiX className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 border-b dark:border-gray-700">
-              <div className="flex flex-wrap gap-3 items-center justify-between">
-                <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-full transition text-sm shadow">
-                  Free Template
-                </button>
-                
-                <div className="relative w-full sm:w-72">
-                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="input pl-10 pr-4 py-2 w-full text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 overflow-y-auto max-h-[50vh] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {filteredTemplates.map((tpl) => (
-                <div
-                  key={tpl.id}
-                  className={`group relative rounded-xl border overflow-hidden bg-white dark:bg-gray-900 shadow-sm flex flex-col items-center cursor-pointer transition ${activeResume?.template === tpl.id ? 'border-indigo-400 ring-2 ring-indigo-200 dark:ring-indigo-800' : 'border-gray-200 dark:border-gray-700'}`}
-                  onClick={() => handleSelectTemplate(tpl.id)}
-                >
-                  <div className="w-full h-64 overflow-hidden relative bg-gray-100">
-                    <img 
-                      src={tpl.image} 
-                      alt={tpl.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <span className="bg-green-500 text-white font-bold py-2.5 px-6 rounded transition shadow-lg text-sm">
-                        SELECT
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 text-center w-full bg-gray-50 dark:bg-gray-800 border-t dark:border-gray-700">
-                    <span className="font-extrabold text-sm text-gray-900 dark:text-white uppercase tracking-wider">{tpl.name}</span>
-                  </div>
-                </div>
-              ))}
-
-              {filteredTemplates.length === 0 && (
-                <div className="col-span-full text-center py-10 text-gray-500">
-                  No templates match your search.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

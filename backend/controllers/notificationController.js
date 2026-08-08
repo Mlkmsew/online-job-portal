@@ -11,6 +11,8 @@ const { AppError } = require('../middleware/errorHandler');
 exports.getNotifications = asyncHandler(async (req, res) => {
   const query = { recipient: req.user.id };
   if (req.query.isRead !== undefined) query.isRead = req.query.isRead === 'true';
+  if (req.query.type)        query.type = req.query.type;
+  if (req.query.excludeType) query.type = { $ne: req.query.excludeType };
 
   const { results, pagination } = await paginate(Notification, query, req.query, ['sender']);
   res.status(200).json({ success: true, count: results.length, pagination, data: results });
@@ -34,10 +36,11 @@ exports.markAsRead = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/notifications/read-all
 // @access  Private
 exports.markAllAsRead = asyncHandler(async (req, res) => {
-  await Notification.updateMany(
-    { recipient: req.user.id, isRead: false },
-    { isRead: true, readAt: new Date() }
-  );
+  const query = { recipient: req.user.id, isRead: false };
+  if (req.query.type)        query.type = req.query.type;
+  if (req.query.excludeType) query.type = { $ne: req.query.excludeType };
+
+  await Notification.updateMany(query, { isRead: true, readAt: new Date() });
   res.status(200).json({ success: true, message: 'All notifications marked as read.' });
 });
 
@@ -55,7 +58,11 @@ exports.deleteNotification = asyncHandler(async (req, res, next) => {
 // @route   GET /api/notifications/unread/count
 // @access  Private
 exports.getUnreadCount = asyncHandler(async (req, res) => {
-  const count = await Notification.countDocuments({ recipient: req.user.id, isRead: false });
+  const query = { recipient: req.user.id, isRead: false };
+  if (req.query.excludeType) {
+    query.type = { $ne: req.query.excludeType };
+  }
+  const count = await Notification.countDocuments(query);
   res.status(200).json({ success: true, count });
 });
 

@@ -103,6 +103,44 @@ export const uploadCV = createAsyncThunk('auth/uploadCV', async (formData, { rej
   }
 });
 
+export const uploadAvatar = createAsyncThunk('auth/uploadAvatar', async (formData, { rejectWithValue }) => {
+  try {
+    const response = await api.put('/auth/upload-avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message);
+  }
+});
+
+export const deleteAvatar = createAsyncThunk('auth/deleteAvatar', async (_, { rejectWithValue }) => {
+  try {
+    const response = await api.delete('/auth/upload-avatar');
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message);
+  }
+});
+
+export const updateSettings = createAsyncThunk('auth/updateSettings', async (settingsPayload, { rejectWithValue }) => {
+  try {
+    const response = await api.put('/auth/update-settings', { settings: settingsPayload });
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || 'Failed to update settings');
+  }
+});
+
+export const updatePassword = createAsyncThunk('auth/updatePassword', async ({ currentPassword, newPassword }, { rejectWithValue }) => {
+  try {
+    const response = await api.put('/auth/update-password', { currentPassword, newPassword });
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || 'Failed to update password');
+  }
+});
+
 export const logout = createAsyncThunk('auth/logout', async () => {
   await api.post('/auth/logout');
 });
@@ -195,8 +233,32 @@ const authSlice = createSlice({
       })
       // Upload CV
       .addCase(uploadCV.fulfilled, (state, action) => {
-        state.user.cv = action.payload.cv;
+        state.user = normalizeUser({ ...(state.user || {}), cv: action.payload.cv });
         localStorage.setItem('user', JSON.stringify(state.user));
+      })
+      // Upload / Delete Avatar
+      .addCase(uploadAvatar.fulfilled, (state, action) => {
+        // If backend returns full user data object, use it; otherwise merge avatar field
+        if (action.payload?.data) {
+          state.user = normalizeUser(action.payload.data);
+        } else {
+          state.user = normalizeUser({ ...(state.user || {}), avatar: action.payload.avatar });
+        }
+        localStorage.setItem('user', JSON.stringify(state.user));
+      })
+      .addCase(deleteAvatar.fulfilled, (state, action) => {
+        state.user = normalizeUser(action.payload.data);
+        localStorage.setItem('user', JSON.stringify(state.user));
+      })
+      // Update Settings
+      .addCase(updateSettings.fulfilled, (state, action) => {
+        if (state.user) {
+          state.user = normalizeUser({
+            ...state.user,
+            settings: action.payload.data,
+          });
+          localStorage.setItem('user', JSON.stringify(state.user));
+        }
       })
       // Logout
       .addCase(logout.fulfilled, (state) => {

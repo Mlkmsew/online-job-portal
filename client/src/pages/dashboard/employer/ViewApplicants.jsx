@@ -88,6 +88,11 @@ const formatDate = (value) => {
   });
 };
 
+const formatDateTime = (value) => {
+  if (!value) return 'Unknown';
+  return new Date(value).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric' });
+};
+
 const getFileNameFromUrl = (url) => {
   if (!url) return 'Resume';
   try {
@@ -122,7 +127,7 @@ const ViewApplicants = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [sortBy, setSortBy] = useState('-matchScore');
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('grid');
+  // viewMode removed — always use list layout (single column)
   const [page, setPage] = useState(1);
   const [statusById, setStatusById] = useState({});
   const [notesById, setNotesById] = useState({});
@@ -360,7 +365,7 @@ const ViewApplicants = () => {
             <select
               value={selectedJobId}
               onChange={(event) => { setSelectedJobId(event.target.value); setPage(1); }}
-              className="input w-full flex-1 max-w-none"
+              className="input min-w-[160px] md:min-w-[220px]"
               aria-label="Filter by job"
             >
               <option value="all">All Jobs</option>
@@ -372,7 +377,7 @@ const ViewApplicants = () => {
             <select
               value={selectedStatus}
               onChange={(event) => { setSelectedStatus(event.target.value); setPage(1); }}
-              className="input w-full flex-1 max-w-none"
+              className="input min-w-[140px] md:min-w-[200px]"
               aria-label="Filter by status"
             >
               <option value="all">All Status</option>
@@ -384,7 +389,7 @@ const ViewApplicants = () => {
             <select
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value)}
-              className="input w-full flex-1 max-w-none"
+              className="input min-w-[160px] md:min-w-[220px]"
               aria-label="Sort applicants"
             >
               {SORT_OPTIONS.map((option) => (
@@ -394,22 +399,7 @@ const ViewApplicants = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setViewMode('list')}
-            className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition ${viewMode === 'list' ? 'bg-emerald-600 text-white' : 'text-slate-600 bg-white border border-slate-200'}`}
-          >
-            <ClipboardList className="h-4 w-4" /> List
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('grid')}
-            className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition ${viewMode === 'grid' ? 'bg-emerald-600 text-white' : 'text-slate-600 bg-white border border-slate-200'}`}
-          >
-            <Layers className="h-4 w-4" /> Grid
-          </button>
-        </div>
+        {/* List/Grid toggle removed — fixed grid layout */}
       </div>
 
       <div className="mt-4 flex justify-end">
@@ -485,7 +475,7 @@ const ViewApplicants = () => {
           <p className="max-w-none text-sm text-slate-500">Applicants will appear here once people apply to your posted jobs. Use the filters above to refine your candidate queue.</p>
         </div>
       ) : (
-        <div className={`grid w-full gap-6 ${viewMode === 'grid' ? 'xl:grid-cols-3' : 'grid-cols-1'}`}>
+        <div className="grid w-full gap-6 grid-cols-1">
           {summary.source.map((application) => {
             const applicant = application.applicant || {};
             const job = application.job || {};
@@ -802,57 +792,302 @@ const ViewApplicants = () => {
       )}
 
       {activeProfile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-5">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900">Full Profile</h2>
-                <p className="mt-1 text-sm text-slate-500">{activeProfile.applicant?.firstName} {activeProfile.applicant?.lastName}</p>
-              </div>
-              <button type="button" onClick={() => setActiveProfile(null)} className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="space-y-6 p-6">
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Applicant</p>
-                  <p className="mt-4 text-lg font-semibold text-slate-900">{activeProfile.applicant?.firstName} {activeProfile.applicant?.lastName}</p>
-                  <p className="mt-2 text-sm text-slate-500">{activeProfile.applicant?.headline || 'No headline available'}</p>
-                  <div className="mt-4 space-y-3 text-sm text-slate-600">
-                    <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {activeProfile.applicant?.email || 'Not provided'}</div>
-                    <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {activeProfile.applicant?.phone || 'Not provided'}</div>
-                    <div className="flex items-center gap-2"><Clock className="h-4 w-4" /> {activeProfile.applicant?.experience || 'Not provided'}</div>
-                  </div>
+        <div className="fixed inset-0 z-50 bg-slate-950/40" role="dialog" aria-modal="true" aria-label={`Full profile for ${activeProfile.applicant?.firstName || ''} ${activeProfile.applicant?.lastName || ''}`}>
+          <div className="absolute inset-0 flex items-start justify-center p-4">
+            <div className="w-full max-w-5xl h-[90vh] overflow-auto rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200" tabIndex={-1}>
+              {/* Header */}
+              <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4 sticky top-0 bg-white z-20">
+                <div>
+                  <h2 className="text-lg md:text-xl font-semibold text-slate-900">{activeProfile.applicant?.firstName} {activeProfile.applicant?.lastName}</h2>
+                  <p className="mt-1 text-sm text-slate-500">{activeProfile.job?.title || activeProfile.jobTitle || 'Applied Position'}</p>
                 </div>
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Skills</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {Array.isArray(activeProfile.applicant?.skills) && activeProfile.applicant.skills.length ? (
-                      activeProfile.applicant.skills.map((skill) => (
-                        <span key={skill._id || skill} className="rounded-full bg-white px-3 py-1 text-sm text-slate-700 shadow-sm">{skill.name || skill}</span>
-                      ))
-                    ) : (
-                      <span className="text-sm text-slate-500">No skills added</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-sm uppercase tracking-[0.2em] text-slate-400">About</p>
-                  <p className="mt-4 text-sm leading-7 text-slate-700">{activeProfile.applicant?.bio || 'No bio available.'}</p>
-                </div>
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Resume</p>
-                  <p className="mt-3 text-sm text-slate-700">{getFileNameFromUrl(activeProfile.resumeUrl || activeProfile.applicant?.cv)}</p>
-                  <button
-                    type="button"
-                    onClick={() => window.open(`${api.defaults.baseURL}/applications/${activeProfile._id}/resume`, '_blank')}
-                    className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-                  >
-                    <Download className="h-4 w-4" /> View resume
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => { navigator.clipboard && navigator.clipboard.writeText(activeProfile.applicant?.email || ''); }} aria-label="Copy email" className="rounded-md p-2 text-slate-600 hover:bg-slate-50">
+                    Copy Email
                   </button>
+                  <button type="button" onClick={() => setActiveProfile(null)} aria-label="Close profile" className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Candidate Summary */}
+                <section className="grid gap-4 md:grid-cols-3 items-start">
+                  <div className="md:col-span-2">
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-16 flex-shrink-0 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center overflow-hidden">
+                        {activeProfile.applicant?.avatar ? (
+                          <img src={activeProfile.applicant.avatar} alt="avatar" className="h-full w-full object-cover" />
+                        ) : (
+                          <User className="h-8 w-8" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900">{activeProfile.applicant?.firstName} {activeProfile.applicant?.lastName}</h3>
+                        <p className="text-sm text-slate-500">{activeProfile.job?.title || activeProfile.jobTitle || 'Applied Position'}</p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                          <div className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> <a href={`mailto:${activeProfile.applicant?.email || ''}`} className="underline">{activeProfile.applicant?.email || 'Not provided'}</a></div>
+                          <div className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" /> <a href={`tel:${activeProfile.applicant?.phone || ''}`}>{activeProfile.applicant?.phone || 'Not provided'}</a></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                        <p className="text-xs text-slate-400">Experience</p>
+                        <p className="mt-1 text-sm text-slate-800">{activeProfile.applicant?.experience || application.resumeAnalysis?.experienceYears ? `${application.resumeAnalysis?.experienceYears || activeProfile.applicant?.experience} years` : 'Not provided'}</p>
+                      </div>
+                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                        <p className="text-xs text-slate-400">Education</p>
+                        <p className="mt-1 text-sm text-slate-800">{Array.isArray(activeProfile.applicant?.education) ? activeProfile.applicant.education.join(', ') : activeProfile.applicant?.education || 'Not provided'}</p>
+                      </div>
+                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                        <p className="text-xs text-slate-400">Location</p>
+                        <p className="mt-1 text-sm text-slate-800">{activeProfile.applicant?.location || 'Not provided'}</p>
+                      </div>
+                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                        <p className="text-xs text-slate-400">Availability</p>
+                        <p className="mt-1 text-sm text-slate-800">{activeProfile.applicant?.availability || 'Not provided'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Skills badges */}
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Skills</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {Array.isArray(activeProfile.applicant?.skills) && activeProfile.applicant.skills.length ? (
+                        activeProfile.applicant.skills.map((skill) => (
+                          <span key={skill._id || skill} className="inline-flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 shadow-sm">{skill.name || skill}</span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-slate-500">No skills provided.</span>
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                <div className="grid gap-6 md:grid-cols-3">
+                  {/* Match Analysis */}
+                  <div className="md:col-span-1 rounded-2xl border border-slate-100 bg-white p-4">
+                    <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Match Analysis</p>
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-slate-600">Overall Match</div>
+                        <div className="text-lg font-semibold text-slate-900">{activeProfile.matchScore || 0}%</div>
+                      </div>
+                      <div className="mt-3 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                        <div className={`h-full rounded-full ${activeProfile.matchScore >= 80 ? 'bg-emerald-500' : activeProfile.matchScore >= 60 ? 'bg-amber-400' : 'bg-rose-500'}`} style={{ width: `${activeProfile.matchScore || 0}%` }} />
+                      </div>
+
+                      <div className="mt-4 space-y-3 text-sm text-slate-700">
+                        <div>
+                          <div className="flex items-center justify-between"><div>Skills</div><div className="font-semibold">{activeProfile.matchScore || 0}%</div></div>
+                          <div className="mt-1 h-2 w-full rounded-full bg-slate-100 overflow-hidden"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${activeProfile.matchScore || 0}%` }} /></div>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between"><div>Experience</div><div className="font-semibold">{activeProfile.resumeAnalysis?.experienceYears ? `${Math.min(100, (activeProfile.resumeAnalysis.experienceYears / 10) * 100).toFixed(0)}%` : '—'}</div></div>
+                          <div className="mt-1 h-2 w-full rounded-full bg-slate-100 overflow-hidden"><div className="h-full rounded-full bg-amber-400" style={{ width: `${activeProfile.resumeAnalysis?.experienceYears ? Math.min(100, (activeProfile.resumeAnalysis.experienceYears / 10) * 100) : 0}%` }} /></div>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between"><div>Education</div><div className="font-semibold">{activeProfile.resumeAnalysis?.education?.length ? 'Good' : '—'}</div></div>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between"><div>Location</div><div className="font-semibold">{activeProfile.applicant?.location ? 'Match' : '—'}</div></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Resume & Portfolio */}
+                  <div className="md:col-span-2 rounded-2xl border border-slate-100 bg-white p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Resume</p>
+                        <p className="mt-2 text-sm font-semibold text-slate-900">{getFileNameFromUrl(activeProfile.resumeUrl || activeProfile.applicant?.cv)}</p>
+                        <p className="mt-1 text-sm text-slate-500">Uploaded {formatDate(activeProfile.appliedAt || activeProfile.createdAt)} • File size: Not available • Type: PDF</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => window.open(`${api.defaults.baseURL}/applications/${activeProfile._id}/resume`, '_blank')} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">View</button>
+                        <button type="button" onClick={() => window.open(`${api.defaults.baseURL}/applications/${activeProfile._id}/resume?download=1`, '_blank')} className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Download</button>
+                        <button type="button" onClick={() => { const w = window.open(`${api.defaults.baseURL}/applications/${activeProfile._id}/resume`, '_blank'); if (w) { w.focus(); setTimeout(() => w.print(), 700); } }} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">Print</button>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid gap-4 md:grid-cols-3">
+                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                        <p className="text-xs text-slate-400">Website</p>
+                        {activeProfile.applicant?.portfolioUrl ? <a href={createProfileUrl(activeProfile.applicant.portfolioUrl)} target="_blank" rel="noreferrer" className="text-sm text-emerald-600">Visit</a> : <p className="text-sm text-slate-500">Not provided</p>}
+                      </div>
+                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                        <p className="text-xs text-slate-400">GitHub</p>
+                        {activeProfile.applicant?.githubUrl ? <a href={createProfileUrl(activeProfile.applicant.githubUrl)} target="_blank" rel="noreferrer" className="text-sm text-emerald-600">Open</a> : <p className="text-sm text-slate-500">Not provided</p>}
+                      </div>
+                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                        <p className="text-xs text-slate-400">LinkedIn</p>
+                        {activeProfile.applicant?.linkedinUrl ? <a href={createProfileUrl(activeProfile.applicant.linkedinUrl)} target="_blank" rel="noreferrer" className="text-sm text-emerald-600">Open</a> : <p className="text-sm text-slate-500">Not provided</p>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-3">
+                  {/* Experience card */}
+                  <div className="rounded-2xl border border-slate-100 bg-white p-4 md:col-span-2">
+                    <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Experience</p>
+                    <div className="mt-4 space-y-4">
+                      {Array.isArray(activeProfile.applicant?.work) && activeProfile.applicant.work.length ? (
+                        activeProfile.applicant.work.map((job, idx) => (
+                          <div key={idx} className="rounded-lg border border-slate-100 p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-semibold text-slate-900">{job.title || 'Job Title'}</div>
+                                <div className="text-sm text-slate-600">{job.company || 'Company'}</div>
+                              </div>
+                              <div className="text-sm text-slate-500">{job.startDate ? `${formatDate(job.startDate)} — ${job.endDate ? formatDate(job.endDate) : 'Present'}` : 'Period not provided'}</div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500">No experience provided.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Education card */}
+                  <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                    <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Education</p>
+                    <div className="mt-4 space-y-3">
+                      {Array.isArray(activeProfile.applicant?.educationList) && activeProfile.applicant.educationList.length ? (
+                        activeProfile.applicant.educationList.map((edu, idx) => (
+                          <div key={idx}>
+                            <div className="font-semibold text-slate-900">{edu.degree || 'Degree'}</div>
+                            <div className="text-sm text-slate-600">{edu.university || 'University'} • {edu.year || ''}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500">Education not provided.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timeline & Interview & Notes & Rating */}
+                <div className="grid gap-6 md:grid-cols-3">
+                  <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                    <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Application Timeline</p>
+                    <div className="mt-4 space-y-3 text-sm text-slate-600">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
+                        <div>
+                          <div className="font-semibold text-slate-900">Application Submitted</div>
+                          <div className="text-xs text-slate-500">{formatDateTime(activeProfile.appliedAt || activeProfile.createdAt)}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 h-2 w-2 rounded-full bg-slate-300" />
+                        <div>
+                          <div className="font-semibold text-slate-900">Resume Reviewed</div>
+                          <div className="text-xs text-slate-500">{activeProfile.updatedAt ? formatDateTime(activeProfile.updatedAt) : '—'}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 h-2 w-2 rounded-full bg-slate-300" />
+                        <div>
+                          <div className="font-semibold text-slate-900">{activeProfile.status || 'Status'}</div>
+                          <div className="text-xs text-slate-500">{formatDateTime(activeProfile.updatedAt || activeProfile.createdAt)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                    <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Interview</p>
+                    <div className="mt-4 text-sm text-slate-700">
+                      {activeProfile.interviewDate ? (
+                        <div className="space-y-2">
+                          <div><span className="font-semibold">Date:</span> {formatDate(activeProfile.interviewDate)}</div>
+                          <div><span className="font-semibold">Time:</span> {activeProfile.interviewTime || 'Not provided'}</div>
+                          <div><span className="font-semibold">Type:</span> {activeProfile.interviewType || 'In-Person'}</div>
+                          <div><span className="font-semibold">Status:</span> {activeProfile.interviewStatus || 'Scheduled'}</div>
+                          <div><span className="font-semibold">Interviewer:</span> {activeProfile.interviewer || 'Not provided'}</div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-500">No interview scheduled.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                    <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Employer Notes</p>
+                    <div className="mt-3 space-y-3">
+                      {Array.isArray(activeProfile.employerNotes) && activeProfile.employerNotes.length ? (
+                        activeProfile.employerNotes.map((n, i) => (
+                          <div key={i} className="rounded-lg border border-slate-100 p-3 bg-amber-50">
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm font-semibold">{n.author || user?.firstName || 'You'}</div>
+                              <div className="text-xs text-slate-500">{n.date ? formatDateTime(n.date) : ''}</div>
+                            </div>
+                            <div className="mt-2 text-sm text-slate-700">{n.content}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500">No notes yet. Add a private note.</p>
+                      )}
+
+                      <div>
+                        <textarea rows={3} placeholder="Add a private note..." className="textarea w-full border-slate-200" id="newNote" aria-label="Add private note" />
+                        <div className="mt-2 flex justify-end gap-2">
+                          <button type="button" onClick={() => { const el = document.getElementById('newNote'); if (!el) return; const value = (el.value || '').toString().trim(); if (!value) return; const noteObj = { author: user?.firstName || 'You', date: new Date().toISOString(), content: value }; /* append locally */ if (!Array.isArray(activeProfile.employerNotes)) activeProfile.employerNotes = []; activeProfile.employerNotes.unshift(noteObj); el.value = ''; /* attempt to save via existing API */ handleNoteSave(activeProfile._id); }} className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Save Note</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rating and Actions */}
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="rounded-2xl border border-slate-100 bg-white p-4 w-full md:w-1/2">
+                    <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Candidate Rating</p>
+                    <div className="mt-3 space-y-3">
+                      {['Communication','Technical Skills','Problem Solving','Culture Fit'].map((label) => (
+                        <div key={label} className="flex items-center justify-between">
+                          <div className="text-sm text-slate-700">{label}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex text-amber-400">{Array.from({ length: 5 }).map((_, i) => (<Star key={i} className="h-4 w-4" />))}</div>
+                            <div className="text-sm text-slate-600">4.0</div>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="mt-2 flex items-center gap-3">
+                        <div className="text-sm font-semibold">Overall</div>
+                        <div className="text-lg font-semibold text-slate-900">4.0</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="w-full md:w-1/2">
+                    <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Current Status</p>
+                          <select value={statusById[activeProfile._id] || activeProfile.status} onChange={(e) => handleStatusChange(activeProfile._id, e.target.value)} className="input mt-2" aria-label="Change application status">
+                            {['Applied','Under Review','Shortlisted','Interview Scheduled','Interviewed','Offer Sent','Hired','Rejected'].map((s) => (<option key={s} value={s}>{s}</option>))}
+                          </select>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button type="button" onClick={() => handleInterviewOpen(activeProfile)} className="inline-flex items-center gap-2 rounded-md border border-emerald-600 bg-white px-3 py-2 text-sm font-semibold text-emerald-600">Schedule Interview</button>
+                          <button type="button" onClick={() => { if (window.confirm('Shortlist this candidate?')) handleAction(activeProfile._id,'shortlist'); }} className="inline-flex items-center gap-2 rounded-md border border-emerald-600 bg-white px-3 py-2 text-sm font-semibold text-emerald-600">Shortlist</button>
+                          <button type="button" onClick={() => { if (window.confirm('Are you sure you want to hire this candidate?')) handleAction(activeProfile._id,'hire'); }} className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Hire</button>
+                          <button type="button" onClick={() => { if (window.confirm('Are you sure you want to reject this candidate?')) handleAction(activeProfile._id,'reject'); }} className="inline-flex items-center gap-2 rounded-md border border-rose-600 bg-white px-3 py-2 text-sm font-semibold text-rose-600">Reject</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 text-right">
+                      <button type="button" onClick={() => setActiveProfile(null)} className="text-sm text-slate-600 underline">Close</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

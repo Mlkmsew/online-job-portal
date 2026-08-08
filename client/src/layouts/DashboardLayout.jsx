@@ -5,12 +5,20 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useState } from 'react';
 import { FiMenu } from 'react-icons/fi';
+import { useSelector } from 'react-redux';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user } = useSelector((state) => state.auth);
+
+  const fontSize = user?.settings?.appearance?.fontSize || 'Medium';
+  const isEmployer = user?.role === 'employer';
 
   return (
-    <div className="flex h-screen bg-white text-slate-900">
+    <div
+      className={`flex h-screen ${isEmployer ? 'employer-dashboard' : ''} bg-white text-slate-900`}
+      data-font-size={isEmployer ? fontSize : undefined}
+    >
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 

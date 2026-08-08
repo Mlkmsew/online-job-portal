@@ -610,7 +610,7 @@ const InterviewDetails = () => {
         applicant: interview?.applicant?._id || interview?.applicant,
         company: interview?.company?._id || interview?.company,
         scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        type: interview?.type || 'Video Interview',
+        type: interview?.type || 'Video',
         location: interview?.location || interview?.meetingLink,
         meetingLink: interview?.meetingLink,
         note: interview?.note || interview?.feedback,

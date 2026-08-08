@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import api from '../../../services/api';
-import { setUser } from '../../../store/slices/authSlice';
+import { logoutUser, setUser } from '../../../store/slices/authSlice';
 import {
   FiAlertTriangle,
   FiBell,
@@ -161,7 +161,10 @@ const EmployerSettings = () => {
       if (savedSettings.companyPreferences) setCompanyPreferences((prev) => ({ ...prev, ...savedSettings.companyPreferences }));
       if (savedSettings.notificationPreferences) setNotificationSettings((prev) => ({ ...prev, ...savedSettings.notificationPreferences }));
       if (savedSettings.appearance) setAppearanceSettings((prev) => ({ ...prev, ...savedSettings.appearance }));
-      if (savedSettings.theme) setTheme(savedSettings.theme);
+      if (savedSettings.theme) {
+        setTheme(savedSettings.theme);
+        setAppearanceSettings((prev) => ({ ...prev, theme: savedSettings.theme }));
+      }
     };
 
     try {
@@ -269,30 +272,12 @@ const EmployerSettings = () => {
       };
 
       const profileResponse = await api.put('/auth/update-profile', profilePayload);
-      syncStoredUser(profileResponse?.data?.data || {
+      const updatedUser = profileResponse?.data?.data || {
         firstName,
         lastName,
         email: account.workEmail,
-      });
-
-      const payload = {
-        account: {
-          fullName: account.fullName,
-          workEmail: account.workEmail,
-          companyName: account.companyName,
-        },
-        companyProfile: {
-          companyName: account.companyName,
-          ...companyPreferences,
-        },
-        notifications,
-        privacySettings,
-        companyPreferences,
-        notificationSettings,
-        appearanceSettings,
-        theme,
-        savedAt: new Date().toISOString(),
       };
+      syncStoredUser(updatedUser);
 
       const settingsPayload = {
         settings: {
@@ -315,6 +300,26 @@ const EmployerSettings = () => {
       };
 
       await api.put('/auth/update-settings', settingsPayload);
+      dispatch(setUser({ settings: settingsPayload.settings }));
+
+      const payload = {
+        account: {
+          fullName: account.fullName,
+          workEmail: account.workEmail,
+          companyName: account.companyName,
+        },
+        companyProfile: {
+          companyName: account.companyName,
+          ...companyPreferences,
+        },
+        notifications,
+        privacySettings,
+        companyPreferences,
+        notificationSettings,
+        appearanceSettings,
+        theme,
+        savedAt: new Date().toISOString(),
+      };
 
       localStorage.setItem('employer-settings', JSON.stringify(payload));
       setSaveMessage('Changes saved successfully.');
@@ -353,6 +358,43 @@ const EmployerSettings = () => {
 
   const toggleNotificationPreference = (key) => {
     setNotificationSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const clearSessionAndRedirect = (redirectTo = '/login') => {
+    dispatch(logoutUser());
+    window.location.href = redirectTo;
+  };
+
+  const handleDeactivateAccount = async () => {
+    const confirmed = window.confirm('Are you sure you want to deactivate your employer account? You can reactivate it later by contacting support.');
+    if (!confirmed) return;
+
+    try {
+      await api.put('/auth/deactivate-account');
+      clearSessionAndRedirect('/login');
+    } catch (error) {
+      setSaveMessage(error?.response?.data?.message || 'Failed to deactivate account.');
+      window.clearTimeout(window.__employerSettingsSaveTimer);
+      window.__employerSettingsSaveTimer = window.setTimeout(() => setSaveMessage(''), 4000);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirm.trim().toUpperCase() !== 'DELETE') {
+      setSaveMessage('Please type DELETE to confirm account deletion.');
+      window.clearTimeout(window.__employerSettingsSaveTimer);
+      window.__employerSettingsSaveTimer = window.setTimeout(() => setSaveMessage(''), 4000);
+      return;
+    }
+
+    try {
+      await api.delete('/auth/delete-account');
+      clearSessionAndRedirect('/');
+    } catch (error) {
+      setSaveMessage(error?.response?.data?.message || 'Failed to delete account.');
+      window.clearTimeout(window.__employerSettingsSaveTimer);
+      window.__employerSettingsSaveTimer = window.setTimeout(() => setSaveMessage(''), 4000);
+    }
   };
 
   const handlePasswordSubmit = async (event) => {
@@ -415,6 +457,18 @@ const EmployerSettings = () => {
     setShowPasswordEditor(false);
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
   };
+
+  useEffect(() => {
+    const selectedTheme = appearanceSettings.theme === 'System'
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches ? 'Dark' : 'Light'
+      : appearanceSettings.theme;
+
+    if (selectedTheme === 'Dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [appearanceSettings.theme]);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -1229,7 +1283,11 @@ const EmployerSettings = () => {
                       <h3 className="text-xl font-semibold text-red-800">Deactivate Account</h3>
                       <p className="mt-2 text-sm text-red-700">Temporarily disable your employer account.</p>
                     </div>
-                    <button type="button" className="rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700">
+                    <button
+                      type="button"
+                      onClick={handleDeactivateAccount}
+                      className="rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+                    >
                       Deactivate Account
                     </button>
                   </div>
@@ -1238,11 +1296,16 @@ const EmployerSettings = () => {
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-xl font-semibold text-red-800">Delete Company</h3>
-                      <p className="mt-2 text-sm text-red-700">Delete your company permanently.</p>
+                      <h3 className="text-xl font-semibold text-red-800">Delete Account</h3>
+                      <p className="mt-2 text-sm text-red-700">Permanently delete your account and all employer data from the platform.</p>
                     </div>
-                    <button type="button" className="rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700">
-                      Delete Company
+                    <button
+                      type="button"
+                      onClick={handleDeleteAccount}
+                      className={`rounded-2xl px-4 py-2.5 text-sm font-semibold text-white transition ${deleteConfirm.trim().toUpperCase() === 'DELETE' ? 'bg-red-600 hover:bg-red-700' : 'bg-red-300 cursor-not-allowed'}`}
+                      disabled={deleteConfirm.trim().toUpperCase() !== 'DELETE'}
+                    >
+                      Delete Account
                     </button>
                   </div>
 

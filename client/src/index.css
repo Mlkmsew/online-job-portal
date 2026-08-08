@@ -173,6 +173,29 @@
   @apply bg-gray-400 dark:bg-gray-500;
 }
 
+.template-gallery-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #818cf8 #e0e7ff;
+}
+
+.template-gallery-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.template-gallery-scroll::-webkit-scrollbar-track {
+  background: #e0e7ff;
+  border-radius: 9999px;
+}
+
+.template-gallery-scroll::-webkit-scrollbar-thumb {
+  background: #818cf8;
+  border-radius: 9999px;
+}
+
+.template-gallery-scroll::-webkit-scrollbar-thumb:hover {
+  background: #6366f1;
+}
+
 /* Loading Spinner */
 .spinner {
   border: 3px solid rgba(15, 157, 88, 0.1);
@@ -204,6 +227,43 @@
 .fade-exit-active {
   opacity: 0;
   transition: opacity 300ms;
+}
+
+.animate-fade-in {
+  animation: fade-in 240ms ease-out both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   EMPLOYER DASHBOARD FONT SIZE PREFERENCE
+   Applies saved employer font-size settings only within the employer dashboard.
+   ============================================ */
+.employer-dashboard[data-font-size="Small"] {
+  font-size: 0.875rem; /* 14px */
+}
+
+.employer-dashboard[data-font-size="Medium"] {
+  font-size: 1rem; /* 16px */
+}
+
+.employer-dashboard[data-font-size="Large"] {
+  font-size: 1.125rem; /* 18px */
+}
+
+.employer-dashboard[data-font-size="Small"] *,
+.employer-dashboard[data-font-size="Medium"] *,
+.employer-dashboard[data-font-size="Large"] * {
+  line-height: 1.6;
 }
 
 /* ============================================

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { FiMail, FiMessageCircle, FiSend, FiPlus, FiArrowLeft } from 'react-icons/fi';
-import { getConversations, getMessages, sendMessage } from '../../../services/messageService';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { FiMail, FiMessageCircle, FiSend, FiPlus, FiArrowLeft, FiEdit2, FiTrash2, FiX } from 'react-icons/fi';
+import { getConversations, getMessages, sendMessage, updateMessage, deleteMessage } from '../../../services/messageService';
 import socketService from '../../../services/socket';
 import useAuth from '../../../hooks/useAuth';
 
@@ -11,6 +11,13 @@ const Messages = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const conversationIdFromUrl = searchParams.get('conversationId');
+  const location = useLocation();
+
+  const basePath = location.pathname.startsWith('/employer')
+    ? '/employer'
+    : location.pathname.startsWith('/admin')
+      ? '/admin'
+      : '/dashboard';
 
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -22,8 +29,26 @@ const Messages = () => {
   const [newConversationEmail, setNewConversationEmail] = useState('');
   const [newConversationMessage, setNewConversationMessage] = useState('');
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [actionMenuVisible, setActionMenuVisible] = useState(false);
+  const [actionMenuMessage, setActionMenuMessage] = useState(null);
+  const [actionMenuPosition, setActionMenuPosition] = useState({ top: 0, left: 0 });
+  const [editMessageId, setEditMessageId] = useState(null);
+  const [editMessageText, setEditMessageText] = useState('');
 
   const messagesEndRef = useRef(null);
+  const actionMenuRef = useRef(null);
+  const editTextareaRef = useRef(null);
+
+  useEffect(() => {
+    if (!successMessage) return undefined;
+
+    const timeout = setTimeout(() => {
+      setSuccessMessage('');
+    }, 1000);
+
+    return () => clearTimeout(timeout);
+  }, [successMessage]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -31,11 +56,13 @@ const Messages = () => {
 
   const loadConversations = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const res = await getConversations();
       setConversations(res.data?.data || []);
     } catch (err) {
       console.error('Failed to load conversations:', err);
+      setError(err.response?.data?.message || 'Unable to load conversations.');
     } finally {
       setIsLoading(false);
     }
@@ -47,6 +74,7 @@ const Messages = () => {
     try {
       const res = await getMessages(conversationId);
       setMessages(res.data?.data || []);
+      await loadConversations();
     } catch (err) {
       console.error('Failed to load messages:', err);
       setError(err.response?.data?.message || 'Unable to load messages.');
@@ -58,7 +86,7 @@ const Messages = () => {
 
   const handleSelectConversation = (conversation) => {
     setSelectedConversation(conversation);
-    navigate(`/dashboard/messages?conversationId=${conversation._id}`);
+    navigate(`${basePath}/messages?conversationId=${conversation._id}`);
   };
 
   const handleSendMessage = async (e) => {
@@ -66,6 +94,8 @@ const Messages = () => {
     if (!inputMessage.trim() || !selectedConversation) return;
 
     setIsSending(true);
+    setError(null);
+    setSuccessMessage('');
     try {
       const recipient = selectedConversation.participants.find((p) => p._id !== currentUserId);
       const payload = {
@@ -86,11 +116,79 @@ const Messages = () => {
     }
   };
 
+  const closeActionMenu = () => {
+    setActionMenuVisible(false);
+    setActionMenuMessage(null);
+  };
+
+  const handleOpenActionMenu = (event, message) => {
+    if (editMessageId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const top = rect.top + window.scrollY + 24;
+    const left = rect.left + window.scrollX + rect.width - 180;
+
+    setActionMenuVisible(true);
+    setActionMenuMessage(message);
+    setActionMenuPosition({ top, left });
+  };
+
+  const handleEditMessage = (message) => {
+    setEditMessageId(message._id);
+    setEditMessageText(message.content || '');
+    closeActionMenu();
+  };
+
+  const handleDeleteMessage = async (message) => {
+    closeActionMenu();
+    const confirmed = window.confirm('Are you sure you want to delete this message?');
+    if (!confirmed) return;
+
+    try {
+      await deleteMessage(message._id);
+      setMessages((prev) => prev.filter((msg) => msg._id !== message._id));
+      setSuccessMessage('Message deleted successfully.');
+    } catch (err) {
+      console.error('Delete message failed:', err);
+      setError(err.response?.data?.message || 'Unable to delete message.');
+    }
+  };
+
+  const handleSaveEditedMessage = async () => {
+    if (!editMessageText.trim()) {
+      setError('Message cannot be empty.');
+      return;
+    }
+
+    try {
+      const res = await updateMessage(editMessageId, editMessageText.trim());
+      setMessages((prev) => prev.map((msg) => (msg._id === editMessageId ? res.data.data : msg)));
+      setSuccessMessage('Message updated successfully.');
+      setEditMessageId(null);
+      setEditMessageText('');
+    } catch (err) {
+      console.error('Update message failed:', err);
+      setError(err.response?.data?.message || 'Unable to update message.');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditMessageId(null);
+    setEditMessageText('');
+  };
+
   const handleStartNewConversation = async (e) => {
     e.preventDefault();
     if (!newConversationEmail.trim() || !newConversationMessage.trim()) return;
 
     setIsSending(true);
+    setError(null);
+    setSuccessMessage('');
     try {
       const res = await sendMessage({
         recipientId: newConversationEmail.trim(),
@@ -104,7 +202,8 @@ const Messages = () => {
       setIsModalOpen(false);
       setNewConversationEmail('');
       setNewConversationMessage('');
-      navigate(`/dashboard/messages?conversationId=${createdConversation._id}`);
+      setSuccessMessage('Conversation started successfully.');
+      navigate(`${basePath}/messages?conversationId=${createdConversation._id}`);
     } catch (err) {
       console.error('Start conversation failed:', err);
       setError(err.response?.data?.message || 'Unable to start conversation.');
@@ -147,6 +246,18 @@ const Messages = () => {
       loadConversations();
     });
 
+    socketService.on('message-updated', (message) => {
+      if (message.conversation === selectedConversation?._id) {
+        setMessages((prev) => prev.map((msg) => (msg._id === message._id ? message : msg)));
+      }
+    });
+
+    socketService.on('message-deleted', ({ _id, conversation }) => {
+      if (conversation === selectedConversation?._id) {
+        setMessages((prev) => prev.filter((msg) => msg._id !== _id));
+      }
+    });
+
     socketService.on('message-read', () => {
       loadConversations();
     });
@@ -156,6 +267,8 @@ const Messages = () => {
         socketService.leaveChat(selectedConversation._id);
       }
       socketService.off('new-message');
+      socketService.off('message-updated');
+      socketService.off('message-deleted');
       socketService.off('message-read');
     };
   }, [selectedConversation]);
@@ -164,6 +277,56 @@ const Messages = () => {
     if (!selectedConversation) return null;
     return selectedConversation.participants.find((participant) => participant._id !== currentUserId);
   }, [selectedConversation, currentUserId]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (actionMenuVisible && actionMenuRef.current && !actionMenuRef.current.contains(event.target)) {
+        closeActionMenu();
+      }
+    };
+
+    if (actionMenuVisible) {
+      window.addEventListener('mousedown', handleOutsideClick);
+      return () => window.removeEventListener('mousedown', handleOutsideClick);
+    }
+    return undefined;
+  }, [actionMenuVisible]);
+
+  useEffect(() => {
+    if (!editMessageId) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        handleCancelEdit();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editMessageId]);
+
+  useEffect(() => {
+    if (editMessageId && editTextareaRef.current) {
+      editTextareaRef.current.focus();
+      const length = editTextareaRef.current.value.length;
+      editTextareaRef.current.setSelectionRange(length, length);
+    }
+  }, [editMessageId]);
+
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        if (editMessageId) {
+          handleCancelEdit();
+        } else if (actionMenuVisible) {
+          closeActionMenu();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [editMessageId, actionMenuVisible]);
 
   return (
     <div className="max-w-6xl mx-auto pb-10">
@@ -187,49 +350,60 @@ const Messages = () => {
             <span>Recent conversations</span>
             {isLoading && <span className="text-xs text-gray-500">Loading...</span>}
           </div>
+          {error && (
+            <div className="mb-4 rounded-2xl bg-red-50 p-3 text-sm text-red-700">{error}</div>
+          )}
+          {successMessage && (
+            <div className="mb-4 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-700">{successMessage}</div>
+          )}
+          {conversations.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center text-gray-500">
+              No conversations yet. Start a new chat to connect with employers or support.
+            </div>
+          ) : (
+            conversations.map((conversation) => {
+              const participant = conversation.participants.find((participant) => participant._id !== currentUserId);
+              const lastMessage = conversation.lastMessage?.content || 'No messages yet';
+              const unreadCount = (() => {
+                const count = conversation.unreadCount;
+                if (typeof count === 'number') return count;
+                if (count?.get) return count.get(currentUserId) || 0;
+                return count?.[currentUserId] || 0;
+              })();
 
-          <div className="space-y-3">
-            {conversations.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center text-gray-500">
-                No conversations yet. Start a new chat to connect with employers or support.
-              </div>
-            ) : (
-              conversations.map((conversation) => {
-                const participant = conversation.participants.find((participant) => participant._id !== currentUserId);
-                const lastMessage = conversation.lastMessage?.content || 'No messages yet';
-                return (
-                  <button
-                    key={conversation._id}
-                    type="button"
-                    onClick={() => handleSelectConversation(conversation)}
-                    className={`w-full text-left rounded-3xl border px-4 py-4 transition ${selectedConversation?._id === conversation._id ? 'border-emerald-300 bg-emerald-50 dark:bg-gray-900' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'} `}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{participant?.firstName} {participant?.lastName}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate max-w-[320px]">{lastMessage}</p>
-                      </div>
-                      <span className="text-xs font-semibold text-teal-700 bg-teal-50 rounded-full px-3 py-1">
-                  {(() => {
-                    const count = conversation.unreadCount;
-                    if (typeof count === 'number') return count > 0 ? 'Unread' : 'Read';
-                    if (count?.get) return count.get(currentUserId) > 0 ? 'Unread' : 'Read';
-                    return count?.[currentUserId] > 0 ? 'Unread' : 'Read';
-                  })()}
-                </span>
+              return (
+                <button
+                  key={conversation._id}
+                  type="button"
+                  onClick={() => handleSelectConversation(conversation)}
+                  className={`w-full text-left rounded-3xl border px-4 py-4 transition ${selectedConversation?._id === conversation._id ? 'border-emerald-300 bg-emerald-50 dark:bg-gray-900' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'} `}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{participant?.firstName} {participant?.lastName}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate max-w-[320px]">{lastMessage}</p>
                     </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
+                    {unreadCount > 0 ? (
+                      <span className="text-xs font-semibold text-white bg-rose-600 rounded-full px-3 py-1">
+                        {unreadCount}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold text-slate-500 bg-slate-100 rounded-full px-3 py-1">
+                        Read
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })
+          )}
         </div>
 
         <aside className="rounded-3xl border border-gray-150 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm flex flex-col h-full">
           {selectedConversation ? (
             <>
               <div className="flex items-center justify-between gap-3 mb-4">
-                <button type="button" onClick={() => navigate('/dashboard/messages')} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
+                <button type="button" onClick={() => navigate(`${basePath}/messages`)} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
                   <FiArrowLeft className="w-4 h-4" /> Back
                 </button>
                 <div>
@@ -238,18 +412,83 @@ const Messages = () => {
                 </div>
               </div>
               <div className="mb-4 overflow-y-auto max-h-[520px] space-y-3 pr-2">
-                {messages.map((message) => (
-                  <div
-                    key={message._id}
-                    className={`flex ${message.sender === currentUserId ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`rounded-3xl p-4 max-w-[85%] ${message.sender === currentUserId ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100'}`}>
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      <p className="text-xs text-gray-500 mt-2 text-right">{new Date(message.createdAt).toLocaleString()}</p>
+                {messages.map((message) => {
+                  const senderId = message.sender?._id?.toString?.() || message.sender?.toString?.();
+                  const isMine = senderId === currentUserId?.toString();
+
+                  return (
+                    <div
+                      key={message._id}
+                      className={`relative flex ${isMine ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+                      <div
+                        onClick={(e) => isMine && handleOpenActionMenu(e, message)}
+                        onContextMenu={(e) => isMine && handleOpenActionMenu(e, message)}
+                        className={`max-w-[85%] p-4 text-sm shadow-sm cursor-pointer ${isMine ? 'bg-emerald-600 text-white rounded-[18px_18px_4px_18px] hover:bg-emerald-500' : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 rounded-[18px_18px_18px_4px]'}`}>
+                        {editMessageId === message._id ? (
+                          <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+                            <textarea
+                              ref={editTextareaRef}
+                              value={editMessageText}
+                              onChange={(e) => setEditMessageText(e.target.value)}
+                              className="w-full min-h-[120px] rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500"
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button type="button" onClick={(e) => { e.stopPropagation(); handleCancelEdit(); }} className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/20">
+                                Cancel
+                              </button>
+                              <button type="button" onClick={(e) => { e.stopPropagation(); handleSaveEditedMessage(); }} className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100">
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                            {message.updatedAt && message.updatedAt !== message.createdAt && (
+                              <span className="mt-2 block text-[11px] opacity-80">(edited)</span>
+                            )}
+                            <p className={`mt-2 text-xs ${isMine ? 'text-emerald-100 text-right' : 'text-gray-500 dark:text-gray-400 text-left'}`}>
+                              {new Date(message.createdAt).toLocaleString()}
+                            </p>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={messagesEndRef} />
               </div>
+              {actionMenuVisible && actionMenuMessage && (
+                <div
+                  ref={actionMenuRef}
+                  style={{ top: actionMenuPosition.top, left: actionMenuPosition.left }}
+                  className="fixed z-50 w-52 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleEditMessage(actionMenuMessage)}
+                    className="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <FiEdit2 className="h-4 w-4" />
+                    ✏️ Edit Message
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMessage(actionMenuMessage)}
+                    className="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50"
+                  >
+                    <FiTrash2 className="h-4 w-4" />
+                    🗑️ Delete Message
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeActionMenu}
+                    className="mt-2 flex w-full items-center justify-center rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-500 hover:bg-gray-50"
+                  >
+                    <FiX className="h-4 w-4" /> Close
+                  </button>
+                </div>
+              )}
               <form onSubmit={handleSendMessage} className="mt-auto">
                 <div className="flex gap-3">
                   <input

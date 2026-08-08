@@ -4,11 +4,12 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getJobs, getJob, createJob, updateJob, deleteJob, getMyJobs, closeJob, getSimilarJobs, getJobStats,
+  getJobs, getJob, createJob, updateJob, deleteJob, getMyJobs, closeJob, getSimilarJobs, getJobStats, getRecommendations,
 } = require('../controllers/jobController');
 const { protect, optionalAuth, authorize, requireEmailVerified } = require('../middleware/auth');
 const { jobValidator, validate } = require('../middleware/validate');
 
+router.get('/recommendations', protect, getRecommendations);
 router.get('/stats/overview', getJobStats);
 router.get('/my/posted', protect, authorize('employer', 'admin'), getMyJobs);
 router.get('/:id/similar', getSimilarJobs);

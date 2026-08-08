@@ -12,6 +12,7 @@
     "generate:pdf": "node scripts/html_to_pdf.cjs"
   },
   "dependencies": {
+    "@babel/parser": "^8.0.4",
     "@react-oauth/google": "^0.9.1",
     "@reduxjs/toolkit": "^2.0.1",
     "axios": "^1.6.5",

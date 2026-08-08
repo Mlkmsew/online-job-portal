@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { Award, Bell, CalendarDays, Clock3, Eye, FileText, Link2, MapPin, SquarePen, Star, ThumbsDown, ThumbsUp, XCircle, PlayCircle } from 'lucide-react';
+import { format, formatDistanceToNowStrict, isToday, isTomorrow, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
+import { Award, Bell, BriefcaseBusiness, CalendarDays, ChevronLeft, ChevronRight, Clock3, Eye, FileText, Link2, Mail, MapPin, Phone, PlayCircle, Search, Sparkles, SquarePen, Star, ThumbsDown, ThumbsUp, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
 import LiveInterview from './components/LiveInterview';
@@ -14,13 +14,19 @@ import InterviewRoundProgress from './components/InterviewRoundProgress';
 import InterviewCompletedSummary from './components/InterviewCompletedSummary';
 import HiringDecisionHub from './components/HiringDecisionHub';
 
-const tabs = ['Upcoming', 'Completed', 'Canceled'];
+const tabs = [
+  { value: 'Upcoming', label: 'Upcoming' },
+  { value: 'Completed', label: 'Completed' },
+  { value: 'Canceled', label: 'Canceled' },
+  { value: 'All', label: 'All' },
+];
 
 const getTabStatuses = (tab) => {
   switch (tab) {
     case 'Completed':
       return ['completed'];
     case 'Canceled':
+    case 'Cancelled':
       return ['cancelled', 'canceled'];
     default:
       return ['scheduled', 'upcoming'];
@@ -36,20 +42,18 @@ const getInterviewTypeLabel = (type) => {
   return type;
 };
 
-const buildInterviewPayload = (form, application) => {
-  const scheduledDateTime = new Date(`${form.scheduledDate}T${form.scheduledTime || '09:00'}`);
-  const normalizedType = form.interviewType === 'In-Person' ? 'In-person' : form.interviewType === 'Google Meet' || form.interviewType === 'Zoom' ? 'Video' : 'In-person';
+const buildInterviewPayload = (form, application, applicantId) => {
+  const normalizedType = form.interviewType || 'In-person';
 
   return {
-    application: application._id,
-    job: application.job?._id || application.job,
-    applicant: application.applicant?._id || application.applicant,
-    company: application.company?._id || application.company,
-    scheduledDate: scheduledDateTime.toISOString(),
-    type: normalizedType,
-    location: form.locationOrLink,
-    meetingLink: form.interviewType === 'Google Meet' || form.interviewType === 'Zoom' ? form.locationOrLink : undefined,
-    note: form.notes,
+    candidateId: applicantId || application.applicant?._id || application.applicant,
+    applicationId: application._id,
+    jobId: application.job?._id || application.job,
+    interviewDate: form.scheduledDate,
+    interviewTime: form.scheduledTime,
+    interviewType: normalizedType,
+    meetingLocationOrLink: form.locationOrLink,
+    invitationNotes: form.notes,
   };
 };
 
@@ -84,13 +88,49 @@ const getEvaluationStatus = (interview) => {
   return 'Pending Evaluation';
 };
 
+const normalizeStatus = (status) => `${status || 'scheduled'}`.toLowerCase();
+
+const getStatusBadgeClasses = (status) => {
+  switch (normalizeStatus(status)) {
+    case 'completed':
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 'cancelled':
+    case 'canceled':
+      return 'bg-rose-50 text-rose-700 border-rose-200';
+    default:
+      return 'bg-amber-50 text-amber-700 border-amber-200';
+  }
+};
+
+const MetricCard = ({ title, value, subtitle, icon: Icon, accent }) => (
+  <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="text-sm font-medium text-slate-500">{title}</p>
+        <p className="mt-3 text-3xl font-semibold text-slate-900">{value}</p>
+        <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
+      </div>
+      <div className={`rounded-2xl p-3 ${accent}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+    </div>
+  </div>
+);
+
 const EmployerInterviews = () => {
   const navigate = useNavigate();
   const [interviews, setInterviews] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [interviewCandidates, setInterviewCandidates] = useState([]);
+  const [selectedApplicantId, setSelectedApplicantId] = useState('');
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [candidatesError, setCandidatesError] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Upcoming');
+  const [dateFilter, setDateFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [showCalendarView, setShowCalendarView] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -106,7 +146,7 @@ const EmployerInterviews = () => {
     applicationId: '',
     scheduledDate: '',
     scheduledTime: '09:00',
-    interviewType: 'In-Person',
+    interviewType: 'In-person',
     locationOrLink: '',
     notes: '',
   });
@@ -127,17 +167,65 @@ const EmployerInterviews = () => {
         api.get('/applications/employer'),
       ]);
 
-      setInterviews(Array.isArray(interviewsResponse.data?.data) ? interviewsResponse.data.data : []);
-      setApplications(Array.isArray(applicationsResponse.data?.data) ? applicationsResponse.data.data : []);
+      setInterviews(Array.isArray(interviewsResponse.data?.data) ? interviewsResponse.data.data : Array.isArray(interviewsResponse.data) ? interviewsResponse.data : []);
+      setApplications(Array.isArray(applicationsResponse.data?.data) ? applicationsResponse.data.data : Array.isArray(applicationsResponse.data) ? applicationsResponse.data : []);
     } catch {
     } finally {
       setLoading(false);
     }
   };
 
+  const loadInterviewCandidates = async () => {
+    setCandidatesLoading(true);
+    setCandidatesError('');
+
+    try {
+      const response = await api.get('/interviews/shortlisted-candidates');
+      let candidates = Array.isArray(response.data?.data)
+        ? response.data.data
+        : Array.isArray(response.data)
+          ? response.data
+          : [];
+
+      if (!candidates.length) {
+        const fallbackResponse = await api.get('/applications/employer');
+        const applications = Array.isArray(fallbackResponse.data?.data)
+          ? fallbackResponse.data.data
+          : Array.isArray(fallbackResponse.data)
+            ? fallbackResponse.data
+            : [];
+
+        candidates = applications
+          .filter((application) => ['Shortlisted', 'Interview', 'Interview Scheduled', 'Selected', 'Accepted'].includes(application.status))
+          .map((application) => ({
+            _id: application._id,
+            applicationId: application._id,
+            candidateId: application.applicant?._id || application.applicant,
+            userId: application.applicant?._id || application.applicant,
+            fullName: `${application.applicant?.firstName || ''} ${application.applicant?.lastName || ''}`.trim(),
+            email: application.applicant?.email || '',
+            jobTitle: application.job?.title || '',
+            status: application.status,
+          }));
+      }
+
+      setInterviewCandidates(candidates);
+    } catch (error) {
+      console.error('Failed to load interview candidates', error);
+      setInterviewCandidates([]);
+      setCandidatesError('Unable to load candidates. Please try again.');
+    } finally {
+      setCandidatesLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, dateFilter, searchTerm]);
 
   const shortlistedCandidates = useMemo(() => {
     return applications.filter((application) => {
@@ -150,18 +238,132 @@ const EmployerInterviews = () => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     const allowedStatuses = getTabStatuses(activeTab);
 
-    return interviews.filter((interview) => {
-      const status = (interview.status || '').toLowerCase();
-      const matchesTab = allowedStatuses.includes(status);
-      if (!matchesTab) return false;
+    return [...interviews]
+      .filter((interview) => {
+        const status = normalizeStatus(interview.status);
+        const matchesTab = activeTab === 'All' ? true : allowedStatuses.includes(status);
+        if (!matchesTab) return false;
 
-      if (!normalizedSearch) return true;
+        const scheduledDate = interview.scheduledDate ? new Date(interview.scheduledDate) : null;
+        if (!scheduledDate) return dateFilter === 'All';
 
-      const candidateName = `${interview.applicant?.firstName || ''} ${interview.applicant?.lastName || ''}`.trim().toLowerCase();
-      const jobTitle = (interview.job?.title || '').toLowerCase();
-      return candidateName.includes(normalizedSearch) || jobTitle.includes(normalizedSearch);
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+        switch (dateFilter) {
+          case 'Today':
+            return scheduledDate.toDateString() === now.toDateString();
+          case 'Tomorrow': {
+            const tomorrow = new Date(now);
+            tomorrow.setDate(now.getDate() + 1);
+            return scheduledDate.toDateString() === tomorrow.toDateString();
+          }
+          case 'This Week':
+            return scheduledDate >= startOfWeek && scheduledDate <= endOfWeek;
+          case 'This Month':
+            return scheduledDate >= startOfMonth && scheduledDate <= endOfMonth;
+          default:
+            return true;
+        }
+      })
+      .filter((interview) => {
+        if (!normalizedSearch) return true;
+        const candidateName = `${interview.applicant?.firstName || ''} ${interview.applicant?.lastName || ''}`.trim().toLowerCase();
+        const email = (interview.applicant?.email || '').toLowerCase();
+        const jobTitle = (interview.job?.title || '').toLowerCase();
+        return candidateName.includes(normalizedSearch) || email.includes(normalizedSearch) || jobTitle.includes(normalizedSearch);
+      })
+      .sort((left, right) => new Date(left.scheduledDate || 0) - new Date(right.scheduledDate || 0));
+  }, [activeTab, dateFilter, interviews, searchTerm]);
+
+  const itemsPerPage = 5;
+  const totalPages = Math.max(1, Math.ceil(filteredInterviews.length / itemsPerPage));
+  const paginatedInterviews = useMemo(() => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return filteredInterviews.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredInterviews, page]);
+
+  const stats = useMemo(() => {
+    const upcoming = interviews.filter((interview) => ['scheduled', 'upcoming'].includes(normalizeStatus(interview.status))).length;
+    const today = interviews.filter((interview) => {
+      const scheduledDate = interview.scheduledDate ? new Date(interview.scheduledDate) : null;
+      return scheduledDate && scheduledDate.toDateString() === new Date().toDateString();
+    }).length;
+    const completed = interviews.filter((interview) => normalizeStatus(interview.status) === 'completed').length;
+    const cancelled = interviews.filter((interview) => ['cancelled', 'canceled'].includes(normalizeStatus(interview.status))).length;
+
+    return { upcoming, today, completed, cancelled };
+  }, [interviews]);
+
+  const typeSummary = useMemo(() => {
+    const counts = { Online: 0, Onsite: 0, Phone: 0 };
+    interviews.forEach((interview) => {
+      const type = getInterviewTypeLabel(interview.type || '').toLowerCase();
+      if (type.includes('phone')) counts.Phone += 1;
+      else if (type.includes('online') || type.includes('video') || type.includes('zoom') || type.includes('meet')) counts.Online += 1;
+      else counts.Onsite += 1;
     });
-  }, [activeTab, interviews, searchTerm]);
+    return Object.entries(counts).map(([label, value]) => ({ label, value }));
+  }, [interviews]);
+
+  const calendarDates = useMemo(() => new Set(interviews.map((interview) => new Date(interview.scheduledDate).toDateString())), [interviews]);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getReminderStatus = (scheduledDate) => {
+    if (!scheduledDate) return { label: 'Future', color: 'bg-slate-300', icon: '⚪' };
+
+    const minutesUntil = differenceInMinutes(scheduledDate, currentTime);
+    if (minutesUntil < 0) return { label: 'Overdue', color: 'bg-rose-500', icon: '🔴' };
+    if (minutesUntil <= 30) return { label: 'Starting soon', color: 'bg-emerald-500', icon: '🟢' };
+    if (minutesUntil <= 120) return { label: 'Later today', color: 'bg-amber-500', icon: '🟡' };
+    if (isToday(scheduledDate)) return { label: 'Later today', color: 'bg-sky-500', icon: '🔵' };
+    return { label: 'Future', color: 'bg-slate-300', icon: '⚪' };
+  };
+
+  const getReminderText = (scheduledDate) => {
+    if (!scheduledDate) return 'Date not available';
+    const minutesUntil = differenceInMinutes(scheduledDate, currentTime);
+
+    if (minutesUntil < 0) return 'Overdue';
+    if (minutesUntil <= 30) return `Interview starts in ${minutesUntil} minute${minutesUntil === 1 ? '' : 's'}`;
+    if (minutesUntil < 120) {
+      const hours = Math.floor(minutesUntil / 60);
+      return `Interview starts in ${hours} hour${hours === 1 ? '' : 's'}`;
+    }
+    if (isToday(scheduledDate)) return 'Starts later today';
+    if (isTomorrow(scheduledDate)) return 'Tomorrow';
+    const daysUntil = differenceInDays(scheduledDate, currentTime);
+    return `In ${daysUntil} day${daysUntil === 1 ? '' : 's'}`;
+  };
+
+  const getReminderMeta = (scheduledDate, jobTitle) => {
+    if (!scheduledDate) return 'Date not available';
+    const dayLabel = isToday(scheduledDate) ? 'Today' : isTomorrow(scheduledDate) ? 'Tomorrow' : format(scheduledDate, 'MMM d');
+    return `${dayLabel} • ${format(scheduledDate, 'h:mm a')} • ${jobTitle || 'Interview'}`;
+  };
+
+  const upcomingReminders = useMemo(() => {
+    return [...interviews]
+      .filter((interview) => {
+        const status = normalizeStatus(interview.status);
+        const scheduledDate = interview.scheduledDate ? new Date(interview.scheduledDate) : null;
+        return scheduledDate && !['completed', 'cancelled', 'canceled'].includes(status);
+      })
+      .sort((left, right) => new Date(left.scheduledDate) - new Date(right.scheduledDate));
+  }, [interviews, currentTime]);
 
   const resetModal = () => {
     setShowModal(false);
@@ -174,11 +376,12 @@ const EmployerInterviews = () => {
     setShowWorkflow(false);
     setWorkflowStep(1);
     setSelectedInterview(null);
+    setSelectedApplicantId('');
     setForm({
       applicationId: '',
       scheduledDate: '',
       scheduledTime: '09:00',
-      interviewType: 'In-Person',
+      interviewType: 'In-person',
       locationOrLink: '',
       notes: '',
     });
@@ -189,9 +392,10 @@ const EmployerInterviews = () => {
     setAssessmentForm({ notes: '', rating: 0, strengths: '', weaknesses: '', finalDecision: 'Pending Evaluation' });
   };
 
-  const openScheduleModal = () => {
+  const openScheduleModal = async () => {
     resetModal();
     setShowModal(true);
+    await loadInterviewCandidates();
   };
 
   const openFeedbackModal = (interview) => {
@@ -324,7 +528,7 @@ const EmployerInterviews = () => {
 
     setSubmitting(true);
     try {
-      const payload = buildInterviewPayload(form, selectedApplication);
+      const payload = buildInterviewPayload(form, selectedApplication, selectedApplicantId);
       const response = await api.post('/interviews', payload);
       const createdInterview = response.data?.data;
 
@@ -501,201 +705,369 @@ const EmployerInterviews = () => {
   };
 
   return (
-    <div className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold text-slate-900">Interviews</h1>
-          <p className="mt-2 text-gray-600">Manage your candidate interviews, notes, and follow-ups in one place.</p>
-        </div>
-        <button
-          type="button"
-          onClick={openScheduleModal}
-          className="rounded-full bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700"
-        >
-          Schedule New Interview
-        </button>
-      </div>
-
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Shortlisted for Interview</h2>
-            <p className="mt-1 text-sm text-slate-600">Select from these candidates when scheduling a new interview.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {shortlistedCandidates.length === 0 ? (
-              <span className="rounded-full bg-white px-3 py-2 text-sm text-slate-500">No shortlisted candidates yet</span>
-            ) : (
-              shortlistedCandidates.slice(0, 4).map((application) => (
-                <span key={application._id} className="rounded-full bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm">
-                  {`${application.applicant?.firstName || ''} ${application.applicant?.lastName || ''}`.trim() || 'Candidate'}
-                </span>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                activeTab === tab ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-        <input
-          type="search"
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          placeholder="Search by candidate or job title"
-          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none ring-0 lg:max-w-sm"
-        />
-      </div>
-
-      {loading ? (
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-          Loading interviews...
-        </div>
-      ) : filteredInterviews.length === 0 ? (
-        <div className="mt-8 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-slate-500">
-          No interviews match this view yet.
-        </div>
-      ) : (
-        <div className="mt-8 grid gap-4">
-          {filteredInterviews.map((interview) => {
-            const candidateName = `${interview.applicant?.firstName || ''} ${interview.applicant?.lastName || ''}`.trim();
-            const statusTone =
-              (interview.status || 'scheduled').toLowerCase() === 'completed'
-                ? 'bg-emerald-100 text-emerald-700'
-                : (interview.status || 'scheduled').toLowerCase() === 'cancelled' || (interview.status || 'scheduled').toLowerCase() === 'canceled'
-                  ? 'bg-rose-100 text-rose-700'
-                  : 'bg-amber-100 text-amber-700';
-            const evaluationStatus = getEvaluationStatus(interview);
-            const isCompletedInterview = (interview.status || '').toLowerCase() === 'completed';
-            const evaluationTone = evaluationStatus === 'Pending Evaluation'
-              ? 'bg-slate-100 text-slate-700'
-              : evaluationStatus === 'Hired' || evaluationStatus === 'Passed'
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-rose-100 text-rose-700';
-
-            return (
-              <div key={interview._id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="flex gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-700">
-                      {interview.applicant?.avatar ? (
-                        <img src={interview.applicant.avatar} alt="Candidate" className="h-12 w-12 rounded-full object-cover" />
-                      ) : (
-                        (interview.applicant?.firstName?.[0] || 'C').toUpperCase()
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg font-semibold text-slate-900">{candidateName || 'Candidate'}</h2>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${statusTone}`}>
-                          {interview.status || 'scheduled'}
-                        </span>
-                        {isCompletedInterview && (
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${evaluationTone}`}>
-                            {evaluationStatus}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-2 text-sm font-medium text-sky-700">{interview.job?.title || 'Applied position'}</p>
-                      <p className="mt-1 text-sm text-slate-600">{interview.company?.name || 'Company'}</p>
-                    </div>
-                  </div>
-                  <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2 lg:min-w-[280px]">
-                    <div className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-slate-500" /><span>{format(new Date(interview.scheduledDate), 'MMM d, yyyy')}</span></div>
-                    <div className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-slate-500" /><span>{format(new Date(interview.scheduledDate), 'h:mm a')}</span></div>
-                    <div className="flex items-center gap-2"><Link2 className="h-4 w-4 text-slate-500" /><span>{getInterviewTypeLabel(interview.type)}</span></div>
-                    <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-slate-500" /><span>{interview.meetingLink || interview.location || 'To be confirmed'}</span></div>
-                  </div>
+    <div className="min-h-screen rounded-[28px] bg-slate-50 p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 xl:flex-row">
+        <div className="flex-1 space-y-6">
+          <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
+                  <Sparkles className="h-6 w-6" />
                 </div>
-
-                <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <button type="button" onClick={() => openDetailsModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                    <Eye className="h-4 w-4" /> View Details
-                  </button>
-                  {!isCompletedInterview && (
-                    <>
-                      <button type="button" onClick={() => openEditModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <SquarePen className="h-4 w-4" /> Reschedule
-                      </button>
-                      <button type="button" onClick={() => handleSendReminder(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <Bell className="h-4 w-4" /> Reminder
-                      </button>
-                      <button type="button" onClick={() => handleCancelInterview(interview)} className="inline-flex items-center gap-2 rounded-full border border-rose-200 px-3 py-2 text-sm text-rose-700 hover:bg-rose-50">
-                        <XCircle className="h-4 w-4" /> Cancel
-                      </button>
-                      <button type="button" onClick={() => handleJoinMeeting(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <Link2 className="h-4 w-4" /> Update Link
-                      </button>
-                      <button type="button" onClick={() => openFeedbackModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <FileText className="h-4 w-4" /> Notes
-                      </button>
-                      <button type="button" aria-label="Start Interview" onClick={() => startInterviewWorkflow(interview)} className="inline-flex items-center gap-2 rounded-full border border-emerald-200 px-3 py-2 text-sm text-emerald-700 hover:bg-emerald-50">
-                        <PlayCircle className="h-4 w-4" /> Start Interview
-                      </button>
-                    </>
-                  )}
-                  <button type="button" onClick={() => handleViewCv(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                    <FileText className="h-4 w-4" /> View CV
-                  </button>
-                  {isCompletedInterview && (
-                    <>
-                      <button type="button" onClick={() => openAssessmentModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-amber-200 px-3 py-2 text-sm text-amber-700 hover:bg-amber-50">
-                        <Star className="h-4 w-4" /> Complete Assessment
-                      </button>
-                      <button type="button" onClick={() => openAssessmentDetailsModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                        <FileText className="h-4 w-4" /> View Assessment
-                      </button>
-                    </>
-                  )}
-                  <select
-                    value={resultByInterview[interview._id] || formatResultLabel(interview.result) || 'Pending'}
-                    onChange={(event) => handleResultChange(interview._id, event.target.value)}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Passed">Passed</option>
-                    <option value="Rejected">Rejected</option>
-                    <option value="Hired">Hired</option>
-                  </select>
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">Employer Interview Dashboard</p>
+                  <h1 className="mt-2 text-3xl font-semibold text-slate-900">Interview pipeline</h1>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-600">Coordinate interviews, track outcomes, and keep every candidate conversation moving with a modern ATS experience.</p>
                 </div>
-
-                {isCompletedInterview && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      <Star className="h-3.5 w-3.5" /> Rating: {interview.rating ? `${interview.rating}/5` : 'Pending'}
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      <FileText className="h-3.5 w-3.5" /> Notes: {interview.feedback || interview.note ? 'Recorded' : 'Pending'}
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      <ThumbsUp className="h-3.5 w-3.5" /> Strengths: {interview.strengths ? 'Recorded' : 'Pending'}
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      <ThumbsDown className="h-3.5 w-3.5" /> Weaknesses: {interview.weaknesses ? 'Recorded' : 'Pending'}
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      <Award className="h-3.5 w-3.5" /> Final Decision: {interview.finalDecision || formatResultLabel(interview.result) || 'Pending Evaluation'}
-                    </span>
-                  </div>
-                )}
               </div>
-            );
-          })}
+              <button
+                type="button"
+                onClick={openScheduleModal}
+                className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition duration-200 hover:bg-emerald-700"
+              >
+                Schedule New Interview
+              </button>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <MetricCard title="Upcoming Interviews" value={stats.upcoming} subtitle="Scheduled in the pipeline" icon={CalendarDays} accent="bg-emerald-50 text-emerald-600" />
+            <MetricCard title="Today's Interviews" value={stats.today} subtitle="On the calendar today" icon={Clock3} accent="bg-sky-50 text-sky-600" />
+            <MetricCard title="Completed Interviews" value={stats.completed} subtitle="Closed successfully" icon={Award} accent="bg-violet-50 text-violet-600" />
+            <MetricCard title="Cancelled Interviews" value={stats.cancelled} subtitle="Needs follow-up" icon={XCircle} accent="bg-rose-50 text-rose-600" />
+          </div>
+
+          <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
+                <label className="flex flex-1 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                  <Search className="h-4 w-4 text-slate-400" />
+                  <input
+                    type="search"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Search candidate, email, or job title"
+                    className="w-full bg-transparent text-sm text-slate-900 outline-none"
+                  />
+                </label>
+                <select
+                  aria-label="Filter interviews"
+                  value={activeTab}
+                  onChange={(event) => setActiveTab(event.target.value)}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none"
+                >
+                  <option value="Upcoming">Pipeline</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                  <option value="All">All</option>
+                </select>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCalendarView((prev) => !prev)}
+                  className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition duration-200 hover:bg-slate-50"
+                >
+                  {showCalendarView ? 'Hide calendar' : 'Calendar view'}
+                </button>
+                <button
+                  type="button"
+                  onClick={openScheduleModal}
+                  className="rounded-full bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition duration-200 hover:bg-emerald-700"
+                >
+                  New Interview
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setActiveTab(tab.value)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition duration-200 ${activeTab === tab.value ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600">
+                {filteredInterviews.length} interviews shown
+              </div>
+              <select
+                aria-label="Filter by date"
+                value={dateFilter}
+                onChange={(event) => setDateFilter(event.target.value)}
+                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 outline-none"
+              >
+                <option value="All">All Dates</option>
+                <option value="Today">Today</option>
+                <option value="Tomorrow">Tomorrow</option>
+                <option value="This Week">This Week</option>
+                <option value="This Month">This Month</option>
+              </select>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="rounded-[24px] border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
+              Loading interviews from the recruitment pipeline...
+            </div>
+          ) : filteredInterviews.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
+              No interviews match this view yet.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {paginatedInterviews.map((interview) => {
+                const candidateName = `${interview.applicant?.firstName || ''} ${interview.applicant?.lastName || ''}`.trim();
+                const status = normalizeStatus(interview.status);
+                const isCompletedInterview = status === 'completed';
+                const evaluationStatus = getEvaluationStatus(interview);
+
+                return (
+                  <div key={interview._id} className="group rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-xl">
+                    <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                      <div className="flex gap-4">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-base font-semibold text-emerald-700">
+                          {interview.applicant?.avatar ? (
+                            <img src={interview.applicant.avatar} alt="Candidate" className="h-14 w-14 rounded-full object-cover" />
+                          ) : (
+                            (interview.applicant?.firstName?.[0] || 'C').toUpperCase()
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-lg font-semibold text-slate-900">{candidateName || 'Candidate'}</h2>
+                            <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase ${getStatusBadgeClasses(status)}`}>
+                              {status}
+                            </span>
+                            {isCompletedInterview && (
+                              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                {evaluationStatus}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                            <span className="inline-flex items-center gap-2"><BriefcaseBusiness className="h-4 w-4 text-emerald-600" />{interview.job?.title || 'Applied position'}</span>
+                            <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4 text-emerald-600" />{interview.applicant?.email || 'Email pending'}</span>
+                            <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4 text-emerald-600" />{interview.applicant?.phone || 'Phone pending'}</span>
+                          </div>
+
+                          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Interview date</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900">{format(new Date(interview.scheduledDate), 'MMM d, yyyy')}</p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Time</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900">{format(new Date(interview.scheduledDate), 'h:mm a')}</p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Duration</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900">{interview.duration || '60 min'}</p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Type</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900">{getInterviewTypeLabel(interview.type)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-3 xl:min-w-[260px]">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Meeting platform</p>
+                          <p className="mt-1 text-sm font-semibold text-slate-900">{getInterviewTypeLabel(interview.type)}</p>
+                          <p className="mt-2 text-sm text-slate-600">
+                            {interview.meetingLink || interview.location || 'Meeting details will be shared soon.'}
+                          </p>
+                        </div>
+                        {isCompletedInterview && (
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Rating</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-900">{interview.rating ? `${interview.rating}/5` : 'Pending'}</p>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {['scheduled', 'upcoming'].includes(status) ? (
+                            <>
+                              <button type="button" aria-label="Start Interview" onClick={() => startInterviewWorkflow(interview)} className="inline-flex items-center gap-2 rounded-full border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50">
+                                <PlayCircle className="h-4 w-4" /> Start Interview
+                              </button>
+                              <button type="button" onClick={() => openEditModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                                <SquarePen className="h-4 w-4" /> Reschedule
+                              </button>
+                              <button type="button" onClick={() => handleCancelInterview(interview)} className="inline-flex items-center gap-2 rounded-full border border-rose-200 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50">
+                                <XCircle className="h-4 w-4" /> Cancel
+                              </button>
+                            </>
+                          ) : null}
+
+                          {isCompletedInterview ? (
+                            <>
+                              <button type="button" onClick={() => openFeedbackModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                                <FileText className="h-4 w-4" /> View Notes
+                              </button>
+                              <button type="button" onClick={() => openAssessmentDetailsModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                                <Star className="h-4 w-4" /> View Feedback
+                              </button>
+                              <button type="button" onClick={() => openAssessmentModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-amber-200 px-3 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-50">
+                                <Star className="h-4 w-4" /> Complete Assessment
+                              </button>
+                            </>
+                          ) : null}
+
+                          {status === 'cancelled' || status === 'canceled' ? (
+                            <button type="button" onClick={() => openEditModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                              <SquarePen className="h-4 w-4" /> Reschedule
+                            </button>
+                          ) : null}
+
+                          <button type="button" onClick={() => openDetailsModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                            <Eye className="h-4 w-4" /> View Details
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={page === 1}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft className="h-4 w-4" /> Previous
+            </button>
+            <div className="flex items-center gap-2">
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => setPage(pageNumber)}
+                  className={`h-9 w-9 rounded-full text-sm font-semibold transition ${page === pageNumber ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={page === totalPages}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-      )}
+
+        {showCalendarView && (
+          <aside className="w-full space-y-4 xl:max-w-[340px]">
+            <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Monthly calendar</p>
+                  <h3 className="mt-1 text-lg font-semibold text-slate-900">{format(new Date(), 'MMMM yyyy')}</h3>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">Live</span>
+              </div>
+              <div className="mt-5 grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                  <span key={`${day}-${index}`}>{day}</span>
+                ))}
+              </div>
+              <div className="mt-3 grid grid-cols-7 gap-2">
+                {Array.from({ length: 35 }, (_, index) => {
+                  const day = index - 4;
+                  const date = new Date();
+                  date.setDate(date.getDate() + day);
+                  const key = date.toDateString();
+                  const isInterviewDay = calendarDates.has(key);
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`flex h-10 items-center justify-center rounded-xl text-sm font-medium transition ${isInterviewDay ? 'bg-emerald-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}`}
+                    >
+                      {date.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">Interview type summary</h3>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">{interviews.length}</span>
+              </div>
+              <div className="mt-4 space-y-3">
+                {typeSummary.map((item) => (
+                  <div key={item.label} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                    <span className="text-sm font-medium text-slate-700">{item.label}</span>
+                    <span className="text-sm font-semibold text-slate-900">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">Upcoming reminders</h3>
+                <span className="text-sm text-slate-500">{upcomingReminders.length} due</span>
+              </div>
+              <div className="mt-4 space-y-3">
+                {upcomingReminders.length === 0 ? (
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
+                    <p className="font-semibold text-slate-900">No upcoming interview reminders.</p>
+                    <p className="mt-2">We’ll notify you when an interview is approaching.</p>
+                  </div>
+                ) : upcomingReminders.map((interview) => {
+                  const candidateName = `${interview.applicant?.firstName || ''} ${interview.applicant?.lastName || ''}`.trim() || 'Candidate';
+                  const scheduledDate = new Date(interview.scheduledDate);
+                  const reminderStatus = getReminderStatus(scheduledDate);
+                  const reminderText = getReminderText(scheduledDate);
+                  const reminderMeta = getReminderMeta(scheduledDate, interview.job?.title);
+
+                  return (
+                    <div key={interview._id} className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className={`mt-1 h-3 w-3 rounded-full ${reminderStatus.color}`} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-base font-semibold text-slate-900">{candidateName}</p>
+                          <p className="mt-1 text-sm text-slate-600">{reminderText}</p>
+                          <p className="mt-2 text-sm font-medium text-slate-500">{reminderMeta}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                <h4 className="text-sm font-semibold text-emerald-800">Stay organized</h4>
+                <p className="mt-1 text-sm text-emerald-700">Keep every follow-up and interview note synced with your hiring team.</p>
+                <button
+                  type="button"
+                  onClick={() => toast.success('Reminder enabled for your hiring team.')}
+                  className="mt-3 rounded-full bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
+                >
+                  Enable Reminder
+                </button>
+              </div>
+            </div>
+          </aside>
+        )}
+      </div>
 
       {showWorkflow && selectedInterview && (
         <div className="mt-8">
@@ -770,17 +1142,30 @@ const EmployerInterviews = () => {
                 <select
                   id="candidate"
                   value={form.applicationId}
-                  onChange={(event) => setForm((prev) => ({ ...prev, applicationId: event.target.value }))}
+                  onChange={(event) => {
+                    const applicationId = event.target.value;
+                    setForm((prev) => ({ ...prev, applicationId }));
+                    const selectedCandidate = interviewCandidates.find((candidate) => candidate.applicationId === applicationId);
+                    setSelectedApplicantId(selectedCandidate?.userId || '');
+                  }}
                   className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
+                  disabled={candidatesLoading || interviewCandidates.length === 0}
                   required
                 >
                   <option value="">Select a candidate</option>
-                  {applications.map((application) => (
-                    <option key={application._id} value={application._id}>
-                      {`${application.applicant?.firstName || ''} ${application.applicant?.lastName || ''}`.trim() || 'Candidate'} — {application.job?.title || 'Position'}
+                  {interviewCandidates.map((candidate) => (
+                    <option key={candidate.applicationId} value={candidate.applicationId}>
+                      {candidate.fullName || 'Candidate'} — {candidate.jobTitle || 'Position'} — {candidate.email || 'No email'}
                     </option>
                   ))}
                 </select>
+                {candidatesLoading ? (
+                  <p className="mt-2 text-sm text-slate-500">Loading candidates...</p>
+                ) : candidatesError ? (
+                  <p className="mt-2 text-sm text-rose-500">{candidatesError}</p>
+                ) : interviewCandidates.length === 0 ? (
+                  <p className="mt-2 text-sm text-slate-500">No shortlisted candidates available.</p>
+                ) : null}
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -813,9 +1198,9 @@ const EmployerInterviews = () => {
                   onChange={(event) => setForm((prev) => ({ ...prev, interviewType: event.target.value }))}
                   className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
                 >
-                  <option value="In-Person">In-Person</option>
-                  <option value="Google Meet">Google Meet</option>
-                  <option value="Zoom">Zoom</option>
+                  <option value="In-person">In-Person</option>
+                  <option value="Video">Google Meet</option>
+                  <option value="Video">Zoom</option>
                 </select>
               </div>
 

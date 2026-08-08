@@ -38,7 +38,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
     .sort({ scheduledDate: 1 })
     .limit(20);
 
-  const recentNotifications = await Notification.find({ recipient: employerId })
+  const recentNotifications = await Notification.find({ recipient: employerId, type: { $ne: 'new_message' } })
     .sort({ createdAt: -1 })
     .limit(10);
 

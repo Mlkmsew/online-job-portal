@@ -74,9 +74,10 @@ const jobSchema = new mongoose.Schema(
     // Status
     status: {
       type: String,
-      enum: ['draft', 'active', 'closed', 'expired', 'paused'],
-      default: 'active',
+      enum: ['pending', 'published', 'active', 'draft', 'closed', 'expired', 'paused'],
+      default: 'pending',
     },
+    publishedAt: { type: Date },
     isFeatured: { type: Boolean, default: false },
     isUrgent: { type: Boolean, default: false },
     isRemote: { type: Boolean, default: false },
@@ -142,7 +143,7 @@ jobSchema.pre('save', async function (next) {
   }
 
   // Auto-close if deadline passed
-  if (this.applicationDeadline < new Date() && this.status === 'active') {
+  if (this.applicationDeadline < new Date() && (this.status === 'active' || this.status === 'published')) {
     this.status = 'expired';
   }
 

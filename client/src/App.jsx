@@ -39,6 +39,7 @@ import VerifyOTP from './pages/auth/VerifyOTP';
 import JobSeekerDashboard from './pages/dashboard/jobseeker/Dashboard';
 import JobSeekerProfile from './pages/dashboard/jobseeker/Profile';
 import MyApplications from './pages/dashboard/jobseeker/MyApplications';
+import JobSeekerInterviewDetails from './pages/dashboard/jobseeker/InterviewDetails';
 import SavedJobs from './pages/dashboard/jobseeker/SavedJobs';
 import ResumeBuilder from './pages/dashboard/jobseeker/ResumeBuilder';
 import FindJobs from './pages/dashboard/jobseeker/FindJobs';
@@ -115,6 +116,7 @@ const AppRoutes = () => {
             <Route index element={<JobSeekerDashboard />} />
             <Route path="find-jobs" element={<FindJobs />} />
             <Route path="applications" element={<MyApplications />} />
+            <Route path="interviews/:id" element={<JobSeekerInterviewDetails />} />
             <Route path="saved-jobs" element={<SavedJobs />} />
             <Route path="profile" element={<JobSeekerProfile />} />
             <Route path="resume" element={<ResumeBuilder />} />
@@ -124,6 +126,7 @@ const AppRoutes = () => {
             <Route path="career-resources" element={<CareerResources />} />
             <Route path="settings" element={<Settings />} />
             <Route path="settings/change-password" element={<ChangePassword />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
 
           {/* Employer Dashboard */}
@@ -132,6 +135,7 @@ const AppRoutes = () => {
             <Route path="post-job" element={<PostJob />} />
             <Route path="post-job/:id" element={<PostJob />} />
             <Route path="jobs" element={<ManageJobs />} />
+            <Route path="manage-jobs" element={<Navigate to="/employer/jobs" replace />} />
             <Route path="applications" element={<Navigate to="/employer/applicants" replace />} />
             <Route path="interviews" element={<EmployerInterviews />} />
             <Route path="interviews/:id" element={<InterviewDetails />} />
@@ -140,6 +144,7 @@ const AppRoutes = () => {
             <Route path="applicants" element={<ViewApplicants />} />
             <Route path="applicants/:jobId" element={<ViewApplicants />} />
             <Route path="company" element={<CompanyProfile />} />
+            <Route path="*" element={<Navigate to="/employer" replace />} />
           </Route>
 
           {/* Admin Dashboard */}
@@ -153,6 +158,7 @@ const AppRoutes = () => {
             <Route path="applications" element={<AdminApplications />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="messages" element={<AdminMessages />} />
+            <Route path="*" element={<Navigate to="/admin" replace />} />
           </Route>
 
           {/* 404 */}

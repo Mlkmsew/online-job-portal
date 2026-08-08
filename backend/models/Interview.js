@@ -29,6 +29,7 @@ const interviewSchema = new mongoose.Schema(
     meetingLink: { type: String },
     meetingId: { type: String },
     meetingPassword: { type: String },
+    requiredDocuments: { type: [String], default: [] },
 
     // Notes
     instructions: { type: String },
@@ -51,6 +52,7 @@ const interviewSchema = new mongoose.Schema(
     weaknesses: { type: String },
     recommendation: { type: String },
     finalDecision: { type: String },
+    reminderSent: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

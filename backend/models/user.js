@@ -16,15 +16,41 @@ const userSchema = new mongoose.Schema(
         cv: String,
         cvPublicId: String,
         phone: String,
+        gender: String,
         headline: String,
         bio: String,
-        dateOfBirth: Date,
-        gender: String,
+        currentRole: String,
+        experienceYears: Number,
+        salaryExpectation: String,
+        availability: String,
         location: Object,
         skills: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Skill' }],
+        skillNames: [String],
+        languages: [{ name: String, level: String }],
+        portfolio: [{ label: String, url: String }],
         certificates: [{ name: String, url: String, publicId: String, issuer: String, issueDate: Date }],
         experience: String,
+        experienceDetails: [
+            {
+                title: String,
+                company: String,
+                location: String,
+                startDate: String,
+                endDate: String,
+                description: String,
+            },
+        ],
         education: [String],
+        educationDetails: [
+            {
+                degree: String,
+                institution: String,
+                location: String,
+                startDate: String,
+                endDate: String,
+                description: String,
+            },
+        ],
         resumeAnalysis: {
             skills: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Skill' }],
             education: [String],
@@ -65,7 +91,21 @@ const userSchema = new mongoose.Schema(
         settings: {
             account: { type: Object, default: {} },
             companyProfile: { type: Object, default: {} },
-            notifications: { type: Object, default: {} },
+            notifications: {
+                type: Object,
+                default: {
+                    email_alerts: true,
+                    in_app_notifications: true,
+                    job_match_alerts: true,
+                    application_status: true,
+                    interview_reminders: true,
+                    email: true,
+                    inapp: true,
+                    match: true,
+                    application: true,
+                    interview: true,
+                },
+            },
             privacy: { type: Object, default: {} },
             companyPreferences: { type: Object, default: {} },
             notificationPreferences: { type: Object, default: {} },
@@ -141,12 +181,14 @@ userSchema.methods.generatePasswordResetToken = function () {
 // Calculate simple profile completeness score
 userSchema.methods.calculateProfileCompleteness = function () {
     let score = 0;
-    if (this.firstName) score += 20;
-    if (this.lastName) score += 20;
-    if (this.email) score += 10;
     if (this.avatar) score += 10;
+    if (this.headline) score += 10;
+    if (this.bio) score += 10;
+    if (Array.isArray(this.skillNames) && this.skillNames.length > 0) score += 15;
+    if (Array.isArray(this.experienceDetails) && this.experienceDetails.length > 0) score += 20;
+    else if (this.experience) score += 20;
+    if ((Array.isArray(this.educationDetails) && this.educationDetails.length > 0) || (Array.isArray(this.education) && this.education.length > 0)) score += 15;
     if (this.cv) score += 20;
-    if (this.bio) score += 20;
     this.profileCompleteness = Math.min(100, score);
     return this.profileCompleteness;
 };

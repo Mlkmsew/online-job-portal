@@ -1,26 +1,28 @@
 const nodemailer = require('nodemailer');
 
+const smtpHost = (process.env.SMTP_HOST || process.env.EMAIL_HOST || '').trim();
+const smtpPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 587);
+const smtpSecure = process.env.SMTP_SECURE === 'true' || process.env.EMAIL_SECURE === 'true';
+const smtpUser = (process.env.SMTP_USER || process.env.EMAIL_USER || '').trim();
+const smtpPass = (process.env.SMTP_PASS || process.env.EMAIL_PASS || '').trim();
+
+if (!smtpHost || !smtpUser || !smtpPass) {
+  console.error('❌ Email service configuration is incomplete. Set SMTP_HOST/EMAIL_HOST, SMTP_USER/EMAIL_USER, and SMTP_PASS/EMAIL_PASS.');
+}
+
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || process.env.EMAIL_HOST,
-  port: Number(process.env.SMTP_PORT || process.env.EMAIL_PORT || 587),
-  secure: Boolean(process.env.EMAIL_SECURE === 'true' || process.env.SMTP_SECURE === 'true'),
+  host: smtpHost,
+  port: smtpPort,
+  secure: smtpSecure,
   auth: {
-    user: process.env.SMTP_USER || process.env.EMAIL_USER,
-    pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
+    user: smtpUser,
+    pass: smtpPass,
   },
 });
 
 const sendContactEmail = async ({ name, email, message }) => {
-  if (!process.env.SMTP_HOST && !process.env.EMAIL_HOST) {
-    throw new Error('Email service is not configured.');
-  }
-
-  if (!process.env.SMTP_USER && !process.env.EMAIL_USER) {
-    throw new Error('Email service is not configured.');
-  }
-
-  if (!process.env.SMTP_PASS && !process.env.EMAIL_PASS) {
-    throw new Error('Email service is not configured.');
+  if (!smtpHost || !smtpUser || !smtpPass) {
+    throw new Error('Email service is not configured. Please review your SMTP environment variables.');
   }
 
   const mailOptions = {

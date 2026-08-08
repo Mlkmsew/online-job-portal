@@ -1,7 +1,9 @@
+const mongoose = require('mongoose');
 const { Conversation, Message } = require('../models/Message');
 const User = require('../models/user');
 const { asyncHandler, createNotification } = require('../utils/helpers');
 const { sendEmail, emailTemplates, getClientURL } = require('../config/email');
+const { sendUpdatedMessageToChat, sendDeletedMessageToChat } = require('../config/socket');
 const { AppError } = require('../middleware/errorHandler');
 
 // @desc    Get the current user's conversations
@@ -31,7 +33,12 @@ exports.getMessages = asyncHandler(async (req, res, next) => {
     .sort({ createdAt: 1 })
     .populate('sender', 'firstName lastName avatar');
 
-  if (conversation.unreadCount?.get(req.user.id.toString()) > 0) {
+  const unreadUpdate = await Message.updateMany(
+    { conversation: req.params.id, receiver: req.user.id, isRead: false },
+    { isRead: true, readAt: new Date() }
+  );
+
+  if (unreadUpdate.modifiedCount > 0 && conversation.unreadCount?.get(req.user.id.toString()) > 0) {
     conversation.unreadCount.set(req.user.id.toString(), 0);
     await conversation.save({ validateBeforeSave: false });
   }
@@ -54,14 +61,42 @@ exports.sendMessage = asyncHandler(async (req, res, next) => {
   }
 
   let conversation;
+  let recipientEmail;
+
+  if (recipientId) {
+    const trimmedRecipient = recipientId.toString().trim();
+    if (trimmedRecipient.includes('@')) {
+      recipientEmail = trimmedRecipient.toLowerCase();
+      const recipientUser = await User.findOne({ email: recipientEmail }).select('_id firstName email isActive isSuspended');
+      if (!recipientUser) {
+        return next(new AppError('No user found with this email.', 404));
+      }
+      recipientId = recipientUser._id.toString();
+    } else {
+      recipientId = trimmedRecipient;
+    }
+  }
+
+  if (conversationId && !mongoose.Types.ObjectId.isValid(conversationId)) {
+    conversationId = undefined;
+  }
+
   if (conversationId) {
     conversation = await Conversation.findById(conversationId);
     if (conversation && !recipientId) {
       recipientId = conversation.participants.find((participant) => participant.toString() !== req.user.id.toString());
     }
-  } else {
-    conversation = await Conversation.findOne({ participants: { $all: [req.user.id, recipientId] } });
   }
+
+  if (!recipientId) {
+    return next(new AppError('Recipient ID or conversation ID is required.', 400));
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(recipientId)) {
+    return next(new AppError('Invalid recipient identifier provided.', 400));
+  }
+
+  conversation = await Conversation.findOne({ participants: { $all: [req.user.id, recipientId] } });
 
   if (!conversation) {
     conversation = await Conversation.create({
@@ -71,43 +106,34 @@ exports.sendMessage = asyncHandler(async (req, res, next) => {
     });
   }
 
-  if (!recipientId) {
-    return next(new AppError('Recipient not found for this conversation.', 400));
-  }
-
-  const recipient = await User.findOne({
-    $or: [{ _id: recipientId }, { email: recipientId }],
-  }).select('firstName email isActive isSuspended');
+  const recipient = await User.findById(recipientId).select('firstName email isActive isSuspended');
   if (!recipient) {
-    return next(new AppError('Recipient user not found.', 404));
-  }
-
-  const recipientObjectId = recipient._id.toString();
-  if (recipientId !== recipientObjectId) {
-    recipientId = recipientObjectId;
+    return next(new AppError('No user found with this email.', 404));
   }
 
   const message = await Message.create({
     conversation: conversation._id,
     sender: req.user.id,
-    receiver: recipientId,
+    receiver: recipient._id,
     content,
     type,
     fileUrl,
     fileName,
+    isRead: false,
   });
 
   conversation.lastMessage = message._id;
   conversation.lastMessageAt = new Date();
-  const currentUnread = conversation.unreadCount?.get(recipientId.toString()) || 0;
-  conversation.unreadCount.set(recipientId.toString(), currentUnread + 1);
+  const currentUnread = conversation.unreadCount?.get(recipient._id.toString()) || 0;
+  conversation.unreadCount.set(recipient._id.toString(), currentUnread + 1);
   await conversation.save({ validateBeforeSave: false });
 
   await createNotification({
-    recipient: recipientId,
+    recipient: recipient._id,
+    sender: req.user.id,
     type: 'new_message',
     title: 'New Message',
-    message: `${req.user.firstName} sent you a message.`,
+    message: content,
     link: '/messages',
     data: { conversationId: conversation._id, messageId: message._id },
   });
@@ -141,4 +167,96 @@ exports.sendMessage = asyncHandler(async (req, res, next) => {
   }
 
   res.status(201).json({ success: true, message: 'Message sent.', data: { conversation, message } });
+});
+
+// @desc    Get unread chat messages count
+// @route   GET /api/messages/unread/count
+// @access  Private
+exports.getUnreadCount = asyncHandler(async (req, res) => {
+  const count = await Message.countDocuments({ receiver: req.user.id, isRead: false });
+  res.status(200).json({ success: true, count });
+});
+
+// @desc    Update a message
+// @route   PATCH /api/messages/:id
+// @access  Private
+exports.updateMessage = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { content } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return next(new AppError('Invalid message ID.', 400));
+  }
+
+  if (!content || !content.trim()) {
+    return next(new AppError('Message content cannot be empty.', 400));
+  }
+
+  const message = await Message.findById(id);
+  if (!message) return next(new AppError('Message not found.', 404));
+
+  if (message.sender.toString() !== req.user.id.toString()) {
+    return next(new AppError('You are not allowed to edit this message.', 403));
+  }
+
+  if (message.isDeleted) {
+    return next(new AppError('Cannot edit a deleted message.', 400));
+  }
+
+  message.content = content.trim();
+  message.updatedAt = Date.now();
+  await message.save({ validateBeforeSave: false });
+
+  const updatedMessage = await Message.findById(message._id)
+    .populate('sender', 'firstName lastName avatar');
+
+  sendUpdatedMessageToChat(message.conversation.toString(), {
+    ...updatedMessage.toObject(),
+  });
+
+  res.status(200).json({ success: true, data: updatedMessage });
+});
+
+// @desc    Delete a message
+// @route   DELETE /api/messages/:id
+// @access  Private
+exports.deleteMessage = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return next(new AppError('Invalid message ID.', 400));
+  }
+
+  const message = await Message.findById(id);
+  if (!message) return next(new AppError('Message not found.', 404));
+
+  if (message.sender.toString() !== req.user.id.toString()) {
+    return next(new AppError('You are not allowed to delete this message.', 403));
+  }
+
+  const conversation = await Conversation.findById(message.conversation);
+  if (!conversation) return next(new AppError('Conversation not found.', 404));
+
+  const wasLastMessage = conversation.lastMessage?.toString() === message._id.toString();
+
+  await message.deleteOne();
+
+  if (wasLastMessage) {
+    const previousMessage = await Message.findOne({ conversation: conversation._id })
+      .sort({ createdAt: -1 });
+
+    if (previousMessage) {
+      conversation.lastMessage = previousMessage._id;
+      conversation.lastMessageAt = previousMessage.createdAt;
+    } else {
+      conversation.lastMessage = undefined;
+      conversation.lastMessageAt = undefined;
+    }
+
+    await conversation.save({ validateBeforeSave: false });
+  }
+
+  sendDeletedMessageToChat(conversation._id.toString(), message._id.toString());
+
+  res.status(200).json({ success: true, message: 'Message deleted successfully.' });
 });

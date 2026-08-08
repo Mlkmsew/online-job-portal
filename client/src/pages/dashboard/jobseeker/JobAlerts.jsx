@@ -1,321 +1,292 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { FiBell, FiPlus, FiChevronRight, FiTrash2, FiClock, FiInfo, FiX } from 'react-icons/fi';
-import { getJobAlerts, createJobAlert, updateJobAlert, deleteJobAlert } from '../../../services/jobSearchService';
-import toast from 'react-hot-toast';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  FiBell, FiMapPin, FiBriefcase, FiClock,
+  FiCheckCircle, FiInbox, FiRefreshCw,
+} from 'react-icons/fi';
+import { getJobAlertNotifications, markJobAlertRead } from '../../../services/jobSearchService';
+import api from '../../../services/api';
 
+// ── Relative time helper ─────────────────────────────────────────────────────
+const relativeTime = (dateStr) => {
+  if (!dateStr) return '';
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60)         return 'Just now';
+  if (diff < 3600)       return `${Math.floor(diff / 60)} minute${Math.floor(diff / 60) === 1 ? '' : 's'} ago`;
+  if (diff < 86400)      return `${Math.floor(diff / 3600)} hour${Math.floor(diff / 3600) === 1 ? '' : 's'} ago`;
+  if (diff < 86400 * 7)  return `${Math.floor(diff / 86400)} day${Math.floor(diff / 86400) === 1 ? '' : 's'} ago`;
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+// ── Single alert card ────────────────────────────────────────────────────────
+const AlertCard = ({ notification, onView }) => {
+  const { data = {}, isRead, createdAt } = notification;
+  // All real values come from the backend data field populated at approval time
+  const jobTitle    = data.jobTitle    || 'Job Posting';
+  const companyName = data.companyName || '';
+  const location    = data.location    || '';
+  const jobType     = data.jobType     || '';
+
+  return (
+    <div
+      className={`group relative rounded-3xl border p-5 transition-all hover:shadow-md ${
+        isRead
+          ? 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+          : 'border-emerald-200 bg-emerald-50/40 dark:border-emerald-700 dark:bg-emerald-900/10'
+      }`}
+    >
+      {/* Unread dot */}
+      {!isRead && (
+        <span className="absolute right-5 top-5 h-2.5 w-2.5 rounded-full bg-emerald-500" />
+      )}
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        {/* Left – icon + content */}
+        <div className="flex items-start gap-4">
+          <span className="mt-0.5 flex-shrink-0 rounded-2xl bg-emerald-100 p-3 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+            <FiBell className="h-5 w-5" />
+          </span>
+
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+              New Job Posted
+            </p>
+
+            <h3 className="mt-1 text-lg font-bold text-gray-900 dark:text-white leading-snug">
+              {jobTitle}
+            </h3>
+
+            {companyName && (
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{companyName}</p>
+            )}
+
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
+              {location && (
+                <span className="flex items-center gap-1.5">
+                  <FiMapPin className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
+                  {location}
+                </span>
+              )}
+              {jobType && (
+                <span className="flex items-center gap-1.5">
+                  <FiBriefcase className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
+                  {jobType}
+                </span>
+              )}
+            </div>
+
+            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+              A new job has been approved and published.
+            </p>
+
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
+              <FiClock className="h-3.5 w-3.5" />
+              {relativeTime(createdAt)}
+            </div>
+          </div>
+        </div>
+
+        {/* Right – View Job button */}
+        <div className="flex flex-shrink-0 items-center sm:ml-4">
+          <button
+            type="button"
+            onClick={() => onView(notification)}
+            className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          >
+            View Job
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Skeleton loader ──────────────────────────────────────────────────────────
+const SkeletonCard = () => (
+  <div className="rounded-3xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800 animate-pulse">
+    <div className="flex items-start gap-4">
+      <div className="h-12 w-12 rounded-2xl bg-gray-200 dark:bg-gray-700" />
+      <div className="flex-1 space-y-3">
+        <div className="h-3 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+        <div className="h-5 w-48 rounded bg-gray-200 dark:bg-gray-700" />
+        <div className="h-4 w-36 rounded bg-gray-200 dark:bg-gray-700" />
+        <div className="h-3 w-full max-w-xs rounded bg-gray-200 dark:bg-gray-700" />
+      </div>
+    </div>
+  </div>
+);
+
+// ── Empty state ──────────────────────────────────────────────────────────────
+const EmptyState = () => (
+  <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-slate-50 px-8 py-16 text-center dark:border-gray-700 dark:bg-gray-900">
+    <span className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
+      <FiInbox className="h-8 w-8" />
+    </span>
+    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">No new job alerts</h3>
+    <p className="mt-3 max-w-sm text-sm text-gray-500 dark:text-gray-400">
+      New job notifications will appear here when jobs are approved and published.
+    </p>
+  </div>
+);
+
+// ── Main component ────────────────────────────────────────────────────────────
 const JobAlerts = () => {
-  const [alerts, setAlerts] = useState([]);
+  const navigate = useNavigate();
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    title: '',
-    keywords: '',
-    region: '',
-    city: '',
-    jobType: '',
-    frequency: 'daily',
-    active: true,
-  });
+  const [markingAll, setMarkingAll] = useState(false);
 
-  const loadAlerts = async () => {
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const loadNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getJobAlerts();
-      setAlerts(res.data?.data || res.data || []);
+      // Fetches ONLY type=new_job notifications for the current authenticated user
+      // from the real database — no mock/seeded data
+      const res = await getJobAlertNotifications({ sort: '-createdAt' });
+      const list = res.data?.data || res.data || [];
+      // Sort newest-first (defensive in case server doesn't sort)
+      list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setNotifications(list);
     } catch (err) {
-      console.error('Failed to load job alerts:', err);
-      toast.error('Unable to load your job alerts right now.');
+      console.error('Failed to load job alert notifications:', err);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadAlerts();
   }, []);
 
-  const handleFormChange = (event) => {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  // Mark single notification read and navigate to the real job page
+  const handleView = async (notification) => {
+    if (!notification.isRead) {
+      try {
+        await markJobAlertRead(notification._id);
+        setNotifications((prev) =>
+          prev.map((n) => (n._id === notification._id ? { ...n, isRead: true } : n))
+        );
+      } catch {
+        // non-critical – navigate anyway
+      }
+    }
+    // Navigate using the REAL jobId from the notification data
+    const jobId = notification.data?.jobId || notification.link?.split('/').pop();
+    if (jobId) {
+      navigate(`/jobs/${jobId}`);
+    }
   };
 
-  const handleCreateAlert = async (event) => {
-    event.preventDefault();
-    if (!form.title.trim() || !form.keywords.trim()) {
-      toast.error('Please provide a title and keywords for this alert.');
-      return;
-    }
-
-    setSaving(true);
+  // Mark ALL new_job notifications read in one request
+  const handleMarkAllRead = async () => {
+    if (unreadCount === 0) return;
+    setMarkingAll(true);
     try {
-      await createJobAlert(form);
-      toast.success('Job alert created successfully.');
-      setIsFormOpen(false);
-      setForm({ title: '', keywords: '', region: '', city: '', jobType: '', frequency: 'daily', active: true });
-      await loadAlerts();
+      await api.put('/notifications/read-all', {}, { params: { type: 'new_job' } });
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } catch (err) {
-      console.error('Failed to create job alert:', err);
-      toast.error(err.response?.data?.message || 'Could not create job alert.');
+      console.error('Failed to mark all as read:', err);
     } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleToggleAlert = async (alert) => {
-    try {
-      const res = await updateJobAlert(alert._id, { ...alert, active: !alert.active });
-      setAlerts((prev) => prev.map((item) => (item._id === alert._id ? res.data?.data || res.data || item : item)));
-      toast.success(`Alert ${alert.active ? 'paused' : 'enabled'}.`);
-    } catch (err) {
-      console.error('Failed to update job alert:', err);
-      toast.error('Unable to update alert status.');
-    }
-  };
-
-  const handleDeleteAlert = async (id) => {
-    if (!window.confirm('Delete this alert?')) return;
-    try {
-      await deleteJobAlert(id);
-      toast.success('Job alert deleted.');
-      setAlerts((prev) => prev.filter((alert) => alert._id !== id));
-    } catch (err) {
-      console.error('Failed to delete job alert:', err);
-      toast.error('Could not delete this alert.');
+      setMarkingAll(false);
     }
   };
 
   return (
     <div className="max-w-6xl mx-auto pb-10 space-y-8">
-      <div className="flex flex-col lg:flex-row items-start justify-between gap-6">
+      {/* ── Page header ── */}
+      <div className="flex flex-col lg:flex-row items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-gray-900 dark:text-white">Job Alerts</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-2xl">
-            Create alerts for your favorite roles and locations so new opportunities come to you first.
+          <p className="mt-2 max-w-2xl text-gray-500 dark:text-gray-400">
+            Get notified whenever a new job is approved and published.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsFormOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 text-white px-5 py-3 font-semibold shadow-lg hover:bg-emerald-700 transition"
-        >
-          <FiPlus className="w-4 h-4" /> Create Alert
-        </button>
-      </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.7fr_0.95fr]">
-        <section className="rounded-3xl border border-gray-150 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Your active alerts</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Stay ahead of new opportunities tailored to your search preferences.</p>
-            </div>
-            <span className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
-              {loading ? 'Loading...' : `${alerts.length} alert${alerts.length === 1 ? '' : 's'}`}
+        <div className="flex items-center gap-3">
+          {/* Unread badge */}
+          {!loading && unreadCount > 0 && (
+            <span className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">
+              {unreadCount} new
             </span>
-          </div>
-
-          {loading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="h-28 rounded-3xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900 animate-pulse" />
-              ))}
-            </div>
-          ) : alerts.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-gray-200 bg-slate-50 p-10 text-center text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
-              <FiInfo className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">No job alerts yet</h3>
-              <p className="mt-3 text-sm">Create alerts for roles, locations, and keywords that matter most to you.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {alerts.map((alert) => (
-                <div key={alert._id} className="rounded-3xl border border-gray-200 dark:border-gray-700 p-5 transition hover:border-emerald-300 hover:shadow-sm">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm uppercase tracking-[0.2em] text-gray-400">{alert.title}</p>
-                      <h3 className="mt-2 text-xl font-semibold text-gray-900 dark:text-white">{alert.keywords || 'Job keywords'} — {alert.region || 'Any region'}{alert.city ? `, ${alert.city}` : ''}</h3>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`rounded-full px-3 py-1 text-sm font-semibold ${alert.active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {alert.active ? 'Active' : 'Paused'}
-                      </span>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 dark:bg-gray-900 dark:text-gray-300">
-                        {alert.frequency || 'Daily'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3 text-sm text-gray-500 dark:text-gray-400">
-                    <span>Type: {alert.jobType || 'Any role'}</span>
-                    <span>Region: {alert.region || 'Any'}</span>
-                    <span>City: {alert.city || 'Any'}</span>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleAlert(alert)}
-                      className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
-                    >
-                      {alert.active ? 'Pause alert' : 'Enable alert'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteAlert(alert._id)}
-                      className="rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
           )}
-        </section>
-
-        <aside className="space-y-4">
-          <div className="rounded-3xl border border-gray-150 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="rounded-2xl bg-emerald-50 text-emerald-700 p-3">
-                <FiBell className="w-5 h-5" />
-              </span>
-              <div>
-                <p className="text-sm text-gray-500 uppercase tracking-[0.18em]">Tips</p>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Build smarter alerts</h3>
-              </div>
-            </div>
-            <ul className="space-y-3 text-sm text-gray-500 dark:text-gray-400">
-              <li>• Keep alert titles short and clear.</li>
-              <li>• Add location details only when relevant.</li>
-              <li>• Use keyword phrases employers commonly include.</li>
-              <li>• Pause alerts when you want fewer updates.</li>
-            </ul>
-          </div>
-
-          <div className="rounded-3xl border border-gray-150 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div>
-                <p className="text-sm text-gray-500 uppercase tracking-[0.18em]">Next step</p>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Keep searches relevant</h3>
-              </div>
-              <FiClock className="w-5 h-5 text-emerald-600" />
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Review your active alerts every few weeks and refine keywords after you apply to similar roles.</p>
-            <Link to="/dashboard/find-jobs" className="mt-6 inline-flex items-center justify-center rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
-              Explore matching jobs
-            </Link>
-          </div>
-        </aside>
+          {/* Refresh */}
+          <button
+            type="button"
+            onClick={loadNotifications}
+            disabled={loading}
+            className="rounded-full border border-gray-200 p-2.5 text-gray-500 transition hover:bg-gray-50 hover:text-gray-700 disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+            title="Refresh"
+          >
+            <FiRefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
-      {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900">
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Create a new job alert</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Get notified when matching roles are posted.</p>
-              </div>
+      {/* ── Content card ── */}
+      <section className="rounded-3xl border border-gray-150 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        {/* Section sub-header */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="rounded-2xl bg-emerald-50 p-3 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+              <FiBell className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Job notifications
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Automatically generated when a new job is approved and published.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {!loading && notifications.length > 0 && (
+              <span className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+                {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
+              </span>
+            )}
+            {!loading && unreadCount > 0 && (
               <button
                 type="button"
-                onClick={() => setIsFormOpen(false)}
-                className="rounded-full border border-gray-200 p-2 text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                onClick={handleMarkAllRead}
+                disabled={markingAll}
+                className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
               >
-                <FiX className="w-5 h-5" />
+                {markingAll ? 'Marking...' : 'Mark all read'}
               </button>
-            </div>
-
-            <form onSubmit={handleCreateAlert} className="grid gap-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  Alert title
-                  <input
-                    name="title"
-                    value={form.title}
-                    onChange={handleFormChange}
-                    className="input"
-                    placeholder="Software Engineer Addis Ababa"
-                    required
-                  />
-                </label>
-                <label className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  Keywords
-                  <input
-                    name="keywords"
-                    value={form.keywords}
-                    onChange={handleFormChange}
-                    className="input"
-                    placeholder="React, Node.js, remote"
-                    required
-                  />
-                </label>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-3">
-                <label className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  Region
-                  <input
-                    name="region"
-                    value={form.region}
-                    onChange={handleFormChange}
-                    className="input"
-                    placeholder="Addis Ababa"
-                  />
-                </label>
-                <label className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  City
-                  <input
-                    name="city"
-                    value={form.city}
-                    onChange={handleFormChange}
-                    className="input"
-                    placeholder="Bole"
-                  />
-                </label>
-                <label className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  Job type
-                  <select name="jobType" value={form.jobType} onChange={handleFormChange} className="select">
-                    <option value="">Any type</option>
-                    <option value="Full-time">Full-time</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Internship">Internship</option>
-                    <option value="Freelance">Freelance</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  Frequency
-                  <select name="frequency" value={form.frequency} onChange={handleFormChange} className="select">
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                  </select>
-                </label>
-                <label className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  Active
-                  <select name="active" value={String(form.active)} onChange={(event) => setForm((prev) => ({ ...prev, active: event.target.value === 'true' }))} className="select">
-                    <option value="true">Enabled</option>
-                    <option value="false">Paused</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <button type="button" onClick={() => setIsFormOpen(false)} className="rounded-full border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving} className="rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300">
-                  {saving ? 'Saving...' : 'Create Alert'}
-                </button>
-              </div>
-            </form>
+            )}
           </div>
         </div>
-      )}
+
+        {/* States */}
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : notifications.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="space-y-4">
+            {notifications.map((notification) => (
+              <AlertCard
+                key={notification._id}
+                notification={notification}
+                onView={handleView}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* All caught up footer */}
+        {!loading && notifications.length > 0 && unreadCount === 0 && (
+          <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400 dark:text-gray-500">
+            <FiCheckCircle className="h-4 w-4 text-emerald-500" />
+            You&apos;re all caught up!
+          </div>
+        )}
+      </section>
     </div>
   );
 };

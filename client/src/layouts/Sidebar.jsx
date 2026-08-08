@@ -1,9 +1,13 @@
 // ============================================
-// Dashboard Sidebar
+// Dashboard Sidebar — Production-quality refinement
 // ============================================
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FiHome, FiUser, FiBriefcase, FiFileText, FiBookmark, FiSearch, FiZap, FiBell, FiBookOpen, FiUsers, FiSettings, FiMail, FiBarChart2, FiCalendar, FiLogOut, FiX } from 'react-icons/fi';
+import {
+  FiHome, FiUser, FiBriefcase, FiFileText, FiBookmark,
+  FiSearch, FiBell, FiUsers, FiSettings, FiMail,
+  FiBarChart2, FiCalendar, FiLogOut, FiX, FiHelpCircle,
+} from 'react-icons/fi';
 import { logout } from '../store/slices/authSlice';
 import toast from 'react-hot-toast';
 
@@ -29,7 +33,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/dashboard/applications', icon: FiFileText, label: 'Applications' },
     { path: '/dashboard/saved-jobs', icon: FiBookmark, label: 'Saved Jobs' },
     { path: '/dashboard/profile', icon: FiUser, label: 'My CV / Profile' },
-    { path: '/dashboard/resume', icon: FiFileText, label: 'Resume' },
+    { path: '/dashboard/resume', icon: FiFileText, label: 'Resume Builder' },
     { path: '/dashboard/job-alerts', icon: FiBell, label: 'Job Alerts' },
     { path: '/dashboard/messages', icon: FiMail, label: 'Messages' },
     { path: '/dashboard/settings', icon: FiSettings, label: 'Settings' },
@@ -39,7 +43,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/employer', icon: FiHome, label: 'Dashboard' },
     { path: '/employer/post-job', icon: FiBriefcase, label: 'Post Job' },
     { path: '/employer/jobs', icon: FiFileText, label: 'Manage Jobs' },
-    { path: '/employer/applicants', icon: FiBookOpen, label: 'Applicant' },
+    { path: '/employer/applicants', icon: FiUsers, label: 'Applicant' },
     { path: '/employer/interviews', icon: FiCalendar, label: 'Interviews' },
     { path: '/employer/company', icon: FiSettings, label: 'Company Profile' },
     { path: '/employer/messages', icon: FiMail, label: 'Messages' },
@@ -65,63 +69,60 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   const menu = getMenu();
   const portalLabel = user?.role === 'admin' ? 'Admin Portal' : user?.role === 'employer' ? 'Employer Portal' : 'Job Seeker Portal';
-  const dashboardTitle = user?.role === 'admin' ? 'Admin Dashboard' : user?.role === 'employer' ? 'Employer Dashboard' : 'Job Seeker Dashboard';
+  const dashboardTitle = user?.role === 'admin' ? 'Admin' : user?.role === 'employer' ? 'Employer' : 'Job Seeker';
   const roleLabel = user?.role === 'admin' ? 'Admin' : user?.role === 'employer' ? 'Employer' : 'Job Seeker';
+  const initials = `${user?.firstName?.charAt(0) || ''}${user?.lastName?.charAt(0) || ''}`;
 
   return (
     <>
       {/* Overlay for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/40 z-40 md:hidden transition-opacity"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out ${
+        className={`sidebar-shell fixed md:static inset-y-0 left-0 z-50 w-[260px] bg-white border-r border-slate-100 transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          {/* ── Header ── */}
+          <div className="flex items-center justify-between px-5 pt-6 pb-5 border-b border-slate-100">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-emerald-500">{portalLabel}</p>
-              <h2 className="mt-2 text-2xl font-bold text-slate-900">{dashboardTitle}</h2>
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-600">{portalLabel}</p>
+              <h2 className="mt-1.5 text-lg font-bold text-slate-900 leading-tight">{dashboardTitle}<br /><span className="text-slate-500 font-semibold">Dashboard</span></h2>
             </div>
-            <button onClick={() => setIsOpen(false)} className="md:hidden text-slate-500 hover:text-slate-800">
-              <FiX className="w-6 h-6" />
+            <button onClick={() => setIsOpen(false)} className="md:hidden rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition">
+              <FiX className="w-5 h-5" />
             </button>
           </div>
 
-          {/* User Info */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="rounded-3xl bg-emerald-50 dark:bg-emerald-900/50 p-4 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-900 text-emerald-200 shadow-sm overflow-hidden">
+          {/* ── User card ── */}
+          <div className="px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white text-sm font-semibold overflow-hidden">
                 {user?.avatar ? (
                   <img src={user.avatar} alt={roleLabel} className="h-full w-full object-cover" />
                 ) : (
-                  <span className="text-lg font-semibold">
-                    {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                  </span>
+                  <span>{initials}</span>
                 )}
               </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-100 truncate">{user?.firstName} {user?.lastName}</p>
-                  <p className="mt-1 text-xs text-slate-400 truncate">{user?.email}</p>
-                  <span className="mt-3 inline-flex rounded-full bg-slate-900 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300 shadow-sm">
-                    {roleLabel}
-                  </span>
-                </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-slate-800 truncate">{user?.firstName} {user?.lastName}</p>
+                <p className="text-xs text-slate-400 truncate">{user?.email}</p>
               </div>
             </div>
+            <span className="mt-2.5 inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-700">
+              {roleLabel}
+            </span>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {/* ── Navigation ── */}
+          <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
             {menu.map((item) => {
               const Icon = item.icon;
               const isRoot = item.path === '/admin' || item.path === '/dashboard' || item.path === '/employer';
@@ -133,33 +134,33 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   key={item.path}
                   to={item.path}
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                  className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-150 ${
                     isActive
-                      ? 'bg-emerald-50 text-emerald-800 shadow-sm border-l-4 border-emerald-500'
-                      : 'text-slate-700 hover:bg-slate-100'
+                      ? 'bg-emerald-50 text-emerald-700 font-semibold border-l-[3px] border-emerald-500 pl-[9px]'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={`w-[18px] h-[18px] flex-shrink-0 transition ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
                   <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}
 
-            <div className="mt-6 pt-4 border-t border-gray-100">
-              <Link to="/help" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-100">
-                <FiMail className="w-5 h-5" />
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <Link to="/help" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+                <FiHelpCircle className="w-[18px] h-[18px] text-slate-400" />
                 <span>Help & Support</span>
               </Link>
             </div>
           </nav>
 
-          {/* Logout */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          {/* ── Logout ── */}
+          <div className="px-3 py-3 border-t border-slate-100">
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+              className="flex items-center gap-3 w-full rounded-xl px-3 py-2.5 text-[13px] font-medium text-red-500 hover:bg-red-50 transition-all duration-150"
             >
-              <FiLogOut className="w-5 h-5" />
+              <FiLogOut className="w-[18px] h-[18px]" />
               <span>Logout</span>
             </button>
           </div>

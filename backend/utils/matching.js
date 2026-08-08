@@ -1,233 +1,327 @@
+// ============================================
+// AI Job Recommendation & Scoring Engine
+// ============================================
+
+/**
+ * Text normalization helper
+ */
 const normalizeText = (text) => {
   if (!text) return '';
   return text
     .toString()
     .toLowerCase()
     .replace(/[“”‘’]/g, "'")
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 };
 
-const mapExperienceLevelToYears = {
-  'Entry Level': 0,
-  'Mid Level': 2,
-  'Senior Level': 5,
-  Lead: 8,
-  Manager: 10,
-  Director: 12,
-  Executive: 15,
-};
-
-const educationKeywords = {
-  'No Requirement': [],
-  'High School': ['high school', 'secondary school', 'senior secondary'],
-  Diploma: ['diploma', 'national diploma', 'nd'],
-  Bachelor: ['bachelor', 'bsc', 'b\.sc', 'ba', 'b\.a', "bachelor's"],
-  Master: ['master', 'msc', 'm\.sc', 'mba', "master's"],
-  PhD: ['phd', 'doctorate'],
-  'Professional Certificate': ['certificate', 'certified', 'certification'],
-};
-
-const isEducationMatch = (jobEducation, candidateEducation = []) => {
-  if (!jobEducation || jobEducation === 'No Requirement') return true;
-  const normalizedCandidate = candidateEducation
-    .map((e) => normalizeText(e))
-    .filter(Boolean);
-
-  const keywords = educationKeywords[jobEducation] || [];
-  if (!keywords.length) return false;
-
-  return keywords.some((keyword) => normalizedCandidate.some((education) => education.includes(keyword)));
-};
-
-const normalizeSkillId = (skill) => {
+/**
+ * Canonical skill normalization to handle variations:
+ * "React JS", "React.js", "React" -> "react"
+ * "NodeJS", "Node.js" -> "nodejs"
+ * "Mongo DB", "MongoDB" -> "mongodb"
+ */
+const normalizeSkillName = (skill) => {
   if (!skill) return '';
-  return skill._id ? skill._id.toString() : skill.toString();
+  let str = typeof skill === 'object' ? skill.name || skill.title || '' : String(skill);
+  if (!str) return '';
+  str = str.toLowerCase().trim();
+
+  // Normalize common variations
+  str = str.replace(/react\.?js/gi, 'react');
+  str = str.replace(/node\.?js/gi, 'node');
+  str = str.replace(/vue\.?js/gi, 'vue');
+  str = str.replace(/express\.?js/gi, 'express');
+  str = str.replace(/mongo\s*db/gi, 'mongodb');
+  str = str.replace(/next\.?js/gi, 'nextjs');
+  str = str.replace(/nest\.?js/gi, 'nestjs');
+  str = str.replace(/typescript/gi, 'ts');
+  str = str.replace(/javascript/gi, 'js');
+  str = str.replace(/[^a-z0-9]/g, '');
+  return str;
 };
 
-const getUserSkillIds = (user) => {
-  const skillIds = [
-    ...(user.skills || []).map(normalizeSkillId),
-    ...(user.resumeAnalysis?.skills || []).map(normalizeSkillId),
-  ].filter(Boolean);
-  return [...new Set(skillIds)];
+/**
+ * Mapping experience levels to required years
+ */
+const mapExperienceLevelToYears = {
+  'entry level': 0,
+  'entry': 0,
+  'mid level': 2,
+  'mid': 2,
+  'senior level': 5,
+  'senior': 5,
+  lead: 8,
+  manager: 10,
+  director: 12,
+  executive: 15,
 };
 
-const getUserSkillNames = (user) => {
-  const names = [
-    ...(user.skills || []).map((skill) => (skill?.name ? skill.name : skill?.toString ? skill.toString() : '')),
-    ...(user.resumeAnalysis?.skills || []).map((skill) => (skill?.name ? skill.name : skill?.toString ? skill.toString() : '')),
-  ].filter(Boolean);
-  return [...new Set(names.map((name) => normalizeText(name)).filter(Boolean))];
+/**
+ * Education level keywords map
+ */
+const educationKeywords = {
+  'no requirement': [],
+  'high school': ['high school', 'secondary school', '12th', 'highschool'],
+  diploma: ['diploma', 'tvet', 'level 4', 'level 3', 'nd'],
+  bachelor: ['bachelor', 'bsc', 'b.sc', 'ba', 'b.a', "bachelor's", 'degree', 'degree in'],
+  master: ['master', 'msc', 'm.sc', 'mba', "master's", 'postgraduate'],
+  phd: ['phd', 'doctorate', 'doctoral'],
+  certificate: ['certificate', 'certified', 'certification'],
 };
 
-const getNormalizedTokens = (text) => normalizeText(text).split(' ').filter(Boolean);
+/**
+ * Extract user skills from all profile fields
+ */
+const extractUserSkillNames = (user) => {
+  const skills = new Set();
 
-const skillTextMatchRatio = (skillName, jobText, resumeContent) => {
-  if (!skillName) return 0;
-  const normalizedSkill = normalizeText(skillName);
-  if (!normalizedSkill) return 0;
-
-  if (resumeContent.includes(normalizedSkill) || jobText.includes(normalizedSkill)) {
-    return 1;
+  // 1. Direct skills array (objects or strings)
+  if (Array.isArray(user?.skills)) {
+    user.skills.forEach((s) => {
+      const name = typeof s === 'object' ? s.name || s.title : String(s);
+      if (name) skills.add(name);
+    });
   }
 
-  const skillTokens = getNormalizedTokens(normalizedSkill);
-  if (!skillTokens.length) return 0;
-
-  const haystackTokens = new Set([...getNormalizedTokens(jobText), ...getNormalizedTokens(resumeContent)]);
-  const matchedTokens = skillTokens.filter((token) => haystackTokens.has(token));
-  return matchedTokens.length / skillTokens.length;
-};
-
-const extractJobSkillIds = (job) => {
-  return [...new Set((job.skillsRequired || [])
-    .map((skill) => (skill._id ? skill._id.toString() : skill.toString()))
-    .filter(Boolean))];
-};
-
-const extractJobSkillNames = (job) => {
-  return [...new Set((job.skillsRequired || [])
-    .map((skill) => (skill.name ? skill.name : skill.toString()))
-    .filter(Boolean)
-    .map((name) => normalizeText(name))
-    .filter(Boolean))];
-};
-
-const calculateSkillScore = (job, userSkillIds = [], userSkillNames = [], resumeText = '') => {
-  const jobSkillIds = extractJobSkillIds(job);
-  const jobSkillNames = extractJobSkillNames(job);
-  const jobText = normalizeText([job.title, job.requirements, job.description].filter(Boolean).join(' '));
-  const resumeContent = normalizeText([resumeText, ...userSkillNames].filter(Boolean).join(' '));
-
-  if (jobSkillIds.length === 0) {
-    return { score: 0, matchedSkills: 0, totalSkills: 0 };
+  // 2. SkillNames string array
+  if (Array.isArray(user?.skillNames)) {
+    user.skillNames.forEach((s) => {
+      if (s) skills.add(String(s));
+    });
   }
 
-  const matchedSkillIds = jobSkillIds.filter((skillId) => userSkillIds.includes(skillId));
-  const matchedTextScore = jobSkillNames.reduce((acc, skillName) => {
-    if (!skillName) return acc;
-    return acc + skillTextMatchRatio(skillName, jobText, resumeContent);
-  }, 0);
-
-  if (matchedSkillIds.length === 0 && matchedTextScore === 0) {
-    return { score: 0, matchedSkills: 0, totalSkills: jobSkillIds.length };
+  // 3. Resume analysis skills
+  if (Array.isArray(user?.resumeAnalysis?.skills)) {
+    user.resumeAnalysis.skills.forEach((s) => {
+      const name = typeof s === 'object' ? s.name || s.title : String(s);
+      if (name) skills.add(name);
+    });
   }
 
-  const skillMatchPercent = Math.round((matchedSkillIds.length / jobSkillIds.length) * 100);
-  const textMatchPercent = jobSkillNames.length > 0 ? Math.round((matchedTextScore / jobSkillNames.length) * 100) : 0;
+  return Array.from(skills).filter(Boolean);
+};
+
+/**
+ * Extract job required skills
+ */
+const extractJobRequiredSkills = (job) => {
+  const skills = new Set();
+
+  if (Array.isArray(job?.skillsRequired)) {
+    job.skillsRequired.forEach((s) => {
+      const name = typeof s === 'object' ? s.name || s.title : String(s);
+      if (name) skills.add(name);
+    });
+  }
+
+  if (Array.isArray(job?.skills?.technical)) {
+    job.skills.technical.forEach((s) => {
+      if (s) skills.add(String(s));
+    });
+  }
+
+  return Array.from(skills).filter(Boolean);
+};
+
+/**
+ * 1. SKILL MATCHING (Weight = 50%)
+ */
+const calculateSkillMatch = (job, user) => {
+  const userRawSkills = extractUserSkillNames(user);
+  const userNormalizedSkills = new Set(userRawSkills.map(normalizeSkillName).filter(Boolean));
+
+  // Also extract words from user headline/bio as candidate skill tokens
+  const userTextTokens = normalizeText(`${user?.headline || ''} ${user?.bio || ''}`).split(' ');
+  userTextTokens.forEach((token) => {
+    if (token.length > 2) userNormalizedSkills.add(normalizeSkillName(token));
+  });
+
+  const jobRawSkills = extractJobRequiredSkills(job);
+
+  if (jobRawSkills.length === 0) {
+    // Fallback if job has no explicit skills list: check job title/description against user skills
+    const jobText = normalizeText(`${job?.title || ''} ${job?.description || ''} ${job?.requirements || ''}`);
+    const matched = userRawSkills.filter((s) => {
+      const norm = normalizeSkillName(s);
+      return norm && jobText.includes(norm);
+    });
+    const score = userRawSkills.length > 0 ? Math.min(100, Math.round((matched.length / Math.max(1, userRawSkills.length)) * 100)) : 50;
+    return {
+      score,
+      matchedSkills: matched,
+      missingSkills: [],
+    };
+  }
+
+  const matchedSkills = [];
+  const missingSkills = [];
+
+  jobRawSkills.forEach((jobSkill) => {
+    const norm = normalizeSkillName(jobSkill);
+    if (userNormalizedSkills.has(norm)) {
+      matchedSkills.push(jobSkill);
+    } else {
+      // Fuzzy token check
+      const matchedByFuzzy = userRawSkills.some((uSkill) => {
+        const uNorm = normalizeSkillName(uSkill);
+        return uNorm.includes(norm) || norm.includes(uNorm);
+      });
+      if (matchedByFuzzy) {
+        matchedSkills.push(jobSkill);
+      } else {
+        missingSkills.push(jobSkill);
+      }
+    }
+  });
+
+  const matchRatio = matchedSkills.length / jobRawSkills.length;
+  const score = Math.round(matchRatio * 100);
 
   return {
-    score: Math.round((skillMatchPercent * 0.7) + (textMatchPercent * 0.3)),
-    matchedSkills: matchedSkillIds.length,
-    totalSkills: jobSkillIds.length,
+    score,
+    matchedSkills: Array.from(new Set(matchedSkills)),
+    missingSkills: Array.from(new Set(missingSkills)),
   };
 };
 
-const calculateExperienceScore = (job, experienceYears) => {
-  if (!job.experienceLevel) return 100;
-  if (experienceYears == null || Number.isNaN(experienceYears)) return 50;
+/**
+ * 2. EXPERIENCE MATCHING (Weight = 20%)
+ */
+const calculateExperienceMatch = (job, user) => {
+  let userYears = user?.experienceYears;
+  if (userYears == null && user?.resumeAnalysis?.experienceYears != null) {
+    userYears = user.resumeAnalysis.experienceYears;
+  }
+  if (userYears == null && Array.isArray(user?.experienceDetails) && user.experienceDetails.length > 0) {
+    userYears = user.experienceDetails.length;
+  }
+  if (userYears == null) {
+    userYears = user?.experience ? 1 : 0;
+  }
+  userYears = Number(userYears) || 0;
 
-  const requiredYears = mapExperienceLevelToYears[job.experienceLevel] ?? 0;
-  if (requiredYears === 0) return 100;
-
-  const score = Math.min(100, Math.round((experienceYears / requiredYears) * 100));
-  return score;
-};
-
-const calculateEducationScore = (job, candidateEducation = []) => {
-  if (!job.educationRequired || job.educationRequired === 'No Requirement') return 100;
-  return isEducationMatch(job.educationRequired, candidateEducation) ? 100 : 0;
-};
-
-const calculateCertificationScore = (job, userCertifications = []) => {
-  const requirements = normalizeText(job.requirements || job.description || '');
-  const requiresCert = /certificat|certified|professional certificate/i.test(requirements);
-  if (!requiresCert) return 100;
-  return userCertifications.length > 0 ? 100 : 0;
-};
-
-const calculateLocationScore = (job, candidateLocation) => {
-  if (!job.workMode || job.workMode === 'Remote') return 100;
-  if (!candidateLocation) return 50;
-
-  const normalizedCandidate = normalizeText(candidateLocation);
-  const region = normalizeText(job.location?.region || '');
-  const city = normalizeText(job.location?.city || '');
-
-  if (!region && !city) return 50;
-  if (region && normalizedCandidate.includes(region)) return 100;
-  if (city && normalizedCandidate.includes(city)) return 100;
-  if (region && region.includes(normalizedCandidate)) return 100;
-  if (city && city.includes(normalizedCandidate)) return 100;
-
-  return 0;
-};
-
-const buildMatchDetails = (job, user) => {
-  const userSkillIds = new Set([
-    ...(user.skills || []).map((skill) => (skill._id ? skill._id.toString() : skill.toString())),
-    ...(user.resumeAnalysis?.skills || []).map((skill) => (skill._id ? skill._id.toString() : skill.toString())),
-  ]);
-
-  const requiredSkills = (job.skillsRequired || []).map((skill) => ({
-    id: skill._id ? skill._id.toString() : skill.toString(),
-    name: skill.name || skill,
-  }));
-
-  const matchedSkills = requiredSkills.filter((skill) => userSkillIds.has(skill.id));
-  const missingSkills = requiredSkills.filter((skill) => !userSkillIds.has(skill.id));
-
-  const experienceYears = user.resumeAnalysis?.experienceYears ?? null;
-  const educationList = [
-    ...new Set([...(user.education || []), ...(user.resumeAnalysis?.education || [])].filter(Boolean)),
-  ];
-  const certificationList = [
-    ...new Set([...(user.certificates || []).map((cert) => cert.name).filter(Boolean), ...(user.resumeAnalysis?.certifications || [])]),
-  ];
-
-  const userSkillIdsArray = Array.from(userSkillIds);
-  const userSkillNames = getUserSkillNames(user);
-  const resumeText = user.resumeAnalysis?.rawText || '';
-  const skillResult = calculateSkillScore(job, userSkillIdsArray, userSkillNames, resumeText);
-  const skillScore = skillResult.score;
-  const experienceScore = calculateExperienceScore(job, experienceYears);
-  const educationScore = calculateEducationScore(job, educationList);
-  const certificationScore = calculateCertificationScore(job, certificationList);
-  const locationScore = calculateLocationScore(job, user.resumeAnalysis?.location || user.location?.region || user.location?.city);
-
-  let score = 0;
-  if (skillScore > 0) {
-    score = skillScore * 0.5 +
-      experienceScore * 0.2 +
-      educationScore * 0.15 +
-      certificationScore * 0.1 +
-      locationScore * 0.05;
+  let requiredYears = 0;
+  if (typeof job?.experienceLevel === 'string') {
+    const lvl = job.experienceLevel.toLowerCase().trim();
+    requiredYears = mapExperienceLevelToYears[lvl] ?? 0;
+  }
+  if (job?.experienceRequired != null) {
+    const parsed = parseInt(job.experienceRequired, 10);
+    if (!Number.isNaN(parsed)) requiredYears = parsed;
   }
 
-  score = Math.round(Math.max(0, Math.min(100, score)));
+  if (requiredYears === 0) return 100;
+  if (userYears >= requiredYears) return 100;
+  return Math.min(100, Math.round((userYears / requiredYears) * 100));
+};
+
+/**
+ * 3. EDUCATION MATCHING (Weight = 15%)
+ */
+const calculateEducationMatch = (job, user) => {
+  const jobEdu = job?.educationRequired || job?.education;
+  if (!jobEdu || normalizeText(jobEdu) === 'no requirement') return 100;
+
+  const candidateEdus = [];
+  if (Array.isArray(user?.educationDetails)) {
+    user.educationDetails.forEach((e) => {
+      if (e?.degree) candidateEdus.push(normalizeText(e.degree));
+      if (e?.institution) candidateEdus.push(normalizeText(e.institution));
+    });
+  }
+  if (Array.isArray(user?.education)) {
+    user.education.forEach((e) => candidateEdus.push(normalizeText(e)));
+  }
+  if (Array.isArray(user?.resumeAnalysis?.education)) {
+    user.resumeAnalysis.education.forEach((e) => candidateEdus.push(normalizeText(e)));
+  }
+
+  if (!candidateEdus.length) return 40; // Neutral fallback
+
+  const jobEduNorm = normalizeText(jobEdu);
+  const keywords = educationKeywords[jobEduNorm] || [jobEduNorm];
+
+  const matched = keywords.some((kw) => candidateEdus.some((cEdu) => cEdu.includes(kw)));
+  return matched ? 100 : 30;
+};
+
+/**
+ * 4. CERTIFICATION MATCHING (Weight = 10%)
+ */
+const calculateCertificationMatch = (job, user) => {
+  const reqText = normalizeText(`${job?.requirements || ''} ${job?.description || ''}`);
+  const requiresCert = /certificat|certified|license|pmp|aws|cisco/i.test(reqText);
+  if (!requiresCert) return 100;
+
+  const userCerts = [
+    ...(Array.isArray(user?.certificates) ? user.certificates.map((c) => c.name || c) : []),
+    ...(Array.isArray(user?.resumeAnalysis?.certifications) ? user.resumeAnalysis.certifications : []),
+  ].filter(Boolean);
+
+  return userCerts.length > 0 ? 100 : 20;
+};
+
+/**
+ * 5. LOCATION MATCHING (Weight = 5%)
+ */
+const calculateLocationMatch = (job, user) => {
+  if (!job?.workMode || job.workMode === 'Remote' || job.isRemote) return 100;
+
+  const candidateLoc = normalizeText(
+    `${user?.location?.city || ''} ${user?.location?.address || ''} ${user?.location?.region || ''} ${user?.resumeAnalysis?.location || ''}`
+  );
+  if (!candidateLoc) return 70; // Neutral fallback
+
+  const jobCity = normalizeText(job?.location?.city || '');
+  const jobRegion = normalizeText(job?.location?.region || '');
+
+  if (!jobCity && !jobRegion) return 100;
+  if (jobCity && candidateLoc.includes(jobCity)) return 100;
+  if (jobRegion && candidateLoc.includes(jobRegion)) return 100;
+
+  return 30;
+};
+
+/**
+ * Main Job Match Calculation Function
+ */
+const calculateJobMatch = (job, user) => {
+  if (!job || !user) {
+    return { score: 0, details: {}, why: [] };
+  }
+
+  const skillResult = calculateSkillMatch(job, user);
+  const experienceScore = calculateExperienceMatch(job, user);
+  const educationScore = calculateEducationMatch(job, user);
+  const certificationScore = calculateCertificationMatch(job, user);
+  const locationScore = calculateLocationMatch(job, user);
+
+  // Overall Score Calculation: 50% Skills + 20% Exp + 15% Edu + 10% Cert + 5% Loc
+  const totalScore = Math.round(
+    skillResult.score * 0.50 +
+    experienceScore * 0.20 +
+    educationScore * 0.15 +
+    certificationScore * 0.10 +
+    locationScore * 0.05
+  );
+
+  const matchScore = Math.max(0, Math.min(100, totalScore));
 
   const details = {
-    skillScore,
+    skillScore: skillResult.score,
     experienceScore,
     educationScore,
     certificationScore,
     locationScore,
-    matchedSkills: matchedSkills.map((skill) => skill.name),
-    missingSkills: missingSkills.map((skill) => skill.name),
-    experienceYears,
-    education: educationList,
-    certifications: certificationList,
-    location: user.resumeAnalysis?.location || user.location?.region || user.location?.city || null,
+    matchedSkills: skillResult.matchedSkills,
+    missingSkills: skillResult.missingSkills,
   };
 
   const why = [];
-  if (matchedSkills.length > 0) {
-    why.push(`✓ ${matchedSkills.length} required skill${matchedSkills.length === 1 ? '' : 's'} matched`);
-  }
-  if (missingSkills.length > 0) {
-    why.push(`Missing ${missingSkills.length} skill${missingSkills.length === 1 ? '' : 's'}`);
+  if (skillResult.matchedSkills.length > 0) {
+    why.push(`${skillResult.matchedSkills.length} required skill${skillResult.matchedSkills.length === 1 ? '' : 's'} matched`);
   }
   if (experienceScore === 100) {
     why.push('Experience requirement satisfied');
@@ -237,47 +331,23 @@ const buildMatchDetails = (job, user) => {
   if (educationScore === 100) {
     why.push('Education requirement satisfied');
   }
-  if (certificationScore === 100) {
-    why.push('Certification requirement satisfied');
-  }
   if (locationScore === 100) {
     why.push('Location preference matched');
   }
 
-  return { score, details, why };
+  return {
+    score: matchScore,
+    matchScore,
+    matchedSkills: skillResult.matchedSkills,
+    missingSkills: skillResult.missingSkills,
+    details,
+    why,
+  };
 };
 
 const calculateMatchScore = (job, user) => {
-  const userSkillIds = getUserSkillIds(user);
-  const userSkillNames = getUserSkillNames(user).map((name) => normalizeText(name));
-  const resumeText = normalizeText(user.resumeAnalysis?.rawText || '');
-
-  const skillResult = calculateSkillScore(job, userSkillIds, userSkillNames, resumeText);
-  const skillScore = skillResult.score;
-
-  const jobText = normalizeText([job.title, job.requirements, job.description].filter(Boolean).join(' '));
-  const matchedSkillTextCount = userSkillNames.filter((name) => name && jobText.includes(name)).length;
-  const keywordScore = userSkillNames.length > 0
-    ? Math.round((matchedSkillTextCount / userSkillNames.length) * 20)
-    : 5;
-
-  const userHeadlineText = normalizeText(user.headline || '');
-  const userBioText = normalizeText(user.bio || '');
-  const titleWords = normalizeText(job.title || '').split(/\s+/).filter((w) => w.length > 3);
-  const matchedTitleWords = titleWords.filter((word) => userHeadlineText.includes(word) || userBioText.includes(word) || resumeText.includes(word)).length;
-  const titleScore = titleWords.length > 0 ? Math.round((matchedTitleWords / titleWords.length) * 15) : 5;
-
-  const experienceScore = calculateExperienceScore(job, user.resumeAnalysis?.experienceYears ?? null);
-  const educationScore = calculateEducationScore(job, [...new Set([...(user.education || []), ...(user.resumeAnalysis?.education || [])].filter(Boolean))]);
-  const certificationScore = calculateCertificationScore(job, [...new Set([...(user.certificates || []).map((cert) => cert.name).filter(Boolean), ...(user.resumeAnalysis?.certifications || [])])]);
-  const locationScore = calculateLocationScore(job, user.resumeAnalysis?.location || user.location?.region || user.location?.city);
-
-  const score = skillScore * 0.5 + keywordScore * 0.15 + titleScore * 0.1 + experienceScore * 0.1 + educationScore * 0.075 + certificationScore * 0.05 + locationScore * 0.05;
-  if (skillScore === 0) {
-    return 0;
-  }
-
-  return Math.min(100, Math.max(0, Math.round(score)));
+  const match = calculateJobMatch(job, user);
+  return match.matchScore;
 };
 
-module.exports = { calculateJobMatch: buildMatchDetails, calculateMatchScore };
+module.exports = { calculateJobMatch, calculateMatchScore };

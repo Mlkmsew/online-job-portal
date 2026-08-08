@@ -25,7 +25,8 @@ const normalizeStringArray = (value) => {
 // @route   GET /api/jobs
 // @access  Public
 exports.getJobs = asyncHandler(async (req, res) => {
-  const queryObj = { status: 'active', isApproved: true };
+  // Jobs visible to the public: status published or active, and isApproved true
+  const queryObj = { status: { $in: ['published', 'active'] }, isApproved: true };
   let sortBy = '-createdAt';
 
   // Filters
@@ -169,7 +170,11 @@ exports.getJob = asyncHandler(async (req, res, next) => {
     (job.postedBy._id && job.postedBy._id.toString() === req.user.id) ||
     job.postedBy.toString() === req.user.id
   );
-  const publicCanView = job.status === 'active' && job.isApproved && job.company?.isApproved && job.company?.isActive;
+  const publicCanView =
+    (job.status === 'published' || job.status === 'active') &&
+    job.isApproved &&
+    job.company?.isApproved &&
+    job.company?.isActive;
   const canView = publicCanView || req.user?.role === 'admin' || isOwner;
 
   if (!canView) return next(new AppError('Job not found.', 404));
@@ -201,6 +206,7 @@ exports.createJob = asyncHandler(async (req, res, next) => {
 
   req.body.postedBy = req.user.id;
   req.body.isApproved = false;
+  req.body.status = 'pending'; // Always start as pending — awaiting admin approval
   if (req.body.benefits !== undefined) {
     req.body.benefits = normalizeStringArray(req.body.benefits);
   }
@@ -240,6 +246,34 @@ exports.createJob = asyncHandler(async (req, res, next) => {
   // Update company job count
   company.totalJobs += 1;
   await company.save({ validateBeforeSave: false });
+
+  // Notify job seekers whose profile matches this job
+  try {
+    const User = require('../models/user');
+    const { calculateJobMatch } = require('../utils/matching');
+    const { createNotification } = require('../utils/helpers');
+
+    const jobseekers = await User.find({ role: 'jobseeker', isActive: { $ne: false } }).limit(50);
+    for (const seeker of jobseekers) {
+      try {
+        const matchResult = calculateJobMatch(job, seeker);
+        if (matchResult && matchResult.score > 20) {
+          await createNotification({
+            recipient: seeker._id,
+            type: 'new_job',
+            title: `New Job Match: ${job.title}`,
+            message: `${company.name || 'An employer'} posted a new job "${job.title}" matching your profile.`,
+            link: `/jobs/${job._id}`,
+            data: { jobId: job._id },
+          });
+        }
+      } catch (err) {
+        // ignore individual match error
+      }
+    }
+  } catch (err) {
+    console.error('Job match notification background dispatch error:', err.message);
+  }
 
   res.status(201).json({ success: true, message: 'Job posted successfully!', data: job });
 });
@@ -339,7 +373,7 @@ exports.getSimilarJobs = asyncHandler(async (req, res, next) => {
   const similar = await Job.find({
     _id: { $ne: job._id },
     category: job.category,
-    status: 'active',
+    status: { $in: ['published', 'active'] },
     isApproved: true,
   })
     .limit(6)
@@ -383,6 +417,70 @@ exports.getJobStats = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: { overview: stats[0] || {}, byCategory, byRegion },
+  });
+});
+
+// @desc    Get job recommendations for authenticated job seeker
+// @route   GET /api/jobs/recommendations
+// @access  Private (Job Seeker)
+exports.getRecommendations = asyncHandler(async (req, res, next) => {
+  const User = require('../models/user');
+  const Application = require('../models/Application');
+  const { calculateJobMatch } = require('../utils/matching');
+
+  const userId = req.user.id || req.user._id;
+  const user = await User.findById(userId).select('-password');
+  if (!user) return next(new AppError('User not found.', 404));
+
+  // Get job IDs user has already applied to
+  const appliedJobIds = new Set(
+    (await Application.find({ applicant: userId }).select('job')).map((app) => app.job?.toString()).filter(Boolean)
+  );
+
+  const activeJobs = await Job.find({ status: 'active', isApproved: true })
+    .populate('company', 'name logo location')
+    .populate('skillsRequired', 'name')
+    .sort({ createdAt: -1 });
+
+  const unappliedJobs = activeJobs.filter((j) => !appliedJobIds.has(j._id.toString()));
+
+  const scoredJobs = unappliedJobs.map((job) => {
+    const match = calculateJobMatch(job, user);
+    const score = match.matchScore ?? match.score ?? 0;
+
+    return {
+      _id: job._id.toString(),
+      jobId: job._id.toString(),
+      title: job.title,
+      company: job.company?.name || 'Company',
+      companyLogo: job.company?.logo || null,
+      location: job.location?.city || job.location?.region || (job.workMode === 'Remote' ? 'Remote' : 'Addis Ababa'),
+      jobType: job.jobType || 'Full-time',
+      salary: job.salary,
+      createdAt: job.createdAt,
+      matchScore: score,
+      matchPercentage: score,
+      matchedSkills: match.matchedSkills || [],
+      missingSkills: match.missingSkills || [],
+      matchReasons: match.why || [],
+      matchDetails: match.details || {},
+    };
+  });
+
+  // Filter threshold >= 40 (fallback to top scoring if candidate profile is new)
+  let recommendations = scoredJobs.filter((j) => j.matchScore >= 40);
+  if (recommendations.length < 2) {
+    recommendations = scoredJobs;
+  }
+
+  recommendations.sort((a, b) => b.matchScore - a.matchScore || new Date(b.createdAt) - new Date(a.createdAt));
+  recommendations = recommendations.slice(0, 10);
+
+  res.status(200).json({
+    success: true,
+    count: recommendations.length,
+    recommendations,
+    data: recommendations,
   });
 });
 

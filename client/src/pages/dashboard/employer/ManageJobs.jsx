@@ -59,8 +59,18 @@ const ManageJobs = () => {
                   <h3 className="text-lg font-semibold mb-2">{job.title}</h3>
                   <p className="text-gray-600 mb-2">{job.location?.region}</p>
                   <div className="flex items-center space-x-4 text-sm">
-                    <span className={`badge ${job.status === 'active' ? 'badge-success' : 'badge-warning'}`}>
-                      {job.status}
+                    <span className={`badge ${
+                      job.status === 'published' || job.isApproved
+                        ? 'badge-success'
+                        : job.status === 'pending'
+                        ? 'badge-warning'
+                        : 'badge-error'
+                    }`}>
+                      {job.status === 'published' || job.isApproved
+                        ? 'Published'
+                        : job.status === 'pending'
+                        ? 'Pending Review'
+                        : job.status}
                     </span>
                     <span>{job.applicantsCount || 0} applicants</span>
                   </div>

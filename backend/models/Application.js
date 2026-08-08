@@ -20,7 +20,7 @@ const applicationSchema = new mongoose.Schema(
     // Status Tracking
     status: {
       type: String,
-      enum: ['Submitted', 'Shortlisted', 'Interview', 'Rejected', 'Reviewed', 'Selected', 'Not Selected', 'Hired', 'withdrawn'],
+      enum: ['Submitted', 'Reviewed', 'Shortlisted', 'Interview', 'Interview Scheduled', 'Interview Completed', 'Interview Cancelled', 'Rejected', 'Selected', 'Not Selected', 'Hired', 'withdrawn'],
       default: 'Submitted',
     },
 

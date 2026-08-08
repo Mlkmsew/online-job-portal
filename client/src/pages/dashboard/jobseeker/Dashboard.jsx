@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../../services/api';
+import socketService from '../../../services/socket';
 import { logout } from '../../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import {
@@ -11,6 +12,7 @@ import {
   FiBookOpen,
   FiBookmark,
   FiBriefcase,
+  FiCalendar,
   FiCheckCircle,
   FiChevronDown,
   FiChevronRight,
@@ -26,6 +28,20 @@ import {
   FiZap,
 } from 'react-icons/fi';
 
+const formatInterviewDate = (dateValue) => {
+  if (!dateValue) return 'Date not set';
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return 'Invalid date';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+const formatInterviewTime = (dateValue) => {
+  if (!dateValue) return 'Time not set';
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return 'Invalid time';
+  return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+};
+
 const JobSeekerDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -35,47 +51,178 @@ const JobSeekerDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [jobAlerts, setJobAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(null);
+  const [messageCount, setMessageCount] = useState(null);
+  const isMounted = useRef(false);
+  const lastFetchId = useRef(0);
+  const [errorMessage, setErrorMessage] = useState(null);
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
+  const fetchDashboardData = async (initial = false) => {
+    if (initial) {
+      setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
+    setErrorMessage(null);
+    const fetchId = ++lastFetchId.current;
+
     try {
-      const [dashboardRes, appsRes, bookmarksRes, alertsRes] = await Promise.all([
+      const [dashboardRes, appsRes, bookmarksRes, alertsRes] = await Promise.allSettled([
         api.get('/dashboard'),
         api.get('/applications/my'),
         api.get('/bookmarks'),
         api.get('/job-alerts'),
       ]);
 
-      const dashboardPayload = dashboardRes.data?.data || {};
-      const normalizedApps = Array.isArray(appsRes.data?.data) ? appsRes.data.data : Array.isArray(appsRes.data) ? appsRes.data : [];
-      const normalizedBookmarks = Array.isArray(bookmarksRes.data?.data) ? bookmarksRes.data.data : Array.isArray(bookmarksRes.data) ? bookmarksRes.data : [];
-      const normalizedAlerts = Array.isArray(alertsRes.data?.data) ? alertsRes.data.data : Array.isArray(alertsRes.data) ? alertsRes.data : [];
+      console.log('Dashboard API Response:', { dashboardRes, appsRes, bookmarksRes, alertsRes });
+      console.log('Dashboard State Before:', { dashboardData, applications, bookmarks, jobAlerts });
 
-      setDashboardData(dashboardPayload);
-      setApplications(normalizedApps);
-      setBookmarks(normalizedBookmarks);
-      setJobAlerts(normalizedAlerts);
+      if (fetchId !== lastFetchId.current) {
+        console.log('Discarding stale dashboard response', fetchId);
+        return;
+      }
+
+      if (!isMounted.current) {
+        return;
+      }
+
+      const normalizeArrayResponse = (response) => {
+        if (response.status !== 'fulfilled') return null;
+        if (Array.isArray(response.value.data?.data)) return response.value.data.data;
+        if (Array.isArray(response.value.data)) return response.value.data;
+        return null;
+      };
+
+      const normalizeDashboardResponse = (response) => {
+        if (response.status !== 'fulfilled') return null;
+        if (response.value?.data?.data !== undefined) return response.value.data.data;
+        return null;
+      };
+
+      const dashboardPayload = normalizeDashboardResponse(dashboardRes);
+      if (dashboardPayload !== null) {
+        setDashboardData(dashboardPayload);
+      } else if (dashboardRes.status === 'rejected') {
+        console.error('Dashboard stats failed:', dashboardRes.reason);
+        setErrorMessage('Unable to load dashboard overview.');
+      }
+
+      const normalizedApps = normalizeArrayResponse(appsRes);
+      if (normalizedApps !== null) {
+        setApplications(normalizedApps);
+      } else {
+        console.error('My applications request failed:', appsRes.reason);
+      }
+
+      const normalizedBookmarks = normalizeArrayResponse(bookmarksRes);
+      if (normalizedBookmarks !== null) {
+        setBookmarks(normalizedBookmarks);
+      } else {
+        console.error('Bookmarks request failed:', bookmarksRes.reason);
+      }
+
+      const normalizedAlerts = normalizeArrayResponse(alertsRes);
+      if (normalizedAlerts !== null) {
+        setJobAlerts(normalizedAlerts);
+      } else {
+        console.error('Job alerts request failed:', alertsRes.reason);
+      }
+
+      console.log('Dashboard State After:', { dashboardData, applications, bookmarks, jobAlerts });
     } catch (err) {
-      console.error('Error fetching dashboard stats:', err.response?.status, err.response?.data || err.message || err);
-      toast.error('We could not load your dashboard data right now.');
+      console.error('Unexpected error fetching dashboard stats:', err);
+      if (isMounted.current) {
+        setErrorMessage('We could not load your dashboard data right now.');
+      }
     } finally {
-      setLoading(false);
+      if (fetchId === lastFetchId.current && isMounted.current) {
+        if (initial) {
+          setLoading(false);
+        } else {
+          setIsRefreshing(false);
+        }
+      }
     }
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    isMounted.current = true;
+    fetchDashboardData(true);
+
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   useEffect(() => {
+    if (!isMounted.current) return;
     if (user?.cv) {
       fetchDashboardData();
     }
   }, [user?.cv]);
+
+  const fetchBadgeCounts = async () => {
+    try {
+      const [notificationRes, messageRes] = await Promise.all([
+        api.get('/notifications/unread/count?excludeType=new_message'),
+        api.get('/messages/unread/count'),
+      ]);
+      setNotificationCount(notificationRes.data?.count ?? 0);
+      setMessageCount(messageRes.data?.count ?? 0);
+    } catch (err) {
+      console.error('Failed to load unread badge counts:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    fetchBadgeCounts();
+  }, [user]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const socket = socketService.connect(token);
+    socketService.on('notification', (notification) => {
+      if (!notification) return;
+      if (notification.type === 'new_message') {
+        setMessageCount((prev) => (prev ?? 0) + 1);
+      } else {
+        setNotificationCount((prev) => (prev ?? 0) + 1);
+      }
+    });
+
+    return () => {
+      socketService.off('notification');
+    };
+  }, []);
+
+  const markAllNotificationsRead = async () => {
+    try {
+      await api.put('/notifications/read-all?excludeType=new_message');
+    } catch (err) {
+      console.error('Failed to mark notifications read:', err);
+    }
+
+    setNotificationCount(0);
+  };
+
+  const handleBellClick = async () => {
+    const nextVisibility = !showNotifications;
+    setShowNotifications(nextVisibility);
+    setShowMessages(false);
+    setShowProfileMenu(false);
+
+    if (nextVisibility) {
+      await markAllNotificationsRead();
+    }
+  };
 
   const normalizedApplications = useMemo(() => applications || [], [applications]);
   const normalizedBookmarks = useMemo(() => bookmarks || [], [bookmarks]);
@@ -126,9 +273,10 @@ const JobSeekerDashboard = () => {
     return Math.round((completed / 5) * 100);
   }, [dashboardData, user]);
 
-  const unreadMessages = Number(dashboardData?.unreadMessages || 0);
-  const unreadNotifications = Number(dashboardData?.unreadNotifications || 0);
+  const unreadMessages = messageCount !== null ? Number(messageCount) : Number(dashboardData?.unreadMessages || 0);
+  const unreadNotifications = notificationCount !== null ? Number(notificationCount) : Number(dashboardData?.unreadNotifications || 0);
   const resumeHasCV = Boolean(dashboardData?.resume?.hasCV || user?.cv);
+  const upcomingInterviews = Array.isArray(dashboardData?.upcomingInterviews) ? dashboardData.upcomingInterviews : [];
 
   const applicationCounts = useMemo(() => {
     const normalizedStatus = (status) => `${status || ''}`.trim().toLowerCase();
@@ -223,6 +371,11 @@ const JobSeekerDashboard = () => {
     navigate(`/dashboard/find-jobs?search=${encodeURIComponent(term)}`);
   };
 
+  const handleOpenInterview = (interviewId) => {
+    if (!interviewId) return;
+    navigate(`/dashboard/interviews/${interviewId}`);
+  };
+
   const handleBookmark = async (jobId) => {
     try {
       await api.post('/bookmarks', { job: jobId });
@@ -307,7 +460,7 @@ const JobSeekerDashboard = () => {
             <div className="relative">
               <button
                 type="button"
-                onClick={() => { setShowNotifications((s) => !s); setShowMessages(false); setShowProfileMenu(false); }}
+                onClick={handleBellClick}
                 className="relative rounded-2xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm"
               >
                 <FiBell className="h-5 w-5" />
@@ -432,7 +585,7 @@ const JobSeekerDashboard = () => {
           { label: 'Total Applications', value: normalizedApplications.length, icon: FiFileText, tone: 'bg-emerald-50 text-emerald-700' },
           { label: 'Profile Views', value: profileViews, icon: FiBriefcase, tone: 'bg-violet-50 text-violet-700' },
           { label: 'Saved Jobs', value: normalizedBookmarks.length, icon: FiBookmark, tone: 'bg-sky-50 text-sky-700' },
-          { label: 'Job Alerts', value: jobAlerts.length, icon: FiBell, tone: 'bg-amber-50 text-amber-700' },
+          { label: 'Upcoming Interviews', value: upcomingInterviews.length, icon: FiCalendar, tone: 'bg-amber-50 text-amber-700', description: upcomingInterviews.length ? upcomingInterviews[0].job?.title : 'No interviews scheduled' },
         ].map((item) => {
           const Icon = item.icon;
           return (
@@ -447,11 +600,11 @@ const JobSeekerDashboard = () => {
         })}
       </div>
 
-      <div className="rounded-3xl bg-emerald-600 p-6 text-white shadow-sm">
+      <div className="rounded-3xl border border-slate-200 bg-emerald-600 p-6 shadow-sm text-white">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-emerald-100/80">Don’t have a professional CV?</p>
-            <h2 className="mt-2 text-2xl font-semibold">Create or upload your CV to increase your chances of getting hired.</h2>
+            <p className="text-sm uppercase tracking-[0.2em] text-emerald-200/80">Don’t have a professional CV?</p>
+            <h2 className="mt-2 text-2xl font-semibold text-white">Create or upload your CV to increase your chances of getting hired.</h2>
           </div>
           <div className="flex flex-wrap gap-3">
             <button
@@ -475,49 +628,113 @@ const JobSeekerDashboard = () => {
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Recommended Jobs</h2>
-            <p className="text-sm text-slate-500">Jobs matched to your profile and skills.</p>
+            <h2 className="text-lg font-bold text-slate-900">Recommended Jobs</h2>
+            <p className="text-xs text-slate-500">Personalized opportunities matched to your profile, skills, and experience.</p>
           </div>
-          <Link to="/dashboard/find-jobs" className="text-sm font-semibold text-emerald-700 hover:underline">View All</Link>
+          <Link to="/dashboard/find-jobs" className="text-xs font-bold text-emerald-700 hover:underline">View All Matches</Link>
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {recommendedJobs.length === 0 ? (
-            <div className="col-span-full rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-              No recommended jobs available yet.
+            <div className="col-span-full rounded-3xl border border-dashed border-slate-200 bg-slate-50/80 p-8 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mb-3">
+                <FiZap className="h-6 w-6" />
+              </div>
+              <h3 className="font-bold text-slate-800 text-base mb-1">No strong job matches yet</h3>
+              <p className="text-slate-500 text-xs max-w-md mx-auto mb-4">Complete your profile details and add your skills to receive personalized AI job recommendations.</p>
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard/profile')}
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 transition shadow-sm"
+              >
+                <FiUser className="w-4 h-4" /> Complete My Profile
+              </button>
             </div>
           ) : (
-            recommendedJobs.map((job) => (
-              <div key={job._id} className="rounded-3xl border border-slate-200 p-4 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
+            recommendedJobs.map((job) => {
+              const score = job.matchScore ?? job.matchPercentage ?? 0;
+              const matchBadgeClass =
+                score >= 80
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : score >= 60
+                  ? 'bg-sky-50 text-sky-700 border-sky-200'
+                  : 'bg-amber-50 text-amber-700 border-amber-200';
+
+              const matchLabel =
+                score >= 80 ? 'Excellent Match' : score >= 60 ? 'Good Match' : 'Possible Match';
+
+              return (
+                <div key={job._id || job.jobId} className="rounded-3xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition bg-white flex flex-col justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">{job.company?.name || 'Company'}</p>
-                    <h3 className="mt-2 text-base font-semibold text-slate-900">{job.title || 'Job title'}</h3>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-slate-500 truncate">{job.company?.name || job.company || 'Company'}</p>
+                        <h3 className="mt-1 text-base font-bold text-slate-900 truncate">{job.title || 'Job title'}</h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleBookmark(job._id || job.jobId)}
+                        className="rounded-xl border border-slate-200 bg-slate-50 p-2 text-slate-500 hover:bg-slate-100 transition flex-shrink-0"
+                        title="Save Job"
+                      >
+                        <FiBookmark className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Location & Job Type */}
+                    <div className="mt-3 flex flex-wrap gap-1.5 text-xs font-medium text-slate-600">
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5">{job.location?.city || job.location?.region || (typeof job.location === 'string' ? job.location : 'Remote')}</span>
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5">{job.jobType || 'Full-time'}</span>
+                    </div>
+
+                    {/* Matched Skills */}
+                    {Array.isArray(job.matchedSkills) && job.matchedSkills.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Matched Skills</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {job.matchedSkills.slice(0, 3).map((sk, idx) => (
+                            <span key={idx} className="rounded-md bg-emerald-50 text-emerald-800 text-[11px] px-2 py-0.5 font-medium border border-emerald-100">
+                              ✓ {sk}
+                            </span>
+                          ))}
+                          {job.matchedSkills.length > 3 && (
+                            <span className="text-[10px] text-slate-400 self-center">+{job.matchedSkills.length - 3} more</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Missing Skills */}
+                    {Array.isArray(job.missingSkills) && job.missingSkills.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Missing</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {job.missingSkills.slice(0, 2).map((sk, idx) => (
+                            <span key={idx} className="rounded-md bg-rose-50 text-rose-700 text-[11px] px-2 py-0.5 font-medium border border-rose-100">
+                              {sk}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleBookmark(job._id)}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-2 text-slate-600 hover:bg-slate-100"
-                  >
-                    <FiBookmark className="h-4 w-4" />
-                  </button>
+
+                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${matchBadgeClass}`}>
+                      <FiZap className="w-3.5 h-3.5" />
+                      {score}% {matchLabel}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/jobs/${job._id || job.jobId}`)}
+                      className="rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition shadow-sm"
+                    >
+                      Apply Now
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
-                  <span className="rounded-full bg-slate-100 px-2 py-1">{job.location?.city || job.location?.region || 'Remote'}</span>
-                  <span className="rounded-full bg-slate-100 px-2 py-1">{job.jobType || 'Full-time'}</span>
-                </div>
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">{job.matchPercentage ?? 0}% match</span>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/jobs/${job._id}`)}
-                    className="rounded-full bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-                  >
-                    Apply Now
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

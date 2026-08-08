@@ -43,6 +43,20 @@ const getApplicationEmployerId = (application) => {
   return employerSource.toString();
 };
 
+const getEmployerNotificationPreference = async (employerId, key) => {
+  if (!employerId || !key) return true;
+
+  const employer = await User.findById(employerId).select('settings.notificationPreferences');
+  if (!employer) return true;
+
+  const preferences = employer.settings?.notificationPreferences || {};
+  if (typeof preferences[key] === 'boolean') {
+    return preferences[key];
+  }
+
+  return true;
+};
+
 const isApplicationEmployer = (application, user) => {
   const employerId = getApplicationEmployerId(application);
   return Boolean(employerId && employerId === user.id);
@@ -122,15 +136,17 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
   job.applicantsCount += 1;
   await job.save({ validateBeforeSave: false });
 
-  // Notify employer
-  await createNotification({
-    recipient: job.postedBy._id,
-    type: 'application_submitted',
-    title: 'New Application Received',
-    message: `${req.user.firstName} ${req.user.lastName} applied for ${job.title}`,
-    link: `/employer/applications/${application._id}`,
-    data: { applicationId: application._id, jobId },
-  });
+  // Notify employer if their notification preferences allow it
+  if (await getEmployerNotificationPreference(job.postedBy._id, 'newApplicant')) {
+    await createNotification({
+      recipient: job.postedBy._id,
+      type: 'application_submitted',
+      title: 'New Application Received',
+      message: `${req.user.firstName} ${req.user.lastName} applied for ${job.title}`,
+      link: `/employer/applications/${application._id}`,
+      data: { applicationId: application._id, jobId },
+    });
+  }
 
   // Send email to applicant
   try {
@@ -251,8 +267,8 @@ exports.scheduleInterviewForApplication = asyncHandler(async (req, res, next) =>
     recipient: application.applicant._id,
     type: 'interview_scheduled',
     title: 'Interview Scheduled',
-    message: `Your interview for ${application.job.title} has been scheduled.`,
-    link: `/dashboard/applications/${application._id}`,
+    message: `${application.company?.name || 'Your employer'} scheduled your interview for ${application.job.title}.`,
+    link: `/dashboard/interviews/${interview._id}`,
     data: { applicationId: application._id, interviewId: interview._id },
   });
 

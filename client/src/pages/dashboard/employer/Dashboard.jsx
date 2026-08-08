@@ -22,6 +22,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { fetchEmployerDashboard } from '../../../store/slices/employerSlice';
 import { logout } from '../../../store/slices/authSlice';
 import api from '../../../services/api';
+import socketService from '../../../services/socket';
 import toast from 'react-hot-toast';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -40,12 +41,13 @@ const EmployerDashboard = () => {
   const { company, jobs, applications, loading } = useSelector((state) => state.employer);
   const [interviews, setInterviews] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [interviewForm, setInterviewForm] = useState({ interviewDate: '', interviewTime: '', interviewLocation: '' });
   const [submittingInterview, setSubmittingInterview] = useState(false);
   const [statusById, setStatusById] = useState({});
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showMessages, setShowMessages] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
@@ -54,10 +56,16 @@ const EmployerDashboard = () => {
     let mounted = true;
     (async () => {
       try {
-        const res = await api.get('/employer/dashboard');
+        const [dashboardRes, notificationCountRes, chatCountRes] = await Promise.all([
+          api.get('/employer/dashboard'),
+          api.get('/notifications/unread/count?excludeType=new_message'),
+          api.get('/messages/unread/count'),
+        ]);
         if (!mounted) return;
-        setInterviews(res.data?.data?.upcomingInterviews || []);
-        setNotifications(res.data?.data?.recentNotifications || []);
+        setInterviews(dashboardRes.data?.data?.upcomingInterviews || []);
+        setNotifications((dashboardRes.data?.data?.recentNotifications || []).filter((notification) => notification.type !== 'new_message'));
+        setUnreadNotificationCount(notificationCountRes.data?.count || 0);
+        setUnreadChatCount(chatCountRes.data?.count || 0);
       } catch (err) {
         // handled by interceptor
       }
@@ -130,6 +138,82 @@ const EmployerDashboard = () => {
     }
   };
 
+  const getNotificationRoute = (type) => {
+    switch (type) {
+      case 'new_application':
+        return '/employer/applicants';
+      case 'new_message':
+        return '/employer/messages';
+      case 'interview':
+        return '/employer/interviews';
+      case 'job':
+        return '/employer/jobs';
+      default:
+        return '/employer/applicants';
+    }
+  };
+
+  const getViewAllRoute = () => {
+    return '/employer/applicants';
+  };
+
+  const markAllNotificationsRead = async () => {
+    try {
+      await api.put('/notifications/read-all?excludeType=new_message');
+    } catch (err) {
+      // handled by interceptor
+    }
+    setUnreadNotificationCount(0);
+    setNotifications((prev) => prev.map((notification) => ({ ...notification, isRead: true })));
+  };
+
+  const handleNotificationClick = async (notification) => {
+    const alreadyRead = notification.isRead;
+    if (!alreadyRead) {
+      try {
+        await api.put(`/notifications/${notification._id}/read`);
+      } catch (err) {
+        // handled by interceptor
+      }
+    }
+
+    setNotifications((prev) => prev.map((item) => (
+      item._id === notification._id ? { ...item, isRead: true } : item
+    )));
+    setUnreadNotificationCount((prev) => Math.max(0, prev - (alreadyRead ? 0 : 1)));
+    setShowNotifications(false);
+    navigate(getNotificationRoute(notification.type));
+  };
+
+  const handleBellClick = async () => {
+    const nextVisibility = !showNotifications;
+    setShowNotifications(nextVisibility);
+    setShowProfileMenu(false);
+
+    if (nextVisibility) {
+      await markAllNotificationsRead();
+    }
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const socket = socketService.connect(token);
+    socketService.on('notification', (notification) => {
+      if (notification.type === 'new_message') {
+        setUnreadChatCount((prev) => prev + 1);
+        return;
+      }
+      setNotifications((prev) => [notification, ...prev]);
+      setUnreadNotificationCount((prev) => prev + 1);
+    });
+
+    return () => {
+      socketService.off('notification');
+    };
+  }, []);
+
   const openInterviewModal = (application) => {
     setSelectedApplication(application);
     setInterviewForm({
@@ -179,41 +263,45 @@ const EmployerDashboard = () => {
             <div className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  setShowNotifications((value) => !value);
-                  setShowMessages(false);
-                  setShowProfileMenu(false);
-                }}
+                onClick={handleBellClick}
                 className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-600 transition hover:bg-gray-200"
               >
                 <FiBell className="w-5 h-5" />
-                {notifications.length > 0 && (
+                {unreadNotificationCount > 0 && (
                   <span className="absolute -right-1 -top-1 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                    {notifications.length}
+                    {unreadNotificationCount}
                   </span>
                 )}
               </button>
 
               {showNotifications && (
                 <div className="absolute right-0 z-20 mt-2 w-80 rounded-2xl border border-gray-200 bg-white p-3 shadow-lg">
-                  <h4 className="text-sm font-semibold text-gray-800">Notifications</h4>
-                  <div className="mt-2 max-h-48 space-y-2 overflow-auto">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-800">Notifications</h4>
+                    <Link to={getViewAllRoute()} className="text-sm font-semibold text-emerald-700">View all</Link>
+                  </div>
+                  <div className="mt-2 max-h-56 space-y-2 overflow-auto">
                     {notifications.length === 0 ? (
                       <div className="py-3 text-sm text-gray-500">No notifications</div>
                     ) : (
                       notifications.slice(0, 5).map((notification) => (
-                        <div key={notification._id || notification.id || `${notification.title}-${notification.createdAt}`} className="flex items-start gap-2 rounded-xl border border-gray-100 p-2">
-                          <FiBell className="mt-0.5 h-4 w-4 text-emerald-600" />
-                          <div className="text-sm">
-                            <div className="font-medium text-gray-800">{notification.title || 'New update'}</div>
-                            <div className="text-gray-500">{notification.message || notification.description || 'No details available.'}</div>
+                        <button
+                          key={notification._id || notification.id || `${notification.title}-${notification.createdAt}`}
+                          type="button"
+                          onClick={() => handleNotificationClick(notification)}
+                          className={`w-full text-left rounded-2xl border px-3 py-3 transition ${notification.isRead ? 'border-gray-100 bg-white text-gray-700 hover:border-emerald-200' : 'border-emerald-200 bg-emerald-50/50 text-gray-900 font-semibold'} `}
+                        >
+                          <div className="flex items-start gap-2">
+                            <FiBell className="mt-0.5 h-4 w-4 text-emerald-600" />
+                            <div className="text-sm">
+                              <div className="truncate">{notification.title || 'New update'}</div>
+                              <div className={`mt-1 text-xs ${notification.isRead ? 'text-gray-500' : 'text-gray-600'}`}>{notification.message || notification.description || 'No details available.'}</div>
+                              <div className="mt-2 text-[11px] text-gray-400">{new Date(notification.createdAt).toLocaleString()}</div>
+                            </div>
                           </div>
-                        </div>
+                        </button>
                       ))
                     )}
-                  </div>
-                  <div className="mt-3 text-right">
-                    <Link to="/employer/messages" className="text-sm font-semibold text-emerald-700">View all</Link>
                   </div>
                 </div>
               )}
@@ -223,24 +311,19 @@ const EmployerDashboard = () => {
               <button
                 type="button"
                 onClick={() => {
-                  setShowMessages((value) => !value);
                   setShowNotifications(false);
                   setShowProfileMenu(false);
+                  navigate('/employer/messages');
                 }}
                 className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-600 transition hover:bg-gray-200"
               >
                 <FiMail className="w-5 h-5" />
+                {unreadChatCount > 0 && (
+                  <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                    {unreadChatCount}
+                  </span>
+                )}
               </button>
-
-              {showMessages && (
-                <div className="absolute right-0 z-20 mt-2 w-72 rounded-2xl border border-gray-200 bg-white p-3 shadow-lg">
-                  <h4 className="text-sm font-semibold text-gray-800">Messages</h4>
-                  <div className="mt-2 text-sm text-gray-500">Open your inbox to review applicants and team conversations.</div>
-                  <div className="mt-3 text-right">
-                    <Link to="/employer/messages" className="text-sm font-semibold text-emerald-700">Open Inbox</Link>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="relative">
@@ -249,7 +332,6 @@ const EmployerDashboard = () => {
                 onClick={() => {
                   setShowProfileMenu((value) => !value);
                   setShowNotifications(false);
-                  setShowMessages(false);
                 }}
                 className="inline-flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:shadow-sm"
               >
