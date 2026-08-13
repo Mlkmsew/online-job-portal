@@ -6,15 +6,17 @@ import { useTranslation } from 'react-i18next';
 import { FaGlobe, FaCheck } from 'react-icons/fa';
 
 const languages = [
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'am', name: 'አማርኛ', flag: '🇪🇹' },
-  { code: 'or', name: 'Afaan Oromo', flag: '🇪🇹' },
+  { code: 'en', name: 'English', flag: '🌐' },
+  { code: 'am', name: 'አማርኛ', flag: '🌐' },
+  { code: 'om', name: 'Afaan Oromoo', flag: '🌐' },
 ];
 
 const normalizeLanguageCode = (code) => {
   if (!code) return 'en';
-  if (code.startsWith('am')) return 'am';
-  if (code.startsWith('or')) return 'or';
+  const normalized = code.toLowerCase();
+  if (normalized.startsWith('am')) return 'am';
+  if (normalized.startsWith('om') || normalized.startsWith('or')) return 'om';
+  if (normalized.startsWith('en')) return 'en';
   return 'en';
 };
 
@@ -41,6 +43,8 @@ const LanguageSwitcher = () => {
   const changeLanguage = (code) => {
     const normalized = normalizeLanguageCode(code);
     i18n.changeLanguage(normalized);
+    localStorage.setItem('selectedLanguage', normalized);
+    localStorage.setItem('i18nextLng', normalized);
     setIsOpen(false);
   };
 
@@ -48,6 +52,8 @@ const LanguageSwitcher = () => {
     const normalized = normalizeLanguageCode(i18n.language);
     if (normalized !== i18n.language) {
       i18n.changeLanguage(normalized);
+      localStorage.setItem('selectedLanguage', normalized);
+      localStorage.setItem('i18nextLng', normalized);
     }
   }, [i18n]);
 
@@ -92,3 +98,4 @@ const LanguageSwitcher = () => {
 };
 
 export default LanguageSwitcher;
+

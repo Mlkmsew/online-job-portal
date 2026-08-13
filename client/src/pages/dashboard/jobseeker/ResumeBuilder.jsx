@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { PhoneIcon, MailIcon, LocationIcon, GlobeIcon, DotIcon } from '../../../components/icons/ResumeIcons';
 import { updateProfile } from '../../../store/slices/authSlice';
 import TemplateBadge from '../../../components/resume/templates/TemplateBadge';
@@ -79,6 +80,7 @@ const LANGUAGE_SUGGESTION_POOL = [
 ];
 
 const ResumeBuilder = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { user, token } = useSelector((state) => state.auth);
   const resumeStorageKey = `ethiojob_resumes_${user?._id || user?.id || user?.email || token || 'guest'}`;
@@ -1417,27 +1419,16 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     <div className="space-y-6">
       {view === 'list' && (
         <div className="space-y-6 animate-fade-in">
-          {/* Top Banner */}
-          <div className="bg-sky-500 text-white rounded-xl p-5 shadow-sm relative overflow-hidden flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold flex items-center gap-2">
-                💡 PRO TIP: <span className="font-normal">It's important to <span className="font-semibold underline">create a custom resume</span> tailored to each job application to increase your chances of success!</span>
-              </p>
-            </div>
-            <div className="bg-white/20 hover:bg-white/30 text-white font-medium text-xs py-1.5 px-3 rounded-full transition-all shrink-0 ml-4 flex items-center gap-2">
-              Crafts
-            </div>
-          </div>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <FiDatabase className="w-6 h-6 text-primary-500" />
-                  My Saved CVs
+                  {t('resume.mySavedCVs') || 'My Saved CVs'}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {resumes.length === 0 
-                    ? 'You haven\'t created any CVs yet. Start by creating a new one!'
+                    ? (t('resume.noCVsSubtitle') || "You haven't created any CVs yet. Start by creating a new one!")
                     : `${resumes.length} CV${resumes.length !== 1 ? 's' : ''} saved`}
                 </p>
               </div>
@@ -1451,15 +1442,15 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                     <div className="w-16 h-16 rounded-lg bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-4">
                       <FiFileText className="w-8 h-8 text-primary-500" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No CVs Created Yet</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('resume.noCVsTitle') || 'No CVs Created Yet'}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 max-w-md">
-                      Create your first CV to get started. You can create multiple CVs tailored to different job applications.
+                      {t('resume.noCVsDesc') || 'Create your first CV to get started. You can create multiple CVs tailored to different job applications.'}
                     </p>
                     <button
                       onClick={handleOpenTitleModal}
                       className="btn btn-primary inline-flex items-center gap-2"
                     >
-                      <FiPlus className="w-4 h-4" /> Create Your First CV
+                      <FiPlus className="w-4 h-4" /> {t('resume.createFirstCV') || 'Create Your First CV'}
                     </button>
                   </div>
                 </div>
@@ -1490,25 +1481,25 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                       onClick={() => handleEditResume(resume.id)}
                       className="btn btn-outline py-1 px-3 text-xs flex items-center gap-1 border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10"
                     >
-                      Edit <FiEdit2 className="w-3 h-3" />
+                      {t('common.edit') || 'Edit'} <FiEdit2 className="w-3 h-3" />
                     </button>
 
                     <button 
-                      title="Download" 
+                      title={t('common.download') || 'Download'} 
                       onClick={() => handleDownloadPDF(resume)}
                       className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
                     >
                       <FiDownload className="w-3.5 h-3.5" />
                     </button>
                     <button 
-                      title="Print" 
+                      title={t('common.print') || 'Print'} 
                       onClick={() => handleDownloadPDF(resume)}
                       className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
                     >
                       <FiPrinter className="w-3.5 h-3.5" />
                     </button>
                     <button 
-                      title="Delete" 
+                      title={t('common.delete') || 'Delete'} 
                       onClick={() => handleDeleteResume(resume.id)}
                       className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500"
                     >
@@ -1532,9 +1523,9 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                 <FiPlus className="w-6 h-6 text-primary-500" />
               </div>
               <span className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-1">
-                Create New CV <FiEdit2 className="w-4 h-4 text-gray-400" />
+                {t('resume.createNewCV') || 'Create New CV'} <FiEdit2 className="w-4 h-4 text-gray-400" />
               </span>
-              <p className="text-sm text-gray-500 mt-1">Start Fresh</p>
+              <p className="text-sm text-gray-500 mt-1">{t('resume.startFresh') || 'Start Fresh'}</p>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-6 flex flex-col items-center justify-center cursor-pointer hover:border-secondary transition group">
@@ -1542,13 +1533,14 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                 <FiUpload className="w-6 h-6 text-secondary-500" />
               </div>
               <span className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-1">
-                Import <FiUpload className="w-4 h-4 text-gray-400" />
+                {t('resume.import') || 'Import'} <FiUpload className="w-4 h-4 text-gray-400" />
               </span>
-              <p className="text-sm text-gray-500 mt-1">Use Current CV</p>
+              <p className="text-sm text-gray-500 mt-1">{t('resume.useCurrentCV') || 'Use Current CV'}</p>
             </div>
           </div>
         </div>
       )}
+
 
       {view === 'preview' && activeResume && (
         <div className="space-y-6 animate-slide-up">

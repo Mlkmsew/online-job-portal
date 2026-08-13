@@ -114,7 +114,7 @@
     "missionTitle": "Hadafkeenna",
     "missionText": "U banaaneyn inaan qof kasta siinno fursad shaqo oo ku habboon, hagid cad, iyo nidaam codsi oo aan dhib lahayn. Waxaan abuurnaa nidaam shaqaaleysiineed oo lagu kalsoonaan karo si xirfadlayaashu u kori karaan iyo loo shaqeeyayaashu si kalsooni leh u shaqaaleysiin karaan.",
     "visionTitle": "Himiladeenna",
-    "visionText": "Mustaqbalka oo fursadaha shaqo ay fududaan karaan in la helo iyo qof kasta uu la kulmi karo shaqo uu jecel yahay. Waxaan rabnaa OnlineJob Portal inuu noqdo heerka shaqaaleysiinta hufan, ka qaybgalaya, iyo waxtar leh ee dalka oo dhan.",
+    "visionText": "Mustaqbalka oo fursadaha shaqo ay fududaan karaan in la helo iyo qof kasta uu la kulmi karo shaqo uu jecel yahay. Waxaan rabnaa OnlineJob Portal inuu noqdo heerka shaqaaleysiinta hufan, ka qaybgalaya, iyo waxtar leh ee dalka oo dhan."
   },
   "contact": {
     "title": "Nala Soo Xiriir",
@@ -146,5 +146,9 @@
     "address": "Cinwaanka",
     "followUs": "Nagu soo biir",
     "copyright": "© 2024 OnlineJob Portal. Xuquuqda daabacaadu waa dhowran tahay."
+  },
+  "savedJobs": {
+    "saved": "La kaydiyay",
+    "saveJob": "Kaydi shaqada"
   }
-
+}

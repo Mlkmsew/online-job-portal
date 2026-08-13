@@ -137,6 +137,13 @@ const sendMessageToChat = (chatId, message) => {
   }
 };
 
+// Send message directly to a user's personal room (always delivered when online)
+const sendMessageToUser = (userId, message) => {
+  if (io) {
+    io.to(userId.toString()).emit('message-received', message);
+  }
+};
+
 const sendUpdatedMessageToChat = (chatId, message) => {
   if (io) {
     io.to(chatId).emit('message-updated', message);
@@ -170,6 +177,7 @@ module.exports = {
   initializeSocket,
   sendNotification,
   sendMessageToChat,
+  sendMessageToUser,
   sendUpdatedMessageToChat,
   sendDeletedMessageToChat,
   broadcastToAll,

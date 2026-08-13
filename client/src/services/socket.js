@@ -9,6 +9,7 @@ class SocketService {
   constructor() {
     this.socket = null;
     this.listeners = new Map();
+    this.globalListeners = new Map();
   }
 
   connect(token) {
@@ -72,6 +73,27 @@ class SocketService {
       const callback = this.listeners.get(event);
       this.socket.off(event, callback);
       this.listeners.delete(event);
+    }
+  }
+
+  // App-wide listeners that can coexist with page-level listeners (socket.io
+  // supports multiple callbacks per event, so `onGlobal` never overwrites
+  // listeners registered through `on` and vice-versa).
+  onGlobal(event, callback) {
+    if (!this.socket) return;
+    this.socket.on(event, callback);
+    if (!this.globalListeners.has(event)) this.globalListeners.set(event, new Set());
+    this.globalListeners.get(event).add(callback);
+  }
+
+  offGlobal(event, callback) {
+    if (!this.socket || !this.globalListeners.has(event)) return;
+    if (callback) {
+      this.socket.off(event, callback);
+      this.globalListeners.get(event).delete(callback);
+    } else {
+      this.globalListeners.get(event).forEach((cb) => this.socket.off(event, cb));
+      this.globalListeners.delete(event);
     }
   }
 

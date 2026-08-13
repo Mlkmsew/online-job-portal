@@ -1,70 +1,63 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 
-const featuredCategoryMeta = {
-  Technology: { icon: '💻', jobs: '284 jobs' },
-  Finance: { icon: '🏦', jobs: '156 jobs' },
-  Healthcare: { icon: '🏥', jobs: '203 jobs' },
-  Education: { icon: '🎓', jobs: '178 jobs' },
-  Engineering: { icon: '⚙️', jobs: '142 jobs' },
-  Marketing: { icon: '📊', jobs: '119 jobs' },
-  Legal: { icon: '⚖️', jobs: '67 jobs' },
-  Logistics: { icon: '🚛', jobs: '94 jobs' },
-  Hospitality: { icon: '🏨', jobs: '88 jobs' },
-  Agriculture: { icon: '🌾', jobs: '73 jobs' },
-  NGO: { icon: '🌍', jobs: '131 jobs' },
-  Construction: { icon: '🏗️', jobs: '105 jobs' },
-};
-
-const defaultCategories = [
-  { name: 'Technology & IT', slug: 'tech', icon: '💻', jobs: '284 jobs' },
-  { name: 'Finance & Banking', slug: 'finance', icon: '🏦', jobs: '156 jobs' },
-  { name: 'Healthcare', slug: 'health', icon: '🏥', jobs: '203 jobs' },
-  { name: 'Education', slug: 'education', icon: '🎓', jobs: '178 jobs' },
-  { name: 'Engineering', slug: 'engineering', icon: '⚙️', jobs: '142 jobs' },
-  { name: 'Marketing & Sales', slug: 'marketing', icon: '📊', jobs: '119 jobs' },
-  { name: 'Legal & Compliance', slug: 'legal', icon: '⚖️', jobs: '67 jobs' },
-  { name: 'Logistics & Supply', slug: 'logistics', icon: '🚛', jobs: '94 jobs' },
-  { name: 'Hospitality', slug: 'hospitality', icon: '🏨', jobs: '88 jobs' },
-  { name: 'Agriculture', slug: 'agriculture', icon: '🌾', jobs: '73 jobs' },
-  { name: 'NGO & Development', slug: 'ngo', icon: '🌍', jobs: '131 jobs' },
-  { name: 'Construction', slug: 'construction', icon: '🏗️', jobs: '105 jobs' },
-];
-
 const PopularCategories = () => {
+  const { t } = useTranslation();
   const [cats, setCats] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
         const res = await api.get('/categories');
         const categories = Array.isArray(res.data) ? res.data : res.data?.data || [];
         setCats(categories);
-      } catch {
+      } catch (err) {
+        setError(err.response?.data?.message || err.message || t('home.categoriesLoadError'));
         setCats([]);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchCategories();
   }, []);
 
   const rendered = cats.length
-    ? cats.slice(0, 12).map((category) => {
-        const key = category.name || category.title || category.category;
-        const meta = featuredCategoryMeta[key.split(' ')[0]] || featuredCategoryMeta[key] || {};
-        const slug = category.slug || category.name?.toLowerCase().replace(/[^a-z0-9]+/gi, '-') || key;
-        return {
-          name: key,
-          slug,
-          icon: meta.icon || '📌',
-          jobs: meta.jobs || '',
-        };
-      })
-    : defaultCategories;
+    ? cats.slice(0, 12).map((category) => ({
+        name: category.name,
+        slug: category.slug || category.name?.toLowerCase().replace(/[^a-z0-9]+/gi, '-') || category._id,
+        icon: category.icon || '📌',
+        description: category.description || t('home.exploreOpportunities'),
+        jobs: `${category.jobCount ?? 0} ${t('home.jobsLabel')}`,
+      }))
+    : [];
 
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-      {rendered.map((category) => (
+      {isLoading && (
+        <div className="col-span-full rounded-3xl border border-gray-200 bg-white px-6 py-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800">
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('home.loadingCategories')}</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="col-span-full rounded-3xl border border-red-200 bg-red-50 px-6 py-6 text-left shadow-sm">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
+      {!isLoading && !error && rendered.length === 0 && (
+        <div className="col-span-full rounded-3xl border border-gray-200 bg-white px-6 py-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800">
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('home.noCategoriesAvailable')}</p>
+        </div>
+      )}
+
+      {!isLoading && !error && rendered.map((category) => (
         <Link
           key={category.slug}
           to={`/jobs?category=${encodeURIComponent(category.slug)}`}
@@ -75,7 +68,7 @@ const PopularCategories = () => {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{category.name}</h3>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{category.jobs || 'Explore opportunities'}</p>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{category.jobs}</p>
           </div>
         </Link>
       ))}

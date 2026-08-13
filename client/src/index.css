@@ -6,13 +6,77 @@
    EthioJob Portal - Global Styles
    ============================================ */
 
+:root {
+  --background: #E8F0ED;
+  --surface: #FFFFFF;
+  --surface-secondary: #F3F7F5;
+  --border: #CBD8D3;
+
+  --text-primary: #17211F;
+  --text-secondary: #64748B;
+
+  --primary: #047857;
+  --primary-dark: #065F46;
+  --primary-hover: #064E3B;
+
+  --accent: #D9A441;
+
+  --sidebar-bg: #F3F7F5;
+  --sidebar-border: #CBD8D3;
+  --sidebar-text: #334155;
+  --sidebar-text-muted: #64748B;
+  --sidebar-active: #047857;
+
+  --header-bg: rgba(255, 255, 255, 0.98);
+  --header-border: #CBD8D3;
+
+  --table-header-bg: #E2EAE7;
+  --table-header-text: #475569;
+  --table-row-hover: rgba(4, 120, 87, 0.05);
+  --status-approved-bg: #DCF2E8;
+  --status-approved-text: #065F46;
+  --status-pending-bg: #FEF3C7;
+  --status-pending-text: #92400E;
+  --status-rejected-bg: #FEE2E2;
+  --status-rejected-text: #B91C1C;
+  --status-unverified-bg: #F1F5F9;
+  --status-unverified-text: #4B5563;
+}
+
+.dark {
+  --background: #0B1714;
+  --surface: #142A24;
+  --surface-secondary: #10231E;
+  --border: #23483D;
+
+  --text-primary: #F4F8F6;
+  --text-secondary: #A9BBB4;
+  --muted: #7F958C;
+
+  --primary: #16A36F;
+  --primary-hover: #25C58A;
+
+  --accent: #D9A441;
+
+  --sidebar-bg: #0E211B;
+  --sidebar-border: #23483D;
+  --sidebar-text: #F4F8F6;
+  --sidebar-text-muted: #A9BBB4;
+  --sidebar-active: #16A36F;
+
+  --header-bg: rgba(16, 35, 30, 0.90);
+  --header-border: #23483D;
+}
+
 @layer base {
   * {
-    @apply border-gray-200 dark:border-gray-700;
+    border-color: var(--border);
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-family: 'Inter', 'Noto Sans Ethiopic', 'Segoe UI', system-ui, sans-serif;
     @apply antialiased;
   }
 
@@ -22,121 +86,215 @@
 }
 
 @layer components {
-  /* Buttons */
-  .btn {
-    @apply px-6 py-2.5 rounded-lg font-medium transition-all duration-200;
-    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  /* Unified Global Cards */
+  .card, .dashboard-card-unified {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    box-shadow: 0 10px 24px rgba(15, 23, 18, 0.08);
+    padding: 1.5rem;
+    transition: all 0.2s ease-in-out;
   }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(15, 23, 18, 0.12);
+    border-color: var(--primary);
+  }
+
+  /* Inputs & Forms */
+  .input, .textarea, .select {
+    width: 100%;
+    padding: 0.625rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border);
+    background-color: var(--surface);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+  }
+
+  .input:focus, .textarea:focus, .select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(8, 127, 91, 0.15);
+  }
+
+
+  /* Buttons — unified semantic system */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .btn-primary {
-    @apply bg-primary-500 text-white hover:bg-primary-600;
-    @apply focus:ring-primary-500 shadow-sm hover:shadow-md;
+    background-color: var(--primary);
+    color: #ffffff;
   }
+  .btn-primary:hover {
+    background-color: var(--primary-hover);
+    box-shadow: 0 12px 24px rgba(4, 120, 87, 0.16);
+  }
+  .btn-primary:focus { outline: 2px solid var(--primary); outline-offset: 2px; }
 
   .btn-secondary {
-    @apply bg-secondary-500 text-white hover:bg-secondary-600;
-    @apply focus:ring-secondary-500 shadow-sm hover:shadow-md;
+    background-color: var(--surface-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
   }
+  .btn-secondary:hover { background-color: var(--border); }
 
-  .btn-accent {
-    @apply bg-accent text-white hover:bg-amber-600;
-    @apply focus:ring-accent shadow-sm hover:shadow-md;
+  .btn-danger {
+    background-color: #EF4444;
+    color: #ffffff;
+  }
+  .btn-danger:hover { background-color: #DC2626; }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--text-secondary);
+  }
+  .btn-ghost:hover {
+    background-color: var(--surface-secondary);
+    color: var(--text-primary);
   }
 
   .btn-outline {
-    @apply border-2 border-primary-500 text-primary-500 hover:bg-primary-50;
-    @apply dark:hover:bg-primary-900/20;
+    background-color: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+  }
+  .btn-outline:hover {
+    background-color: var(--surface-secondary);
   }
 
-  .btn-ghost {
-    @apply text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800;
+  /* Admin dashboard-specific overrides */
+  .admin-dashboard .text-gray-900,
+  .admin-dashboard .text-gray-800 {
+    color: var(--text-primary) !important;
   }
 
-  .btn-danger {
-    @apply bg-red-500 text-white hover:bg-red-600 focus:ring-red-500;
+  .admin-dashboard .text-gray-700,
+  .admin-dashboard .text-gray-600,
+  .admin-dashboard .text-gray-500 {
+    color: var(--text-secondary) !important;
   }
 
-  /* Cards */
-  .card {
-    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm;
-    @apply border border-gray-200 dark:border-gray-700;
-    @apply p-6 transition-all duration-200;
+  .admin-dashboard .text-gray-400,
+  .admin-dashboard .text-gray-300,
+  .admin-dashboard .text-slate-500 {
+    color: #94a3b8 !important;
   }
 
-  .card-hover {
-    @apply hover:shadow-lg hover:-translate-y-1;
+  .admin-dashboard .border-gray-200,
+  .admin-dashboard .border-gray-100 {
+    border-color: var(--border) !important;
   }
 
-  /* Inputs */
-  .input {
-    @apply w-full px-4 py-2.5 rounded-lg border border-gray-300;
-    @apply focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
-    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-white;
-    @apply transition-all duration-200;
+  .admin-dashboard .bg-gray-50,
+  .admin-dashboard .bg-gray-100 {
+    background-color: var(--surface-secondary) !important;
   }
 
-  .textarea {
-    @apply input resize-none;
+  .admin-dashboard .hover\:bg-gray-50:hover {
+    background-color: var(--surface-secondary) !important;
   }
 
-  .select {
-    @apply input;
-  }
-
-  /* Badge */
-  .badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
-  }
-
-  .badge-primary {
-    @apply bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300;
-  }
-
-  .badge-success {
-    @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300;
-  }
-
-  .badge-warning {
-    @apply bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300;
-  }
-
-  .badge-danger {
-    @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300;
-  }
-
-  /* Container */
+  /* Container - Generous Spacing & Centered Layout */
   .container-custom {
-    @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+    max-width: 80rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  @media (min-width: 640px) {
+    .container-custom {
+      padding-left: 3rem;
+      padding-right: 3rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .container-custom {
+      padding-left: 4.5rem;
+      padding-right: 4.5rem;
+    }
   }
 
-  /* Section */
-  .section {
-    @apply py-4 md:py-6;
+  /* Unified Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge-primary { background-color: var(--primary); color: #fff; }
+  .badge-success { background-color: #DCF2E8; color: #065F46; }
+  .badge-warning { background-color: #FEF3C7; color: #92400E; }
+  .badge-danger  { background-color: #FEE2E2; color: #B91C1C; }
+  .badge-muted   { background-color: #F1F5F9; color: #4B5563; }
+
+  /* Tables — unified system */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--surface);
+    color: var(--text-primary);
+  }
+  thead tr {
+    background-color: var(--table-header-bg);
+  }
+  th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--table-header-text);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-primary);
+  }
+  tbody tr:hover {
+    background-color: var(--table-row-hover);
   }
 
-  /* Heading */
-  .heading-1 {
-    @apply text-4xl md:text-5xl lg:text-6xl font-bold;
-  }
-
-  .heading-2 {
-    @apply text-3xl md:text-4xl lg:text-5xl font-bold;
-  }
-
-  .heading-3 {
-    @apply text-2xl md:text-3xl font-bold;
-  }
-
-  /* Glassmorphism */
-  .glass {
-    @apply bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg;
-    @apply border border-white/20 dark:border-gray-700/20;
+  /* Modals & Dropdowns — unified surface */
+  .modal-surface, .dropdown-surface {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+    color: var(--text-primary);
   }
 
   /* Skeleton Loader */
   .skeleton {
-    @apply animate-pulse bg-gray-200 dark:bg-gray-700 rounded;
+    background-color: var(--border);
+    border-radius: 0.5rem;
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Glass */
+  .glass {
+    backdrop-filter: blur(12px);
+    background-color: color-mix(in srgb, var(--surface) 70%, transparent);
+    border: 1px solid var(--border);
   }
 }
 
@@ -439,3 +597,182 @@ body {
   clip: auto;
   white-space: normal;
 }
+
+/* ============================================
+   Dashboard — Utility Styles
+   ============================================ */
+
+/* Reusable card hover effect */
+.dashboard-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.dashboard-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(16, 24, 40, 0.08);
+}
+
+/* Reusable button hover lift */
+.dashboard-btn {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+.dashboard-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.1);
+}
+.dashboard-btn:active {
+  transform: translateY(0);
+}
+
+/* Sidebar nav item hover slide */
+.sidebar-nav-item {
+  transition: all 0.2s ease;
+}
+.sidebar-nav-item:hover {
+  transform: translateX(3px);
+}
+
+/* Header icon button hover */
+.header-icon-btn {
+  transition: all 0.2s ease;
+}
+.header-icon-btn:hover {
+  background-color: rgba(0, 168, 107, 0.08);
+  color: #00A86B;
+  transform: scale(1.05);
+}
+
+/* Smooth scrollbar for sidebar */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 4px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* ============================================
+   Ethiopian Heritage Themes for Dashboards
+   ============================================ */
+
+:root {
+  --ethiopia-coffee-dark: #231410;
+  --ethiopia-coffee-mid: #3D2119;
+  --ethiopia-gold: #D4AF37;
+  --ethiopia-gold-light: #F3E5AB;
+  --ethiopia-terracotta: #C85A32;
+  
+  --ethiopia-forest-dark: #081E17;
+  --ethiopia-forest-mid: #0F382C;
+  --ethiopia-emerald: #10B981;
+  
+  --ethiopia-navy-dark: #060C1E;
+  --ethiopia-navy-mid: #0B132B;
+  --ethiopia-cyan: #00B4D8;
+}
+
+/* 1. Job Seeker Ethiopian Heritage Theme */
+.ethiopian-dashboard-jobseeker {
+  background-color: #231410 !important;
+  background-image: url('/images/ethiopian-jobseeker-bg.svg') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+  color: #F8FAFC !important;
+}
+
+.ethiopian-glass-card-jobseeker {
+  background: rgba(45, 27, 24, 0.75) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 175, 55, 0.25) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ethiopian-glass-card-jobseeker:hover {
+  transform: translateY(-4px);
+  border-color: rgba(212, 175, 55, 0.55) !important;
+  box-shadow: 0 16px 35px rgba(200, 90, 50, 0.25), 0 0 20px rgba(212, 175, 55, 0.2);
+}
+
+/* 2. Employer Ethiopian Heritage Theme */
+.ethiopian-dashboard-employer {
+  background-color: #081E17 !important;
+  background-image: url('/images/ethiopian-employer-bg.svg') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+  color: #F8FAFC !important;
+}
+
+.ethiopian-glass-card-employer {
+  background: rgba(15, 56, 44, 0.75) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ethiopian-glass-card-employer:hover {
+  transform: translateY(-4px);
+  border-color: rgba(212, 175, 55, 0.5) !important;
+  box-shadow: 0 16px 35px rgba(16, 185, 129, 0.25), 0 0 20px rgba(212, 175, 55, 0.2);
+}
+
+/* 3. Admin Ethiopian Heritage Theme */
+.ethiopian-dashboard-admin {
+  background-color: #060C1E !important;
+  background-image: url('/images/ethiopian-admin-bg.svg') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+  color: #F8FAFC !important;
+}
+
+.ethiopian-glass-card-admin {
+  background: rgba(11, 19, 43, 0.8) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 180, 216, 0.25) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ethiopian-glass-card-admin:hover {
+  transform: translateY(-4px);
+  border-color: rgba(212, 175, 55, 0.55) !important;
+  box-shadow: 0 16px 35px rgba(0, 180, 216, 0.25), 0 0 20px rgba(212, 175, 55, 0.2);
+}
+
+/* Shared Interactive Card Glow & Tibeb Border Accents */
+.ethiopian-tibeb-border-top {
+  border-top: 3px solid;
+  border-image: linear-gradient(to right, #C85A32, #D4AF37, #10B981) 1;
+}
+
+.ethiopian-tibeb-border-bottom {
+  border-bottom: 3px solid;
+  border-image: linear-gradient(to right, #D4AF37, #C85A32, #00B4D8) 1;
+}
+
+/* Accessibility: Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+
+
+

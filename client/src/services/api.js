@@ -45,7 +45,7 @@ api.interceptors.response.use(
       clearAuthStorage();
       window.location.href = '/login';
       toast.error('Session expired. Please login again.');
-    } else {
+    } else if (!error.config?.skipGlobalErrorToast) {
       toast.error(message);
     }
     

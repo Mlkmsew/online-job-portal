@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { FiBell, FiUser, FiCamera, FiTrash2, FiKey, FiX, FiCheckCircle, FiLock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { uploadAvatar, deleteAvatar, updateProfile, updateSettings, updatePassword } from '../../../store/slices/authSlice';
@@ -18,6 +19,7 @@ const phoneIsValid = (phone) => {
 };
 
 const Settings = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth) || {};
 
@@ -98,7 +100,7 @@ const Settings = () => {
       await dispatch(updateSettings({ notifications: updated })).unwrap();
     } catch (err) {
       setNotifications(previousState);
-      toast.error('Unable to save notification preference. Please try again.');
+      toast.error(t('settings.toggleFailed') || 'Unable to save notification preference. Please try again.');
     } finally {
       setTogglingKey(null);
     }
@@ -116,14 +118,19 @@ const Settings = () => {
       return;
     }
 
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(t('settings.photoTooLarge') || 'Photo size must be less than 2MB.');
+      return;
+    }
+
     setAvatarUploading(true);
     try {
       const fd = new FormData();
       fd.append('avatar', file);
       await dispatch(uploadAvatar(fd)).unwrap();
-      toast.success('Profile photo updated successfully!');
+      toast.success(t('settings.photoUploaded') || 'Profile photo updated successfully!');
     } catch (err) {
-      toast.error(typeof err === 'string' ? err : 'Failed to upload profile photo.');
+      toast.error(typeof err === 'string' ? err : t('settings.photoUploadFailed') || 'Failed to upload profile photo.');
     } finally {
       setAvatarUploading(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -136,9 +143,9 @@ const Settings = () => {
     setAvatarUploading(true);
     try {
       await dispatch(deleteAvatar()).unwrap();
-      toast.success('Profile photo removed successfully.');
+      toast.success(t('settings.photoDeleted') || 'Profile photo removed successfully.');
     } catch (err) {
-      toast.error(typeof err === 'string' ? err : 'Failed to remove photo.');
+      toast.error(typeof err === 'string' ? err : t('settings.photoDeleteFailed') || 'Failed to remove photo.');
     } finally {
       setAvatarUploading(false);
     }
@@ -148,7 +155,7 @@ const Settings = () => {
   const handleSave = async (e) => {
     e?.preventDefault();
     if (!phoneIsValid(phone)) {
-      toast.error('Please enter a valid phone number (7-15 digits, optional +).');
+      toast.error(t('settings.invalidPhone') || 'Please enter a valid phone number (7-15 digits, optional +).');
       return;
     }
 
@@ -165,9 +172,9 @@ const Settings = () => {
           phone,
         })
       ).unwrap();
-      toast.success('Changes saved successfully');
+      toast.success(t('settings.savedSuccess') || 'Changes saved successfully');
     } catch (err) {
-      toast.error(typeof err === 'string' ? err : 'Failed to save changes.');
+      toast.error(typeof err === 'string' ? err : t('settings.saveFailed') || 'Failed to save changes.');
     } finally {
       setSaving(false);
     }
@@ -179,26 +186,26 @@ const Settings = () => {
     const { currentPassword, newPassword, confirmPassword } = passwordForm;
 
     if (!currentPassword) {
-      toast.error('Please enter your current password.');
+      toast.error(t('auth.passwordRequired') || 'Please enter your current password.');
       return;
     }
     if (!newPassword || newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters long.');
+      toast.error(t('auth.weakPassword') || 'New password must be at least 6 characters long.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error('Confirm password does not match new password.');
+      toast.error(t('auth.passwordMismatch') || 'Confirm password does not match new password.');
       return;
     }
 
     setPasswordSaving(true);
     try {
       await dispatch(updatePassword({ currentPassword, newPassword })).unwrap();
-      toast.success('Password updated successfully!');
+      toast.success(t('settings.passwordUpdated') || 'Password updated successfully!');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setShowPasswordModal(false);
     } catch (err) {
-      toast.error(typeof err === 'string' ? err : 'Failed to update password. Check current password.');
+      toast.error(typeof err === 'string' ? err : t('settings.passwordUpdateFailed') || 'Failed to update password. Check current password.');
     } finally {
       setPasswordSaving(false);
     }
@@ -219,8 +226,8 @@ const Settings = () => {
                   <FiUser className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Account Settings</h3>
-                  <p className="text-xs text-slate-500">Manage your profile details and security.</p>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('nav.settings') || 'Account Settings'}</h3>
+                  <p className="text-xs text-slate-500">{t('settings.accountSubtitle') || 'Manage your profile details and security.'}</p>
                 </div>
               </div>
             </div>
@@ -257,7 +264,7 @@ const Settings = () => {
                     className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 transition shadow-sm"
                   >
                     <FiCamera className="w-3.5 h-3.5 text-emerald-600" />
-                    {user?.avatar ? 'Replace Photo' : 'Upload Photo'}
+                    {user?.avatar ? t('settings.replacePhoto') || 'Replace Photo' : t('settings.uploadPhoto') || 'Upload Photo'}
                   </button>
                   {user?.avatar && (
                     <button
@@ -266,7 +273,7 @@ const Settings = () => {
                       disabled={avatarUploading}
                       className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50/60 hover:bg-rose-100 disabled:opacity-50 transition"
                     >
-                      <FiTrash2 className="w-3.5 h-3.5" /> Remove
+                      <FiTrash2 className="w-3.5 h-3.5" /> {t('common.delete') || 'Remove'}
                     </button>
                   )}
                 </div>
@@ -275,7 +282,7 @@ const Settings = () => {
               {/* Form Input Fields */}
               <div className="flex-1 w-full space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Email Address</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">{t('auth.email') || 'Email Address'}</label>
                   <div className="w-full rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-700 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300 select-none">
                     {user?.email || 'Not available'}
                   </div>
@@ -283,7 +290,7 @@ const Settings = () => {
 
                 <div>
                   <label htmlFor="fullname" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1">
-                    Full Name
+                    {t('auth.name') || 'Full Name'}
                   </label>
                   <input
                     id="fullname"
@@ -297,7 +304,7 @@ const Settings = () => {
 
                 <div>
                   <label htmlFor="phone" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1">
-                    Phone Number
+                    {t('contact.info.phoneLabel') || 'Phone Number'}
                   </label>
                   <input
                     id="phone"
@@ -308,7 +315,7 @@ const Settings = () => {
                     className="block w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition dark:bg-gray-900 dark:border-gray-700 dark:text-white"
                     aria-invalid={!phoneIsValid(phone)}
                   />
-                  {!phoneIsValid(phone) && <p className="mt-1 text-xs text-rose-600 font-medium">Invalid phone format (+251...).</p>}
+                  {!phoneIsValid(phone) && <p className="mt-1 text-xs text-rose-600 font-medium">{t('settings.invalidPhone') || 'Invalid phone format (+251...).'}</p>}
                 </div>
 
                 <div className="pt-2">
@@ -318,7 +325,7 @@ const Settings = () => {
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
                   >
                     <FiKey className="w-3.5 h-3.5 text-emerald-600" />
-                    Change Password
+                    {t('auth.resetPassword') || 'Change Password'}
                   </button>
                 </div>
               </div>
@@ -333,7 +340,7 @@ const Settings = () => {
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-60 transition shadow-md shadow-emerald-600/10"
             >
               {saving && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-              {saving ? 'Saving Changes...' : 'Save Changes'}
+              {saving ? (t('common.loading') || 'Saving...') : (t('common.save') || 'Save Changes')}
             </button>
           </div>
         </section>
@@ -349,8 +356,8 @@ const Settings = () => {
                 <FiBell className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Notification Preferences</h3>
-                <p className="text-xs text-slate-500">Manage real-time alerts and communication channels.</p>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('dashboard.notifications.title') || 'Notification Preferences'}</h3>
+                <p className="text-xs text-slate-500">{t('settings.notificationSubtitle') || 'Manage real-time alerts and communication channels.'}</p>
               </div>
             </div>
 
@@ -397,7 +404,7 @@ const Settings = () => {
 
           <div className="mt-6 border-t border-slate-100 dark:border-gray-700 pt-3 text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
             <FiCheckCircle className="text-emerald-500 w-3.5 h-3.5" />
-            Preferences auto-save directly to your database profile.
+            {t('settings.autoSaveNotice') || 'Preferences auto-save directly to your database profile.'}
           </div>
         </section>
 
@@ -416,7 +423,7 @@ const Settings = () => {
                 <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
                   <FiLock className="w-5 h-5" />
                 </div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Change Password</h3>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('auth.resetPassword') || 'Change Password'}</h3>
               </div>
               <button
                 type="button"
@@ -430,7 +437,7 @@ const Settings = () => {
             {/* Modal Body / Form */}
             <form onSubmit={handlePasswordSubmit} className="mt-4 space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 dark:text-gray-300 mb-1">Current Password</label>
+                <label className="block font-bold text-slate-700 dark:text-gray-300 mb-1">{t('auth.password') || 'Current Password'}</label>
                 <input
                   type="password"
                   placeholder="Enter current password"
@@ -442,7 +449,7 @@ const Settings = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-gray-300 mb-1">New Password (min 6 characters)</label>
+                <label className="block font-bold text-slate-700 dark:text-gray-300 mb-1">{t('auth.newPassword') || 'New Password (min 6 characters)'}</label>
                 <input
                   type="password"
                   placeholder="Enter new password"
@@ -454,7 +461,7 @@ const Settings = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-gray-300 mb-1">Confirm New Password</label>
+                <label className="block font-bold text-slate-700 dark:text-gray-300 mb-1">{t('auth.confirmPassword') || 'Confirm New Password'}</label>
                 <input
                   type="password"
                   placeholder="Confirm new password"
@@ -472,7 +479,7 @@ const Settings = () => {
                   onClick={() => setShowPasswordModal(false)}
                   className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
                 >
-                  Cancel
+                  {t('common.cancel') || 'Cancel'}
                 </button>
                 <button
                   type="submit"

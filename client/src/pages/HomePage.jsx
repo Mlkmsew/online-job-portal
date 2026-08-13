@@ -1,11 +1,9 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import AnimatedSearch from '../components/home/AnimatedSearch';
 import PopularCategories from '../components/home/PopularCategories';
-import FeaturedJobs from '../components/home/FeaturedJobs';
 import LatestJobs from '../components/home/LatestJobs';
-import TopCompanies from '../components/home/TopCompanies';
+// TopCompanies intentionally omitted from homepage
 import SuccessStories from '../components/home/SuccessStories';
 import Testimonials from '../components/home/Testimonials';
 import CareerBlog from '../components/home/CareerBlog';
@@ -34,15 +32,12 @@ const HomePage = () => {
         </motion.div>
       </section>
 
-    <section className="container-custom -mt-12">
-      <AnimatedSearch />
-    </section>
+    {/* Large search component removed from public homepage */}
 
     <section className="container-custom">
       <PopularCategories />
-      <FeaturedJobs />
       <LatestJobs />
-      <TopCompanies />
+      {/* TopCompanies removed from public homepage */}
       <SuccessStories />
       <Testimonials />
       <CareerBlog />

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft,
@@ -72,64 +73,70 @@ const mockInterview = {
   ],
 };
 
-const CompletedInterviewHeader = ({ onBack, title, status, onReschedule, onCancel, onEdit, isCompleted }) => (
-  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-    <div>
-      <button type="button" onClick={onBack} className="inline-flex items-center gap-2 text-sm font-medium text-sky-700">
-        <ArrowLeft className="h-4 w-4" /> Back to Interviews
-      </button>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-semibold text-slate-900">{title}</h1>
-        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">{status}</span>
-      </div>
-      <p className="mt-2 text-sm text-slate-600">View and manage interview information, notes, and feedback.</p>
-    </div>
-    <div className="flex flex-wrap gap-2">
-      <button type="button" onClick={onReschedule} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Reschedule</button>
-      <button type="button" disabled={!isCompleted} onClick={onCancel} className="rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 disabled:cursor-not-allowed disabled:opacity-50">Cancel Interview</button>
-      <button type="button" onClick={onEdit} className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white">Edit Interview</button>
-    </div>
-  </div>
-);
-
-const CandidateSummaryCard = ({ interview, candidateName }) => (
-  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-      <div className="flex gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sky-600 text-xl font-semibold text-white">
-          {(interview?.applicant?.firstName?.[0] || 'C').toUpperCase()}
+const CompletedInterviewHeader = ({ onBack, title, status, onReschedule, onCancel, onEdit, isCompleted }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <button type="button" onClick={onBack} className="inline-flex items-center gap-2 text-sm font-medium text-sky-700">
+          <ArrowLeft className="h-4 w-4" /> {t('interviews.backToInterviews') || 'Back to Interviews'}
+        </button>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-semibold text-slate-900">{title}</h1>
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">{status}</span>
         </div>
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">{candidateName}</h2>
-          <p className="mt-1 text-sm font-medium text-sky-700">{interview?.job?.title || 'Applied Position'}</p>
-          <div className="mt-3 flex flex-wrap gap-3 text-sm text-slate-600">
-            <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> {interview?.applicant?.email || 'Email pending'}</span>
-            <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> {interview?.applicant?.phone || 'Phone pending'}</span>
-            <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" /> {formatLocationValue(interview?.applicant?.location) || 'Addis Ababa'}</span>
+        <p className="mt-2 text-sm text-slate-600">{t('interviews.viewManageInfo') || 'View and manage interview information, notes, and feedback.'}</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={onReschedule} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">{t('interviews.reschedule')}</button>
+        <button type="button" disabled={!isCompleted} onClick={onCancel} className="rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 disabled:cursor-not-allowed disabled:opacity-50">{t('common.cancel')}</button>
+        <button type="button" onClick={onEdit} className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white">{t('common.edit')}</button>
+      </div>
+    </div>
+  );
+};
+
+const CandidateSummaryCard = ({ interview, candidateName }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex gap-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-sky-600 text-xl font-semibold text-white">
+            {(interview?.applicant?.firstName?.[0] || 'C').toUpperCase()}
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">{candidateName}</h2>
+            <p className="mt-1 text-sm font-medium text-sky-700">{interview?.job?.title || t('interviews.jobPosition')}</p>
+            <div className="mt-3 flex flex-wrap gap-3 text-sm text-slate-600">
+              <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4" /> {interview?.applicant?.email || 'Email pending'}</span>
+              <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> {interview?.applicant?.phone || 'Phone pending'}</span>
+              <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4" /> {formatLocationValue(interview?.applicant?.location) || 'Addis Ababa'}</span>
+            </div>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[360px]">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-600"><CalendarDays className="h-4 w-4" /> {t('interviews.interviewDate')}</div>
+            <p className="mt-2 text-sm text-slate-900">{interview?.scheduledDate ? new Date(interview.scheduledDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : t('interviews.pending')}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-600"><Clock className="h-4 w-4" /> {t('interviews.interviewTime')}</div>
+            <p className="mt-2 text-sm text-slate-900">{interview?.scheduledDate ? new Date(interview.scheduledDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : t('interviews.pending')} · {interview?.duration || '60 min'}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-600"><Video className="h-4 w-4" /> {t('interviews.interviewType')}</div>
+            <p className="mt-2 text-sm text-slate-900">{interview?.type || t('interviews.online')} · {interview?.meetingLink ? 'Google Meet' : t('interviews.meetingLink')}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-600"><Users className="h-4 w-4" /> {t('interviews.interviewer')}</div>
+            <p className="mt-2 text-sm text-slate-900">Recruiter Team</p>
           </div>
         </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[360px]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-slate-600"><CalendarDays className="h-4 w-4" /> Date</div>
-          <p className="mt-2 text-sm text-slate-900">{interview?.scheduledDate ? new Date(interview.scheduledDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Not scheduled'}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-slate-600"><Clock className="h-4 w-4" /> Time & Duration</div>
-          <p className="mt-2 text-sm text-slate-900">{interview?.scheduledDate ? new Date(interview.scheduledDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'Pending'} · 60 min</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-slate-600"><Video className="h-4 w-4" /> Interview Type</div>
-          <p className="mt-2 text-sm text-slate-900">{interview?.type || 'Video Interview'} · {interview?.meetingLink ? 'Google Meet' : 'Meeting link pending'}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-slate-600"><Users className="h-4 w-4" /> Interviewer</div>
-          <p className="mt-2 text-sm text-slate-900">Recruiter Team</p>
-        </div>
-      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const InterviewSummaryCard = ({ interview, onJoinMeeting, onCopyLink }) => (
   <div className="rounded-3xl border border-slate-200 bg-white p-5">

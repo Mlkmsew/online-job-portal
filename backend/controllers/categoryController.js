@@ -2,13 +2,49 @@
 // Category Controller (Public)
 // ============================================
 const Category = require('../models/Category');
+const Job = require('../models/Job');
 const { asyncHandler } = require('../utils/helpers');
 
-// @desc    Get all categories
+// @desc    Get all categories with active job counts
 // @route   GET /api/categories
 // @access  Public
 exports.getCategories = asyncHandler(async (req, res) => {
-  const categories = await Category.find({ isActive: true }).sort('order name');
+  const categories = await Category.aggregate([
+    { $match: { isActive: true } },
+    { $sort: { order: 1, name: 1 } },
+    {
+      $lookup: {
+        from: 'jobs',
+        let: { categoryId: '$_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ['$category', '$$categoryId'] },
+                  { $eq: ['$status', 'active'] },
+                  { $eq: ['$isApproved', true] },
+                ],
+              },
+            },
+          },
+          { $count: 'count' },
+        ],
+        as: 'jobStats',
+      },
+    },
+    {
+      $addFields: {
+        jobCount: { $ifNull: [{ $arrayElemAt: ['$jobStats.count', 0] }, 0] },
+      },
+    },
+    {
+      $project: {
+        jobStats: 0,
+      },
+    },
+  ]);
+
   res.status(200).json({ success: true, count: categories.length, data: categories });
 });
 

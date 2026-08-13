@@ -72,7 +72,42 @@ const certStorage = new CloudinaryStorage({
   },
 });
 
+// Storage for chat message attachments (PDF, DOC, DOCX, images)
+const chatStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'ethiojob/chat-attachments',
+    allowed_formats: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'webp'],
+    resource_type: 'auto',
+  },
+});
+
 // Multer instances
+const uploadChat = multer({
+  storage: chatStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ];
+    const allowedExts = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.webp'];
+    const ext = path.extname(file.originalname || '').toLowerCase();
+
+    if (allowedMimes.includes(file.mimetype) || allowedExts.includes(ext)) {
+      return cb(null, true);
+    }
+
+    const err = new Error('Unsupported file format. Allowed: PDF, DOC, DOCX, JPG, PNG, WEBP.');
+    err.code = 'UNSUPPORTED_FILE_TYPE';
+    return cb(err, false);
+  },
+});
+
 const uploadAvatar = multer({
   storage: avatarStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
@@ -112,11 +147,28 @@ const uploadCV = multer({
 
 const uploadCert = multer({
   storage: certStorage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['application/pdf', 'image/jpeg', 'image/png'];
+    const allowedExts = ['.pdf', '.jpg', '.jpeg', '.png'];
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const mimeOk = allowedMimes.includes(file.mimetype);
+    const extOk = allowedExts.includes(ext);
+
+    // Reject files whose extension and MIME type disagree (spoofing attempt)
+    if (mimeOk && extOk) return cb(null, true);
+
+    const err = new Error(
+      'Unsupported certificate file format. Allowed: PDF, JPG, PNG. The file extension and file type must match.'
+    );
+    err.code = 'UNSUPPORTED_FILE_TYPE';
+    return cb(err, false);
+  },
 });
 
 module.exports = {
   cloudinary,
+  uploadChat,
   uploadAvatar,
   uploadLogo,
   uploadCompany,

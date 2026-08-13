@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
 import {
@@ -14,23 +15,18 @@ import {
   FiX,
   FiBookmark,
 } from 'react-icons/fi';
-import { REGIONS, REGION_CITIES } from '../constants/locations';
+import { REGIONS, CITIES, REGION_CITIES } from '../constants/locations';
 
 const JOB_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'];
 const EXPERIENCE_LEVELS = ['Entry Level', 'Mid Level', 'Senior Level', 'Lead'];
 const EDUCATION_LEVELS = ['No Requirement', 'High School', 'Diploma', 'Bachelor', 'Master', 'PhD', 'Professional Certificate'];
-const DATE_POSTED_OPTIONS = [
-  { value: '', label: 'Any time' },
-  { value: '1', label: 'Today' },
-  { value: '3', label: 'Last 3 days' },
-  { value: '7', label: 'Last 7 days' },
-  { value: '30', label: 'Last 30 days' },
-];
 
 const Jobs = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
+
 
   const [jobs, setJobs] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -366,15 +362,15 @@ const Jobs = () => {
     }
   };
 
-  const availableCities = selectedRegion ? REGION_CITIES[selectedRegion] || [] : [];
+  const availableCities = selectedRegion ? REGION_CITIES[selectedRegion] || [] : CITIES;
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="space-y-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-black text-gray-900 dark:text-white">Find Jobs</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Explore job opportunities and apply to roles that fit your profile.</p>
+            <h1 className="text-3xl font-black text-gray-900 dark:text-white">{t('sidebar.findJobs') || 'Find Jobs'}</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('jobs.findJobsSubtitle') || 'Explore job opportunities and apply to roles that fit your profile.'}</p>
           </div>
         </div>
 
@@ -389,31 +385,31 @@ const Jobs = () => {
                     type="text"
                     value={search}
                     onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                    placeholder="Search jobs, companies or skills"
+                    placeholder={t('dashboard.searchPlaceholder') || 'Search jobs, companies or skills'}
                     className="input pl-11"
                   />
                 </div>
                 <div>
-                  <label className="sr-only">Category</label>
+                  <label className="sr-only">{t('jobs.category') || 'Category'}</label>
                   <select
                     value={selectedCategory}
                     onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
                     className="select"
                   >
-                    <option value="">All Categories</option>
+                    <option value="">{t('jobs.allCategories') || 'All Categories'}</option>
                     {categories.map((cat) => (
                       <option key={cat._id} value={cat._id}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="sr-only">Job type</label>
+                  <label className="sr-only">{t('jobs.jobType') || 'Job type'}</label>
                   <select
                     value={jobType}
                     onChange={(e) => { setJobType(e.target.value); setPage(1); }}
                     className="select"
                   >
-                    <option value="">All Job Types</option>
+                    <option value="">{t('jobs.allJobTypes') || 'All Job Types'}</option>
                     {JOB_TYPES.map((type) => (
                       <option key={type} value={type}>{type}</option>
                     ))}
@@ -424,39 +420,39 @@ const Jobs = () => {
               {/* Compact second row: Work mode + Region/City */}
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 <div>
-                  <label className="sr-only">Work mode</label>
+                  <label className="sr-only">{t('jobs.workMode') || 'Work mode'}</label>
                   <select
                     value={workMode}
                     onChange={(e) => { setWorkMode(e.target.value); setPage(1); }}
                     className="select w-full"
                   >
-                    <option value="">Any mode</option>
+                    <option value="">{t('jobs.anyMode') || 'Any mode'}</option>
                     <option value="on-site">On-site</option>
                     <option value="remote">Remote</option>
                     <option value="hybrid">Hybrid</option>
                   </select>
                 </div>
                 <div>
-                  <label className="sr-only">Region</label>
+                  <label className="sr-only">{t('jobs.region') || 'Region'}</label>
                   <select
                     value={selectedRegion}
                     onChange={(e) => { setSelectedRegion(e.target.value); setSelectedCity(''); setPage(1); }}
                     className="select w-full"
                   >
-                    <option value="">All regions</option>
+                    <option value="">{t('jobs.allRegions') || 'All regions'}</option>
                     {REGIONS.map((r) => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
+                      <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="sr-only">City</label>
+                  <label className="sr-only">{t('jobs.city') || 'City'}</label>
                   <select
                     value={selectedCity}
                     onChange={(e) => { setSelectedCity(e.target.value); setPage(1); }}
                     className="select w-full"
                   >
-                    <option value="">All cities</option>
+                    <option value="">{t('jobs.allCities') || 'All cities'}</option>
                     {availableCities.map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
@@ -472,16 +468,16 @@ const Jobs = () => {
                   className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700"
                 >
                   <FiSliders className="h-4 w-4 text-gray-500" />
-                  {showAdvanced ? 'Hide advanced filters' : 'More filters'}
+                  {showAdvanced ? (t('jobs.hideAdvancedFilters') || 'Hide advanced filters') : (t('jobs.moreFilters') || 'More filters')}
                 </button>
-                <div className="text-sm text-gray-500">{totalJobs.toLocaleString()} jobs found</div>
+                <div className="text-sm text-gray-500">{totalJobs.toLocaleString()} {t('jobs.jobsFound') || 'jobs found'}</div>
               </div>
 
               {showAdvanced && (
                 <div className="mt-4 space-y-4">
                   <div className="grid gap-4 lg:grid-cols-3">
                     <div>
-                      <label className="block text-sm font-semibold mb-2">Company</label>
+                      <label className="block text-sm font-semibold mb-2">{t('jobs.company') || 'Company'}</label>
                       <input
                         value={companyName}
                         onChange={(e) => { setCompanyName(e.target.value); setPage(1); }}
@@ -490,76 +486,78 @@ const Jobs = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold mb-2">Company type</label>
+                      <label className="block text-sm font-semibold mb-2">{t('jobs.companyType') || 'Company type'}</label>
                       <select
                         value={companyType}
                         onChange={(e) => { setCompanyType(e.target.value); setPage(1); }}
                         className="select w-full"
                       >
-                        <option value="">All company types</option>
-                        <option value="Private">Private</option>
-                        <option value="Government">Government</option>
+                        <option value="">{t('jobs.allTypes') || 'All company types'}</option>
+                        <option value="Private">{t('jobs.companyType') || 'Private'}</option>
+                        <option value="Government">{t('roles.admin') || 'Government'}</option>
                         <option value="NGO">NGO</option>
                         <option value="Startup">Startup</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold mb-2">Sort by</label>
+                      <label className="block text-sm font-semibold mb-2">{t('jobs.sortBy') || 'Sort by'}</label>
                       <select
                         value={sort}
                         onChange={(e) => { setSort(e.target.value); setPage(1); }}
                         className="select w-full"
                       >
-                        <option value="relevance">Sort by relevance</option>
-                        <option value="newest">Newest first</option>
-                        <option value="salaryHighToLow">Salary high to low</option>
-                        <option value="salaryLowToHigh">Salary low to high</option>
+                        <option value="relevance">{t('jobs.sortBy') || 'Sort by relevance'}</option>
+                        <option value="newest">{t('jobs.newest') || 'Newest first'}</option>
+                        <option value="salaryHighToLow">{t('jobs.highestSalary') || 'Salary high to low'}</option>
+                        <option value="salaryLowToHigh">{t('jobs.recentlyUpdated') || 'Salary low to high'}</option>
                       </select>
                     </div>
                   </div>
 
                   <div className="grid gap-4 lg:grid-cols-4">
                     <div>
-                      <label className="block text-sm font-semibold mb-2">Education</label>
+                      <label className="block text-sm font-semibold mb-2">{t('jobs.education') || 'Education'}</label>
                       <select
                         value={educationLevel}
                         onChange={(e) => { setEducationLevel(e.target.value); setPage(1); }}
                         className="select w-full"
                       >
-                        <option value="">Any education level</option>
+                        <option value="">{t('jobs.anyExperience') || 'Any education level'}</option>
                         {EDUCATION_LEVELS.map((level) => (
                           <option key={level} value={level}>{level}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold mb-2">Experience</label>
+                      <label className="block text-sm font-semibold mb-2">{t('jobs.experience') || 'Experience'}</label>
                       <select
                         value={experienceLevel}
                         onChange={(e) => { setExperienceLevel(e.target.value); setPage(1); }}
                         className="select w-full"
                       >
-                        <option value="">Any experience level</option>
+                        <option value="">{t('jobs.anyExperience') || 'Any experience level'}</option>
                         {EXPERIENCE_LEVELS.map((level) => (
                           <option key={level} value={level}>{level}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold mb-2">Date posted</label>
+                      <label className="block text-sm font-semibold mb-2">{t('jobs.datePosted') || 'Date posted'}</label>
                       <select
                         value={datePosted}
                         onChange={(e) => { setDatePosted(e.target.value); setPage(1); }}
                         className="select w-full"
                       >
-                        {DATE_POSTED_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
+                        <option value="">{t('jobs.any') || 'Any time'}</option>
+                        <option value="1">{t('jobs.newest') || 'Today'}</option>
+                        <option value="3">3 {t('jobs.daysLeft') || 'Days'}</option>
+                        <option value="7">7 {t('jobs.daysLeft') || 'Days'}</option>
+                        <option value="30">30 {t('jobs.daysLeft') || 'Days'}</option>
                       </select>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-semibold mb-2">Min salary</label>
+                        <label className="block text-sm font-semibold mb-2">{t('jobs.minSalary') || 'Min salary'}</label>
                         <input
                           type="number"
                           value={minSalary}
@@ -570,7 +568,7 @@ const Jobs = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold mb-2">Max salary</label>
+                        <label className="block text-sm font-semibold mb-2">{t('jobs.maxSalary') || 'Max salary'}</label>
                         <input
                           type="number"
                           value={maxSalary}
@@ -584,7 +582,7 @@ const Jobs = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold mb-2">Skills</label>
+                    <label className="block text-sm font-semibold mb-2">{t('jobs.skills') || 'Skills'}</label>
                     <Select
                       value={selectedSkillOptions}
                       onChange={(selected) => { setSelectedSkills((selected || []).map((item) => item.value)); setPage(1); }}
@@ -603,7 +601,7 @@ const Jobs = () => {
                   onClick={resetFilters}
                   className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 >
-                  Clear filters
+                  {t('common.clearAll') || 'Clear filters'}
                 </button>
                 <button
                   type="button"
@@ -613,7 +611,7 @@ const Jobs = () => {
                   }}
                   className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
                 >
-                  Apply filters
+                  {t('common.apply') || 'Apply filters'}
                 </button>
               </div>
             </div>
@@ -628,10 +626,10 @@ const Jobs = () => {
             ) : jobs.length === 0 ? (
               <div className="rounded-[32px] border border-gray-200 bg-white p-10 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
                 <FiBriefcase className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-4 text-xl font-semibold text-gray-900 dark:text-gray-100">No jobs matched your filters</h3>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Try changing your keywords, location or category to see more results.</p>
+                <h3 className="mt-4 text-xl font-semibold text-gray-900 dark:text-gray-100">{t('jobs.noJobsMatched') || 'No jobs matched your filters'}</h3>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('jobs.noJobsMatchedHint') || 'Try changing your keywords, location or category to see more results.'}</p>
                 <button onClick={handleResetFilters} className="mt-6 rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
-                  Clear Filters
+                  {t('common.clearAll') || 'Clear Filters'}
                 </button>
               </div>
             ) : (
@@ -698,15 +696,15 @@ const Jobs = () => {
                         <div className="flex flex-col gap-4 lg:w-[280px]">
                           <div className="space-y-3 rounded-3xl border border-gray-100 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-950">
                             <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                              <span>Posted</span>
+                              <span>{t('jobs.posted') || 'Posted'}</span>
                               <span>{new Date(job.createdAt).toLocaleDateString()}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm font-semibold text-gray-900 dark:text-white">
-                              <span>Salary</span>
+                              <span>{t('jobs.salary') || 'Salary'}</span>
                               <span>
                                 {job.salary?.min && job.salary?.max
                                   ? `${job.salary.min.toLocaleString()} - ${job.salary.max.toLocaleString()} ETB`
-                                  : 'Negotiable'}
+                                  : (t('jobs.negotiable') || 'Negotiable')}
                               </span>
                             </div>
                           </div>
@@ -723,19 +721,19 @@ const Jobs = () => {
                             className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition ${savedJobMap[job._id] ? 'bg-emerald-700 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200'}`}
                           >
                             <FiBookmark className="h-4 w-4" />
-                            {savedJobMap[job._id] ? 'Saved' : 'Save Job'}
+                            {savedJobMap[job._id] ? (t('savedJobs.saved') || 'Saved') : (t('savedJobs.saveJob') || 'Save Job')}
                           </button>
                           <Link
                             to={`/jobs/${job._id}`}
                             className="inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
                           >
-                            Apply Now
+                            {t('jobs.applyNow') || 'Apply Now'}
                           </Link>
                           <Link
                             to={`/jobs/${job._id}`}
                             className="inline-flex w-full items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200"
                           >
-                            View Details
+                            {t('jobs.viewDetails') || 'View Details'}
                           </Link>
                         </div>
                       </div>
@@ -751,7 +749,7 @@ const Jobs = () => {
                       onClick={() => setPage((current) => Math.max(1, current - 1))}
                       className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-950"
                     >
-                      Previous
+                      {t('common.previous') || 'Previous'}
                     </button>
                     {Array.from({ length: pages }, (_, index) => index + 1).map((pageNumber) => (
                       <button
@@ -769,7 +767,7 @@ const Jobs = () => {
                       onClick={() => setPage((current) => Math.min(pages, current + 1))}
                       className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-950"
                     >
-                      Next
+                      {t('common.next') || 'Next'}
                     </button>
                   </div>
                 )}
@@ -783,3 +781,4 @@ const Jobs = () => {
 };
 
 export default Jobs;
+

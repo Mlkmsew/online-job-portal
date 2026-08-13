@@ -24,12 +24,33 @@ export const fetchAdminStats = createAsyncThunk('admin/fetchStats', async (_, { 
 
 export const fetchAdminUsers = createAsyncThunk('admin/fetchUsers', async (_, { rejectWithValue }) => {
   try {
-    const response = await api.get('/admin/users');
+    const response = await api.get('/admin/users', { params: { limit: 200 } });
     return response.data;
   } catch (error) {
     return rejectWithValue(error.response?.data?.message || error.message || 'Failed to load users');
   }
 });
+
+export const fetchAdminUser = createAsyncThunk('admin/fetchUser', async (userId, { rejectWithValue }) => {
+  try {
+    const response = await api.get(`/admin/users/${userId}`);
+    return response.data.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || error.message || 'Failed to load user');
+  }
+});
+
+export const updateUserStatus = createAsyncThunk(
+  'admin/updateUserStatus',
+  async ({ userId, status, reason }, { rejectWithValue }) => {
+    try {
+      const response = await api.patch(`/admin/users/${userId}/status`, { status, reason });
+      return { userId, data: response.data?.data, message: response.data?.message };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to update user status');
+    }
+  }
+);
 
 export const fetchAdminCompanies = createAsyncThunk('admin/fetchCompanies', async (filters = {}, { rejectWithValue }) => {
   try {
@@ -114,10 +135,28 @@ export const verifyCompany = createAsyncThunk('admin/verifyCompany', async (comp
 
 export const createCategory = createAsyncThunk('admin/createCategory', async (category, { rejectWithValue }) => {
   try {
-    const response = await api.post('/admin/categories', category);
+    const response = await api.post('/admin/categories', category, { skipGlobalErrorToast: true });
     return response.data.data;
   } catch (error) {
     return rejectWithValue(error.response?.data?.message || error.message || 'Failed to create category');
+  }
+});
+
+export const updateCategory = createAsyncThunk('admin/updateCategory', async ({ id, ...data }, { rejectWithValue }) => {
+  try {
+    const response = await api.put(`/admin/categories/${id}`, data, { skipGlobalErrorToast: true });
+    return response.data.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || error.message || 'Failed to update category');
+  }
+});
+
+export const deleteCategory = createAsyncThunk('admin/deleteCategory', async (id, { rejectWithValue }) => {
+  try {
+    await api.delete(`/admin/categories/${id}`, { skipGlobalErrorToast: true });
+    return id;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || error.message || 'Failed to delete category');
   }
 });
 
@@ -184,7 +223,22 @@ const adminSlice = createSlice({
       .addCase(toggleUserSuspension.fulfilled, (state, action) => {
         const index = state.users.findIndex((user) => user._id === action.payload.userId);
         if (index !== -1) {
-          state.users[index].isSuspended = !state.users[index].isSuspended;
+          const data = action.payload?.data;
+          if (data?.status) {
+            state.users[index] = { ...state.users[index], ...data };
+          } else {
+            state.users[index].isSuspended = !state.users[index].isSuspended;
+            state.users[index].status = state.users[index].isSuspended ? 'suspended' : 'active';
+          }
+        }
+      })
+      .addCase(updateUserStatus.fulfilled, (state, action) => {
+        const data = action.payload?.data;
+        if (data) {
+          const index = state.users.findIndex((user) => user._id === action.payload.userId);
+          if (index !== -1) {
+            state.users[index] = { ...state.users[index], ...data };
+          }
         }
       })
       .addCase(approveCompany.fulfilled, (state, action) => {
@@ -209,6 +263,13 @@ const adminSlice = createSlice({
       })
       .addCase(createCategory.fulfilled, (state, action) => {
         state.categories.unshift(action.payload);
+      })
+      .addCase(updateCategory.fulfilled, (state, action) => {
+        const index = state.categories.findIndex((c) => c._id === action.payload._id);
+        if (index !== -1) state.categories[index] = action.payload;
+      })
+      .addCase(deleteCategory.fulfilled, (state, action) => {
+        state.categories = state.categories.filter((c) => c._id !== action.payload);
       })
       // ── Jobs ──
       .addCase(fetchAdminJobs.pending, (state) => {

@@ -233,7 +233,11 @@ const authSlice = createSlice({
       })
       // Upload CV
       .addCase(uploadCV.fulfilled, (state, action) => {
-        state.user = normalizeUser({ ...(state.user || {}), cv: action.payload.cv });
+        if (action.payload?.data) {
+          state.user = normalizeUser(action.payload.data);
+        } else {
+          state.user = normalizeUser({ ...(state.user || {}), cv: action.payload?.cv });
+        }
         localStorage.setItem('user', JSON.stringify(state.user));
       })
       // Upload / Delete Avatar

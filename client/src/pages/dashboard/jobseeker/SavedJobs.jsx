@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import api from '../../../services/api';
 import { FiMapPin, FiBriefcase, FiTrash2, FiClock, FiZap, FiAward } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const SavedJobs = () => {
+  const { t } = useTranslation();
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useSelector((state) => state.auth);
@@ -20,7 +22,7 @@ const SavedJobs = () => {
       const res = await api.get('/bookmarks');
       setBookmarks(res.data?.data || res.data || []);
     } catch (error) {
-      toast.error('Failed to load saved jobs');
+      toast.error(t('savedJobs.loadFailed') || 'Failed to load saved jobs');
     } finally {
       setLoading(false);
     }
@@ -30,44 +32,44 @@ const SavedJobs = () => {
     try {
       await api.delete(`/bookmarks/${id}`);
       setBookmarks(bookmarks.filter((b) => b._id !== id));
-      toast.success('Job removed from saved');
+      toast.success(t('savedJobs.removedSuccess') || 'Job removed from saved');
     } catch (error) {
-      toast.error('Failed to remove job');
+      toast.error(t('savedJobs.removeFailed') || 'Failed to remove job');
     }
   };
 
   // Helper to format days remaining
   const getDeadlineText = (deadlineDate) => {
-    if (!deadlineDate) return 'No deadline specified';
+    if (!deadlineDate) return t('jobs.any');
     const now = new Date();
     const deadline = new Date(deadlineDate);
     const diffTime = deadline - now;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return 'Closed';
-    if (diffDays === 0) return 'Closes today';
-    if (diffDays === 1) return 'Closes tomorrow';
-    return `Closes in ${diffDays} days`;
+    if (diffDays < 0) return t('jobs.expired');
+    if (diffDays === 0) return t('jobs.closesToday') || 'Closes today';
+    if (diffDays === 1) return t('jobs.closesTomorrow') || 'Closes tomorrow';
+    return t('jobs.closesInDays', { count: diffDays }) || `Closes in ${diffDays} days`;
   };
 
   const handleQuickApply = async (jobId) => {
     if (!user?.cv) {
-      toast.error('Please build or upload a resume in the Profile/Resume tab first!', {
+      toast.error(t('savedJobs.resumeRequired') || 'Please build or upload a resume in the Profile/Resume tab first!', {
         duration: 4000,
       });
       return;
     }
 
-    const loadToast = toast.loading('Submitting your quick application...');
+    const loadToast = toast.loading(t('savedJobs.submitting') || 'Submitting your quick application...');
     try {
       await api.post('/applications', {
         job: jobId,
         useProfileCV: true,
         coverLetter: 'Quick Applied via Saved Jobs.',
       });
-      toast.success('Quick Applied successfully!', { id: loadToast });
+      toast.success(t('savedJobs.appliedSuccess') || 'Quick Applied successfully!', { id: loadToast });
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Quick Apply failed. You might have already applied.', {
+      toast.error(error.response?.data?.message || t('savedJobs.applyFailed') || 'Quick Apply failed.', {
         id: loadToast,
       });
     }
@@ -75,7 +77,7 @@ const SavedJobs = () => {
 
   return (
     <div className="max-w-5xl mx-auto pb-10">
-      <h1 className="text-3xl font-black mb-8 text-slate-900 dark:text-white">Saved Jobs</h1>
+      <h1 className="text-3xl font-black mb-8 text-slate-900 dark:text-white">{t('dashboard.savedJobs')}</h1>
 
       {loading ? (
         <div className="flex justify-center items-center py-20">
@@ -84,12 +86,12 @@ const SavedJobs = () => {
       ) : bookmarks.length === 0 ? (
         <div className="card text-center py-16 px-6 border-dashed border-gray-300 dark:border-gray-700 bg-slate-50 dark:bg-slate-900">
           <FiBriefcase className="w-16 h-16 text-slate-300 dark:text-slate-500 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">No saved jobs yet</h3>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('savedJobs.emptyTitle') || 'No saved jobs yet'}</h3>
           <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-sm mx-auto mb-6">
-            Bookmark jobs while browsing to keep them handy and apply later.
+            {t('savedJobs.emptySubtitle') || 'Bookmark jobs while browsing to keep them handy and apply later.'}
           </p>
           <Link to="/jobs" className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-700">
-            Browse Opportunities
+            {t('savedJobs.browseOpportunities') || 'Browse Opportunities'}
           </Link>
         </div>
       ) : (
@@ -101,7 +103,6 @@ const SavedJobs = () => {
             const daysLeft = job.applicationDeadline ? Math.ceil((new Date(job.applicationDeadline) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
             const deadlineBadgeColor = daysLeft <= 3 ? 'bg-red-50 text-red-700 border-red-150' : 'bg-amber-50 text-amber-700 border-amber-150';
 
-            // Placeholder AI score calculation or default display
             const mockAIScore = 85 + (job.title.length % 15); 
 
             return (
@@ -112,12 +113,12 @@ const SavedJobs = () => {
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white hover:text-teal-600 transition">
                         <Link to={`/jobs/${job._id}`}>{job.title}</Link>
                       </h3>
-                      <p className="text-sm font-semibold text-teal-600 dark:text-teal-400 mt-0.5">{job.company?.name || 'Company'}</p>
+                      <p className="text-sm font-semibold text-teal-600 dark:text-teal-400 mt-0.5">{job.company?.name || t('dashboard.jobCard.company')}</p>
                     </div>
                     <button
                       onClick={() => handleRemove(bookmark._id)}
                       className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all"
-                      title="Remove Bookmark"
+                      title={t('savedJobs.removeBookmark') || 'Remove Bookmark'}
                     >
                       <FiTrash2 className="w-5 h-5" />
                     </button>
@@ -127,7 +128,7 @@ const SavedJobs = () => {
                   <div className="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-400 mt-4 mb-4">
                     <span className="flex items-center gap-1">
                       <FiMapPin className="text-gray-400" />
-                      {job.location?.city ? `${job.location.city}, ` : ''}{job.location?.region || 'Remote'}
+                      {job.location?.city ? `${job.location.city}, ` : ''}{job.location?.region || t('dashboard.jobCard.remote')}
                     </span>
                     <span className="flex items-center gap-1">
                       <FiBriefcase className="text-gray-400" />
@@ -143,7 +144,7 @@ const SavedJobs = () => {
                     </span>
                     <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-teal-50 dark:bg-teal-950/20 text-teal-600 dark:text-teal-400 border border-teal-200/30 flex items-center gap-1">
                       <FiZap className="w-3 h-3" />
-                      AI Match: {mockAIScore}%
+                      {t('savedJobs.aiMatch', { score: mockAIScore }) || `AI Match: ${mockAIScore}%`}
                     </span>
                   </div>
                 </div>
@@ -154,13 +155,13 @@ const SavedJobs = () => {
                     onClick={() => handleQuickApply(job._id)}
                     className="flex-1 btn btn-primary bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-4 rounded-xl text-center text-sm shadow"
                   >
-                    Quick Apply
+                    {t('savedJobs.quickApply') || 'Quick Apply'}
                   </button>
                   <Link
                     to={`/jobs/${job._id}`}
                     className="flex-1 btn btn-outline border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 py-2.5 px-4 rounded-xl text-center text-sm font-bold"
                   >
-                    View Details
+                    {t('jobs.viewDetails')}
                   </Link>
                 </div>
               </div>
@@ -173,3 +174,4 @@ const SavedJobs = () => {
 };
 
 export default SavedJobs;
+

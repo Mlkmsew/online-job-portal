@@ -5,6 +5,7 @@ const initialState = {
   company: null,
   jobs: [],
   applications: [],
+  dashboardStats: null,
   loading: false,
   error: null,
   pagination: null,
@@ -16,10 +17,11 @@ export const fetchEmployerDashboard = createAsyncThunk(
   'employer/fetchDashboard',
   async (_, { rejectWithValue }) => {
     try {
-      const [companyResult, jobsResult, applicationsResult] = await Promise.allSettled([
+      const [companyResult, jobsResult, applicationsResult, dashboardStatsResult] = await Promise.allSettled([
         api.get('/companies/my/company'),
         api.get('/jobs/my/posted'),
         api.get('/applications/employer'),
+        api.get('/employer/dashboard'),
       ]);
 
       const company = companyResult.status === 'fulfilled' ? companyResult.value.data.data : null;
@@ -27,23 +29,15 @@ export const fetchEmployerDashboard = createAsyncThunk(
       const applications = applicationsResult.status === 'fulfilled'
         ? (applicationsResult.value.data.data || applicationsResult.value.data || [])
         : [];
-
-      if (companyResult.status === 'rejected' && !isNotFoundError(companyResult.reason)) {
-        return rejectWithValue(companyResult.reason.response?.data?.message || companyResult.reason.message || 'Failed to load employer dashboard');
-      }
-
-      if (jobsResult.status === 'rejected') {
-        return rejectWithValue(jobsResult.reason.response?.data?.message || jobsResult.reason.message || 'Failed to load employer dashboard');
-      }
-
-      if (applicationsResult.status === 'rejected') {
-        return rejectWithValue(applicationsResult.reason.response?.data?.message || applicationsResult.reason.message || 'Failed to load employer dashboard');
-      }
+      const dashboardStats = dashboardStatsResult.status === 'fulfilled'
+        ? (dashboardStatsResult.value.data.data || dashboardStatsResult.value.data || null)
+        : null;
 
       return {
         company,
         jobs,
         applications,
+        dashboardStats,
       };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to load employer dashboard');
@@ -109,6 +103,7 @@ const employerSlice = createSlice({
         state.company = action.payload.company;
         state.jobs = action.payload.jobs || [];
         state.applications = action.payload.applications || [];
+        state.dashboardStats = action.payload.dashboardStats || null;
       })
       .addCase(fetchEmployerDashboard.rejected, (state, action) => {
         state.loading = false;

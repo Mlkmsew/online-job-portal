@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../../../services/api';
 import { fetchMyApplications } from '../../../store/slices/applicationSlice';
 import { formatRelativeTime } from '../../../utils/helpers';
@@ -28,8 +29,10 @@ import {
 } from 'react-icons/fi';
 
 const MyApplications = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
   const { applications, loading, error } = useSelector((state) => state.applications);
   const { user } = useSelector((state) => state.auth);
   const [selectedApp, setSelectedApp] = useState(null);
@@ -254,8 +257,8 @@ const MyApplications = () => {
       <div className="mb-8 rounded-[18px] bg-white p-6 shadow-sm border border-slate-200">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">My Applications</h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">Track your applications and interview progress in one place.</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">{t('applications.title')}</h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600">{t('applications.subtitle')}</p>
           </div>
 
           <div className="relative w-full max-w-md">
@@ -263,7 +266,7 @@ const MyApplications = () => {
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search applications..."
+              placeholder={t('applications.searchPlaceholder')}
               className="w-full rounded-full border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
           </div>
@@ -275,11 +278,11 @@ const MyApplications = () => {
           <div className="rounded-[18px] bg-white p-6 shadow-sm border border-slate-200">
             <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-500">Application backlog</p>
-                <h2 className="text-2xl font-semibold text-slate-900">{filteredApplications.length} applications in review</h2>
+                <p className="text-sm font-semibold text-slate-500">{t('applications.backlog')}</p>
+                <h2 className="text-2xl font-semibold text-slate-900">{t('applications.inReviewCount', { count: filteredApplications.length })}</h2>
               </div>
               <div className="inline-flex items-center rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm">
-                <FiCalendar className="mr-2 h-4 w-4" /> Interview Scheduled
+                <FiCalendar className="mr-2 h-4 w-4" /> {t('applications.interviewScheduled')}
               </div>
             </div>
 
@@ -300,16 +303,16 @@ const MyApplications = () => {
                           {app.company?.name?.charAt(0) || 'G'}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">{app.company?.name || 'Company'}</p>
-                          <h3 className="text-xl font-semibold text-slate-900 truncate">{app.job?.title || 'Frontend Developer'}</h3>
-                          <p className="mt-2 text-sm text-slate-500">{app.company?.name || 'Company Name'}</p>
+                          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">{app.company?.name || t('applications.company')}</p>
+                          <h3 className="text-xl font-semibold text-slate-900 truncate">{app.job?.title || t('dashboard.jobCard.jobTitle')}</h3>
+                          <p className="mt-2 text-sm text-slate-500">{app.company?.name || t('applications.company')}</p>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-3 text-sm text-slate-500">
-                        <span>Applied {formatRelativeTime(app.appliedAt)}</span>
+                        <span>{t('applications.appliedTime', { time: formatRelativeTime(app.appliedAt) })}</span>
                         <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-slate-600">
-                          <FiCalendar className="h-4 w-4" /> {interviewDate ? formatDate(interviewDate) : 'Date TBA'}
+                          <FiCalendar className="h-4 w-4" /> {interviewDate ? formatDate(interviewDate) : t('applications.dateTBA')}
                         </span>
                       </div>
                     </div>
@@ -317,17 +320,17 @@ const MyApplications = () => {
                     <div className="mt-6 grid gap-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${getStatusPill(app.status)}`}>
-                          {app.status || 'Pending'}
+                          {app.status || t('dashboard.status.underReview')}
                         </span>
                       </div>
 
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-3xl bg-slate-50 p-4">
-                          <p className="text-sm font-semibold text-slate-500">Interview Date</p>
+                          <p className="text-sm font-semibold text-slate-500">{t('applications.interviewDate')}</p>
                           <p className="mt-2 text-base font-semibold text-slate-900">{interviewDate ? formatDate(interviewDate) : 'TBD'}</p>
                         </div>
                         <div className="rounded-3xl bg-slate-50 p-4">
-                          <p className="text-sm font-semibold text-slate-500">Interview Time</p>
+                          <p className="text-sm font-semibold text-slate-500">{t('applications.interviewTime')}</p>
                           <p className="mt-2 text-base font-semibold text-slate-900">{formatInterviewTime(app.interviewTime || app.interviewDate)}</p>
                         </div>
                       </div>
@@ -339,7 +342,7 @@ const MyApplications = () => {
                         onClick={() => setSelectedApp(app)}
                         className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                       >
-                        <FiInfo className="h-4 w-4" /> View Application
+                        <FiInfo className="h-4 w-4" /> {t('applications.viewApplication')}
                       </button>
                       {(app.status === 'Interview Scheduled' || app.status === 'Interview') && (
                         <button
@@ -354,26 +357,26 @@ const MyApplications = () => {
                                 : [];
                               const interview = interviews[0];
                               if (!interview) {
-                                toast.error('Interview details not found.');
+                                toast.error(t('applications.interviewNotFound') || 'Interview details not found.');
                                 return;
                               }
                               navigate(`/dashboard/interviews/${interview._id}`);
                             } catch (err) {
                               console.error(err);
-                              toast.error('Unable to find interview details.');
+                              toast.error(t('applications.interviewError') || 'Unable to find interview details.');
                             }
                           }}
                           className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
                         >
-                          <FiVideo className="h-4 w-4" /> View Interview
+                          <FiVideo className="h-4 w-4" /> {t('applications.viewInterview')}
                         </button>
                       )}
                       <button
                         type="button"
-                        onClick={() => toast.success('Download started')}
+                        onClick={() => toast.success(t('applications.downloadStarted') || 'Download started')}
                         className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
                       >
-                        <FiDownload className="h-4 w-4" /> Download Invite
+                        <FiDownload className="h-4 w-4" /> {t('applications.downloadInvite')}
                       </button>
                     </div>
                   </div>
@@ -389,20 +392,20 @@ const MyApplications = () => {
               <div className="rounded-[18px] bg-white p-6 shadow-sm border border-slate-200">
                 {interviewLoading ? (
                   <div className="min-h-[200px] flex items-center justify-center">
-                    <p className="text-sm text-slate-500">Loading interview details...</p>
+                    <p className="text-sm text-slate-500">{t('common.loading')}</p>
                   </div>
                 ) : showInterviewPanel ? (
                   <>
                     <div className="rounded-[18px] bg-blue-50 p-5">
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-700">Interview Status</p>
+                          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-700">{t('applications.interviewStatus')}</p>
                           <h3 className="mt-2 text-xl font-semibold text-slate-900">
                             {selectedInterview.status === 'completed'
-                              ? 'Interview Completed'
+                              ? t('applications.interviewCompleted')
                               : selectedInterview.status === 'cancelled'
-                                ? 'Interview Cancelled'
-                                : 'Your interview has been scheduled.'}
+                                ? t('applications.interviewCancelled')
+                                : t('applications.interviewScheduledMsg')}
                           </h3>
                         </div>
                         <div className="inline-flex items-center rounded-full bg-white px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm">
@@ -413,23 +416,23 @@ const MyApplications = () => {
 
                     <div className="mt-6 space-y-4">
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-slate-500">Company</p>
+                        <p className="text-sm font-semibold text-slate-500">{t('applications.company')}</p>
                         <p className="text-base font-semibold text-slate-900">{selectedCompany}</p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm font-semibold text-slate-500">Position</p>
+                        <p className="text-sm font-semibold text-slate-500">{t('applications.position')}</p>
                         <p className="text-base font-semibold text-slate-900">{selectedJob}</p>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-3xl bg-slate-50 p-4">
-                          <p className="text-sm font-semibold text-slate-500">Interview Date</p>
+                          <p className="text-sm font-semibold text-slate-500">{t('applications.interviewDate')}</p>
                           <p className="mt-2 text-base font-semibold text-slate-900">{formatDate(selectedInterviewDate)}</p>
                           <p className="text-sm text-slate-500">
                             {selectedInterviewDate ? new Date(selectedInterviewDate).toLocaleDateString(undefined, { weekday: 'long' }) : ''}
                           </p>
                         </div>
                         <div className="rounded-3xl bg-slate-50 p-4">
-                          <p className="text-sm font-semibold text-slate-500">Time</p>
+                          <p className="text-sm font-semibold text-slate-500">{t('applications.interviewTime')}</p>
                           <p className="mt-2 text-base font-semibold text-slate-900">{selectedInterviewTime}</p>
                           <p className="mt-2 text-base font-semibold text-slate-900">{selectedMeetingPlatform}</p>
                         </div>
@@ -438,7 +441,7 @@ const MyApplications = () => {
                       {selectedMeetingLink ? (
                         <div className="rounded-3xl bg-slate-50 p-4">
                           <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                            <FiLink className="h-4 w-4" /> Meeting Link
+                            <FiLink className="h-4 w-4" /> {t('applications.meetingLink')}
                           </div>
                           <a href={selectedMeetingLink} target="_blank" rel="noreferrer" className="mt-2 block text-sm text-blue-700 underline break-all">
                             {selectedMeetingLink}
@@ -447,7 +450,7 @@ const MyApplications = () => {
                       ) : selectedMeetingLocation ? (
                         <div className="rounded-3xl bg-slate-50 p-4">
                           <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                            <FiMapPin className="h-4 w-4" /> Location
+                            <FiMapPin className="h-4 w-4" /> {t('applications.location')}
                           </div>
                           <p className="mt-2 text-sm text-slate-700 break-all">{selectedMeetingLocation}</p>
                         </div>
@@ -457,14 +460,14 @@ const MyApplications = () => {
                     <div className="mt-6 space-y-4">
                       {selectedNotes ? (
                         <div>
-                          <p className="text-sm font-semibold text-slate-500">Employer Notes</p>
+                          <p className="text-sm font-semibold text-slate-500">{t('applications.employerNotes')}</p>
                           <p className="mt-2 text-sm leading-7 text-slate-700">{selectedNotes}</p>
                         </div>
                       ) : null}
 
                       {selectedDocuments.length > 0 ? (
                         <div>
-                          <p className="text-sm font-semibold text-slate-500">Documents Required</p>
+                          <p className="text-sm font-semibold text-slate-500">{t('applications.documentsRequired')}</p>
                           <ul className="mt-3 space-y-2 text-sm text-slate-700">
                             {selectedDocuments.map((doc) => (
                               <li key={doc} className="flex items-center gap-2">
@@ -484,40 +487,40 @@ const MyApplications = () => {
                           onClick={() => window.open(selectedMeetingLink, '_blank', 'noopener,noreferrer')}
                           className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
                         >
-                          <FiVideo className="h-4 w-4" /> Join Meeting
+                          <FiVideo className="h-4 w-4" /> {t('applications.joinMeeting')}
                         </button>
                       ) : null}
                       <button
                         type="button"
-                        onClick={() => toast.success('Added to calendar')}
+                        onClick={() => toast.success(t('applications.addedToCalendar') || 'Added to calendar')}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                       >
-                        <FiCalendar className="h-4 w-4" /> Add to Calendar
+                        <FiCalendar className="h-4 w-4" /> {t('applications.addToCalendar')}
                       </button>
                       <button
                         type="button"
-                        onClick={() => toast('Reschedule request sent')}
+                        onClick={() => toast(t('applications.rescheduleSent') || 'Reschedule request sent')}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                       >
-                        <FiClock className="h-4 w-4" /> Reschedule Request
+                        <FiClock className="h-4 w-4" /> {t('applications.rescheduleRequest')}
                       </button>
                       <button
                         type="button"
-                        onClick={() => toast('Message sent to employer')}
+                        onClick={() => toast(t('applications.messageSent') || 'Message sent to employer')}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                       >
-                        <FiMail className="h-4 w-4" /> Contact Employer
+                        <FiMail className="h-4 w-4" /> {t('applications.contactEmployer')}
                       </button>
                     </div>
                   </>
                 ) : showNoInterviewYet ? (
                   <div className="rounded-[18px] bg-slate-50 p-6 text-center">
-                    <p className="text-sm font-semibold text-slate-700">No interview has been scheduled yet.</p>
-                    <p className="mt-2 text-sm text-slate-500">We’ll update you once an interview is created for this application.</p>
+                    <p className="text-sm font-semibold text-slate-700">{t('applications.noInterviewYet')}</p>
+                    <p className="mt-2 text-sm text-slate-500">{t('applications.noInterviewYetHint')}</p>
                   </div>
                 ) : (
                   <div className="rounded-[18px] bg-slate-50 p-6 text-center">
-                    <p className="text-sm font-semibold text-slate-700">Interview details are not available.</p>
+                    <p className="text-sm font-semibold text-slate-700">{t('applications.interviewDetailsNotAvailable')}</p>
                   </div>
                 )}
               </div>
@@ -529,8 +532,8 @@ const MyApplications = () => {
                       <FiClock className="h-6 w-6" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-500">Interview starts in</p>
-                      <p className="mt-1 text-2xl font-semibold text-slate-900">{countdownDays} Days {countdownHours} Hours</p>
+                      <p className="text-sm font-semibold text-slate-500">{t('applications.interviewStartsIn')}</p>
+                      <p className="mt-1 text-2xl font-semibold text-slate-900">{countdownDays} {t('applications.days')} {countdownHours} {t('applications.hours')}</p>
                     </div>
                   </div>
                 </div>

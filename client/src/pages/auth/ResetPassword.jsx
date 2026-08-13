@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 const ResetPassword = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -42,10 +44,10 @@ const ResetPassword = () => {
         code: data.code,
         password: data.password,
       });
-      toast.success('Password reset successful!');
+      toast.success(t('auth.resetPassword'));
       navigate('/login');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to reset password');
+      toast.error(error.response?.data?.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -53,7 +55,7 @@ const ResetPassword = () => {
 
   const handleResendCode = async () => {
     if (!emailValue) {
-      toast.error('Please enter your email address first.');
+      toast.error(t('auth.emailRequired'));
       return;
     }
 
@@ -61,9 +63,9 @@ const ResetPassword = () => {
     try {
       await api.post('/auth/forgot-password', { email: emailValue });
       setResendCountdown(60);
-      toast.success('A new verification code has been sent.');
+      toast.success(t('auth.verifyEmail'));
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Unable to resend verification code');
+      toast.error(error.response?.data?.message || t('common.error'));
     } finally {
       setResending(false);
     }
@@ -72,14 +74,14 @@ const ResetPassword = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 p-4">
       <div className="w-full max-w-md card">
-        <h2 className="text-2xl font-bold text-center mb-6">Reset Password</h2>
+        <h2 className="text-2xl font-bold text-center mb-6">{t('auth.resetPassword')}</h2>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Email Address</label>
+            <label className="block text-sm font-medium mb-2">{t('auth.email')}</label>
             <input
               type="email"
-              {...register('email', { required: 'Email is required' })}
+              {...register('email', { required: t('auth.emailRequired') })}
               className="input"
               placeholder="you@example.com"
             />
@@ -87,11 +89,11 @@ const ResetPassword = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Verification Code</label>
+            <label className="block text-sm font-medium mb-2">{t('auth.verifyEmail')}</label>
             <input
               type="text"
               inputMode="numeric"
-              {...register('code', { required: 'Code is required', pattern: { value: /^\d{6}$/, message: 'Enter the 6-digit code' } })}
+              {...register('code', { required: t('common.error'), pattern: { value: /^\d{6}$/, message: 'Enter the 6-digit code' } })}
               className="input"
               placeholder="123456"
             />
@@ -99,63 +101,69 @@ const ResetPassword = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">New Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  {...register('password', { required: true, minLength: 8 })}
-                  className="input pr-10"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
-                </button>
-              </div>
-              {errors.password && <p className="text-red-500 text-sm">Password must be 8+ characters</p>}
+            <label className="block text-sm font-medium mb-2">{t('auth.password')}</label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                {...register('password', { required: t('auth.passwordRequired') })}
+                className="input pr-10"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+              </button>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Confirm Password</label>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  {...register('confirmPassword', {
-                    required: true,
-                    validate: v => v === password || 'Passwords do not match'
-                  })}
-                  className="input pr-10"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showConfirmPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
-                </button>
-              </div>
-              {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p>}
+            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">{t('auth.confirmPassword')}</label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                {...register('confirmPassword', {
+                  required: t('auth.passwordRequired'),
+                  validate: (val) => val === password || t('auth.passwordMismatch'),
+                })}
+                className="input pr-10"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showConfirmPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+              </button>
             </div>
+            {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>}
+          </div>
+
+          <div className="flex justify-between items-center text-sm pt-2">
+            <button
+              type="button"
+              onClick={handleResendCode}
+              disabled={resending || resendCountdown > 0}
+              className="text-primary-500 hover:underline disabled:text-gray-400"
+            >
+              {resendCountdown > 0 ? `${resendCountdown}s` : t('common.reset')}
+            </button>
+          </div>
+
           <button type="submit" disabled={loading} className="btn btn-primary w-full">
-            {loading ? 'Resetting...' : 'Reset Password'}
+            {loading ? t('common.loading') : t('auth.resetPassword')}
           </button>
         </form>
 
-        <div className="text-center mt-4 text-sm text-gray-600">
-          <button
-            type="button"
-            onClick={handleResendCode}
-            disabled={resending || resendCountdown > 0}
-            className="text-primary-500 hover:underline disabled:text-gray-400 disabled:no-underline"
-          >
-            {resending ? 'Sending...' : resendCountdown > 0 ? `Resend code in ${resendCountdown}s` : 'Resend code'}
-          </button>
-        </div>
+        <p className="text-center mt-6 text-sm">
+          <Link to="/login" className="text-primary-500 hover:underline">
+            {t('common.back')} {t('auth.login')}
+          </Link>
+        </p>
       </div>
     </div>
   );

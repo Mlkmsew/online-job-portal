@@ -11,6 +11,7 @@ const notificationSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: [
+        // Job seeker / employer flow
         'application_submitted',
         'application_reviewed',
         'application_Reviewed',
@@ -23,6 +24,17 @@ const notificationSchema = new mongoose.Schema(
         'new_message',
         'profile_view',
         'job_closed',
+        // Admin-facing / moderation
+        'new_user_registration',
+        'new_employer_registration',
+        'new_company',
+        'company_pending_approval',
+        'company_approved',
+        'company_rejected',
+        'job_pending_approval',
+        'job_approved',
+        'job_rejected',
+        'job_reported',
         'system',
       ],
       required: true,

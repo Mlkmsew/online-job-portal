@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { updateProfile, uploadAvatar, uploadCV, deleteAvatar } from '../../../store/slices/authSlice';
 import { toast } from 'react-hot-toast';
 import {
@@ -78,6 +79,7 @@ const calculateProfileStrength = (user) => {
 
 /* ── Main Component ────────────────────────────────────────────────────────── */
 const JobSeekerProfile = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
 
@@ -123,7 +125,8 @@ const JobSeekerProfile = () => {
   const languageItems = useMemo(() => (Array.isArray(user?.languages) ? user.languages : []), [user]);
   const portfolioItems = useMemo(() => (Array.isArray(user?.portfolio) ? user.portfolio : []), [user]);
   const resumeUploaded = Boolean(user?.cv);
-  const resumeFileName = user?.cv ? user.cv.split('/').pop() : null;
+  const resumeFileName = user?.cvOriginalName || (user?.cv ? user.cv.split('/').pop() : null);
+  const resumeUrl = user?.cv || null;
   const initials = `${user?.firstName?.[0] || 'U'}${user?.lastName?.[0] || ''}`;
 
   /* Save updated profile payload directly to Database */
@@ -226,7 +229,7 @@ const JobSeekerProfile = () => {
       toast.success('Resume / CV uploaded successfully!');
       setCvFile(null);
     } catch (err) {
-      toast.error('Failed to upload resume.');
+      toast.error(err || 'Failed to upload resume.');
     }
   };
 
@@ -334,7 +337,7 @@ const JobSeekerProfile = () => {
               style={{ width: `${profileStrength}%` }}
             />
           </div>
-          <span className="mt-1 text-xs font-bold text-white tracking-wide">{profileStrength}% Complete</span>
+          <span className="mt-1 text-xs font-bold text-white tracking-wide">{profileStrength}% {t('profile.complete')}</span>
         </div>
 
         {/* Header Main Grid */}
@@ -357,7 +360,7 @@ const JobSeekerProfile = () => {
                   type="button"
                   onClick={() => avatarInputRef.current?.click()}
                   className="absolute bottom-1 left-0 flex h-7 w-7 items-center justify-center rounded-full bg-white text-amber-700 shadow-md transition hover:scale-110"
-                  title={user?.avatar ? "Replace Photo" : "Upload Photo"}
+                  title={user?.avatar ? t('profile.replaceCV') : t('profile.uploadCV')}
                 >
                   <FiCamera className="h-3.5 w-3.5" />
                 </button>
@@ -366,7 +369,7 @@ const JobSeekerProfile = () => {
                     type="button"
                     onClick={handleDeleteAvatar}
                     className="absolute bottom-1 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-white shadow-md transition hover:scale-110"
-                    title="Delete Photo"
+                    title={t('common.delete')}
                   >
                     <FiTrash2 className="h-3.5 w-3.5" />
                   </button>
@@ -385,7 +388,7 @@ const JobSeekerProfile = () => {
                   type="button"
                   onClick={() => openAddModal('header')}
                   className="flex-shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-white/20 hover:bg-white/40 text-white transition hover:scale-110 shadow"
-                  title="Edit Profile Info"
+                  title={t('common.edit')}
                 >
                   <FiEdit2 className="h-3.5 w-3.5" />
                 </button>
@@ -418,7 +421,7 @@ const JobSeekerProfile = () => {
 
           {/* Column 2: Real Education List from Database */}
           <div className="md:col-span-4 space-y-2 border-t md:border-t-0 md:border-l border-white/20 pt-4 md:pt-0 md:pl-6">
-            <h2 className="text-base font-bold text-white">Education</h2>
+            <h2 className="text-base font-bold text-white">{t('profile.education')}</h2>
             <div className="space-y-1.5 text-xs text-white/90 font-medium">
               {educationItems.length > 0 ? (
                 <>
@@ -444,14 +447,14 @@ const JobSeekerProfile = () => {
                   )}
                 </>
               ) : (
-                <p className="text-white/70 italic text-xs">No education added yet</p>
+                <p className="text-white/70 italic text-xs">{t('profile.noEducation')}</p>
               )}
             </div>
           </div>
 
           {/* Column 3: Real Skills List from Database */}
           <div className="md:col-span-3 space-y-2 border-t md:border-t-0 md:border-l border-white/20 pt-4 md:pt-0 md:pl-6">
-            <h2 className="text-base font-bold text-white">Skills</h2>
+            <h2 className="text-base font-bold text-white">{t('profile.skills')}</h2>
             <div className="space-y-1.5 text-xs text-white/90 font-medium">
               {skillNames.length > 0 ? (
                 skillNames.slice(0, 4).map((sk, idx) => (
@@ -461,7 +464,7 @@ const JobSeekerProfile = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-white/70 italic text-xs">No skills added yet</p>
+                <p className="text-white/70 italic text-xs">{t('profile.noSkills')}</p>
               )}
             </div>
           </div>
@@ -481,60 +484,60 @@ const JobSeekerProfile = () => {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
               <FiUser className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">Bio Information</h2>
+            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.bioInformation')}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('bio')}
             className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
           >
-            <FiEdit2 className="h-3.5 w-3.5" /> Edit Bio
+            <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editBio')}
           </button>
         </div>
 
         {formData.bio || formData.currentRole || formData.experienceYears || formData.salaryExpectation ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-2">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">Professional Summary</h3>
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">{t('profile.bioOverview')}</h3>
               <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
-                {formData.bio || 'No summary text provided. Click Edit Bio to add details about your goals and experience.'}
+                {formData.bio || t('profile.noBioDesc')}
               </p>
             </div>
 
             <div className="space-y-2 bg-slate-50/80 rounded-xl p-3.5 border border-slate-100 text-xs">
-              <h3 className="font-bold text-slate-700 uppercase tracking-wider">Career Overview</h3>
+              <h3 className="font-bold text-slate-700 uppercase tracking-wider">{t('profile.bioOverview')}</h3>
               <div className="space-y-1.5 pt-1">
                 <div className="flex justify-between border-b border-slate-200/60 pb-1">
-                  <span className="text-slate-500">Current Role</span>
-                  <span className="font-semibold text-slate-800">{formData.currentRole || 'Not specified'}</span>
+                  <span className="text-slate-500">{t('employer.postJob.jobTitle')}</span>
+                  <span className="font-semibold text-slate-800">{formData.currentRole || t('jobs.any')}</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-200/60 pb-1">
-                  <span className="text-slate-500">Experience</span>
+                  <span className="text-slate-500">{t('jobs.experience')}</span>
                   <span className="font-semibold text-slate-800">
-                    {formData.experienceYears ? `${formData.experienceYears} Years` : 'Not specified'}
+                    {formData.experienceYears ? `${formData.experienceYears} Years` : t('jobs.any')}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-slate-200/60 pb-1">
-                  <span className="text-slate-500">Expected Salary</span>
-                  <span className="font-semibold text-slate-800">{formData.salaryExpectation || 'Not specified'}</span>
+                  <span className="text-slate-500">{t('jobs.salary')}</span>
+                  <span className="font-semibold text-slate-800">{formData.salaryExpectation || t('jobs.any')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Availability</span>
-                  <span className="font-semibold text-slate-800">{formData.availability || 'Not specified'}</span>
+                  <span className="text-slate-500">{t('jobs.workMode')}</span>
+                  <span className="font-semibold text-slate-800">{formData.availability || t('jobs.any')}</span>
                 </div>
               </div>
             </div>
           </div>
         ) : (
           <div className="py-6 text-center">
-            <p className="text-sm text-slate-500">No bio information added yet.</p>
-            <p className="text-xs text-slate-400 mt-1">Add a summary to help employers understand your background and career goals.</p>
+            <p className="text-sm text-slate-500">{t('profile.noBio')}</p>
+            <p className="text-xs text-slate-400 mt-1">{t('profile.noBioDesc')}</p>
             <button
               type="button"
               onClick={() => openAddModal('bio')}
               className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
             >
-              <FiPlus className="h-4 w-4" /> Add Bio Information
+              <FiPlus className="h-4 w-4" /> {t('profile.addBio')}
             </button>
           </div>
         )}
@@ -548,14 +551,14 @@ const JobSeekerProfile = () => {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
               <FiBookOpen className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">Education</h2>
+            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.education')}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('education')}
             className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
           >
-            <FiEdit2 className="h-3.5 w-3.5" /> Edit Education
+            <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editEducation')}
           </button>
         </div>
 
@@ -565,8 +568,8 @@ const JobSeekerProfile = () => {
               <div key={idx} className="group relative rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 transition hover:border-orange-200 hover:bg-white">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">{edu.degree || 'Degree / Qualification'}</h3>
-                    <p className="text-xs font-semibold text-orange-600 mt-0.5">{edu.institution || 'Institution'}</p>
+                    <h3 className="text-sm font-bold text-slate-900">{edu.degree || t('employer.postJob.educationRequired')}</h3>
+                    <p className="text-xs font-semibold text-orange-600 mt-0.5">{edu.institution || t('profile.education')}</p>
                     {(edu.startDate || edu.endDate || edu.location) && (
                       <p className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
                         {(edu.startDate || edu.endDate) && (
@@ -593,7 +596,7 @@ const JobSeekerProfile = () => {
                       type="button"
                       onClick={() => openEditModal('education', idx, edu)}
                       className="p-1.5 text-slate-400 hover:text-orange-600 transition"
-                      title="Edit"
+                      title={t('common.edit')}
                     >
                       <FiEdit2 className="h-3.5 w-3.5" />
                     </button>
@@ -601,7 +604,7 @@ const JobSeekerProfile = () => {
                       type="button"
                       onClick={() => handleDeleteItem('educationDetails', idx)}
                       className="p-1.5 text-slate-400 hover:text-red-600 transition"
-                      title="Delete"
+                      title={t('common.delete')}
                     >
                       <FiTrash2 className="h-3.5 w-3.5" />
                     </button>
@@ -612,14 +615,14 @@ const JobSeekerProfile = () => {
           </div>
         ) : (
           <div className="py-6 text-center">
-            <p className="text-sm text-slate-500">No education added yet.</p>
-            <p className="text-xs text-slate-400 mt-1">Add your academic qualifications to highlight your educational background.</p>
+            <p className="text-sm text-slate-500">{t('profile.noEducation')}</p>
+            <p className="text-xs text-slate-400 mt-1">{t('profile.noEducationDesc')}</p>
             <button
               type="button"
               onClick={() => openAddModal('education')}
               className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
             >
-              <FiPlus className="h-4 w-4" /> Add Education
+              <FiPlus className="h-4 w-4" /> {t('profile.addEducation')}
             </button>
           </div>
         )}
@@ -633,14 +636,14 @@ const JobSeekerProfile = () => {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
               <FiBriefcase className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">Work Experience</h2>
+            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.workExperience')}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('experience')}
             className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
           >
-            <FiEdit2 className="h-3.5 w-3.5" /> Edit Experience
+            <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editExperience')}
           </button>
         </div>
 
@@ -650,8 +653,8 @@ const JobSeekerProfile = () => {
               <div key={idx} className="group relative rounded-xl border border-slate-200/80 bg-slate-50/40 p-4 transition hover:border-orange-200 hover:bg-white">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
-                    <h3 className="text-sm font-bold text-slate-900">{exp.title || 'Job Position'}</h3>
-                    <p className="text-xs font-semibold text-orange-600">{exp.company || 'Company Name'}</p>
+                    <h3 className="text-sm font-bold text-slate-900">{exp.title || t('employer.postJob.jobTitle')}</h3>
+                    <p className="text-xs font-semibold text-orange-600">{exp.company || t('jobs.company')}</p>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-0.5">
                       {(exp.startDate || exp.endDate) && (
                         <span className="flex items-center gap-1">
@@ -676,7 +679,7 @@ const JobSeekerProfile = () => {
                       type="button"
                       onClick={() => openEditModal('experience', idx, exp)}
                       className="p-1.5 text-slate-400 hover:text-orange-600 transition"
-                      title="Edit"
+                      title={t('common.edit')}
                     >
                       <FiEdit2 className="h-3.5 w-3.5" />
                     </button>
@@ -684,7 +687,7 @@ const JobSeekerProfile = () => {
                       type="button"
                       onClick={() => handleDeleteItem('experienceDetails', idx)}
                       className="p-1.5 text-slate-400 hover:text-red-600 transition"
-                      title="Delete"
+                      title={t('common.delete')}
                     >
                       <FiTrash2 className="h-3.5 w-3.5" />
                     </button>
@@ -695,14 +698,14 @@ const JobSeekerProfile = () => {
           </div>
         ) : (
           <div className="py-6 text-center">
-            <p className="text-sm text-slate-500">No work experience added yet.</p>
-            <p className="text-xs text-slate-400 mt-1">Add your professional work history to showcase your roles and career experience.</p>
+            <p className="text-sm text-slate-500">{t('profile.noExperience')}</p>
+            <p className="text-xs text-slate-400 mt-1">{t('profile.noExperienceDesc')}</p>
             <button
               type="button"
               onClick={() => openAddModal('experience')}
               className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
             >
-              <FiPlus className="h-4 w-4" /> Add Work Experience
+              <FiPlus className="h-4 w-4" /> {t('profile.addExperience')}
             </button>
           </div>
         )}
@@ -716,14 +719,14 @@ const JobSeekerProfile = () => {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
               <FiStar className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">Skills</h2>
+            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.skills') || 'Skills'}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('skills')}
             className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
           >
-            <FiEdit2 className="h-3.5 w-3.5" /> Edit Skills
+            <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editSkills') || 'Edit Skills'}
           </button>
         </div>
 
@@ -740,14 +743,14 @@ const JobSeekerProfile = () => {
           </div>
         ) : (
           <div className="py-6 text-center">
-            <p className="text-sm text-slate-500">No skills added yet.</p>
-            <p className="text-xs text-slate-400 mt-1">Add your technical and professional skills to help employers discover your profile.</p>
+            <p className="text-sm text-slate-500">{t('profile.noSkills') || 'No skills added yet.'}</p>
+            <p className="text-xs text-slate-400 mt-1">{t('profile.noSkillsDesc') || 'Add your technical and professional skills to help employers discover your profile.'}</p>
             <button
               type="button"
               onClick={() => openAddModal('skills')}
               className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
             >
-              <FiPlus className="h-4 w-4" /> Add Skills
+              <FiPlus className="h-4 w-4" /> {t('profile.addSkills') || 'Add Skills'}
             </button>
           </div>
         )}
@@ -761,14 +764,14 @@ const JobSeekerProfile = () => {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
               <FiGlobe className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">Languages</h2>
+            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.languages') || 'Languages'}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('languages')}
             className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
           >
-            <FiEdit2 className="h-3.5 w-3.5" /> Edit Languages
+            <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editLanguages') || 'Edit Languages'}
           </button>
         </div>
 
@@ -803,14 +806,14 @@ const JobSeekerProfile = () => {
           </div>
         ) : (
           <div className="py-6 text-center">
-            <p className="text-sm text-slate-500">No languages added yet.</p>
-            <p className="text-xs text-slate-400 mt-1">Add languages you speak along with your proficiency level.</p>
+            <p className="text-sm text-slate-500">{t('profile.noLanguages') || 'No languages added yet.'}</p>
+            <p className="text-xs text-slate-400 mt-1">{t('profile.noLanguagesDesc') || 'Add languages you speak along with your proficiency level.'}</p>
             <button
               type="button"
               onClick={() => openAddModal('languages')}
               className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
             >
-              <FiPlus className="h-4 w-4" /> Add Language
+              <FiPlus className="h-4 w-4" /> {t('profile.addLanguage') || 'Add Language'}
             </button>
           </div>
         )}
@@ -824,14 +827,14 @@ const JobSeekerProfile = () => {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
               <FiLink className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">Portfolio & Projects</h2>
+            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.portfolio') || 'Portfolio & Projects'}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('portfolio')}
             className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
           >
-            <FiEdit2 className="h-3.5 w-3.5" /> Edit Portfolio
+            <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editPortfolio') || 'Edit Portfolio'}
           </button>
         </div>
 
@@ -875,14 +878,14 @@ const JobSeekerProfile = () => {
           </div>
         ) : (
           <div className="py-6 text-center">
-            <p className="text-sm text-slate-500">No portfolio links added yet.</p>
-            <p className="text-xs text-slate-400 mt-1">Add links to your portfolio, GitHub, or personal projects.</p>
+            <p className="text-sm text-slate-500">{t('profile.noPortfolio') || 'No portfolio links added yet.'}</p>
+            <p className="text-xs text-slate-400 mt-1">{t('profile.noPortfolioDesc') || 'Add links to your portfolio, GitHub, or personal projects.'}</p>
             <button
               type="button"
               onClick={() => openAddModal('portfolio')}
               className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
             >
-              <FiPlus className="h-4 w-4" /> Add Project / Link
+              <FiPlus className="h-4 w-4" /> {t('profile.addPortfolio') || 'Add Project / Link'}
             </button>
           </div>
         )}
@@ -894,17 +897,31 @@ const JobSeekerProfile = () => {
               <FiFileText className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-800">Attached Resume Document</p>
-              <p className="text-[11px] text-slate-500">{resumeUploaded ? resumeFileName : 'No CV document uploaded yet'}</p>
+              <p className="text-xs font-bold text-slate-800">{t('profile.cvResume') || 'Attached Resume Document'}</p>
+              <p className="text-[11px] text-slate-500">{resumeUploaded ? resumeFileName : (t('profile.noCVUploaded') || 'No CV document uploaded yet')}</p>
             </div>
           </div>
-          <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-bold text-orange-700 hover:bg-orange-50 transition">
-            <FiUploadCloud className="h-3.5 w-3.5" />
-            {resumeUploaded ? 'Replace CV' : 'Upload CV'}
-            <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCVSelect} />
-          </label>
+          <div className="flex items-center gap-2">
+            {resumeUploaded && resumeUrl && (
+              <a
+                href={resumeUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-bold text-orange-700 hover:bg-orange-50 transition"
+              >
+                <FiExternalLink className="h-3.5 w-3.5" />
+                {t('common.view') || 'View'}
+              </a>
+            )}
+            <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-bold text-orange-700 hover:bg-orange-50 transition">
+              <FiUploadCloud className="h-3.5 w-3.5" />
+              {resumeUploaded ? (t('profile.replaceCV') || 'Replace CV') : (t('profile.uploadCV') || 'Upload CV')}
+              <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCVSelect} />
+            </label>
+          </div>
         </div>
       </section>
+
 
 
       {/* ═════════════════════════════════════════════════════════════════════
@@ -916,13 +933,13 @@ const JobSeekerProfile = () => {
 
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">
-                {activeModal === 'header' && 'Edit Header Summary'}
-                {activeModal === 'bio' && 'Edit Bio & Career Overview'}
-                {activeModal === 'education' && (editingItemIndex !== null ? 'Edit Education' : 'Add Education')}
-                {activeModal === 'experience' && (editingItemIndex !== null ? 'Edit Work Experience' : 'Add Work Experience')}
-                {activeModal === 'skills' && 'Manage Skills'}
-                {activeModal === 'languages' && (editingItemIndex !== null ? 'Edit Language' : 'Add Language')}
-                {activeModal === 'portfolio' && (editingItemIndex !== null ? 'Edit Portfolio Link' : 'Add Portfolio Link')}
+                {activeModal === 'header' && t('common.edit')}
+                {activeModal === 'bio' && t('profile.editBio')}
+                {activeModal === 'education' && (editingItemIndex !== null ? t('profile.editEducation') : t('profile.addEducation'))}
+                {activeModal === 'experience' && (editingItemIndex !== null ? t('profile.editExperience') : t('profile.addExperience'))}
+                {activeModal === 'skills' && t('profile.editSkills')}
+                {activeModal === 'languages' && (editingItemIndex !== null ? t('profile.editLanguages') : t('profile.addLanguage'))}
+                {activeModal === 'portfolio' && (editingItemIndex !== null ? t('profile.editPortfolio') : t('profile.addPortfolio'))}
               </h3>
               <button
                 type="button"
@@ -1365,14 +1382,14 @@ const JobSeekerProfile = () => {
                   onClick={() => setActiveModal(null)}
                   className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-5 py-2 text-xs font-bold text-white hover:bg-orange-700 transition disabled:opacity-60"
                 >
-                  {saving ? 'Saving...' : 'Save Changes'}
+                  {saving ? t('common.loading') : t('common.save')}
                 </button>
               </div>
             </form>

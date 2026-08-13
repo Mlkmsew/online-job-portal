@@ -56,9 +56,9 @@ const Navbar = () => {
       <div className="container-custom">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2" aria-label="OnlineJob Portal - Go to homepage">
+          <Link to="/" className="flex items-center space-x-2" aria-label={t('aria.homepage') || 'OnlineJob Portal - Go to homepage'}>
             <FiBriefcase className="w-8 h-8 text-primary-500" aria-hidden="true" />
-            <span className="text-2xl font-bold text-primary-500">OnlineJob Portal</span>
+            <span className="text-2xl font-bold text-primary-500">{t('common.appName')}</span>
           </Link>
 
           {/* Desktop Menu */}

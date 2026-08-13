@@ -119,5 +119,9 @@
     "address": "ኣድራሻ",
     "followUs": "ስዓቡና",
     "copyright": "© 2024 OnlineJob Portal. All rights reserved."
+  },
+  "savedJobs": {
+    "saved": "ዝተዓቀበ",
+    "saveJob": "ስራሕ ዓቅብ"
   }
 }

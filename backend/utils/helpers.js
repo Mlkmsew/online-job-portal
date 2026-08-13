@@ -174,6 +174,26 @@ const escapeRegex = (text) => {
 };
 
 /**
+ * Notify every active admin account with an in-app notification.
+ * Used for moderation-worthy events (new registrations, company/job submissions).
+ * Respects each admin's notification preferences via createNotification.
+ */
+const notifyAllAdmins = async ({ type, title, message, link, data, sender }) => {
+  try {
+    const User = require('../models/user');
+    const admins = await User.find({ role: 'admin', isActive: { $ne: false } })
+      .select('_id settings')
+      .lean();
+
+    for (const admin of admins) {
+      await createNotification({ recipient: admin._id, sender, type, title, message, link, data });
+    }
+  } catch (err) {
+    console.error('notifyAllAdmins error:', err.message);
+  }
+};
+
+/**
  * Pick only allowed fields from object
  */
 const pick = (obj, fields) => {
@@ -196,4 +216,4 @@ const formatSalary = (salary) => {
   return `${currency || 'ETB'} ${range} / ${period || 'Month'}${isNegotiable ? ' (Negotiable)' : ''}`;
 };
 
-module.exports = { asyncHandler, paginate, createNotification, hashToken, pick, formatSalary, escapeRegex };
+module.exports = { asyncHandler, paginate, createNotification, notifyAllAdmins, hashToken, pick, formatSalary, escapeRegex };

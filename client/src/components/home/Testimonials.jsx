@@ -1,11 +1,17 @@
-const Testimonials = () => (
-  <section className="testimonials py-6">
-    <h3 className="heading-3 mb-4">What People Say</h3>
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="card p-4">“Found my dream job in Addis within 2 weeks.” — Amanuel</div>
-      <div className="card p-4">“Great platform for employers to discover talent.” — Selam</div>
-      <div className="card p-4">“Easy CV upload and apply flow.” — Hiwot</div>
-    </div>
-  </section>
-);
+import { useTranslation } from 'react-i18next';
+
+const Testimonials = () => {
+  const { t } = useTranslation();
+
+  return (
+    <section className="testimonials py-6">
+      <h3 className="heading-3 mb-4">{t('home.testimonialsTitle')}</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="card p-4">{t('home.testimonial1')}</div>
+        <div className="card p-4">{t('home.testimonial2')}</div>
+        <div className="card p-4">{t('home.testimonial3')}</div>
+      </div>
+    </section>
+  );
+};
 export default Testimonials;

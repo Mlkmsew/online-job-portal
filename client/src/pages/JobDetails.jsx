@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import {
@@ -70,6 +71,7 @@ const SectionCard = ({ icon: Icon, title, subtitle, children, accent = 'emerald'
 };
 
 const JobDetails = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
@@ -225,7 +227,9 @@ const JobDetails = () => {
         const response = await api.get('/applications/my', {
           params: { job: job._id, limit: 1 },
         });
-        const application = Array.isArray(response.data?.data) ? response.data.data[0] : null;
+        const applications = Array.isArray(response.data?.data) ? response.data.data : [];
+        // Match against the currently viewed job, not just the user's first record.
+        const application = applications.find((a) => (a.job?._id || a.job)?.toString() === job._id.toString()) || null;
         if (application) {
           setHasApplied(true);
           setApplicationStatus(application.status || 'Submitted');
@@ -363,13 +367,13 @@ const JobDetails = () => {
                           }}
                           className="rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
                         >
-                          {hasApplied ? 'Applied' : deadlinePassed ? 'Applications Closed' : 'Apply Now'}
+                          {hasApplied ? t('dashboard.jobCard.saved') : deadlinePassed ? t('jobs.expired') : t('jobs.apply')}
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             if (!isAuthenticated) {
-                              toast.error('Please login to save jobs.');
+                              toast.error(t('savedJobs.resumeRequired'));
                               navigate('/login');
                               return;
                             }
@@ -377,15 +381,15 @@ const JobDetails = () => {
                           }}
                           className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                         >
-                          {isBookmarked ? 'Saved' : 'Save Job'}
+                          {isBookmarked ? t('dashboard.jobCard.saved') : t('jobs.save')}
                         </button>
                       </>
                     )}
                     <button type="button" onClick={handleCopyJob} className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                      Share
+                      {t('jobs.share')}
                     </button>
                     <button type="button" onClick={handleReportJob} className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                      Report
+                      {t('common.error')}
                     </button>
                   </div>
                 </div>

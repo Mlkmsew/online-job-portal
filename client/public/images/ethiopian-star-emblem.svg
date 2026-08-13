@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="emblemGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="50%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer Concentric Circle Frame -->
+  <circle cx="50" cy="50" r="46" fill="none" stroke="url(#emblemGold)" stroke-width="2.5"/>
+  <circle cx="50" cy="50" r="41" fill="none" stroke="url(#emblemGold)" stroke-width="1.2" stroke-dasharray="3 2"/>
+
+  <!-- Radiating Sun Rays -->
+  <g stroke="url(#emblemGold)" stroke-width="1" opacity="0.7">
+    <line x1="50" y1="5" x2="50" y2="15"/>
+    <line x1="50" y1="85" x2="50" y2="95"/>
+    <line x1="5" y1="50" x2="15" y2="50"/>
+    <line x1="85" y1="50" x2="95" y2="50"/>
+    <line x1="18" y1="18" x2="25" y2="25"/>
+    <line x1="75" y1="75" x2="82" y2="82"/>
+    <line x1="82" y1="18" x2="75" y2="25"/>
+    <line x1="18" y1="82" x2="25" y2="75"/>
+  </g>
+
+  <!-- Ethiopian 5-Pointed Star -->
+  <polygon points="50,16 59,38 82,38 63,52 70,74 50,60 30,74 37,52 18,38 41,38" fill="none" stroke="url(#emblemGold)" stroke-width="2.5" stroke-linejoin="round"/>
+  <polygon points="50,22 57,39 74,39 60,50 65,67 50,56 35,67 40,50 26,39 43,39" fill="url(#emblemGold)" opacity="0.3"/>
+</svg>

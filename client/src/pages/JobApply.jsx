@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { FiArrowLeft, FiMapPin, FiBriefcase, FiCalendar, FiCheckCircle, FiDollarSign, FiZap, FiShield, FiUser, FiEdit2, FiDownloadCloud, FiUploadCloud, FiChevronRight, FiCheck } from 'react-icons/fi';
@@ -31,6 +32,7 @@ const validateResumeFile = (selectedFile) => {
 };
 
 const JobApply = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useSelector((state) => state.auth);
@@ -64,6 +66,12 @@ const JobApply = () => {
   const [applicationReference, setApplicationReference] = useState('');
 
   const resumeInputRef = useRef(null);
+  const submittingRef = useRef(false);
+  const applicantSectionRef = useRef(null);
+  const resumeSectionRef = useRef(null);
+  const coverLetterSectionRef = useRef(null);
+  const screeningSectionRef = useRef(null);
+  const reviewSectionRef = useRef(null);
   const applicantName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.name || 'Applicant';
   const applicantEmail = user?.email || 'Not provided';
   const applicantPhone = user?.phone || user?.mobile || 'Not provided';
@@ -157,12 +165,36 @@ const JobApply = () => {
     { id: 5, label: 'Review & Submit' },
   ];
 
-  const activeStep = useMemo(() => {
-    if (!file && !useProfileCV) return 2;
-    if (coverLetter.length < 150) return 3;
-    if (!availability || (!expectedSalary && !isSalaryNegotiable)) return 4;
-    return 5;
-  }, [file, useProfileCV, coverLetter, availability, expectedSalary, isSalaryNegotiable]);
+  const sectionRefs = [
+    { id: 1, ref: applicantSectionRef },
+    { id: 2, ref: resumeSectionRef },
+    { id: 3, ref: coverLetterSectionRef },
+    { id: 4, ref: screeningSectionRef },
+    { id: 5, ref: reviewSectionRef },
+  ];
+
+  const [activeStep, setActiveStep] = useState(1);
+
+  useEffect(() => {
+    if (loading || !job) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((entry) => entry.isIntersecting);
+        if (visible.length === 0) return;
+        const nearest = visible.sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        const step = Number(nearest.target.dataset.step);
+        if (step) setActiveStep(step);
+      },
+      { rootMargin: '-35% 0px -50% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] }
+    );
+
+    sectionRefs.forEach(({ ref }) => {
+      if (ref.current) observer.observe(ref.current);
+    });
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, job]);
 
   const completionPercentage = useMemo(() => {
     let score = 0;
@@ -325,6 +357,9 @@ const JobApply = () => {
       return;
     }
 
+    // Prevent double submissions (e.g. rapid double-clicks on the confirm button)
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setApplying(true);
     try {
       const formData = new FormData();
@@ -343,6 +378,7 @@ const JobApply = () => {
 
       const response = await api.post('/applications', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        skipGlobalErrorToast: true,
       });
 
       toast.success('Your application was submitted successfully!');
@@ -359,6 +395,7 @@ const JobApply = () => {
         toast.error(err.response?.data?.message || 'Failed to submit application.');
       }
     } finally {
+      submittingRef.current = false;
       setApplying(false);
     }
   };
@@ -458,7 +495,7 @@ const JobApply = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <div ref={applicantSectionRef} data-step="1" className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold text-slate-900">Applicant Information</h3>
@@ -486,7 +523,7 @@ const JobApply = () => {
                     </div>
                   </div>
 
-                  <div className={`rounded-[28px] border ${formErrors.resume ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'} p-6 shadow-sm`}>
+                  <div ref={resumeSectionRef} data-step="2" className={`rounded-[28px] border ${formErrors.resume ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'} p-6 shadow-sm`}>
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold text-slate-900">Resume</h3>
@@ -645,7 +682,7 @@ const JobApply = () => {
                     {formErrors.resume && <p className="mt-3 text-sm text-rose-600">{formErrors.resume}</p>}
                   </div>
 
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <div ref={coverLetterSectionRef} data-step="3" className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="mb-5 flex items-center justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold text-slate-900">Cover Letter</h3>
@@ -671,7 +708,7 @@ const JobApply = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <div ref={screeningSectionRef} data-step="4" className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                     <h3 className="mb-5 text-lg font-semibold text-slate-900">Screening Questions</h3>
                     <div className="grid gap-5 lg:grid-cols-2">
                       <label className="space-y-3">
@@ -744,7 +781,7 @@ const JobApply = () => {
                     </div>
                   </div>
 
-                  <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <section ref={reviewSectionRef} data-step="5" className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="mb-4 flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
                         <FiCheckCircle className="h-5 w-5" />

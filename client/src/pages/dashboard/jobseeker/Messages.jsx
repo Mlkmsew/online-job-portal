@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FiMail, FiMessageCircle, FiSend, FiPlus, FiArrowLeft, FiEdit2, FiTrash2, FiX } from 'react-icons/fi';
 import { getConversations, getMessages, sendMessage, updateMessage, deleteMessage } from '../../../services/messageService';
 import socketService from '../../../services/socket';
 import useAuth from '../../../hooks/useAuth';
 
 const Messages = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const currentUserId = user?._id;
   const [searchParams] = useSearchParams();
@@ -62,7 +64,7 @@ const Messages = () => {
       setConversations(res.data?.data || []);
     } catch (err) {
       console.error('Failed to load conversations:', err);
-      setError(err.response?.data?.message || 'Unable to load conversations.');
+      setError(err.response?.data?.message || t('messages.loadFailed') || 'Unable to load conversations.');
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +79,7 @@ const Messages = () => {
       await loadConversations();
     } catch (err) {
       console.error('Failed to load messages:', err);
-      setError(err.response?.data?.message || 'Unable to load messages.');
+      setError(err.response?.data?.message || t('messages.loadMessagesFailed') || 'Unable to load messages.');
     } finally {
       setIsLoading(false);
       scrollToBottom();
@@ -91,7 +93,7 @@ const Messages = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputMessage.trim() || !selectedConversation) return;
+    if (!inputMessage.trim() || !selectedConversation?._id || isSending) return;
 
     setIsSending(true);
     setError(null);
@@ -110,7 +112,7 @@ const Messages = () => {
       scrollToBottom();
     } catch (err) {
       console.error('Send message failed:', err);
-      setError(err.response?.data?.message || 'Unable to send message.');
+      setError(err.response?.data?.message || t('messages.sendFailed') || 'Unable to send message.');
     } finally {
       setIsSending(false);
     }
@@ -184,7 +186,7 @@ const Messages = () => {
 
   const handleStartNewConversation = async (e) => {
     e.preventDefault();
-    if (!newConversationEmail.trim() || !newConversationMessage.trim()) return;
+    if (!newConversationEmail.trim() || !newConversationMessage.trim() || isSending) return;
 
     setIsSending(true);
     setError(null);
@@ -202,11 +204,11 @@ const Messages = () => {
       setIsModalOpen(false);
       setNewConversationEmail('');
       setNewConversationMessage('');
-      setSuccessMessage('Conversation started successfully.');
+      setSuccessMessage(t('messages.startSuccess') || 'Conversation started successfully.');
       navigate(`${basePath}/messages?conversationId=${createdConversation._id}`);
     } catch (err) {
       console.error('Start conversation failed:', err);
-      setError(err.response?.data?.message || 'Unable to start conversation.');
+      setError(err.response?.data?.message || t('messages.startFailed') || 'Unable to start conversation.');
     } finally {
       setIsSending(false);
     }
@@ -332,23 +334,23 @@ const Messages = () => {
     <div className="max-w-6xl mx-auto pb-10">
       <div className="flex items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white">Messages</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">Chat with employers, recruiters, and support while tracking your conversation history.</p>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white">{t('dashboard.messages.title')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">{t('messages.subtitle') || 'Chat with employers, recruiters, and support while tracking your conversation history.'}</p>
         </div>
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
           className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 transition"
         >
-          <FiPlus className="w-4 h-4" /> Start a new conversation
+          <FiPlus className="w-4 h-4" /> {t('messages.startNewConversation') || 'Start a new conversation'}
         </button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[0.95fr_0.65fr]">
         <div className="rounded-3xl border border-gray-150 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm">
           <div className="text-sm font-semibold uppercase tracking-[0.22em] text-gray-400 mb-6 flex items-center justify-between">
-            <span>Recent conversations</span>
-            {isLoading && <span className="text-xs text-gray-500">Loading...</span>}
+            <span>{t('messages.recentConversations') || 'Recent conversations'}</span>
+            {isLoading && <span className="text-xs text-gray-500">{t('common.loading')}</span>}
           </div>
           {error && (
             <div className="mb-4 rounded-2xl bg-red-50 p-3 text-sm text-red-700">{error}</div>
@@ -358,44 +360,44 @@ const Messages = () => {
           )}
           {conversations.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center text-gray-500">
-              No conversations yet. Start a new chat to connect with employers or support.
+              {t('messages.noConversations') || 'No conversations yet. Start a new chat to connect with employers or support.'}
             </div>
           ) : (
             conversations.map((conversation) => {
               const participant = conversation.participants.find((participant) => participant._id !== currentUserId);
-              const lastMessage = conversation.lastMessage?.content || 'No messages yet';
-              const unreadCount = (() => {
-                const count = conversation.unreadCount;
-                if (typeof count === 'number') return count;
-                if (count?.get) return count.get(currentUserId) || 0;
-                return count?.[currentUserId] || 0;
-              })();
+              const lastMessage = conversation.lastMessage?.content || t('messages.noMessagesYet') || 'No Messages Yet';
+                const unreadCount = (() => {
+                  const count = conversation.unreadCount;
+                  if (typeof count === 'number') return count;
+                  if (count?.get) return count.get(currentUserId) || 0;
+                  return count?.[currentUserId] || 0;
+                })();
 
-              return (
-                <button
-                  key={conversation._id}
-                  type="button"
-                  onClick={() => handleSelectConversation(conversation)}
-                  className={`w-full text-left rounded-3xl border px-4 py-4 transition ${selectedConversation?._id === conversation._id ? 'border-emerald-300 bg-emerald-50 dark:bg-gray-900' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'} `}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{participant?.firstName} {participant?.lastName}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate max-w-[320px]">{lastMessage}</p>
+                return (
+                  <button
+                    key={conversation._id}
+                    type="button"
+                    onClick={() => handleSelectConversation(conversation)}
+                    className={`w-full text-left rounded-3xl border px-4 py-4 transition ${selectedConversation?._id === conversation._id ? 'border-emerald-300 bg-emerald-50 dark:bg-gray-900' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'} `}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{`${participant?.firstName || ''} ${participant?.lastName || ''}`.trim()}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate max-w-[320px]">{lastMessage}</p>
+                      </div>
+                      {unreadCount > 0 ? (
+                        <span className="text-xs font-semibold text-white bg-rose-600 rounded-full px-3 py-1">
+                          {unreadCount}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-semibold text-slate-500 bg-slate-100 rounded-full px-3 py-1">
+                          {t('messages.read') || 'Read'}
+                        </span>
+                      )}
                     </div>
-                    {unreadCount > 0 ? (
-                      <span className="text-xs font-semibold text-white bg-rose-600 rounded-full px-3 py-1">
-                        {unreadCount}
-                      </span>
-                    ) : (
-                      <span className="text-xs font-semibold text-slate-500 bg-slate-100 rounded-full px-3 py-1">
-                        Read
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })
+                  </button>
+                );
+              })
           )}
         </div>
 
@@ -404,10 +406,10 @@ const Messages = () => {
             <>
               <div className="flex items-center justify-between gap-3 mb-4">
                 <button type="button" onClick={() => navigate(`${basePath}/messages`)} className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
-                  <FiArrowLeft className="w-4 h-4" /> Back
+                  <FiArrowLeft className="w-4 h-4" /> {t('common.back')}
                 </button>
                 <div>
-                  <p className="text-sm text-gray-500 uppercase tracking-[0.2em]">Conversation</p>
+                  <p className="text-sm text-gray-500 uppercase tracking-[0.2em]">{t('messages.conversation') || 'Conversation'}</p>
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white">{selectedParticipant?.firstName} {selectedParticipant?.lastName}</h3>
                 </div>
               </div>
@@ -434,10 +436,10 @@ const Messages = () => {
                             />
                             <div className="flex justify-end gap-2">
                               <button type="button" onClick={(e) => { e.stopPropagation(); handleCancelEdit(); }} className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/20">
-                                Cancel
+                                {t('common.cancel')}
                               </button>
                               <button type="button" onClick={(e) => { e.stopPropagation(); handleSaveEditedMessage(); }} className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100">
-                                Save
+                                {t('common.save')}
                               </button>
                             </div>
                           </div>
@@ -445,7 +447,7 @@ const Messages = () => {
                           <>
                             <p className="whitespace-pre-wrap break-words">{message.content}</p>
                             {message.updatedAt && message.updatedAt !== message.createdAt && (
-                              <span className="mt-2 block text-[11px] opacity-80">(edited)</span>
+                              <span className="mt-2 block text-[11px] opacity-80">({t('messages.edited') || 'edited'})</span>
                             )}
                             <p className={`mt-2 text-xs ${isMine ? 'text-emerald-100 text-right' : 'text-gray-500 dark:text-gray-400 text-left'}`}>
                               {new Date(message.createdAt).toLocaleString()}
@@ -470,7 +472,7 @@ const Messages = () => {
                     className="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                   >
                     <FiEdit2 className="h-4 w-4" />
-                    ✏️ Edit Message
+                    {t('common.edit')}
                   </button>
                   <button
                     type="button"
@@ -478,14 +480,14 @@ const Messages = () => {
                     className="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50"
                   >
                     <FiTrash2 className="h-4 w-4" />
-                    🗑️ Delete Message
+                    {t('common.delete')}
                   </button>
                   <button
                     type="button"
                     onClick={closeActionMenu}
                     className="mt-2 flex w-full items-center justify-center rounded-2xl border border-gray-200 px-3 py-2 text-sm text-gray-500 hover:bg-gray-50"
                   >
-                    <FiX className="h-4 w-4" /> Close
+                    <FiX className="h-4 w-4" /> {t('common.cancel')}
                   </button>
                 </div>
               )}
@@ -494,11 +496,11 @@ const Messages = () => {
                   <input
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Type your message..."
+                    placeholder={t('messages.typePlaceholder') || 'Type your message...'}
                     className="flex-1 rounded-3xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500"
                   />
                   <button type="submit" disabled={!inputMessage.trim() || isSending} className="inline-flex items-center gap-2 rounded-3xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300">
-                    <FiSend className="w-4 h-4" /> Send
+                    <FiSend className="w-4 h-4" /> {t('common.submit')}
                   </button>
                 </div>
               </form>
@@ -506,8 +508,8 @@ const Messages = () => {
           ) : (
             <div className="h-full rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center text-gray-500">
               <FiMessageCircle className="mx-auto mb-4 w-12 h-12 text-emerald-500" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Select a conversation to start chatting</h3>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Choose a recent thread or start a new conversation now.</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('messages.selectConversationTitle') || 'Select a conversation to start chatting'}</h3>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('messages.selectConversationSubtitle') || 'Choose a recent thread or start a new conversation now.'}</p>
             </div>
           )}
         </aside>
@@ -518,15 +520,15 @@ const Messages = () => {
           <div className="w-full max-w-2xl rounded-3xl bg-white dark:bg-gray-900 p-6 shadow-2xl">
             <div className="flex items-center justify-between gap-4 mb-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Start a new conversation</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Enter the recipient email and your first message.</p>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('messages.startNewConversation') || 'Start a new conversation'}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('messages.newConversationSubtitle') || 'Enter the recipient email and your first message.'}</p>
               </div>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white">Cancel</button>
+              <button type="button" onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white">{t('common.cancel')}</button>
             </div>
             {error && <div className="mb-4 rounded-2xl bg-red-50 p-3 text-sm text-red-700">{error}</div>}
             <form onSubmit={handleStartNewConversation} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Recipient email</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth.email')}</label>
                 <input
                   value={newConversationEmail}
                   onChange={(e) => setNewConversationEmail(e.target.value)}
@@ -537,21 +539,21 @@ const Messages = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Message</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('dashboard.messages.title')}</label>
                 <textarea
                   value={newConversationMessage}
                   onChange={(e) => setNewConversationMessage(e.target.value)}
                   className="mt-2 w-full min-h-[150px] rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500"
-                  placeholder="Write your message here..."
+                  placeholder={t('messages.typePlaceholder') || 'Write your message here...'}
                   required
                 />
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-full border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button type="submit" disabled={isSending} className="rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300">
-                  {isSending ? 'Sending...' : 'Start conversation'}
+                  {isSending ? t('common.loading') : t('messages.startConversation') || 'Start conversation'}
                 </button>
               </div>
             </form>

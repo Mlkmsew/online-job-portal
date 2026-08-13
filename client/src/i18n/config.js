@@ -8,24 +8,31 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // Translation Resources
 import enTranslations from './locales/en.json';
 import amTranslations from './locales/am.json';
-import orTranslations from './locales/or.json';
+import omTranslations from './locales/om.json';
 
 const resources = {
   en: { translation: enTranslations },
   am: { translation: amTranslations },
-  or: { translation: orTranslations },
+  om: { translation: omTranslations },
 };
+
+const savedLang = localStorage.getItem('selectedLanguage') || localStorage.getItem('i18nextLng');
+const initialLang = ['en', 'am', 'om'].includes(savedLang) ? savedLang : 'en';
+
+if (savedLang && savedLang !== initialLang) {
+  localStorage.setItem('selectedLanguage', initialLang);
+}
 
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
-    supportedLngs: ['en', 'am', 'or'],
+    supportedLngs: ['en', 'am', 'om'],
     nonExplicitSupportedLngs: true,
     load: 'languageOnly',
     fallbackLng: 'en',
-    lng: 'en',
+    lng: initialLang,
     debug: false,
     interpolation: {
       escapeValue: false,
@@ -33,8 +40,19 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
-      lookupLocalStorage: 'i18nextLng',
+      lookupLocalStorage: 'selectedLanguage',
+    },
+    parseMissingKeyHandler: (key, defaultValue) => {
+      if (defaultValue !== undefined) return defaultValue;
+      // Safety net: never render a raw translation key in the UI.
+      const segments = String(key || '').split('.').filter(Boolean);
+      const last = segments[segments.length - 1] || '';
+      return last
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (char) => char.toUpperCase())
+        .trim();
     },
   });
 
 export default i18n;
+

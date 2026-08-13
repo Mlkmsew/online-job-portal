@@ -19,22 +19,22 @@ const regions = [
 
 // Categories data
 const categoriesData = [
-  { name: 'Information Technology', icon: '💻', color: '#0F766E' },
-  { name: 'Healthcare', icon: '🏥', color: '#14B8A6' },
-  { name: 'Agriculture', icon: '🌾', color: '#22C55E' },
-  { name: 'Finance & Banking', icon: '💰', color: '#F59E0B' },
-  { name: 'Education', icon: '📚', color: '#3B82F6' },
-  { name: 'Engineering', icon: '⚙️', color: '#8B5CF6' },
-  { name: 'Construction', icon: '🏗️', color: '#EF4444' },
-  { name: 'Marketing & Sales', icon: '📈', color: '#EC4899' },
-  { name: 'Hospitality & Tourism', icon: '🏨', color: '#06B6D4' },
-  { name: 'Government & NGO', icon: '🏛️', color: '#10B981' },
-  { name: 'Manufacturing', icon: '🏭', color: '#6366F1' },
-  { name: 'Transport & Logistics', icon: '🚚', color: '#F97316' },
-  { name: 'Telecommunication', icon: '📱', color: '#A855F7' },
-  { name: 'Media & Communication', icon: '📺', color: '#EAB308' },
-  { name: 'Legal Services', icon: '⚖️', color: '#84CC16' },
-  { name: 'Customer Service', icon: '🎧', color: '#06B6D4' },
+  { name: 'Information Technology', description: 'Jobs related to software development, IT infrastructure, networking, cybersecurity, and technology services.', icon: '💻', color: '#0F766E' },
+  { name: 'Healthcare', description: 'Careers in medicine, nursing, pharmacy, public health, and clinical support services.', icon: '🏥', color: '#14B8A6' },
+  { name: 'Agriculture', description: 'Opportunities in farming, agribusiness, agronomy, and food production.', icon: '🌾', color: '#22C55E' },
+  { name: 'Finance & Banking', description: 'Roles in banking, accounting, financial analysis, investment, and insurance.', icon: '💰', color: '#F59E0B' },
+  { name: 'Education', description: 'Teaching, academic administration, curriculum development, and training positions.', icon: '📚', color: '#3B82F6' },
+  { name: 'Engineering', description: 'Careers across civil, mechanical, electrical, software, and industrial engineering.', icon: '⚙️', color: '#8B5CF6' },
+  { name: 'Construction', description: 'Jobs in building, site management, quantity surveying, and infrastructure projects.', icon: '🏗️', color: '#EF4444' },
+  { name: 'Marketing & Sales', description: 'Marketing, advertising, digital media, and sales roles that drive business growth.', icon: '📈', color: '#EC4899' },
+  { name: 'Hospitality & Tourism', description: 'Hotel, restaurant, travel, and customer-facing service careers.', icon: '🏨', color: '#06B6D4' },
+  { name: 'Government & NGO', description: 'Public sector and non-governmental organization roles in policy, programs, and administration.', icon: '🏛️', color: '#10B981' },
+  { name: 'Manufacturing', description: 'Production, operations, quality control, and supply chain jobs in industry.', icon: '🏭', color: '#6366F1' },
+  { name: 'Transport & Logistics', description: 'Careers in freight, fleet management, warehousing, and supply chain coordination.', icon: '🚚', color: '#F97316' },
+  { name: 'Telecommunication', description: 'Network engineering, field operations, and customer support in telecom services.', icon: '📱', color: '#A855F7' },
+  { name: 'Media & Communication', description: 'Journalism, content creation, broadcasting, and corporate communication roles.', icon: '📺', color: '#EAB308' },
+  { name: 'Legal Services', description: 'Attorney, legal advisor, compliance, and paralegal career opportunities.', icon: '⚖️', color: '#84CC16' },
+  { name: 'Customer Service', description: 'Support, call center, and client relations roles across every industry.', icon: '🎧', color: '#06B6D4' },
 ];
 
 // Skills data

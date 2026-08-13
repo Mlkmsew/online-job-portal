@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { format, formatDistanceToNowStrict, isToday, isTomorrow, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
 import { Award, Bell, BriefcaseBusiness, CalendarDays, ChevronLeft, ChevronRight, Clock3, Eye, FileText, Link2, Mail, MapPin, Phone, PlayCircle, Search, Sparkles, SquarePen, Star, ThumbsDown, ThumbsUp, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -15,10 +16,10 @@ import InterviewCompletedSummary from './components/InterviewCompletedSummary';
 import HiringDecisionHub from './components/HiringDecisionHub';
 
 const tabs = [
-  { value: 'Upcoming', label: 'Upcoming' },
-  { value: 'Completed', label: 'Completed' },
-  { value: 'Canceled', label: 'Canceled' },
-  { value: 'All', label: 'All' },
+  { value: 'Upcoming', labelKey: 'employer.tabs.upcoming' },
+  { value: 'Completed', labelKey: 'employer.tabs.completed' },
+  { value: 'Canceled', labelKey: 'employer.tabs.canceled' },
+  { value: 'All', labelKey: 'employer.tabs.all' },
 ];
 
 const getTabStatuses = (tab) => {
@@ -33,12 +34,12 @@ const getTabStatuses = (tab) => {
   }
 };
 
-const getInterviewTypeLabel = (type) => {
-  if (!type) return 'In Person';
+const getInterviewTypeLabel = (type, t) => {
+  if (!type) return t ? t('interviews.inPerson') : 'Onsite';
   const normalizedType = (type || '').toLowerCase();
-  if (normalizedType.includes('zoom') || normalizedType.includes('meet') || normalizedType.includes('video') || normalizedType.includes('online')) return 'Online';
-  if (normalizedType.includes('phone')) return 'Phone';
-  if (normalizedType.includes('in-person') || normalizedType.includes('in person')) return 'In Person';
+  if (normalizedType.includes('zoom') || normalizedType.includes('meet') || normalizedType.includes('video') || normalizedType.includes('online')) return t ? t('interviews.online') : 'Online';
+  if (normalizedType.includes('phone')) return t ? t('interviews.phone') : 'Phone';
+  if (normalizedType.includes('in-person') || normalizedType.includes('in person') || normalizedType.includes('onsite')) return t ? t('interviews.inPerson') : 'Onsite';
   return type;
 };
 
@@ -66,26 +67,26 @@ const normalizeResultValue = (value) => {
   return normalized;
 };
 
-const formatResultLabel = (value) => {
-  if (!value) return 'Pending';
+const formatResultLabel = (value, t) => {
+  if (!value) return t ? t('interviews.pending') : 'Pending';
   const normalized = `${value}`.trim().toLowerCase();
-  if (['passed', 'pass', 'hired', 'hire', 'accepted'].includes(normalized)) return 'Hired';
-  if (['rejected', 'failed', 'fail', 'no hire', 'not selected'].includes(normalized)) return 'Rejected';
-  if (['pending', 'pending evaluation', 'review'].includes(normalized)) return 'Pending';
+  if (['passed', 'pass', 'hired', 'hire', 'accepted'].includes(normalized)) return t ? t('interviews.hired') : 'Hired';
+  if (['rejected', 'failed', 'fail', 'no hire', 'not selected'].includes(normalized)) return t ? t('interviews.rejected') : 'Rejected';
+  if (['pending', 'pending evaluation', 'review'].includes(normalized)) return t ? t('interviews.pendingEvaluation') : 'Pending Evaluation';
   return value;
 };
 
-const getEvaluationStatus = (interview) => {
+const getEvaluationStatus = (interview, t) => {
   const decision = interview?.finalDecision || interview?.result || interview?.feedback || interview?.rating;
   if (decision) {
     const normalized = `${decision}`.trim().toLowerCase();
-    if (['hired', 'hire', 'accepted'].includes(normalized)) return 'Hired';
-    if (['passed', 'pass', 'move to next round'].includes(normalized)) return 'Passed';
-    if (['rejected', 'failed', 'fail', 'not selected'].includes(normalized)) return 'Rejected';
-    if (['pending', 'pending evaluation', 'review'].includes(normalized)) return 'Pending Evaluation';
-    return interview.finalDecision || formatResultLabel(interview.result);
+    if (['hired', 'hire', 'accepted'].includes(normalized)) return t ? t('interviews.hired') : 'Hired';
+    if (['passed', 'pass', 'move to next round'].includes(normalized)) return t ? t('interviews.passed') : 'Passed';
+    if (['rejected', 'failed', 'fail', 'not selected'].includes(normalized)) return t ? t('interviews.rejected') : 'Rejected';
+    if (['pending', 'pending evaluation', 'review'].includes(normalized)) return t ? t('interviews.pendingEvaluation') : 'Pending Evaluation';
+    return interview.finalDecision || formatResultLabel(interview.result, t);
   }
-  return 'Pending Evaluation';
+  return t ? t('interviews.pendingEvaluation') : 'Pending Evaluation';
 };
 
 const normalizeStatus = (status) => `${status || 'scheduled'}`.toLowerCase();
@@ -118,6 +119,7 @@ const MetricCard = ({ title, value, subtitle, icon: Icon, accent }) => (
 );
 
 const EmployerInterviews = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [interviews, setInterviews] = useState([]);
   const [applications, setApplications] = useState([]);
@@ -304,15 +306,19 @@ const EmployerInterviews = () => {
   }, [interviews]);
 
   const typeSummary = useMemo(() => {
-    const counts = { Online: 0, Onsite: 0, Phone: 0 };
+    const onlineLabel = t('interviews.online');
+    const onsiteLabel = t('interviews.inPerson');
+    const phoneLabel = t('interviews.phone');
+    const counts = { [onlineLabel]: 0, [onsiteLabel]: 0, [phoneLabel]: 0 };
+
     interviews.forEach((interview) => {
-      const type = getInterviewTypeLabel(interview.type || '').toLowerCase();
-      if (type.includes('phone')) counts.Phone += 1;
-      else if (type.includes('online') || type.includes('video') || type.includes('zoom') || type.includes('meet')) counts.Online += 1;
-      else counts.Onsite += 1;
+      const type = getInterviewTypeLabel(interview.type || '', t).toLowerCase();
+      if (type.includes('phone') || type.includes('በስልክ')) counts[phoneLabel] += 1;
+      else if (type.includes('online') || type.includes('video') || type.includes('zoom') || type.includes('meet') || type.includes('በኦንላይን')) counts[onlineLabel] += 1;
+      else counts[onsiteLabel] += 1;
     });
     return Object.entries(counts).map(([label, value]) => ({ label, value }));
-  }, [interviews]);
+  }, [interviews, t]);
 
   const calendarDates = useMemo(() => new Set(interviews.map((interview) => new Date(interview.scheduledDate).toDateString())), [interviews]);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -323,36 +329,36 @@ const EmployerInterviews = () => {
   }, []);
 
   const getReminderStatus = (scheduledDate) => {
-    if (!scheduledDate) return { label: 'Future', color: 'bg-slate-300', icon: '⚪' };
+    if (!scheduledDate) return { label: t('interviews.future'), color: 'bg-slate-300', icon: '⚪' };
 
     const minutesUntil = differenceInMinutes(scheduledDate, currentTime);
-    if (minutesUntil < 0) return { label: 'Overdue', color: 'bg-rose-500', icon: '🔴' };
-    if (minutesUntil <= 30) return { label: 'Starting soon', color: 'bg-emerald-500', icon: '🟢' };
-    if (minutesUntil <= 120) return { label: 'Later today', color: 'bg-amber-500', icon: '🟡' };
-    if (isToday(scheduledDate)) return { label: 'Later today', color: 'bg-sky-500', icon: '🔵' };
-    return { label: 'Future', color: 'bg-slate-300', icon: '⚪' };
+    if (minutesUntil < 0) return { label: t('interviews.overdue'), color: 'bg-rose-500', icon: '🔴' };
+    if (minutesUntil <= 30) return { label: t('interviews.startingSoon'), color: 'bg-emerald-500', icon: '🟢' };
+    if (minutesUntil <= 120) return { label: t('interviews.laterToday'), color: 'bg-amber-500', icon: '🟡' };
+    if (isToday(scheduledDate)) return { label: t('interviews.laterToday'), color: 'bg-sky-500', icon: '🔵' };
+    return { label: t('interviews.future'), color: 'bg-slate-300', icon: '⚪' };
   };
 
   const getReminderText = (scheduledDate) => {
-    if (!scheduledDate) return 'Date not available';
+    if (!scheduledDate) return t('interviews.dateNotAvailable') || 'Date not available';
     const minutesUntil = differenceInMinutes(scheduledDate, currentTime);
 
-    if (minutesUntil < 0) return 'Overdue';
-    if (minutesUntil <= 30) return `Interview starts in ${minutesUntil} minute${minutesUntil === 1 ? '' : 's'}`;
+    if (minutesUntil < 0) return t('interviews.overdue');
+    if (minutesUntil <= 30) return `${t('interviews.interviewStartsIn') || 'Interview starts in'} ${minutesUntil} ${t('applications.minutes') || 'min'}`;
     if (minutesUntil < 120) {
       const hours = Math.floor(minutesUntil / 60);
-      return `Interview starts in ${hours} hour${hours === 1 ? '' : 's'}`;
+      return `${t('interviews.interviewStartsIn') || 'Interview starts in'} ${hours} ${t('applications.hours') || 'hours'}`;
     }
-    if (isToday(scheduledDate)) return 'Starts later today';
-    if (isTomorrow(scheduledDate)) return 'Tomorrow';
+    if (isToday(scheduledDate)) return t('interviews.laterToday');
+    if (isTomorrow(scheduledDate)) return t('interviews.tomorrowFilter');
     const daysUntil = differenceInDays(scheduledDate, currentTime);
-    return `In ${daysUntil} day${daysUntil === 1 ? '' : 's'}`;
+    return `${t('interviews.in') || 'In'} ${daysUntil} ${t('applications.days') || 'days'}`;
   };
 
   const getReminderMeta = (scheduledDate, jobTitle) => {
-    if (!scheduledDate) return 'Date not available';
-    const dayLabel = isToday(scheduledDate) ? 'Today' : isTomorrow(scheduledDate) ? 'Tomorrow' : format(scheduledDate, 'MMM d');
-    return `${dayLabel} • ${format(scheduledDate, 'h:mm a')} • ${jobTitle || 'Interview'}`;
+    if (!scheduledDate) return t('interviews.dateNotAvailable') || 'Date not available';
+    const dayLabel = isToday(scheduledDate) ? t('interviews.todayFilter') : isTomorrow(scheduledDate) ? t('interviews.tomorrowFilter') : format(scheduledDate, 'MMM d');
+    return `${dayLabel} • ${format(scheduledDate, 'h:mm a')} • ${jobTitle || t('interviews.pipeline')}`;
   };
 
   const upcomingReminders = useMemo(() => {
@@ -715,9 +721,9 @@ const EmployerInterviews = () => {
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">Employer Interview Dashboard</p>
-                  <h1 className="mt-2 text-3xl font-semibold text-slate-900">Interview pipeline</h1>
-                  <p className="mt-2 max-w-2xl text-sm text-slate-600">Coordinate interviews, track outcomes, and keep every candidate conversation moving with a modern ATS experience.</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">{t('interviews.dashboardTitle')}</p>
+                  <h1 className="mt-2 text-3xl font-semibold text-slate-900">{t('interviews.pipeline')}</h1>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-600">{t('interviews.pipelineSubtitle')}</p>
                 </div>
               </div>
               <button
@@ -725,16 +731,16 @@ const EmployerInterviews = () => {
                 onClick={openScheduleModal}
                 className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition duration-200 hover:bg-emerald-700"
               >
-                Schedule New Interview
+                {t('interviews.scheduleNew')}
               </button>
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <MetricCard title="Upcoming Interviews" value={stats.upcoming} subtitle="Scheduled in the pipeline" icon={CalendarDays} accent="bg-emerald-50 text-emerald-600" />
-            <MetricCard title="Today's Interviews" value={stats.today} subtitle="On the calendar today" icon={Clock3} accent="bg-sky-50 text-sky-600" />
-            <MetricCard title="Completed Interviews" value={stats.completed} subtitle="Closed successfully" icon={Award} accent="bg-violet-50 text-violet-600" />
-            <MetricCard title="Cancelled Interviews" value={stats.cancelled} subtitle="Needs follow-up" icon={XCircle} accent="bg-rose-50 text-rose-600" />
+            <MetricCard title={t('interviews.upcoming')} value={stats.upcoming} subtitle={t('interviews.scheduledInPipeline')} icon={CalendarDays} accent="bg-emerald-50 text-emerald-600" />
+            <MetricCard title={t('interviews.today')} value={stats.today} subtitle={t('interviews.onCalendarToday')} icon={Clock3} accent="bg-sky-50 text-sky-600" />
+            <MetricCard title={t('interviews.completed')} value={stats.completed} subtitle={t('interviews.closedSuccessfully')} icon={Award} accent="bg-violet-50 text-violet-600" />
+            <MetricCard title={t('interviews.cancelled')} value={stats.cancelled} subtitle={t('interviews.needsFollowUp')} icon={XCircle} accent="bg-rose-50 text-rose-600" />
           </div>
 
           <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
@@ -746,7 +752,7 @@ const EmployerInterviews = () => {
                     type="search"
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
-                    placeholder="Search candidate, email, or job title"
+                    placeholder={t('interviews.searchPlaceholder')}
                     className="w-full bg-transparent text-sm text-slate-900 outline-none"
                   />
                 </label>
@@ -756,10 +762,10 @@ const EmployerInterviews = () => {
                   onChange={(event) => setActiveTab(event.target.value)}
                   className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none"
                 >
-                  <option value="Upcoming">Pipeline</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Cancelled">Cancelled</option>
-                  <option value="All">All</option>
+                  <option value="Upcoming">{t('interviews.pipeline')}</option>
+                  <option value="Completed">{t('interviews.completed')}</option>
+                  <option value="Cancelled">{t('interviews.cancelled')}</option>
+                  <option value="All">{t('interviews.all')}</option>
                 </select>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -768,14 +774,14 @@ const EmployerInterviews = () => {
                   onClick={() => setShowCalendarView((prev) => !prev)}
                   className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition duration-200 hover:bg-slate-50"
                 >
-                  {showCalendarView ? 'Hide calendar' : 'Calendar view'}
+                  {showCalendarView ? t('interviews.hideCalendar') : t('interviews.calendarView')}
                 </button>
                 <button
                   type="button"
                   onClick={openScheduleModal}
                   className="rounded-full bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition duration-200 hover:bg-emerald-700"
                 >
-                  New Interview
+                  {t('interviews.newInterview')}
                 </button>
               </div>
             </div>
@@ -788,14 +794,14 @@ const EmployerInterviews = () => {
                   onClick={() => setActiveTab(tab.value)}
                   className={`rounded-full px-4 py-2 text-sm font-medium transition duration-200 ${activeTab === tab.value ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
                 >
-                  {tab.label}
+                  {t(tab.labelKey)}
                 </button>
               ))}
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600">
-                {filteredInterviews.length} interviews shown
+                {t('interviews.interviewsShown', { count: filteredInterviews.length })}
               </div>
               <select
                 aria-label="Filter by date"
@@ -803,22 +809,22 @@ const EmployerInterviews = () => {
                 onChange={(event) => setDateFilter(event.target.value)}
                 className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 outline-none"
               >
-                <option value="All">All Dates</option>
-                <option value="Today">Today</option>
-                <option value="Tomorrow">Tomorrow</option>
-                <option value="This Week">This Week</option>
-                <option value="This Month">This Month</option>
+                <option value="All">{t('interviews.allDates')}</option>
+                <option value="Today">{t('interviews.todayFilter')}</option>
+                <option value="Tomorrow">{t('interviews.tomorrowFilter')}</option>
+                <option value="This Week">{t('interviews.thisWeekFilter')}</option>
+                <option value="This Month">{t('interviews.thisMonthFilter')}</option>
               </select>
             </div>
           </div>
 
           {loading ? (
             <div className="rounded-[24px] border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
-              Loading interviews from the recruitment pipeline...
+              {t('interviews.loadingPipeline')}
             </div>
           ) : filteredInterviews.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
-              No interviews match this view yet.
+              {t('interviews.noInterviews')}
             </div>
           ) : (
             <div className="space-y-4">
@@ -826,7 +832,7 @@ const EmployerInterviews = () => {
                 const candidateName = `${interview.applicant?.firstName || ''} ${interview.applicant?.lastName || ''}`.trim();
                 const status = normalizeStatus(interview.status);
                 const isCompletedInterview = status === 'completed';
-                const evaluationStatus = getEvaluationStatus(interview);
+                const evaluationStatus = getEvaluationStatus(interview, t);
 
                 return (
                   <div key={interview._id} className="group rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-xl">
@@ -841,9 +847,9 @@ const EmployerInterviews = () => {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-lg font-semibold text-slate-900">{candidateName || 'Candidate'}</h2>
+                            <h2 className="text-lg font-semibold text-slate-900">{candidateName || t('interviews.candidate')}</h2>
                             <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase ${getStatusBadgeClasses(status)}`}>
-                              {status}
+                              {status === 'scheduled' ? t('interviews.scheduled') : status === 'completed' ? t('interviews.completed') : status === 'cancelled' || status === 'canceled' ? t('interviews.cancelled') : status}
                             </span>
                             {isCompletedInterview && (
                               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -852,27 +858,27 @@ const EmployerInterviews = () => {
                             )}
                           </div>
                           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                            <span className="inline-flex items-center gap-2"><BriefcaseBusiness className="h-4 w-4 text-emerald-600" />{interview.job?.title || 'Applied position'}</span>
+                            <span className="inline-flex items-center gap-2"><BriefcaseBusiness className="h-4 w-4 text-emerald-600" />{interview.job?.title || t('interviews.jobPosition')}</span>
                             <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4 text-emerald-600" />{interview.applicant?.email || 'Email pending'}</span>
                             <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4 text-emerald-600" />{interview.applicant?.phone || 'Phone pending'}</span>
                           </div>
 
                           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Interview date</p>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('interviews.interviewDate')}</p>
                               <p className="mt-1 text-sm font-semibold text-slate-900">{format(new Date(interview.scheduledDate), 'MMM d, yyyy')}</p>
                             </div>
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Time</p>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('interviews.interviewTime')}</p>
                               <p className="mt-1 text-sm font-semibold text-slate-900">{format(new Date(interview.scheduledDate), 'h:mm a')}</p>
                             </div>
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Duration</p>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('interviews.duration') || 'Duration'}</p>
                               <p className="mt-1 text-sm font-semibold text-slate-900">{interview.duration || '60 min'}</p>
                             </div>
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Type</p>
-                              <p className="mt-1 text-sm font-semibold text-slate-900">{getInterviewTypeLabel(interview.type)}</p>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('interviews.interviewType')}</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-900">{getInterviewTypeLabel(interview.type, t)}</p>
                             </div>
                           </div>
                         </div>
@@ -880,8 +886,8 @@ const EmployerInterviews = () => {
 
                       <div className="flex flex-col gap-3 xl:min-w-[260px]">
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Meeting platform</p>
-                          <p className="mt-1 text-sm font-semibold text-slate-900">{getInterviewTypeLabel(interview.type)}</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('interviews.meetingLink')}</p>
+                          <p className="mt-1 text-sm font-semibold text-slate-900">{getInterviewTypeLabel(interview.type, t)}</p>
                           <p className="mt-2 text-sm text-slate-600">
                             {interview.meetingLink || interview.location || 'Meeting details will be shared soon.'}
                           </p>
@@ -889,20 +895,20 @@ const EmployerInterviews = () => {
                         {isCompletedInterview && (
                           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Rating</p>
-                            <p className="mt-1 text-sm font-semibold text-slate-900">{interview.rating ? `${interview.rating}/5` : 'Pending'}</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-900">{interview.rating ? `${interview.rating}/5` : t('interviews.pending')}</p>
                           </div>
                         )}
                         <div className="flex flex-wrap gap-2">
                           {['scheduled', 'upcoming'].includes(status) ? (
                             <>
                               <button type="button" aria-label="Start Interview" onClick={() => startInterviewWorkflow(interview)} className="inline-flex items-center gap-2 rounded-full border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50">
-                                <PlayCircle className="h-4 w-4" /> Start Interview
+                                <PlayCircle className="h-4 w-4" /> {t('interviews.startInterview')}
                               </button>
                               <button type="button" onClick={() => openEditModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                                <SquarePen className="h-4 w-4" /> Reschedule
+                                <SquarePen className="h-4 w-4" /> {t('interviews.reschedule')}
                               </button>
                               <button type="button" onClick={() => handleCancelInterview(interview)} className="inline-flex items-center gap-2 rounded-full border border-rose-200 px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50">
-                                <XCircle className="h-4 w-4" /> Cancel
+                                <XCircle className="h-4 w-4" /> {t('common.cancel')}
                               </button>
                             </>
                           ) : null}
@@ -910,25 +916,25 @@ const EmployerInterviews = () => {
                           {isCompletedInterview ? (
                             <>
                               <button type="button" onClick={() => openFeedbackModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                                <FileText className="h-4 w-4" /> View Notes
+                                <FileText className="h-4 w-4" /> {t('interviews.notes')}
                               </button>
                               <button type="button" onClick={() => openAssessmentDetailsModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                                <Star className="h-4 w-4" /> View Feedback
+                                <Star className="h-4 w-4" /> {t('interviews.evaluationSummary')}
                               </button>
                               <button type="button" onClick={() => openAssessmentModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-amber-200 px-3 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-50">
-                                <Star className="h-4 w-4" /> Complete Assessment
+                                <Star className="h-4 w-4" /> {t('interviews.evaluate')}
                               </button>
                             </>
                           ) : null}
 
                           {status === 'cancelled' || status === 'canceled' ? (
                             <button type="button" onClick={() => openEditModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                              <SquarePen className="h-4 w-4" /> Reschedule
+                              <SquarePen className="h-4 w-4" /> {t('interviews.reschedule')}
                             </button>
                           ) : null}
 
                           <button type="button" onClick={() => openDetailsModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-                            <Eye className="h-4 w-4" /> View Details
+                            <Eye className="h-4 w-4" /> {t('common.view')}
                           </button>
                         </div>
                       </div>
@@ -946,7 +952,7 @@ const EmployerInterviews = () => {
               disabled={page === 1}
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <ChevronLeft className="h-4 w-4" /> Previous
+              <ChevronLeft className="h-4 w-4" /> {t('common.previous')}
             </button>
             <div className="flex items-center gap-2">
               {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
@@ -966,7 +972,7 @@ const EmployerInterviews = () => {
               disabled={page === totalPages}
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Next <ChevronRight className="h-4 w-4" />
+              {t('common.next')} <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -976,10 +982,10 @@ const EmployerInterviews = () => {
             <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Monthly calendar</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">{t('interviews.monthlyCalendar')}</p>
                   <h3 className="mt-1 text-lg font-semibold text-slate-900">{format(new Date(), 'MMMM yyyy')}</h3>
                 </div>
-                <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">Live</span>
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">{t('interviews.live')}</span>
               </div>
               <div className="mt-5 grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
@@ -1008,7 +1014,7 @@ const EmployerInterviews = () => {
 
             <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">Interview type summary</h3>
+                <h3 className="text-lg font-semibold text-slate-900">{t('interviews.typeSummaryTitle')}</h3>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">{interviews.length}</span>
               </div>
               <div className="mt-4 space-y-3">
@@ -1023,17 +1029,17 @@ const EmployerInterviews = () => {
 
             <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">Upcoming reminders</h3>
-                <span className="text-sm text-slate-500">{upcomingReminders.length} due</span>
+                <h3 className="text-lg font-semibold text-slate-900">{t('interviews.upcomingReminders')}</h3>
+                <span className="text-sm text-slate-500">{upcomingReminders.length}</span>
               </div>
               <div className="mt-4 space-y-3">
                 {upcomingReminders.length === 0 ? (
                   <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
-                    <p className="font-semibold text-slate-900">No upcoming interview reminders.</p>
-                    <p className="mt-2">We’ll notify you when an interview is approaching.</p>
+                    <p className="font-semibold text-slate-900">{t('interviews.noUpcomingReminders')}</p>
+                    <p className="mt-2">{t('interviews.notifyApproaching')}</p>
                   </div>
                 ) : upcomingReminders.map((interview) => {
-                  const candidateName = `${interview.applicant?.firstName || ''} ${interview.applicant?.lastName || ''}`.trim() || 'Candidate';
+                  const candidateName = `${interview.applicant?.firstName || ''} ${interview.applicant?.lastName || ''}`.trim() || t('interviews.candidate');
                   const scheduledDate = new Date(interview.scheduledDate);
                   const reminderStatus = getReminderStatus(scheduledDate);
                   const reminderText = getReminderText(scheduledDate);
@@ -1054,14 +1060,14 @@ const EmployerInterviews = () => {
                 })}
               </div>
               <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                <h4 className="text-sm font-semibold text-emerald-800">Stay organized</h4>
-                <p className="mt-1 text-sm text-emerald-700">Keep every follow-up and interview note synced with your hiring team.</p>
+                <h4 className="text-sm font-semibold text-emerald-800">{t('interviews.stayOrganized')}</h4>
+                <p className="mt-1 text-sm text-emerald-700">{t('interviews.keepSynced')}</p>
                 <button
                   type="button"
-                  onClick={() => toast.success('Reminder enabled for your hiring team.')}
+                  onClick={() => toast.success(t('interviews.reminderEnabledSuccess') || 'Reminder enabled.')}
                   className="mt-3 rounded-full bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
                 >
-                  Enable Reminder
+                  {t('interviews.enableReminder')}
                 </button>
               </div>
             </div>

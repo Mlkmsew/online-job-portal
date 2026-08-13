@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema(
         avatarPublicId: String,
         cv: String,
         cvPublicId: String,
+        cvOriginalName: String,
         phone: String,
         gender: String,
         headline: String,
@@ -64,6 +65,14 @@ const userSchema = new mongoose.Schema(
         isActive: { type: Boolean, default: true },
         isSuspended: { type: Boolean, default: false },
         isEmailVerified: { type: Boolean, default: false },
+        // Admin account approval state (single source of truth for the admin
+        // user-management workflow). Kept in sync with isActive/isSuspended.
+        status: {
+            type: String,
+            enum: ['pending', 'active', 'suspended', 'rejected'],
+            default: 'active',
+        },
+        rejectionReason: { type: String, default: '' },
         emailVerificationToken: String,
         emailVerificationExpire: Date,
         // OTP for quick verification (numeric) and two-factor

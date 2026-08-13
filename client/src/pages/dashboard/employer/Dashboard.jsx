@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FiBriefcase,
@@ -12,43 +13,36 @@ import {
   FiChevronDown,
   FiArrowRight,
   FiMapPin,
-  FiClock,
   FiFlag,
   FiUser,
   FiSettings,
+  FiEdit3,
+  FiMessageCircle,
 } from 'react-icons/fi';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { fetchEmployerDashboard } from '../../../store/slices/employerSlice';
 import { logout } from '../../../store/slices/authSlice';
 import api from '../../../services/api';
-import socketService from '../../../services/socket';
 import toast from 'react-hot-toast';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const formatLocation = (location) => {
-  if (!location) return '';
-  if (typeof location === 'string') return location;
-  const parts = [location.city, location.region, location.address].filter(Boolean);
-  return parts.join(', ') || '';
-};
-
 const EmployerDashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const { user } = useSelector((state) => state.auth);
-  const { company, jobs, applications, loading } = useSelector((state) => state.employer);
+  const { company, jobs, applications, dashboardStats, loading } = useSelector((state) => state.employer);
+
+  const [dashboardData, setDashboardData] = useState(null);
   const [interviews, setInterviews] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
-  const [selectedApplication, setSelectedApplication] = useState(null);
-  const [interviewForm, setInterviewForm] = useState({ interviewDate: '', interviewTime: '', interviewLocation: '' });
-  const [submittingInterview, setSubmittingInterview] = useState(false);
-  const [statusById, setStatusById] = useState({});
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [fetchingApi, setFetchingApi] = useState(true);
 
   useEffect(() => {
     dispatch(fetchEmployerDashboard());
@@ -56,18 +50,23 @@ const EmployerDashboard = () => {
     let mounted = true;
     (async () => {
       try {
+        setFetchingApi(true);
         const [dashboardRes, notificationCountRes, chatCountRes] = await Promise.all([
           api.get('/employer/dashboard'),
           api.get('/notifications/unread/count?excludeType=new_message'),
           api.get('/messages/unread/count'),
         ]);
         if (!mounted) return;
-        setInterviews(dashboardRes.data?.data?.upcomingInterviews || []);
-        setNotifications((dashboardRes.data?.data?.recentNotifications || []).filter((notification) => notification.type !== 'new_message'));
-        setUnreadNotificationCount(notificationCountRes.data?.count || 0);
-        setUnreadChatCount(chatCountRes.data?.count || 0);
+        const dash = dashboardRes.data?.data || dashboardRes.data || null;
+        setDashboardData(dash);
+        setInterviews(dash?.upcomingInterviews || []);
+        setNotifications((dash?.recentNotifications || []).filter((n) => n.type !== 'new_message'));
+        if (notificationCountRes.data?.count !== undefined) setUnreadNotificationCount(notificationCountRes.data.count);
+        if (chatCountRes.data?.count !== undefined) setUnreadChatCount(chatCountRes.data.count);
       } catch (err) {
-        // handled by interceptor
+        // handled gracefully
+      } finally {
+        if (mounted) setFetchingApi(false);
       }
     })();
 
@@ -76,596 +75,463 @@ const EmployerDashboard = () => {
     };
   }, [dispatch]);
 
-  useEffect(() => {
-    const initialStatusMap = {};
-    applications?.forEach((application) => {
-      initialStatusMap[application._id] = application.status;
-    });
-    setStatusById(initialStatusMap);
-  }, [applications]);
-
-  const jobsPosted = jobs?.length || 0;
-  const activeJobs = jobs?.filter((job) => job.status === 'active').length || 0;
-  const totalApplicants = applications?.length || 0;
-  const interviewsCount = interviews?.length || 0;
-  const hiredCount = applications?.filter((item) => ['hired', 'Hired', 'Selected', 'Accepted'].includes(item.status)).length || 0;
-  const recentApplications = applications?.slice(0, 5) || [];
-  const statusOptions = ['Submitted', 'Shortlisted', 'Interview', 'Rejected'];
+  // Combine Redux state & API backend data dynamically from real database records
+  const stats = dashboardData || dashboardStats || {};
+  const jobsPosted = stats.totalJobs ?? jobs?.length ?? 0;
+  const activeJobs = stats.activeJobs ?? jobs?.filter((job) => job.status === 'active' || job.status === 'published').length ?? 0;
+  const totalApplicants = stats.totalApplicants ?? applications?.length ?? 0;
+  const newApplicantsCount = stats.newApplicantsCount ?? 0;
+  const interviewsCount = stats.interviewsCount ?? interviews?.length ?? 0;
+  const hiredCount = stats.hiredCount ?? applications?.filter((item) => ['hired', 'Hired', 'Selected'].includes(item.status)).length ?? 0;
 
   const profileCompletion = useMemo(() => {
-    if (!company) return 0;
-    const fields = [company.name, company.description, company.industry, company.location, company.logo];
+    const targetCompany = company || stats.company;
+    if (!targetCompany) return 0;
+    const fields = [
+      targetCompany.name,
+      targetCompany.description,
+      targetCompany.industry,
+      targetCompany.location?.address || targetCompany.location,
+      targetCompany.logo,
+    ];
     const filled = fields.filter(Boolean).length;
-    return Math.min(100, Math.round((filled / fields.length) * 100));
-  }, [company]);
+    return Math.round((filled / fields.length) * 100);
+  }, [company, stats.company]);
 
-  const chartData = useMemo(() => {
-    const newApps = applications?.filter((item) => item.status?.toLowerCase() === 'submitted').length || 0;
-    const reviewApps = applications?.filter((item) => ['shortlisted', 'review', 'under review'].includes(item.status?.toLowerCase())).length || 0;
-    const interviewApps = applications?.filter((item) => ['interview', 'interview scheduled'].includes(item.status?.toLowerCase())).length || 0;
-    const hiredApps = applications?.filter((item) => ['hired', 'selected', 'accepted'].includes(item.status?.toLowerCase())).length || 0;
-    return {
-      labels: ['New Applications', 'Under Review', 'Interview', 'Hired'],
-      datasets: [
-        {
-          data: [newApps, reviewApps, interviewApps, hiredApps],
-          backgroundColor: ['#4ade80', '#a3e635', '#34d399', '#16a34a'],
-          hoverBackgroundColor: ['#86efac', '#bef264', '#6ee7b7', '#22c55e'],
-          borderWidth: 0,
-        },
-      ],
-    };
-  }, [applications]);
-
-  const handleStatusChange = async (applicationId, status) => {
-    try {
-      await api.put(`/applications/${applicationId}/status`, { status });
-      setStatusById((prev) => ({ ...prev, [applicationId]: status }));
-      toast.success('Application status updated');
-      dispatch(fetchEmployerDashboard());
-    } catch (err) {
-      toast.error('Unable to update application status');
+  // Real Analytics Funnel Percentages calculated directly from database records
+  const analyticsFunnel = useMemo(() => {
+    if (stats.analytics) {
+      return {
+        newAppsPct: stats.analytics.newApplications?.percentage ?? 0,
+        underReviewPct: stats.analytics.underReview?.percentage ?? 0,
+        interviewPct: stats.analytics.interview?.percentage ?? 0,
+        hiredPct: stats.analytics.hired?.percentage ?? 0,
+      };
     }
+
+    const total = totalApplicants || 0;
+    if (total === 0) {
+      return { newAppsPct: 0, underReviewPct: 0, interviewPct: 0, hiredPct: 0 };
+    }
+
+    const countNew = applications?.filter((a) => ['Submitted'].includes(a.status)).length || 0;
+    const countReview = applications?.filter((a) => ['Reviewed', 'Under Review'].includes(a.status)).length || 0;
+    const countInterview = applications?.filter((a) => ['Interview', 'Interview Scheduled', 'Shortlisted'].includes(a.status)).length || 0;
+    const countHired = applications?.filter((a) => ['Hired', 'Selected'].includes(a.status)).length || 0;
+
+    return {
+      newAppsPct: Math.round((countNew / total) * 100),
+      underReviewPct: Math.round((countReview / total) * 100),
+      interviewPct: Math.round((countInterview / total) * 100),
+      hiredPct: Math.round((countHired / total) * 100),
+    };
+  }, [stats.analytics, applications, totalApplicants]);
+
+  const chartData = useMemo(() => ({
+    labels: [
+      t('dashboard.analytics.newApplications'),
+      t('dashboard.analytics.underReview'),
+      t('dashboard.analytics.interview'),
+      t('dashboard.analytics.hired'),
+    ],
+    datasets: [
+      {
+        data: [
+          analyticsFunnel.newAppsPct,
+          analyticsFunnel.underReviewPct,
+          analyticsFunnel.interviewPct,
+          analyticsFunnel.hiredPct,
+        ],
+        backgroundColor: ['#10B981', '#A3E635', '#0D9488', '#087F5B'],
+        hoverBackgroundColor: ['#34D399', '#BEF264', '#14B8A6', '#10B981'],
+        borderWidth: 0,
+      },
+    ],
+  }), [analyticsFunnel, t]);
+
+  const chartOptions = {
+    cutout: '72%',
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: true },
+    },
+    maintainAspectRatio: false,
   };
 
   const handleLogout = async () => {
     try {
       await dispatch(logout()).unwrap();
-      toast.success('Logged out successfully');
+      toast.success(t('auth.logoutSuccess'));
       navigate('/');
-    } catch (error) {
-      toast.error('Logout failed');
+    } catch {
+      toast.error(t('auth.logoutFailed'));
     }
   };
 
-  const getNotificationRoute = (type) => {
-    switch (type) {
-      case 'new_application':
-        return '/employer/applicants';
-      case 'new_message':
-        return '/employer/messages';
-      case 'interview':
-        return '/employer/interviews';
-      case 'job':
-        return '/employer/jobs';
-      default:
-        return '/employer/applicants';
-    }
-  };
+  const activeCompany = company || stats.company;
 
-  const getViewAllRoute = () => {
-    return '/employer/applicants';
-  };
+  const companyLocation = useMemo(() => {
+    const loc = activeCompany?.location;
+    if (!loc) return '';
+    if (typeof loc === 'string') return loc;
+    return [loc.address, loc.city, loc.region].filter(Boolean).join(', ');
+  }, [activeCompany]);
 
-  const markAllNotificationsRead = async () => {
-    try {
-      await api.put('/notifications/read-all?excludeType=new_message');
-    } catch (err) {
-      // handled by interceptor
-    }
-    setUnreadNotificationCount(0);
-    setNotifications((prev) => prev.map((notification) => ({ ...notification, isRead: true })));
-  };
+  const memberSinceDate = activeCompany?.createdAt || user?.createdAt;
 
-  const handleNotificationClick = async (notification) => {
-    const alreadyRead = notification.isRead;
-    if (!alreadyRead) {
-      try {
-        await api.put(`/notifications/${notification._id}/read`);
-      } catch (err) {
-        // handled by interceptor
-      }
-    }
-
-    setNotifications((prev) => prev.map((item) => (
-      item._id === notification._id ? { ...item, isRead: true } : item
-    )));
-    setUnreadNotificationCount((prev) => Math.max(0, prev - (alreadyRead ? 0 : 1)));
-    setShowNotifications(false);
-    navigate(getNotificationRoute(notification.type));
-  };
-
-  const handleBellClick = async () => {
-    const nextVisibility = !showNotifications;
-    setShowNotifications(nextVisibility);
-    setShowProfileMenu(false);
-
-    if (nextVisibility) {
-      await markAllNotificationsRead();
-    }
-  };
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    const socket = socketService.connect(token);
-    socketService.on('notification', (notification) => {
-      if (notification.type === 'new_message') {
-        setUnreadChatCount((prev) => prev + 1);
-        return;
-      }
-      setNotifications((prev) => [notification, ...prev]);
-      setUnreadNotificationCount((prev) => prev + 1);
-    });
-
-    return () => {
-      socketService.off('notification');
-    };
-  }, []);
-
-  const openInterviewModal = (application) => {
-    setSelectedApplication(application);
-    setInterviewForm({
-      interviewDate: application.interviewDate ? new Date(application.interviewDate).toISOString().split('T')[0] : '',
-      interviewTime: application.interviewTime || '',
-      interviewLocation: application.interviewLocation || '',
-    });
-  };
-
-  const handleInterviewSubmit = async (event) => {
-    event.preventDefault();
-    if (!selectedApplication) return;
-
-    setSubmittingInterview(true);
-    try {
-      await api.post(`/applications/${selectedApplication._id}/schedule-interview`, interviewForm);
-      toast.success('Interview scheduled successfully');
-      setSelectedApplication(null);
-      setInterviewForm({ interviewDate: '', interviewTime: '', interviewLocation: '' });
-      dispatch(fetchEmployerDashboard());
-    } catch (err) {
-      toast.error('Unable to schedule interview');
-    } finally {
-      setSubmittingInterview(false);
-    }
-  };
+  if (loading && fetchingApi) {
+    return (
+      <div className="space-y-8 pb-16 animate-pulse">
+        <div className="h-16 rounded-2xl bg-slate-200 dark:bg-[#142A24]" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-28 rounded-2xl bg-slate-200 dark:bg-[#142A24]" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <div className="lg:col-span-7 h-64 rounded-3xl bg-slate-200 dark:bg-[#142A24]" />
+          <div className="lg:col-span-5 h-64 rounded-3xl bg-slate-200 dark:bg-[#142A24]" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-3xl bg-white p-6 shadow-sm hover:shadow-lg transition-all duration-300">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm text-gray-500">Welcome back, {user?.firstName || 'Employer'}!</p>
-            <h1 className="text-3xl font-semibold text-gray-900 mt-2">Here's what's happening with your recruitment today.</h1>
-          </div>
+    <div className="space-y-8 pb-16">
+      
+      {/* ── Top Header Greeting & Right Control Bar ── */}
+      <section className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-sm font-medium text-[#64746E] dark:text-[#A9BBB4]">
+            {t('dashboard.welcomeBack', { name: user?.firstName || user?.name || 'Employer' })}
+          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#14231F] dark:text-[#F4F8F6] tracking-tight mt-1">
+            {t('dashboard.headerSubtitle')}
+          </h1>
+        </div>
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="relative w-full sm:w-80">
-              <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search jobs, applicants..."
-                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-              />
-            </div>
-
-            <div className="relative">
-              <button
-                type="button"
-                onClick={handleBellClick}
-                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-600 transition hover:bg-gray-200"
-              >
-                <FiBell className="w-5 h-5" />
-                {unreadNotificationCount > 0 && (
-                  <span className="absolute -right-1 -top-1 rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                    {unreadNotificationCount}
-                  </span>
-                )}
-              </button>
-
-              {showNotifications && (
-                <div className="absolute right-0 z-20 mt-2 w-80 rounded-2xl border border-gray-200 bg-white p-3 shadow-lg">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold text-gray-800">Notifications</h4>
-                    <Link to={getViewAllRoute()} className="text-sm font-semibold text-emerald-700">View all</Link>
-                  </div>
-                  <div className="mt-2 max-h-56 space-y-2 overflow-auto">
-                    {notifications.length === 0 ? (
-                      <div className="py-3 text-sm text-gray-500">No notifications</div>
-                    ) : (
-                      notifications.slice(0, 5).map((notification) => (
-                        <button
-                          key={notification._id || notification.id || `${notification.title}-${notification.createdAt}`}
-                          type="button"
-                          onClick={() => handleNotificationClick(notification)}
-                          className={`w-full text-left rounded-2xl border px-3 py-3 transition ${notification.isRead ? 'border-gray-100 bg-white text-gray-700 hover:border-emerald-200' : 'border-emerald-200 bg-emerald-50/50 text-gray-900 font-semibold'} `}
-                        >
-                          <div className="flex items-start gap-2">
-                            <FiBell className="mt-0.5 h-4 w-4 text-emerald-600" />
-                            <div className="text-sm">
-                              <div className="truncate">{notification.title || 'New update'}</div>
-                              <div className={`mt-1 text-xs ${notification.isRead ? 'text-gray-500' : 'text-gray-600'}`}>{notification.message || notification.description || 'No details available.'}</div>
-                              <div className="mt-2 text-[11px] text-gray-400">{new Date(notification.createdAt).toLocaleString()}</div>
-                            </div>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowNotifications(false);
-                  setShowProfileMenu(false);
-                  navigate('/employer/messages');
-                }}
-                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-600 transition hover:bg-gray-200"
-              >
-                <FiMail className="w-5 h-5" />
-                {unreadChatCount > 0 && (
-                  <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                    {unreadChatCount}
-                  </span>
-                )}
-              </button>
-            </div>
-
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowProfileMenu((value) => !value);
-                  setShowNotifications(false);
-                }}
-                className="inline-flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:shadow-sm"
-              >
-                <span className="flex h-10 w-10 overflow-hidden rounded-full bg-emerald-100 text-emerald-700">
-                  {user?.avatar ? (
-                    <img src={user.avatar} alt={user?.firstName || 'Profile'} className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="flex h-full w-full items-center justify-center text-sm font-semibold">
-                      {user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'E'}
-                    </span>
-                  )}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Bell Icon Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowNotifications((v) => !v)}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-[#142A24] border border-[#E1E8E4] dark:border-[#23483D] text-[#14231F] dark:text-[#F4F8F6] shadow-2xs hover:bg-gray-50 dark:hover:bg-[#18342C] transition"
+              aria-label="Notifications"
+            >
+              <FiBell className="w-4.5 h-4.5" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white shadow-xs">
+                  {unreadNotificationCount}
                 </span>
-                <span>{user?.firstName || 'Employer'}</span>
-                <FiChevronDown className="w-4 h-4 text-gray-400" />
-              </button>
-
-              {showProfileMenu && (
-                <div className="absolute right-0 z-20 mt-2 w-48 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      navigate('/employer/company');
-                    }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                  >
-                    <FiUser className="h-4 w-4" /> Company profile
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      navigate('/employer/settings');
-                    }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                  >
-                    <FiSettings className="h-4 w-4" /> Settings
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowProfileMenu(false);
-                      handleLogout();
-                    }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-rose-600 hover:bg-rose-50"
-                  >
-                    <FiArrowRight className="h-4 w-4" /> Logout
-                  </button>
-                </div>
               )}
-            </div>
-          </div>
-        </div>
-      </section>
+            </button>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {[
-          { label: 'Jobs Posted', value: jobsPosted, icon: FiBriefcase, accent: 'bg-emerald-100 text-emerald-600', status: `${activeJobs} active` },
-          { label: 'Total Applicants', value: totalApplicants, icon: FiUsers, accent: 'bg-sky-100 text-sky-600', status: 'New this week' },
-          { label: 'Active Jobs', value: activeJobs, icon: FiFlag, accent: 'bg-violet-100 text-violet-600', status: `${activeJobs} live roles` },
-          { label: 'Upcoming Interviews', value: interviewsCount, icon: FiCalendar, accent: 'bg-amber-100 text-amber-600', status: `${interviewsCount} scheduled` },
-          { label: 'Hired Candidates', value: hiredCount, icon: FiCheckCircle, accent: 'bg-emerald-200 text-emerald-700', status: `${hiredCount} filled` },
-        ].map((card) => {
-          const Icon = card.icon;
-          return (
-            <div key={card.label} className="rounded-3xl bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">{card.label}</p>
-                  <p className="mt-3 text-3xl font-semibold text-gray-900">{card.value}</p>
+            {showNotifications && (
+              <div className="absolute right-0 z-[60] mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-3 shadow-xl">
+                <div className="flex items-center justify-between border-b border-[#E1E8E4] dark:border-[#23483D] pb-2">
+                  <h4 className="text-xs font-bold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.notifications.title')}</h4>
+                  <Link to="/employer/applicants" className="text-xs font-semibold text-[#087F5B] dark:text-[#16A36F] hover:underline">{t('common.viewAll')}</Link>
                 </div>
-                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${card.accent}`}>
-                  <Icon className="w-6 h-6" />
-                </div>
-              </div>
-              <p className="mt-4 text-sm text-gray-500">{card.status}</p>
-            </div>
-          );
-        })}
-      </section>
-
-      <section className="rounded-3xl bg-emerald-600 p-6 text-white shadow-sm transition-all duration-300 hover:shadow-lg">
-        <div className="grid gap-6 lg:grid-cols-[1.8fr_1fr] lg:items-center">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Company profile</p>
-            <h2 className="mt-3 text-2xl font-semibold">Complete your company profile to attract more applicants.</h2>
-            <p className="mt-3 max-w-2xl text-sm text-emerald-100">Add your company logo, description, industry, and location.</p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Link to="/employer/company" className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50">
-              Complete Profile
-            </Link>
-            <Link to="/employer/post-job" className="inline-flex items-center justify-center rounded-2xl border border-white/30 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/20">
-              Post New Job
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-3xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-lg">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-50 text-emerald-700">
-                <span className="text-3xl font-bold">{company?.name?.charAt(0) || 'C'}</span>
-              </div>
-              <div>
-                <h3 className="text-2xl font-semibold text-gray-900">{company?.name || 'Company Name'}</h3>
-                <p className="text-sm text-gray-500">{company?.industry || 'Industry not set'}</p>
-              </div>
-            </div>
-            <Link to="/employer/company" className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">
-              Edit Profile
-            </Link>
-          </div>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-3xl bg-gray-50 p-4">
-              <p className="text-sm text-gray-500">Location</p>
-              <p className="mt-2 text-base font-medium text-gray-900">{formatLocation(company?.location) || 'Not available'}</p>
-            </div>
-            <div className="rounded-3xl bg-gray-50 p-4">
-              <p className="text-sm text-gray-500">Company Size</p>
-              <p className="mt-2 text-base font-medium text-gray-900">{company?.size || company?.companySize || 'Not available'}</p>
-            </div>
-            <div className="rounded-3xl bg-gray-50 p-4">
-              <p className="text-sm text-gray-500">Member Since</p>
-              <p className="mt-2 text-base font-medium text-gray-900">{company?.createdAt ? new Date(company.createdAt).toLocaleDateString() : 'Not available'}</p>
-            </div>
-            <div className="rounded-3xl bg-gray-50 p-4">
-              <p className="text-sm text-gray-500">Profile Completion</p>
-              <div className="mt-3 h-3 overflow-hidden rounded-full bg-gray-200">
-                <div className="h-full rounded-full bg-emerald-500" style={{ width: `${profileCompletion}%` }} />
-              </div>
-              <p className="mt-2 text-sm font-medium text-gray-700">{profileCompletion}% complete</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-lg">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <p className="text-sm text-gray-500">Analytics</p>
-              <h3 className="text-xl font-semibold text-gray-900">Applicant funnel</h3>
-            </div>
-            <div className="rounded-2xl bg-gray-100 px-3 py-2 text-sm text-gray-600">Live data</div>
-          </div>
-          <div className="h-72">
-            <Doughnut data={chartData} options={{ plugins: { legend: { position: 'bottom', labels: { padding: 20, boxWidth: 12 } } } }} />
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {chartData.labels.map((label, index) => (
-              <div key={label} className="flex items-center gap-3 rounded-3xl bg-gray-50 p-4">
-                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: chartData.datasets[0].backgroundColor[index] }} />
-                <div>
-                  <p className="text-sm text-gray-500">{label}</p>
-                  <p className="text-sm font-semibold text-gray-900">{chartData.datasets[0].data[index]}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-3xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-lg">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Recent Applicants</p>
-              <h3 className="text-xl font-semibold text-gray-900">Latest candidates</h3>
-            </div>
-            <Link to="/employer/jobs" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">View all jobs</Link>
-          </div>
-          <div className="mt-6 space-y-4">
-            {recentApplications.length ? (
-              recentApplications.map((application) => (
-                <div key={application._id} className="flex flex-col gap-4 rounded-3xl border border-gray-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-emerald-50 text-emerald-700">
-                      {application.applicant?.avatar ? (
-                        <img src={application.applicant.avatar} alt={application.applicant?.firstName || 'Applicant'} className="h-12 w-12 rounded-3xl object-cover" />
-                      ) : (
-                        <span className="text-lg font-semibold">{(application.applicant?.firstName || 'A').charAt(0)}</span>
-                      )}
+                <div className="mt-2 max-h-52 space-y-2 overflow-auto sidebar-scroll">
+                  {notifications.length > 0 ? (
+                    notifications.map((notif) => (
+                      <div key={notif._id} className="p-2 rounded-lg bg-slate-50 dark:bg-[#10231E] text-xs text-[#14231F] dark:text-[#F4F8F6]">
+                        {notif.message || notif.title}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-2 text-xs text-[#64746E] dark:text-[#A9BBB4]">
+                      {t('dashboard.notifications.noNotifications') || 'No new notifications'}
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">{application.applicant?.firstName} {application.applicant?.lastName}</p>
-                      <p className="text-sm text-gray-500">{application.job?.title || 'Applied position'}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-2">
-                      <FiClock className="h-4 w-4" />
-                      {new Date(application.createdAt).toLocaleDateString()}
-                    </span>
-                    <Link
-                      to={`/employer/applicants/${application.job?._id}`}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
-                    >
-                      View <FiArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
+                  )}
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-600">No recent applicants yet.</p>
+              </div>
             )}
           </div>
-        </div>
 
-        <div className="space-y-6">
-          <div className="rounded-3xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Active Jobs</p>
-                <h3 className="text-xl font-semibold text-gray-900">Current openings</h3>
-              </div>
-              <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">{activeJobs} live</div>
-            </div>
-            <div className="mt-6 space-y-4">
-              {jobs.filter((job) => job.status === 'active').slice(0, 4).map((job) => (
-                <div key={job._id} className="rounded-3xl border border-gray-200 p-4 hover:border-emerald-200 transition">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-semibold text-gray-900">{job.title}</p>
-                      <p className="text-sm text-gray-500">{job.employmentType || job.type || job.jobType || 'Full time'}</p>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <FiMapPin className="h-4 w-4" />
-                      <span>{formatLocation(job.location) || 'Remote'}</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
-                    <span>{job.applicantsCount || 0} applicants</span>
-                    <span>Closes {job.closingDate ? new Date(job.closingDate).toLocaleDateString() : 'TBD'}</span>
-                    <Link to={`/employer/applicants/${job._id}`} className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700">
-                      View <FiArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-                </div>
-              ))}
-              {jobs.filter((job) => job.status === 'active').length === 0 && (
-                <p className="text-gray-600">No active jobs available right now.</p>
+          {/* Mail Icon Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => navigate('/employer/messages')}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-[#142A24] border border-[#E1E8E4] dark:border-[#23483D] text-[#14231F] dark:text-[#F4F8F6] shadow-2xs hover:bg-gray-50 dark:hover:bg-[#18342C] transition"
+              aria-label={t('nav.messages')}
+            >
+              <FiMail className="w-4.5 h-4.5" />
+              {unreadChatCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#087F5B] dark:bg-[#16A36F] px-1 text-[9px] font-bold text-white shadow-xs">
+                  {unreadChatCount}
+                </span>
               )}
-            </div>
+            </button>
           </div>
 
-          <div className="rounded-3xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">Notifications</p>
-                <h3 className="text-xl font-semibold text-gray-900">Recent updates</h3>
+          {/* User Profile Pill */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowProfileMenu((v) => !v)}
+              className="flex items-center gap-2.5 rounded-full border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] px-3 py-1.5 shadow-2xs hover:bg-gray-50 dark:hover:bg-[#18342C] transition"
+            >
+              <div className="h-7 w-7 overflow-hidden rounded-full bg-[#087F5B] dark:bg-[#16A36F] text-white text-xs font-bold flex items-center justify-center">
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="user avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <span>{(user?.firstName || user?.name || 'E').charAt(0).toUpperCase()}</span>
+                )}
               </div>
-            </div>
-            <div className="mt-6 space-y-4">
-              {notifications.length ? (
-                notifications.slice(0, 4).map((notification) => (
-                  <div key={notification._id} className="rounded-3xl border border-gray-200 p-4 bg-gray-50 transition hover:border-emerald-200">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-gray-900">{notification.title || (notification.message || 'Notification')}</p>
-                        <p className="text-sm text-gray-500">{notification.subtitle || 'Action recommended'}</p>
-                      </div>
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-600 shadow-sm">New</span>
-                    </div>
-                    <p className="mt-3 text-sm text-gray-500">{new Date(notification.createdAt).toLocaleString()}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-600">No recent notifications.</p>
-              )}
-            </div>
+              <span className="text-xs font-semibold text-[#14231F] dark:text-[#F4F8F6]">{user?.firstName || user?.name || 'Employer'}</span>
+              <FiChevronDown className="w-3.5 h-3.5 text-[#64746E] dark:text-[#A9BBB4]" />
+            </button>
+
+            {showProfileMenu && (
+              <div className="absolute right-0 z-30 mt-2 w-48 rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-2 shadow-xl">
+                <button
+                  type="button"
+                  onClick={() => { setShowProfileMenu(false); navigate('/employer/company'); }}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-[#14231F] dark:text-[#F4F8F6] hover:bg-slate-50 dark:hover:bg-[#18342C]"
+                >
+                  <FiUser className="h-4 w-4 text-[#087F5B] dark:text-[#16A36F]" /> {t('sidebar.companyProfile')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowProfileMenu(false); navigate('/employer/settings'); }}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-[#14231F] dark:text-[#F4F8F6] hover:bg-slate-50 dark:hover:bg-[#18342C]"
+                >
+                  <FiSettings className="h-4 w-4 text-[#64746E]" /> {t('nav.settings')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowProfileMenu(false); handleLogout(); }}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30"
+                >
+                  <FiArrowRight className="h-4 w-4" /> {t('nav.logout')}
+                </button>
+              </div>
+            )}
           </div>
+
         </div>
       </section>
 
-      {selectedApplication && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">Schedule Interview</h3>
-                <p className="text-sm text-gray-500">Confirm the interview time for this candidate.</p>
-              </div>
-              <button onClick={() => setSelectedApplication(null)} className="text-gray-500 transition hover:text-gray-700">Close</button>
+      {/* ── 5 Real Stat Cards Row ── */}
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {/* Card 1: Jobs Posted */}
+        <div className="rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#087F5B] dark:text-[#25C58A]">
+              <FiBriefcase className="w-5.5 h-5.5 stroke-[2.2]" />
             </div>
-            <form onSubmit={handleInterviewSubmit} className="mt-6 space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Interview Date</label>
-                  <input
-                    type="date"
-                    value={interviewForm.interviewDate}
-                    onChange={(event) => setInterviewForm((prev) => ({ ...prev, interviewDate: event.target.value }))}
-                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-700 focus:border-emerald-500 focus:outline-none"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Interview Time</label>
-                  <input
-                    type="time"
-                    value={interviewForm.interviewTime}
-                    onChange={(event) => setInterviewForm((prev) => ({ ...prev, interviewTime: event.target.value }))}
-                    className="mt-2 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-700 focus:border-emerald-500 focus:outline-none"
-                    required
-                  />
-                </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-[#64746E] dark:text-[#A9BBB4]">{t('dashboard.jobsPosted')}</p>
+              <p className="mt-1 text-2xl font-bold text-[#14231F] dark:text-[#F4F8F6]">{jobsPosted}</p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-[#64746E] dark:text-[#7F958C] font-medium">{t('dashboard.active', { count: activeJobs })}</p>
+        </div>
+
+        {/* Card 2: Total Applicants */}
+        <div className="rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#087F5B] dark:text-[#25C58A]">
+              <FiUsers className="w-5.5 h-5.5 stroke-[2.2]" />
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-[#64746E] dark:text-[#A9BBB4]">{t('dashboard.totalApplicants')}</p>
+              <p className="mt-1 text-2xl font-bold text-[#14231F] dark:text-[#F4F8F6]">{totalApplicants}</p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-[#64746E] dark:text-[#7F958C] font-medium">
+            {newApplicantsCount > 0 ? `+${newApplicantsCount} ${t('dashboard.newThisWeek')}` : `0 ${t('dashboard.newThisWeek')}`}
+          </p>
+        </div>
+
+        {/* Card 3: Active Jobs */}
+        <div className="rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#087F5B] dark:text-[#25C58A]">
+              <FiFlag className="w-5.5 h-5.5 stroke-[2.2]" />
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-[#64746E] dark:text-[#A9BBB4]">{t('dashboard.activeJobs')}</p>
+              <p className="mt-1 text-2xl font-bold text-[#14231F] dark:text-[#F4F8F6]">{activeJobs}</p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-[#64746E] dark:text-[#7F958C] font-medium">{t('dashboard.liveRoles', { count: activeJobs })}</p>
+        </div>
+
+        {/* Card 4: Upcoming Interviews */}
+        <div className="rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+              <FiCalendar className="w-5.5 h-5.5 stroke-[2.2]" />
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-[#64746E] dark:text-[#A9BBB4]">{t('dashboard.upcomingInterviews')}</p>
+              <p className="mt-1 text-2xl font-bold text-[#14231F] dark:text-[#F4F8F6]">{interviewsCount}</p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-[#64746E] dark:text-[#7F958C] font-medium">{t('dashboard.scheduled', { count: interviewsCount })}</p>
+        </div>
+
+        {/* Card 5: Hired Candidates */}
+        <div className="rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <div className="flex items-center justify-between">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#087F5B] dark:text-[#25C58A]">
+              <FiCheckCircle className="w-5.5 h-5.5 stroke-[2.2]" />
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-[#64746E] dark:text-[#A9BBB4]">{t('dashboard.hiredCandidates')}</p>
+              <p className="mt-1 text-2xl font-bold text-[#14231F] dark:text-[#F4F8F6]">{hiredCount}</p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-[#64746E] dark:text-[#7F958C] font-medium">{t('dashboard.filled', { count: hiredCount })}</p>
+        </div>
+      </section>
+
+      {/* ── Bottom Section: Company Overview & Analytics ── */}
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        
+        {/* Left Column: Company Overview Card */}
+        <div className="lg:col-span-7 rounded-3xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-6 shadow-2xs">
+          <div className="flex items-center justify-between border-b border-[#E1E8E4] dark:border-[#23483D] pb-5">
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-[#087F5B] dark:text-[#25C58A]">
+                <FiUser className="w-6 h-6 stroke-[2]" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Location / Online Link</label>
-                <input
-                  type="text"
-                  value={interviewForm.interviewLocation}
-                  onChange={(event) => setInterviewForm((prev) => ({ ...prev, interviewLocation: event.target.value }))}
-                  className="mt-2 w-full rounded-2xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-700 focus:border-emerald-500 focus:outline-none"
-                  placeholder="Conference room A or meeting link"
-                  required
-                />
+                <p className="text-xs font-semibold text-[#64746E] dark:text-[#A9BBB4]">{t('dashboard.companyOverview')}</p>
+                <h3 className="text-lg font-bold text-[#14231F] dark:text-[#F4F8F6]">{activeCompany?.name || t('dashboard.noCompanyProfile')}</h3>
+                <p className="text-xs text-[#64746E] dark:text-[#A9BBB4] font-medium">{activeCompany?.industry || t('dashboard.notProvided')}</p>
               </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <button type="button" onClick={() => setSelectedApplication(null)} className="rounded-2xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
-                  Cancel
-                </button>
-                <button type="submit" className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700" disabled={submittingInterview}>
-                  {submittingInterview ? 'Saving...' : 'Save Interview'}
-                </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/employer/company')}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#087F5B]/30 bg-emerald-50/50 dark:bg-emerald-950/30 px-3.5 py-1.5 text-xs font-bold text-[#087F5B] dark:text-[#25C58A] hover:bg-emerald-100/60 transition"
+            >
+              <FiEdit3 className="w-3.5 h-3.5" />
+              <span>{t('dashboard.editProfile')}</span>
+            </button>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl bg-[#F0F4F2] dark:bg-[#10231E] p-4 border border-[#E1E8E4] dark:border-[#23483D]">
+              <div className="flex items-center gap-2 text-[#64746E] dark:text-[#A9BBB4] text-xs font-medium">
+                <FiMapPin className="w-4 h-4" />
+                <span>{t('dashboard.location')}</span>
               </div>
-            </form>
+              <p className="mt-1.5 text-xs font-semibold text-[#14231F] dark:text-[#F4F8F6]">
+                {companyLocation || t('dashboard.notProvided')}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-[#F0F4F2] dark:bg-[#10231E] p-4 border border-[#E1E8E4] dark:border-[#23483D]">
+              <div className="flex items-center gap-2 text-[#64746E] dark:text-[#A9BBB4] text-xs font-medium">
+                <FiUsers className="w-4 h-4" />
+                <span>{t('dashboard.companySize')}</span>
+              </div>
+              <p className="mt-1.5 text-xs font-semibold text-[#14231F] dark:text-[#F4F8F6]">
+                {activeCompany?.companySize || activeCompany?.size || t('dashboard.notProvided')}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-[#F0F4F2] dark:bg-[#10231E] p-4 border border-[#E1E8E4] dark:border-[#23483D]">
+              <div className="flex items-center gap-2 text-[#64746E] dark:text-[#A9BBB4] text-xs font-medium">
+                <FiCalendar className="w-4 h-4" />
+                <span>{t('dashboard.memberSince')}</span>
+              </div>
+              <p className="mt-1.5 text-xs font-semibold text-[#14231F] dark:text-[#F4F8F6]">
+                {memberSinceDate
+                  ? new Date(memberSinceDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : t('dashboard.notProvided')}
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-[#F0F4F2] dark:bg-[#10231E] p-4 border border-[#E1E8E4] dark:border-[#23483D]">
+              <div className="flex items-center justify-between text-xs font-medium">
+                <span className="text-[#64746E] dark:text-[#A9BBB4]">{t('dashboard.profileCompletion')}</span>
+              </div>
+              <p className="mt-1.5 text-xs font-bold text-[#14231F] dark:text-[#F4F8F6]">{profileCompletion}% {t('dashboard.complete')}</p>
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                <div className="h-full rounded-full bg-[#087F5B] dark:bg-[#16A36F] transition-all duration-500" style={{ width: `${profileCompletion}%` }} />
+              </div>
+            </div>
+          </div>
+
+          {!activeCompany && (
+            <div className="mt-6 rounded-2xl border border-dashed border-[#087F5B]/30 bg-emerald-50/50 dark:bg-emerald-950/30 p-5 text-center">
+              <p className="text-sm font-semibold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.noCompanyProfile')}</p>
+              <p className="mt-1 text-xs text-[#64746E] dark:text-[#A9BBB4]">{t('dashboard.noCompanyProfileDesc')}</p>
+              <button
+                type="button"
+                onClick={() => navigate('/employer/company')}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#087F5B] px-4 py-2 text-xs font-bold text-white hover:bg-[#0A6B4E] transition"
+              >
+                <FiEdit3 className="w-3.5 h-3.5" />
+                {t('dashboard.completeCompanyProfile')}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Real Analytics Funnel Card */}
+        <div className="lg:col-span-5 rounded-3xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-6 shadow-2xs">
+          <div className="flex items-center justify-between border-b border-[#E1E8E4] dark:border-[#23483D] pb-4">
+            <div>
+              <p className="text-xs font-semibold text-[#64746E] dark:text-[#A9BBB4]">{t('dashboard.analytics.title')}</p>
+              <h3 className="text-lg font-bold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.applicantFunnel')}</h3>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 text-[11px] font-semibold text-[#087F5B] dark:text-[#25C58A]">
+              <span className="h-2 w-2 rounded-full bg-[#087F5B] dark:bg-[#25C58A] animate-pulse" />
+              {t('dashboard.liveData')}
+            </span>
+          </div>
+
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="relative h-44 w-44 shrink-0">
+              <Doughnut data={chartData} options={chartOptions} />
+            </div>
+
+            <div className="space-y-3 w-full sm:w-auto text-xs">
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-sm bg-[#10B981]" />
+                  <span className="font-semibold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.analytics.newApplications')}</span>
+                </div>
+                <span className="font-bold text-[#14231F] dark:text-[#F4F8F6]">{analyticsFunnel.newAppsPct}%</span>
+              </div>
+
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-sm bg-[#A3E635]" />
+                  <span className="font-semibold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.analytics.underReview')}</span>
+                </div>
+                <span className="font-bold text-[#14231F] dark:text-[#F4F8F6]">{analyticsFunnel.underReviewPct}%</span>
+              </div>
+
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-sm bg-[#0D9488]" />
+                  <span className="font-semibold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.analytics.interview')}</span>
+                </div>
+                <span className="font-bold text-[#14231F] dark:text-[#F4F8F6]">{analyticsFunnel.interviewPct}%</span>
+              </div>
+
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-sm bg-[#087F5B]" />
+                  <span className="font-semibold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.analytics.hired')}</span>
+                </div>
+                <span className="font-bold text-[#14231F] dark:text-[#F4F8F6]">{analyticsFunnel.hiredPct}%</span>
+              </div>
+            </div>
           </div>
         </div>
-      )}
 
-      {loading && <p className="text-sm text-gray-500">Loading employer dashboard...</p>}
+      </section>
+
     </div>
   );
 };

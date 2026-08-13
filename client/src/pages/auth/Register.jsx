@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { GoogleLogin } from '@react-oauth/google';
 import api from '../../services/api';
 import { register as registerUser, setCredentials } from '../../store/slices/authSlice';
@@ -13,6 +14,7 @@ import { FiUser, FiMail, FiLock, FiBriefcase, FiEye, FiEyeOff, FiPhone, FiChevro
 import countryOptions from '../../data/countryCodes';
 
 const Register = () => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -38,15 +40,14 @@ const Register = () => {
     setLoading(true);
     try {
       await dispatch(registerUser(data)).unwrap();
-      // Save the email so OTP page can prefill
       try { localStorage.setItem('pendingVerificationEmail', data.email); } catch (e) {}
-      toast.success('Registration successful! Please verify your email with the code sent.');
+      toast.success(t('auth.registerSuccess'));
       navigate('/verify-otp');
     } catch (error) {
       const message =
         error?.errors?.length > 0
           ? error.errors.map((err) => err.message).join(', ')
-          : error?.message || error || 'Registration failed';
+          : error?.message || error || t('common.error');
       toast.error(message);
     } finally {
       setLoading(false);
@@ -60,27 +61,27 @@ const Register = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-2">
             <FiBriefcase className="w-10 h-10 text-primary-500" />
-            <span className="text-3xl font-bold text-primary-500">OnlineJob portal</span>
+            <span className="text-3xl font-bold text-primary-500">{t('common.appName')}</span>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">Create your account and start your journey</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('common.tagline')}</p>
         </div>
 
         {/* Form Card */}
         <div className="card">
-          <h2 className="text-2xl font-bold text-center mb-6">Create Account</h2>
+          <h2 className="text-2xl font-bold text-center mb-6">{t('auth.register')}</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Name Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">First Name</label>
+                <label className="block text-sm font-medium mb-2">{t('auth.firstName')}</label>
                 <input
                   type="text"
                   {...register('firstName', {
-                    required: 'First name is required',
+                    required: t('common.error'),
                     pattern: {
                       value: /^[A-Za-z]+$/,
-                      message: 'First name must contain only letters',
+                      message: t('common.error'),
                     },
                   })}
                   className="input"
@@ -90,14 +91,14 @@ const Register = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Last Name</label>
+                <label className="block text-sm font-medium mb-2">{t('auth.lastName')}</label>
                 <input
                   type="text"
                   {...register('lastName', {
-                    required: 'Last name is required',
+                    required: t('common.error'),
                     pattern: {
                       value: /^[A-Za-z]+$/,
-                      message: 'Last name must contain only letters',
+                      message: t('common.error'),
                     },
                   })}
                   className="input"
@@ -109,12 +110,12 @@ const Register = () => {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium mb-2">Email Address</label>
+              <label className="block text-sm font-medium mb-2">{t('auth.email')}</label>
               <div className="relative">
                 <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
-                  {...register('email', { required: 'Email is required' })}
+                  {...register('email', { required: t('auth.emailRequired') })}
                   className="input pl-10"
                   placeholder="you@example.com"
                 />
@@ -124,7 +125,7 @@ const Register = () => {
 
             {/* Phone */}
             <div className="relative space-y-2">
-              <label className="block text-sm font-medium mb-2">Phone Number</label>
+              <label className="block text-sm font-medium mb-2">{t('footer.phone')}</label>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -188,10 +189,10 @@ const Register = () => {
               <input
                 type="hidden"
                 {...register('phone', {
-                  required: 'Phone number is required',
+                  required: t('common.error'),
                   pattern: {
                     value: /^\+251[0-9]{9}$/,
-                    message: 'Please enter a valid phone number',
+                    message: t('common.error'),
                   },
                   setValueAs: (value) => {
                     const digits = String(value || '').replace(/\D/g, '');
@@ -207,18 +208,14 @@ const Register = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
+              <label className="block text-sm font-medium mb-2">{t('auth.password')}</label>
               <div className="relative">
                 <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   {...register('password', {
-                    required: 'Password is required',
-                    minLength: { value: 8, message: 'Password must be at least 8 characters' },
-                    pattern: {
-                      value: /(?=.*[0-9])(?=.*[a-zA-Z])/, 
-                      message: 'Password must contain at least one letter and one number',
-                    },
+                    required: t('auth.passwordRequired'),
+                    minLength: { value: 8, message: t('auth.weakPassword') },
                   })}
                   className="input pl-10 pr-10"
                   placeholder="••••••••"
@@ -237,14 +234,14 @@ const Register = () => {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium mb-2">Confirm Password</label>
+              <label className="block text-sm font-medium mb-2">{t('auth.confirmPassword')}</label>
               <div className="relative">
                 <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   {...register('confirmPassword', {
-                    required: 'Please confirm your password',
-                    validate: value => value === password || 'Passwords do not match'
+                    required: t('auth.passwordRequired'),
+                    validate: value => value === password || t('auth.passwordMismatch')
                   })}
                   className="input pl-10 pr-10"
                   placeholder="••••••••"
@@ -263,63 +260,24 @@ const Register = () => {
 
             {/* Role Selection */}
             <div>
-              <label className="block text-sm font-medium mb-2">I am a</label>
+              <label className="block text-sm font-medium mb-2">{t('common.user')}</label>
               <select {...register('role')} className="select">
-                <option value="jobseeker">Job Seeker</option>
-                <option value="employer">Employer</option>
+                <option value="jobseeker">{t('roles.jobSeeker')}</option>
+                <option value="employer">{t('roles.employer')}</option>
               </select>
             </div>
 
             {/* Submit Button */}
             <button type="submit" disabled={loading} className="btn btn-primary w-full">
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? t('common.loading') : t('auth.register')}
             </button>
           </form>
 
-          <div className="mt-4">
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
-              <span className="h-px w-16 bg-gray-300"></span>
-              <span>or sign up with</span>
-              <span className="h-px w-16 bg-gray-300"></span>
-            </div>
-            <div className="mt-4 flex justify-center">
-              <GoogleLogin
-                onSuccess={async (credentialResponse) => {
-                  if (!credentialResponse?.credential) {
-                    setLoading(false);
-                    return toast.error('Google sign-in failed.');
-                  }
-
-                  setLoading(true);
-                  try {
-                    const response = await api.post('/auth/google', {
-                      idToken: credentialResponse.credential,
-                    });
-                    dispatch(setCredentials(response.data));
-                    toast.success('Signed in with Google!');
-                    const role = response.data?.user?.role;
-                    if (role === 'admin') navigate('/admin');
-                    else if (role === 'employer') navigate('/employer');
-                    else navigate('/dashboard');
-                  } catch (error) {
-                    toast.error(error?.response?.data?.message || 'Google sign-in failed.');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                onError={() => {
-                  setLoading(false);
-                  toast.error('Google sign-in failed.');
-                }}
-              />
-            </div>
-          </div>
-
           {/* Login Link */}
           <p className="text-center mt-6 text-sm text-gray-600 dark:text-gray-400">
-            Already have an account?{' '}
+            {t('nav.login')}{' '}
             <Link to="/login" className="text-primary-500 hover:underline font-medium">
-              Login here
+              {t('auth.login')}
             </Link>
           </p>
         </div>

@@ -49,6 +49,7 @@ import Messages from './pages/dashboard/jobseeker/Messages';
 import CareerResources from './pages/dashboard/jobseeker/CareerResources';
 import Settings from './pages/dashboard/jobseeker/Settings';
 import ChangePassword from './pages/dashboard/jobseeker/ChangePassword';
+import CertificateVerification from './pages/dashboard/jobseeker/CertificateVerification';
 
 // Employer Dashboard
 import EmployerDashboard from './pages/dashboard/employer/Dashboard';
@@ -66,12 +67,17 @@ import CompanyProfile from './pages/dashboard/employer/CompanyProfile';
 import AdminDashboard from './pages/dashboard/admin/Dashboard';
 import ManageUsers from './pages/dashboard/admin/ManageUsers';
 import ManageCompanies from './pages/dashboard/admin/ManageCompanies';
+import UserProfile from './pages/admin/UserProfile';
 import CreateCompany from './pages/dashboard/admin/CreateCompany';
 import AdminManageJobs from './pages/dashboard/admin/AdminManageJobs';
 import ManageCategories from './pages/dashboard/admin/ManageCategories';
 import AdminApplications from './pages/dashboard/admin/AdminApplications';
 import AdminReports from './pages/dashboard/admin/AdminReports';
 import AdminMessages from './pages/dashboard/admin/AdminMessages';
+import AdminNotifications from './pages/dashboard/admin/AdminNotifications';
+import AdminProfile from './pages/dashboard/admin/AdminProfile';
+import AdminSettings from './pages/dashboard/admin/AdminSettings';
+import AdminCertificateVerifications from './pages/dashboard/admin/CertificateVerifications';
 
 // Protected Route Component
 import ProtectedRoute from './components/ProtectedRoute';
@@ -83,11 +89,21 @@ const AppRoutes = () => {
     dispatch(initializeAuth());
   }, [dispatch]);
 
+  // Debug: log imported route components to detect invalid object exports
+  try {
+    // eslint-disable-next-line no-console
+    console.log('ROUTES DEBUG:', {
+      ManageUsersType: typeof ManageUsers,
+      ManageCompaniesType: typeof ManageCompanies,
+      UserProfileType: typeof UserProfile,
+      AdminDashboardType: typeof AdminDashboard,
+    });
+  } catch (e) {}
+
   return (
     <AccessibilityProvider>
       <Router>
         <Toaster position="top-right" />
-        <ChatWidget /> {/* Floating chat widget */}
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<MainLayout />}>
@@ -124,6 +140,7 @@ const AppRoutes = () => {
             <Route path="job-alerts" element={<JobAlerts />} />
             <Route path="messages" element={<Messages />} />
             <Route path="career-resources" element={<CareerResources />} />
+            <Route path="certificate-verification" element={<CertificateVerification />} />
             <Route path="settings" element={<Settings />} />
             <Route path="settings/change-password" element={<ChangePassword />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -151,13 +168,18 @@ const AppRoutes = () => {
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<ManageUsers />} />
+            <Route path="users/:id" element={<UserProfile />} />
             <Route path="companies" element={<ManageCompanies />} />
             <Route path="companies/new" element={<CreateCompany />} />
             <Route path="jobs" element={<AdminManageJobs />} />
             <Route path="categories" element={<ManageCategories />} />
             <Route path="applications" element={<AdminApplications />} />
+            <Route path="certificates" element={<AdminCertificateVerifications />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="messages" element={<AdminMessages />} />
+            <Route path="notifications" element={<AdminNotifications />} />
+            <Route path="profile" element={<AdminProfile />} />
+            <Route path="settings" element={<AdminSettings />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Route>
 

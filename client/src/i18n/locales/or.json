@@ -76,7 +76,7 @@
     "heroCard": "Marsariitii hojii haaraa dargaggoota Itiyoophiyaaaf",
     "faqSectionTitle": "Gaaffiiwwan Baay'ee Gaafataman",
     "faqShort1": "Q: Akkamitti iyyannoo dhiyeessa? A: CV kee olkaa'ii fi Apply tuqi.",
-    "faqShort2": "Q: Qacaroonni na akkamitti quunnamu? A: Email ykn ergaa app irratti." ,
+    "faqShort2": "Q: Qacaroonni na akkamitti quunnamu? A: Email ykn ergaa app irratti.",
     "newsletterTitle": "Nuti waliin ta'i",
     "newsletterText": "Beeksisa hojii fi qajeelfama hojii argadhu.",
     "newsletterEmailPlaceholder": "Email kee",
@@ -223,6 +223,9 @@
     "answer4": "Eeyyee, qacartoonni proofiilii dhaabbataa uumuun fi hooggansa argachuun hojii dhiyeessuu danda’u.",
     "question5": "Deebii argachuuf yeroo meeqa fudhata?",
     "answer5": "Yeroon deebii qacartoota irratti hundaa’a. Haala iyyannoo kee dashboard irra ilaali."
+  },
+  "savedJobs": {
+    "saved": "Olkaa'amaa",
+    "saveJob": "Hojii Olkaayi"
   }
 }
-

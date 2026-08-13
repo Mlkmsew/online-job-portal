@@ -33,7 +33,7 @@ const companySchema = new mongoose.Schema(
     foundedYear: { type: Number },
     companyType: {
       type: String,
-      enum: ['Private', 'Public', 'NGO', 'Government', 'Startup', 'MNC', 'Other'],
+      enum: ['Private', 'Public', 'Non-Profit', 'NGO', 'Government', 'Startup', 'MNC', 'Other'],
     },
 
     // Contact

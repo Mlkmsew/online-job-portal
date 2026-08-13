@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import { FiMail, FiKey, FiSend, FiCheckCircle } from 'react-icons/fi';
+import { FiMail, FiKey, FiCheckCircle } from 'react-icons/fi';
 
 const VerifyOTP = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
@@ -17,9 +19,9 @@ const VerifyOTP = () => {
     try {
       await api.post('/auth/send-otp', { email: data.email });
       setCodeSent(true);
-      toast.success('Verification code sent to your email.');
+      toast.success(t('auth.verifyEmail'));
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Failed to send verification code.');
+      toast.error(error?.response?.data?.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -29,11 +31,11 @@ const VerifyOTP = () => {
     setLoading(true);
     try {
       await api.post('/auth/verify-otp', { email: data.email, code: data.code });
-      toast.success('Email verified successfully!');
+      toast.success(t('auth.verifyEmail'));
       try { localStorage.removeItem('pendingVerificationEmail'); } catch (e) {}
       navigate('/login');
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Invalid or expired verification code.');
+      toast.error(error?.response?.data?.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -44,18 +46,17 @@ const VerifyOTP = () => {
       <div className="w-full max-w-md card">
         <div className="text-center mb-6">
           <FiCheckCircle className="mx-auto h-12 w-12 text-primary-500" />
-          <h1 className="text-2xl font-bold mt-4">Verify Your Email</h1>
-          <p className="text-gray-600 mt-2">Enter your email and the verification code sent to you.</p>
+          <h1 className="text-2xl font-bold mt-4">{t('auth.verifyEmail')}</h1>
         </div>
 
         <form className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Email Address</label>
+            <label className="block text-sm font-medium mb-2">{t('auth.email')}</label>
             <div className="relative">
               <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="email"
-                {...register('email', { required: 'Email is required' })}
+                {...register('email', { required: t('auth.emailRequired') })}
                 defaultValue={savedEmail}
                 className="input pl-10"
                 placeholder="you@example.com"
@@ -65,12 +66,12 @@ const VerifyOTP = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Verification Code</label>
+            <label className="block text-sm font-medium mb-2">{t('auth.verifyEmail')}</label>
             <div className="relative">
               <FiKey className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                {...register('code', { required: 'Verification code is required' })}
+                {...register('code', { required: t('common.error') })}
                 className="input pl-10"
                 placeholder="123456"
               />
@@ -85,7 +86,7 @@ const VerifyOTP = () => {
               disabled={loading}
               className="btn btn-secondary w-full"
             >
-              {loading ? 'Sending…' : 'Resend Code'}
+              {loading ? t('common.loading') : t('common.reset')}
             </button>
             <button
               type="button"
@@ -93,20 +94,13 @@ const VerifyOTP = () => {
               disabled={loading}
               className="btn btn-primary w-full"
             >
-              {loading ? 'Verifying…' : 'Verify Code'}
+              {loading ? t('common.loading') : t('auth.verifyEmail')}
             </button>
           </div>
 
-          {codeSent && (
-            <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-700">
-              A verification code has been sent to your email. Please check your inbox or spam folder.
-            </div>
-          )}
-
-          <p className="text-center text-sm text-gray-600">
-            Already verified?{' '}
+          <p className="text-center mt-6 text-sm">
             <Link to="/login" className="text-primary-500 hover:underline">
-              Return to login
+              {t('common.back')} {t('auth.login')}
             </Link>
           </p>
         </form>

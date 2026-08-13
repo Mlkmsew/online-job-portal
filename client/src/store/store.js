@@ -8,6 +8,7 @@ import applicationReducer from './slices/applicationSlice';
 import notificationReducer from './slices/notificationSlice';
 import employerReducer from './slices/employerSlice';
 import adminReducer from './slices/adminSlice';
+import messagesReducer from './slices/messagesSlice';
 
 const rootReducer = {
   auth: authReducer,
@@ -16,6 +17,7 @@ const rootReducer = {
   notifications: notificationReducer,
   employer: employerReducer,
   admin: adminReducer,
+  messages: messagesReducer,
 };
 
 const appReducer = combineReducers(rootReducer);

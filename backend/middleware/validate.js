@@ -116,7 +116,18 @@ const companyValidator = [
     .trim()
     .isLength({ max: 5000 })
     .withMessage('Description must be at most 5000 characters'),
-  body('industry').optional().notEmpty(),
+  body('industry').optional().trim().notEmpty().withMessage('Industry is required'),
+  body('website')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL({ require_protocol: true })
+    .withMessage('Website must be a valid URL, including http:// or https://'),
+  body('email').optional({ checkFalsy: true }).trim().isEmail().withMessage('Please provide a valid email address').normalizeEmail(),
+  body('phone')
+    .optional({ checkFalsy: true })
+    .trim()
+    .matches(/^[0-9()+\-\s]{7,20}$/)
+    .withMessage('Please provide a valid phone number'),
   body('logo').optional().notEmpty().withMessage('Company logo is required'),
 ];
 

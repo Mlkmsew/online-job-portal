@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { fetchEmployerCompany } from '../../../store/slices/employerSlice';
 import { useForm } from 'react-hook-form';
 import api from '../../../services/api';
@@ -28,6 +29,8 @@ import {
 const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5000+'];
 const FOUNDED_YEARS = Array.from({ length: 50 }, (_, index) => new Date().getFullYear() - index);
 
+const PORTAL_HOME_URL = typeof window !== 'undefined' ? window.location.origin : '';
+
 const EMPTY_FORM_VALUES = {
   name: '',
   description: '',
@@ -35,7 +38,7 @@ const EMPTY_FORM_VALUES = {
   companySize: '1-10',
   foundedYear: '',
   companyType: 'Private',
-  website: '',
+  website: PORTAL_HOME_URL,
   email: '',
   phone: '',
   location: {
@@ -69,7 +72,7 @@ const getFormValues = (company = {}) => ({
   companySize: company.companySize || '1-10',
   foundedYear: company.foundedYear?.toString() || '',
   companyType: company.companyType || 'Private',
-  website: company.website || '',
+  website: company.website || PORTAL_HOME_URL,
   email: company.email || '',
   phone: company.phone || '',
   location: {
@@ -98,6 +101,7 @@ const getFormValues = (company = {}) => ({
 
 const CompanyProfile = () => {
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const { company, loading } = useSelector((state) => state.employer);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -185,15 +189,15 @@ const CompanyProfile = () => {
     fieldValue !== undefined && fieldValue !== '' ? fieldValue : companyValue || fallback;
 
   const preview = {
-    name: getPreviewValue(formPreview.name, company?.name, 'Company name not set'),
-    industry: getPreviewValue(formPreview.industry, company?.industry, 'Industry not set'),
-    companySize: getPreviewValue(formPreview.companySize, company?.companySize, 'Size not set'),
-    foundedYear: getPreviewValue(formPreview.foundedYear, company?.foundedYear, 'Founded year not set'),
+    name: getPreviewValue(formPreview.name, company?.name, ''),
+    industry: getPreviewValue(formPreview.industry, company?.industry, ''),
+    companySize: getPreviewValue(formPreview.companySize, company?.companySize, ''),
+    foundedYear: getPreviewValue(formPreview.foundedYear, company?.foundedYear, ''),
     companyType: getPreviewValue(formPreview.companyType, company?.companyType, 'Private'),
-    website: getPreviewValue(formPreview.website, company?.website, 'Website not set'),
-    email: getPreviewValue(formPreview.email, company?.email, 'Email not set'),
-    phone: getPreviewValue(formPreview.phone, company?.phone, 'Phone not set'),
-    locationRegion: getPreviewValue(formPreview.location?.region, company?.location?.region, 'Region not set'),
+    website: getPreviewValue(formPreview.website, company?.website, ''),
+    email: getPreviewValue(formPreview.email, company?.email, ''),
+    phone: getPreviewValue(formPreview.phone, company?.phone, ''),
+    locationRegion: getPreviewValue(formPreview.location?.region, company?.location?.region, ''),
     locationCity: getPreviewValue(formPreview.location?.city, company?.location?.city, ''),
     socialLinks: {
       linkedin: getPreviewValue(formPreview.socialLinks?.linkedin, company?.socialLinks?.linkedin, ''),
@@ -202,10 +206,10 @@ const CompanyProfile = () => {
       instagram: getPreviewValue(formPreview.socialLinks?.instagram, company?.socialLinks?.instagram, ''),
     },
     recruiter: {
-      hrManagerName: getPreviewValue(formPreview.recruiter?.hrManagerName, company?.recruiter?.hrManagerName, 'HR Manager not set'),
-      position: getPreviewValue(formPreview.recruiter?.position, company?.recruiter?.position, 'Position not set'),
-      email: getPreviewValue(formPreview.recruiter?.email, company?.recruiter?.email, 'Email not set'),
-      phone: getPreviewValue(formPreview.recruiter?.phone, company?.recruiter?.phone, 'Phone not set'),
+      hrManagerName: getPreviewValue(formPreview.recruiter?.hrManagerName, company?.recruiter?.hrManagerName, ''),
+      position: getPreviewValue(formPreview.recruiter?.position, company?.recruiter?.position, ''),
+      email: getPreviewValue(formPreview.recruiter?.email, company?.recruiter?.email, ''),
+      phone: getPreviewValue(formPreview.recruiter?.phone, company?.recruiter?.phone, ''),
     },
     businessLicense: businessLicenseFile ? businessLicenseFile.name : company?.businessLicense ? company.businessLicense.split('/').pop() : '',
     tinCertificate: tinCertificateFile ? tinCertificateFile.name : company?.tinCertificate ? company.tinCertificate.split('/').pop() : '',
@@ -378,7 +382,7 @@ const CompanyProfile = () => {
 
   const onSubmit = async (data) => {
     if (!company && !logoFile) {
-      toast.error('Please upload a company logo before submitting.');
+      toast.error(t('employer.companyProfile.error.uploadLogo'));
       return;
     }
 
@@ -391,11 +395,11 @@ const CompanyProfile = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      toast.success(company ? 'Company profile updated successfully.' : 'Company profile submitted for approval!');
+      toast.success(company ? t('employer.companyProfile.success.updated') : t('employer.companyProfile.success.submitted'));
       dispatch(fetchEmployerCompany());
       setIsEditing(false);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Unable to save company profile.');
+      toast.error(error.response?.data?.message || t('employer.companyProfile.error.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -454,17 +458,17 @@ const CompanyProfile = () => {
       <div className="card p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-primary-600">Employer Profile / Company Profile</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-primary-600">{t('employer.companyProfile.breadcrumb')}</p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">
-              Employer Company Profile
+              {t('employer.companyProfile.title')}
             </h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 max-w-2xl">
-              Manage your company branding, contact details, social links, recruiter contact, and verification documents.
+              {t('employer.companyProfile.description')}
             </p>
           </div>
 
           <div className="badge badge-primary">
-            {completionPercent}% complete
+            {completionPercent}% {t('employer.companyProfile.complete')}
           </div>
         </div>
 
@@ -479,8 +483,8 @@ const CompanyProfile = () => {
             <div className="card p-6">
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Company Branding</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Upload logo and cover image, then add your company basics.</p>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('employer.companyProfile.sections.branding.title')}</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employer.companyProfile.sections.branding.description')}</p>
                 </div>
                 {company && !isEditing ? (
                   <button
@@ -488,7 +492,7 @@ const CompanyProfile = () => {
                     onClick={() => setIsEditing(true)}
                     className="btn btn-outline"
                   >
-                    Edit Profile
+                    {t('employer.companyProfile.actions.editProfile')}
                   </button>
                 ) : null}
               </div>
@@ -497,14 +501,14 @@ const CompanyProfile = () => {
                 <div className="space-y-4 rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center dark:border-gray-700 dark:bg-gray-900">
                   <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-3xl bg-white shadow-sm dark:bg-gray-800">
                     {logoPreview ? (
-                      <img src={logoPreview} alt="Company logo preview" className="h-20 w-20 object-contain" />
+                      <img src={logoPreview} alt={t('employer.companyProfile.previewLabels.logoPreview')} className="h-20 w-20 object-contain" />
                     ) : (
                       <FiUploadCloud className="h-10 w-10 text-gray-400" />
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Company Logo</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">PNG, JPG, SVG up to 5MB</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('employer.companyProfile.fields.logo')}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('employer.companyProfile.hints.logoFile')}</p>
                   </div>
                   <input
                     type="file"
@@ -522,7 +526,7 @@ const CompanyProfile = () => {
                       }}
                       className="btn btn-outline w-full"
                     >
-                      Remove / Replace Logo
+                      {t('employer.companyProfile.actions.removeReplaceLogo')}
                     </button>
                   )}
                 </div>
@@ -530,7 +534,7 @@ const CompanyProfile = () => {
                 <div className="space-y-4 rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
                   <div className="h-36 overflow-hidden rounded-3xl bg-white shadow-sm dark:bg-gray-800">
                     {coverPreview ? (
-                      <img src={coverPreview} alt="Company cover preview" className="h-full w-full object-cover" />
+                      <img src={coverPreview} alt={t('employer.companyProfile.previewLabels.coverPreview')} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full items-center justify-center text-gray-400">
                         <FiUploadCloud className="h-12 w-12" />
@@ -538,8 +542,8 @@ const CompanyProfile = () => {
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Cover Image</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Optional, adds polish to your public profile.</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('employer.companyProfile.fields.coverImage')}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('employer.companyProfile.sections.cover.description')}</p>
                   </div>
                   <input
                     type="file"
@@ -557,7 +561,7 @@ const CompanyProfile = () => {
                       }}
                       className="btn btn-outline w-full"
                     >
-                      Remove / Replace Cover
+                      {t('employer.companyProfile.actions.removeReplaceCover')}
                     </button>
                   )}
                 </div>
@@ -565,28 +569,28 @@ const CompanyProfile = () => {
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Company Name</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.name')}</label>
                   <input
                     type="text"
-                    {...register('name', { required: 'Company name is required' })}
+                    {...register('name', { required: t('employer.companyProfile.validation.nameRequired') })}
                     disabled={!isEditing}
                     className="input"
-                    placeholder="E.g. Emare Ict Hub"
+                    placeholder={t('employer.companyProfile.placeholders.name')}
                   />
                   {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Industry</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.industry')}</label>
                   <input
                     type="text"
                     {...register('industry')}
                     disabled={!isEditing}
                     className="input"
-                    placeholder="E.g. Technology"
+                    placeholder={t('employer.companyProfile.placeholders.industry')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Company Size</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.companySize')}</label>
                   <select
                     {...register('companySize')}
                     disabled={!isEditing}
@@ -598,13 +602,13 @@ const CompanyProfile = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Founded Year</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.foundedYear')}</label>
                   <select
                     {...register('foundedYear')}
                     disabled={!isEditing}
                     className="select"
                   >
-                    <option value="">Select year</option>
+                    <option value="">{t('employer.companyProfile.previewLabels.selectYear')}</option>
                     {FOUNDED_YEARS.map((year) => (
                       <option key={year} value={year}>{year}</option>
                     ))}
@@ -613,17 +617,39 @@ const CompanyProfile = () => {
               </div>
             </div>
 
+            {/* About Company Section */}
+            <div className="card p-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('employer.companyProfile.sections.about.title')}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('employer.companyProfile.sections.about.description')}</p>
+              </div>
+              <div className="mt-6">
+                <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.description')}</label>
+                <textarea
+                  {...register('description')}
+                  disabled={!isEditing}
+                  rows={5}
+                  className="input w-full resize-none"
+                  placeholder={t('employer.companyProfile.placeholders.description')}
+                  maxLength={2000}
+                />
+                <p className="mt-1 text-xs text-gray-400 text-right">
+                  {(formPreview.description || '').length}/2000
+                </p>
+              </div>
+            </div>
+
             <div className="card p-6">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Contact Information</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Primary company contact details.</p>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('employer.companyProfile.sections.contact.title')}</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('employer.companyProfile.sections.contact.description')}</p>
                 </div>
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Email</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.email')}</label>
                   <input
                     type="email"
                     {...register('email')}
@@ -633,7 +659,7 @@ const CompanyProfile = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Phone</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.phone')}</label>
                   <input
                     type="tel"
                     {...register('phone')}
@@ -643,7 +669,7 @@ const CompanyProfile = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Website</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.website')}</label>
                   <input
                     type="url"
                     {...register('website')}
@@ -653,7 +679,7 @@ const CompanyProfile = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Region</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.region')}</label>
                   <select
                     {...register('location.region')}
                     disabled={!isEditing}
@@ -663,33 +689,33 @@ const CompanyProfile = () => {
                       setValue('location.city', '');
                     }}
                   >
-                    <option value="">Choose region</option>
+                    <option value="">{t('employer.companyProfile.placeholders.region')}</option>
                     {REGIONS.map((region) => (
                       <option key={region} value={region}>{region}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">City</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.city')}</label>
                   <select
                     {...register('location.city')}
                     disabled={!isEditing || !selectedRegion}
                     className="select"
                   >
-                    <option value="">Choose city</option>
+                    <option value="">{t('employer.companyProfile.placeholders.city')}</option>
                     {selectedCities.map((city) => (
                       <option key={city} value={city}>{city}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Address</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.address')}</label>
                   <input
                     type="text"
                     {...register('location.address')}
                     disabled={!isEditing}
                     className="input"
-                    placeholder="Street address"
+                    placeholder={t('employer.companyProfile.placeholders.address')}
                   />
                 </div>
               </div>
@@ -697,49 +723,49 @@ const CompanyProfile = () => {
 
             <div className="card p-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Social Media</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Add links for company visibility.</p>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('employer.companyProfile.sections.social.title')}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('employer.companyProfile.sections.social.description')}</p>
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-semibold mb-2">LinkedIn</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.linkedin')}</label>
                   <input
                     type="url"
                     {...register('socialLinks.linkedin')}
                     disabled={!isEditing}
                     className="input"
-                    placeholder="https://linkedin.com/company/example"
+                    placeholder={t('employer.companyProfile.placeholders.linkedin')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Facebook</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.facebook')}</label>
                   <input
                     type="url"
                     {...register('socialLinks.facebook')}
                     disabled={!isEditing}
                     className="input"
-                    placeholder="https://facebook.com/example"
+                    placeholder={t('employer.companyProfile.placeholders.facebook')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Telegram</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.telegram')}</label>
                   <input
                     type="url"
                     {...register('socialLinks.telegram')}
                     disabled={!isEditing}
                     className="input"
-                    placeholder="https://t.me/example"
+                    placeholder={t('employer.companyProfile.placeholders.telegram')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Instagram</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.instagram')}</label>
                   <input
                     type="url"
                     {...register('socialLinks.instagram')}
                     disabled={!isEditing}
                     className="input"
-                    placeholder="https://instagram.com/example"
+                    placeholder={t('employer.companyProfile.placeholders.instagram')}
                   />
                 </div>
               </div>
@@ -747,49 +773,49 @@ const CompanyProfile = () => {
 
             <div className="card p-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recruiter Information</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">HR or recruiter contact details for your company.</p>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('employer.companyProfile.sections.recruiter.title')}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('employer.companyProfile.sections.recruiter.description')}</p>
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-semibold mb-2">HR Manager Name</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.recruiterName')}</label>
                   <input
                     type="text"
                     {...register('recruiter.hrManagerName')}
                     disabled={!isEditing}
                     className="input"
-                    placeholder="E.g. Sara Bekele"
+                    placeholder={t('employer.companyProfile.placeholders.recruiterName')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Position</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.recruiterPosition')}</label>
                   <input
                     type="text"
                     {...register('recruiter.position')}
                     disabled={!isEditing}
                     className="input"
-                    placeholder="E.g. HR Manager"
+                    placeholder={t('employer.companyProfile.placeholders.recruiterPosition')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Recruiter Email</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.recruiterEmail')}</label>
                   <input
                     type="email"
                     {...register('recruiter.email')}
                     disabled={!isEditing}
                     className="input"
-                    placeholder="hr@company.com"
+                    placeholder={t('employer.companyProfile.placeholders.recruiterEmail')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Recruiter Phone</label>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.recruiterPhone')}</label>
                   <input
                     type="tel"
                     {...register('recruiter.phone')}
                     disabled={!isEditing}
                     className="input"
-                    placeholder="+251911123456"
+                    placeholder={t('employer.companyProfile.placeholders.recruiterPhone')}
                   />
                 </div>
               </div>
@@ -797,13 +823,13 @@ const CompanyProfile = () => {
 
             <div className="card p-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Verification Documents</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Upload business documents used for verification.</p>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('employer.companyProfile.sections.verification.title')}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('employer.companyProfile.sections.verification.description')}</p>
               </div>
 
               <div className="mt-6 grid gap-4">
                 <div className="grid gap-2">
-                  <label className="block text-sm font-semibold">Business License</label>
+                  <label className="block text-sm font-semibold">{t('employer.companyProfile.fields.businessLicense')}</label>
                   <input
                     type="file"
                     accept=".pdf,image/*"
@@ -821,17 +847,17 @@ const CompanyProfile = () => {
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">{getDocumentName(businessLicenseFile, company?.businessLicense)}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {businessLicensePreviewType === 'image' ? 'Image document ready' : 'Document ready'}
+                            {businessLicensePreviewType === 'image' ? t('employer.companyProfile.statuses.imageDocumentReady') : t('employer.companyProfile.statuses.documentReady')}
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => openDocumentPreview('Business License', businessLicensePreview, businessLicensePreviewType, businessLicensePreviewMime)}
+                            onClick={() => openDocumentPreview(t('employer.companyProfile.previewLabels.businessLicense'), businessLicensePreview, businessLicensePreviewType, businessLicensePreviewMime)}
                             className="btn btn-outline flex items-center gap-2"
                           >
                             <FiEye className="h-4 w-4" />
-                            View
+                            {t('employer.companyProfile.actions.view')}
                           </button>
                           <button
                             type="button"
@@ -844,17 +870,17 @@ const CompanyProfile = () => {
                             disabled={!isEditing}
                             className="btn btn-outline"
                           >
-                            Remove / Replace
+                            {t('employer.companyProfile.actions.removeReplace')}
                           </button>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">No document uploaded yet.</p>
+                    <p className="text-sm text-gray-500">{t('employer.companyProfile.previewLabels.noDocumentUploaded')}</p>
                   )}
                 </div>
                 <div className="grid gap-2">
-                  <label className="block text-sm font-semibold">TIN Certificate</label>
+                  <label className="block text-sm font-semibold">{t('employer.companyProfile.fields.tinCertificate')}</label>
                   <input
                     type="file"
                     accept=".pdf,image/*"
@@ -872,17 +898,17 @@ const CompanyProfile = () => {
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">{getDocumentName(tinCertificateFile, company?.tinCertificate)}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {tinCertificatePreviewType === 'image' ? 'Image document ready' : 'Document ready'}
+                            {tinCertificatePreviewType === 'image' ? t('employer.companyProfile.statuses.imageDocumentReady') : t('employer.companyProfile.statuses.documentReady')}
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => openDocumentPreview('TIN Certificate', tinCertificatePreview, tinCertificatePreviewType, tinCertificatePreviewMime)}
+                            onClick={() => openDocumentPreview(t('employer.companyProfile.previewLabels.tinCertificate'), tinCertificatePreview, tinCertificatePreviewType, tinCertificatePreviewMime)}
                             className="btn btn-outline flex items-center gap-2"
                           >
                             <FiEye className="h-4 w-4" />
-                            View
+                            {t('employer.companyProfile.actions.view')}
                           </button>
                           <button
                             type="button"
@@ -895,17 +921,17 @@ const CompanyProfile = () => {
                             disabled={!isEditing}
                             className="btn btn-outline"
                           >
-                            Remove / Replace
+                            {t('employer.companyProfile.actions.removeReplace')}
                           </button>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">No document uploaded yet.</p>
+                    <p className="text-sm text-gray-500">{t('employer.companyProfile.previewLabels.noDocumentUploaded')}</p>
                   )}
                 </div>
                 <div className="grid gap-2">
-                  <label className="block text-sm font-semibold">Company Registration</label>
+                  <label className="block text-sm font-semibold">{t('employer.companyProfile.fields.companyRegistration')}</label>
                   <input
                     type="file"
                     accept=".pdf,image/*"
@@ -923,17 +949,17 @@ const CompanyProfile = () => {
                         <div>
                           <p className="text-sm font-medium text-gray-900 dark:text-white">{getDocumentName(companyRegistrationFile, company?.companyRegistration)}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {companyRegistrationPreviewType === 'image' ? 'Image document ready' : 'Document ready'}
+                            {companyRegistrationPreviewType === 'image' ? t('employer.companyProfile.statuses.imageDocumentReady') : t('employer.companyProfile.statuses.documentReady')}
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => openDocumentPreview('Company Registration', companyRegistrationPreview, companyRegistrationPreviewType, companyRegistrationPreviewMime)}
+                            onClick={() => openDocumentPreview(t('employer.companyProfile.previewLabels.companyRegistration'), companyRegistrationPreview, companyRegistrationPreviewType, companyRegistrationPreviewMime)}
                             className="btn btn-outline flex items-center gap-2"
                           >
                             <FiEye className="h-4 w-4" />
-                            View
+                            {t('employer.companyProfile.actions.view')}
                           </button>
                           <button
                             type="button"
@@ -946,13 +972,13 @@ const CompanyProfile = () => {
                             disabled={!isEditing}
                             className="btn btn-outline"
                           >
-                            Remove / Replace
+                            {t('employer.companyProfile.actions.removeReplace')}
                           </button>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">No document uploaded yet.</p>
+                    <p className="text-sm text-gray-500">{t('employer.companyProfile.previewLabels.noDocumentUploaded')}</p>
                   )}
                 </div>
               </div>
@@ -964,7 +990,7 @@ const CompanyProfile = () => {
                   <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{previewModal.title}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{previewModal.type === 'image' ? 'Image preview' : 'Document preview'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{previewModal.type === 'image' ? t('employer.companyProfile.previewLabels.imagePreview') : t('employer.companyProfile.previewLabels.documentPreview')}</p>
                     </div>
                     <button
                       type="button"
@@ -985,9 +1011,9 @@ const CompanyProfile = () => {
                       />
                     ) : (
                       <div className="flex min-h-[260px] flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-gray-300 bg-white p-6 text-center dark:border-gray-700 dark:bg-gray-950">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">This document type cannot be previewed inline.</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{t('employer.companyProfile.previewLabels.previewUnsupported')}</p>
                         <a href={previewModal.url} target="_blank" rel="noreferrer" className="btn btn-primary">
-                          Open in new tab
+                          {t('employer.companyProfile.actions.openInNewTab')}
                         </a>
                       </div>
                     )}
@@ -998,8 +1024,8 @@ const CompanyProfile = () => {
 
             <div className="flex flex-col gap-3 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-950 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">Ready to save your employer profile?</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Your changes are saved through a secure update request.</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('employer.companyProfile.sections.savePrompt.title')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('employer.companyProfile.sections.savePrompt.description')}</p>
               </div>
               <div className="flex flex-wrap gap-3">
                 {company && (
@@ -1009,7 +1035,7 @@ const CompanyProfile = () => {
                     disabled={!isEditing || saving}
                     className="btn btn-outline"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 )}
                 <button
@@ -1017,7 +1043,7 @@ const CompanyProfile = () => {
                   disabled={!isEditing || saving}
                   className="btn btn-primary"
                 >
-                  {saving ? 'Saving...' : company ? 'Save Changes' : 'Create Company Profile'}
+                  {saving ? t('employer.companyProfile.actions.saving') : company ? t('employer.companyProfile.actions.saveChanges') : t('employer.companyProfile.actions.createCompanyProfile')}
                 </button>
               </div>
             </div>
@@ -1028,12 +1054,12 @@ const CompanyProfile = () => {
           <div className="sticky top-28 space-y-4 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Live Preview</p>
+                <p className="text-xs uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">{t('employer.companyProfile.previewLabels.livePreview')}</p>
                 <h2 className="mt-3 text-2xl font-semibold text-gray-900 dark:text-white">{preview.name}</h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{preview.industry}</p>
               </div>
               <span className={(company?.isApproved || company?.isApproved === false) ? (company?.isApproved ? 'badge badge-success' : 'badge badge-warning') : 'badge badge-warning'}>
-                {company?.isApproved ? 'Verified' : 'Pending'}
+                {company?.isApproved ? t('employer.companyProfile.statuses.verified') : t('employer.companyProfile.statuses.pending')}
               </span>
             </div>
 
@@ -1079,7 +1105,7 @@ const CompanyProfile = () => {
 
             <div className="space-y-4 rounded-3xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300">
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">Social</p>
+                <p className="text-xs uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">{t('employer.companyProfile.previewLabels.social')}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {preview.socialLinks.linkedin ? (
                     <a href={preview.socialLinks.linkedin} target="_blank" rel="noreferrer" className="badge badge-outline flex items-center gap-2">
@@ -1102,7 +1128,7 @@ const CompanyProfile = () => {
                     </a>
                   ) : null}
                   {!preview.socialLinks.linkedin && !preview.socialLinks.facebook && !preview.socialLinks.telegram && !preview.socialLinks.instagram && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">No social links added</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{t('employer.companyProfile.previewLabels.noSocialLinks')}</span>
                   )}
                 </div>
               </div>
@@ -1110,7 +1136,7 @@ const CompanyProfile = () => {
 
             <div className="space-y-4 rounded-3xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300">
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">Recruiter</p>
+                <p className="text-xs uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">{t('employer.companyProfile.previewLabels.recruiter')}</p>
                 <p className="mt-2 text-sm font-medium text-gray-900 dark:text-white">{preview.recruiter.hrManagerName}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{preview.recruiter.position}</p>
                 <div className="mt-3 space-y-2">
@@ -1125,45 +1151,45 @@ const CompanyProfile = () => {
                 </div>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">Verification Documents</p>
+                <p className="text-xs uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">{t('employer.companyProfile.previewLabels.verificationDocuments')}</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-3">
                   {preview.businessLicense ? (
                     <button
                       type="button"
-                      onClick={() => openDocumentPreview('Business License', businessLicensePreview, businessLicensePreviewType, businessLicensePreviewMime)}
+                      onClick={() => openDocumentPreview(t('employer.companyProfile.previewLabels.businessLicense'), businessLicensePreview, businessLicensePreviewType, businessLicensePreviewMime)}
                       className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 transition hover:border-primary-500 hover:text-primary-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-primary-400 dark:hover:text-primary-300 sm:text-[11px]"
                     >
-                      {`License: ${preview.businessLicense}`}
+                      {t('employer.companyProfile.previewLabels.businessLicenseCount', { name: preview.businessLicense })}
                     </button>
                   ) : (
                     <span className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 sm:text-[11px]">
-                      License Pending ⏳
+                      {t('employer.companyProfile.statuses.licensePending')}
                     </span>
                   )}
                   {preview.tinCertificate ? (
                     <button
                       type="button"
-                      onClick={() => openDocumentPreview('TIN Certificate', tinCertificatePreview, tinCertificatePreviewType, tinCertificatePreviewMime)}
+                      onClick={() => openDocumentPreview(t('employer.companyProfile.previewLabels.tinCertificate'), tinCertificatePreview, tinCertificatePreviewType, tinCertificatePreviewMime)}
                       className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 transition hover:border-primary-500 hover:text-primary-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-primary-400 dark:hover:text-primary-300 sm:text-[11px]"
                     >
-                      {`TIN: ${preview.tinCertificate}`}
+                      {t('employer.companyProfile.previewLabels.tinCertificateCount', { name: preview.tinCertificate })}
                     </button>
                   ) : (
                     <span className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 sm:text-[11px]">
-                      TIN Pending ⏳
+                      {t('employer.companyProfile.statuses.tinPending')}
                     </span>
                   )}
                   {preview.companyRegistration ? (
                     <button
                       type="button"
-                      onClick={() => openDocumentPreview('Company Registration', companyRegistrationPreview, companyRegistrationPreviewType, companyRegistrationPreviewMime)}
+                      onClick={() => openDocumentPreview(t('employer.companyProfile.previewLabels.companyRegistration'), companyRegistrationPreview, companyRegistrationPreviewType, companyRegistrationPreviewMime)}
                       className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 transition hover:border-primary-500 hover:text-primary-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-primary-400 dark:hover:text-primary-300 sm:text-[11px]"
                     >
-                      {`Registration: ${preview.companyRegistration}`}
+                      {t('employer.companyProfile.previewLabels.companyRegistrationCount', { name: preview.companyRegistration })}
                     </button>
                   ) : (
                     <span className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 sm:text-[11px]">
-                      Registration Pending ⏳
+                      {t('employer.companyProfile.statuses.registrationPending')}
                     </span>
                   )}
                 </div>

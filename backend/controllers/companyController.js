@@ -3,7 +3,7 @@
 // ============================================
 const Company = require('../models/Company');
 const Job = require('../models/Job');
-const { asyncHandler, paginate, escapeRegex } = require('../utils/helpers');
+const { asyncHandler, paginate, escapeRegex, notifyAllAdmins } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 
 // @desc    Get all companies
@@ -23,7 +23,72 @@ exports.getCompanies = asyncHandler(async (req, res) => {
   }
 
   const { results, pagination } = await paginate(Company, query, req.query, ['owner']);
-  res.status(200).json({ success: true, count: results.length, pagination, data: results });
+
+  const companyIds = results.map((c) => c._id);
+  const now = new Date();
+  const openJobs = await Job.aggregate([
+    {
+      $match: {
+        company: { $in: companyIds },
+        status: { $in: ['published', 'active'] },
+        isApproved: true,
+        applicationDeadline: { $gt: now },
+      },
+    },
+    { $group: { _id: '$company', count: { $sum: 1 } } },
+  ]);
+  const openCounts = {};
+  openJobs.forEach((j) => {
+    openCounts[String(j._id)] = j.count;
+  });
+
+  const data = results.map((c) => {
+    const obj = c.toObject ? c.toObject() : { ...c };
+    return { ...obj, openPositions: openCounts[String(c._id)] || 0 };
+  });
+
+  res.status(200).json({ success: true, count: data.length, pagination, data });
+});
+
+// @desc    Get trusted companies (verified + approved + active) with open job counts
+// @route   GET /api/companies/trusted
+// @access  Public
+exports.getTrustedCompanies = asyncHandler(async (req, res) => {
+  const companies = await Company.find({
+    isApproved: true,
+    isActive: true,
+    isVerified: true,
+  })
+    .select('name slug logo industry isVerified location companySize')
+    .limit(20)
+    .lean();
+
+  const companyIds = companies.map((c) => c._id);
+  const now = new Date();
+
+  const openJobs = await Job.aggregate([
+    {
+      $match: {
+        company: { $in: companyIds },
+        status: { $in: ['published', 'active'] },
+        isApproved: true,
+        applicationDeadline: { $gt: now },
+      },
+    },
+    { $group: { _id: '$company', count: { $sum: 1 } } },
+  ]);
+
+  const openCounts = {};
+  openJobs.forEach((j) => {
+    openCounts[String(j._id)] = j.count;
+  });
+
+  const data = companies.map((c) => ({
+    ...c,
+    openPositions: openCounts[String(c._id)] || 0,
+  }));
+
+  res.status(200).json({ success: true, count: data.length, data });
 });
 
 // @desc    Get single company
@@ -40,17 +105,23 @@ exports.getCompany = asyncHandler(async (req, res, next) => {
   company.profileViews += 1;
   await company.save({ validateBeforeSave: false });
 
-  // Get active jobs
-  const jobs = await Job.find({ company: company._id, status: 'active' })
-    .select('title jobType location applicationDeadline')
-    .limit(10);
+  // Get open jobs — same filter used by the list/trusted endpoints so counts always match
+  const jobs = await Job.find({
+    company: company._id,
+    status: { $in: ['published', 'active'] },
+    isApproved: true,
+    applicationDeadline: { $gt: new Date() },
+  })
+    .select('title jobType location applicationDeadline salary workMode')
+    .sort({ createdAt: -1 })
+    .limit(50);
 
   res.status(200).json({ success: true, data: { ...company.toObject(), jobs } });
 });
 
 // @desc    Create company
 // @route   POST /api/companies
-// @access  Private (Employer)
+// @access  Private (Employer/Admin)
 exports.createCompany = asyncHandler(async (req, res, next) => {
   const normalizeNestedBodyObject = (field) => {
     if (typeof req.body[field] === 'string') {
@@ -65,6 +136,14 @@ exports.createCompany = asyncHandler(async (req, res, next) => {
   normalizeNestedBodyObject('location');
   normalizeNestedBodyObject('socialLinks');
   normalizeNestedBodyObject('recruiter');
+
+  // Prevent duplicate company names
+  if (req.body.name) {
+    const existingByName = await Company.findOne({ name: req.body.name.trim() });
+    if (existingByName) {
+      return next(new AppError('A company with that name already exists.', 400));
+    }
+  }
 
   // Check if user already owns a company
   const existing = await Company.findOne({ owner: req.user.id });
@@ -131,9 +210,32 @@ exports.createCompany = asyncHandler(async (req, res, next) => {
     req.body.companyRegistrationPublicId = files.companyRegistration[0].filename;
   }
 
+  // Admin-created companies are considered approved and active by default.
+  if (req.user.role === 'admin') {
+    req.body.isApproved = true;
+    req.body.isActive = true;
+  }
+
   req.body.owner = req.user.id;
   const company = await Company.create(req.body);
-  res.status(201).json({ success: true, message: 'Company created! Waiting for admin approval.', data: company });
+
+  // Notify admins when a company profile is awaiting moderation (non-admin owners only).
+  if (req.user.role !== 'admin') {
+    notifyAllAdmins({
+      type: 'company_pending_approval',
+      title: 'Company awaiting approval',
+      message: `${company.name} submitted a company profile for approval.`,
+      link: '/admin/companies',
+      data: { companyId: company._id },
+      sender: req.user.id,
+    });
+  }
+
+  res.status(201).json({
+    success: true,
+    message: req.user.role === 'admin' ? 'Company created and approved.' : 'Company created! Waiting for admin approval.',
+    data: company,
+  });
 });
 
 // @desc    Update company

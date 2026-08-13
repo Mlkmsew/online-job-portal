@@ -275,6 +275,21 @@ exports.createJob = asyncHandler(async (req, res, next) => {
     console.error('Job match notification background dispatch error:', err.message);
   }
 
+  // Notify admins that a new job is awaiting approval.
+  try {
+    const { notifyAllAdmins } = require('../utils/helpers');
+    notifyAllAdmins({
+      type: 'job_pending_approval',
+      title: 'Job awaiting approval',
+      message: `"${job.title}" was submitted by ${company.name || 'an employer'} and requires admin approval.`,
+      link: '/admin/jobs',
+      data: { jobId: job._id },
+      sender: req.user.id,
+    });
+  } catch (err) {
+    console.error('Admin job-approval notification dispatch error:', err.message);
+  }
+
   res.status(201).json({ success: true, message: 'Job posted successfully!', data: job });
 });
 

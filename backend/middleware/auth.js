@@ -34,8 +34,17 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'User no longer exists.' });
     }
 
-    if (user.isSuspended) {
+    if (user.isSuspended || user.status === 'suspended') {
       return res.status(403).json({ success: false, message: 'Your account has been suspended. Please contact support.' });
+    }
+
+    if (user.status === 'rejected' || user.status === 'pending') {
+      return res.status(403).json({
+        success: false,
+        message: user.status === 'rejected'
+          ? 'Your account was not approved. Please contact support for more information.'
+          : 'Your account is awaiting approval. Please check back later.',
+      });
     }
 
     if (!user.isActive) {
@@ -70,7 +79,14 @@ const optionalAuth = async (req, res, next) => {
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.id).select('-password');
-      if (user && !user.isSuspended && user.isActive) {
+      if (
+        user &&
+        !user.isSuspended &&
+        user.status !== 'suspended' &&
+        user.status !== 'rejected' &&
+        user.status !== 'pending' &&
+        user.isActive
+      ) {
         req.user = user;
       }
     }

@@ -81,14 +81,26 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
 
   const job = await Job.findById(jobId).populate('company postedBy');
   if (!job) return next(new AppError('Job not found.', 404));
-  if (job.status !== 'active') return next(new AppError('This job is no longer accepting applications.', 400));
+  // Jobs approved & published by an admin are visible to the public and accept
+  // applications. 'active' is also a valid open state (used by the seeder).
+  if (!['published', 'active'].includes(job.status)) {
+    return next(new AppError('This job is no longer accepting applications.', 400));
+  }
   if (new Date(job.applicationDeadline) < new Date()) {
     return next(new AppError('Application deadline has passed.', 400));
   }
 
-  // Check duplicate
+  // Check duplicate — an active application blocks re-applying. A withdrawn
+  // application is removed so the job seeker can genuinely apply again.
   const existing = await Application.findOne({ job: jobId, applicant: req.user.id });
-  if (existing) return next(new AppError('You have already applied for this job.', 400));
+  if (existing && existing.status !== 'withdrawn') {
+    return next(new AppError('You have already applied for this job.', 400));
+  }
+  if (existing) {
+    // Previously withdrawn -> clear it (the unique job+applicant index would
+    // otherwise prevent creating a fresh application).
+    await existing.deleteOne();
+  }
 
   const userId = req.user.id || req.user._id;
   // Get full user with skills to compute AI match score
@@ -120,17 +132,27 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
   // Compute AI match score
   const matchScore = calculateMatchScore(job, user);
 
-  // Create application
-  const application = await Application.create({
-    job: jobId,
-    applicant: req.user.id,
-    company: job.company._id,
-    employer: job.postedBy._id,
-    coverLetter,
-    useProfileCV,
-    resumeUrl: req.file ? req.file.path : req.user.cv,
-    matchScore,
-  });
+  // Create application — the unique (job, applicant) index makes the duplicate
+  // guard race-safe: if two requests slip past the pre-check, the second insert
+  // fails with E11000 which we translate to the friendly message.
+  let application;
+  try {
+    application = await Application.create({
+      job: jobId,
+      applicant: req.user.id,
+      company: job.company._id,
+      employer: job.postedBy._id,
+      coverLetter,
+      useProfileCV,
+      resumeUrl: req.file ? req.file.path : req.user.cv,
+      matchScore,
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return next(new AppError('You have already applied for this job.', 400));
+    }
+    return next(error);
+  }
 
   // Update job applicant count
   job.applicantsCount += 1;
@@ -165,6 +187,9 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
 exports.getMyApplications = asyncHandler(async (req, res) => {
   const query = { applicant: req.user.id };
   if (req.query.status) query.status = req.query.status;
+  // Allow filtering by a specific job (used by the job details page to detect
+  // whether this user has already applied to the currently viewed job).
+  if (req.query.job) query.job = req.query.job;
 
   const { results, pagination } = await paginate(Application, query, req.query, [
     { path: 'job', populate: { path: 'company', select: 'name logo' } },

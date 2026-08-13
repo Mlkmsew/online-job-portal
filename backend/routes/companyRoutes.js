@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getCompanies, getCompany, createCompany, updateCompany, deleteCompany, uploadLogo, getMyCompany,
+  getCompanies, getTrustedCompanies, getCompany, createCompany, updateCompany, deleteCompany, uploadLogo, getMyCompany,
 } = require('../controllers/companyController');
 const { protect, authorize, requireEmailVerified } = require('../middleware/auth');
 const { uploadLogo: logoUpload, uploadCompany } = require('../config/cloudinary');
@@ -12,6 +12,7 @@ const { companyValidator, validate } = require('../middleware/validate');
 const { uploadLimiter } = require('../middleware/rateLimiter');
 
 router.get('/', getCompanies);
+router.get('/trusted', getTrustedCompanies);
 router.get('/my/company', protect, authorize('employer', 'admin'), requireEmailVerified, getMyCompany);
 router.get('/:id', getCompany);
 

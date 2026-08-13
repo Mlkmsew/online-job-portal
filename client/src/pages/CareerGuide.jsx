@@ -1,10 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import { FiBookOpen, FiFileText, FiAward, FiUsers, FiTarget, FiArrowRight } from 'react-icons/fi';
 
 const CareerGuide = () => {
+  const { t } = useTranslation();
+
   const guides = [
     {
-      title: 'Crafting a Standout CV',
-      description: 'Learn how to highlight your academic projects, internships, and key skills to pass applicant tracking systems (ATS).',
+      title: t('careerGuide.standoutCV'),
+      description: t('careerGuide.standoutCVDesc'),
       icon: FiFileText,
       color: 'bg-teal-50 text-teal-600 dark:bg-teal-950/20 dark:text-teal-400',
       tips: [
@@ -14,8 +17,8 @@ const CareerGuide = () => {
       ]
     },
     {
-      title: 'Employability Skills Training',
-      description: 'Unlock career readiness modules designed in partnership with industry experts to bridge the transition from university to workplace.',
+      title: t('careerGuide.employability'),
+      description: t('careerGuide.employabilityDesc'),
       icon: FiBookOpen,
       color: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400',
       tips: [
@@ -25,8 +28,8 @@ const CareerGuide = () => {
       ]
     },
     {
-      title: 'Direct Campus Partnerships',
-      description: 'EthioJob partners directly with leading Ethiopian universities to host direct recruiting campaigns and job fairs on campus.',
+      title: t('careerGuide.campus'),
+      description: t('careerGuide.campusDesc'),
       icon: FiUsers,
       color: 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400',
       tips: [
@@ -36,8 +39,8 @@ const CareerGuide = () => {
       ]
     },
     {
-      title: 'Acing Your First Interview',
-      description: 'Preparation is key. Standard questions, body language cues, and how to follow up post-interview.',
+      title: t('careerGuide.interview'),
+      description: t('careerGuide.interviewDesc'),
       icon: FiAward,
       color: 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400',
       tips: [
@@ -53,13 +56,13 @@ const CareerGuide = () => {
       {/* Hero Header */}
       <div className="text-center max-w-3xl mx-auto mb-16 animate-fade-in">
         <span className="text-teal-600 dark:text-teal-400 font-extrabold text-xs uppercase tracking-wider bg-teal-50 dark:bg-teal-950/30 px-3 py-1.5 rounded-full">
-          Value-Added Services
+          {t('careerGuide.heroBadge')}
         </span>
         <h1 className="text-4xl sm:text-5xl font-black mt-4 text-gray-900 dark:text-white leading-tight">
-          Accelerate Your Career with <span className="text-teal-600">OnlineJob Guides</span>
+          {t('careerGuide.heroTitle')}
         </h1>
         <p className="text-lg text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
-          We go beyond simply listing jobs. OnlineJob provides resources, guidance, and partnerships to help fresh graduates and tech professionals land their dream roles.
+          {t('careerGuide.heroSubtitle')}
         </p>
       </div>
 
@@ -77,7 +80,7 @@ const CareerGuide = () => {
                 <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-6">{guide.description}</p>
                 
                 <h4 className="font-bold text-xs uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-1.5">
-                  <FiTarget className="text-teal-500" /> Key Insights & Steps
+                  <FiTarget className="text-teal-500" /> {t('careerGuide.insights')}
                 </h4>
                 <ul className="space-y-2">
                   {guide.tips.map((tip, tIdx) => (
@@ -91,26 +94,12 @@ const CareerGuide = () => {
 
               <div className="pt-8 border-t dark:border-gray-700 mt-8 flex justify-end">
                 <button className="text-teal-600 dark:text-teal-400 text-sm font-bold flex items-center gap-1 group hover:underline">
-                  Learn More <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+                  {t('careerGuide.learnMore')} <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
             </div>
           );
         })}
-      </div>
-
-      {/* Direct recruiting CTA */}
-      <div className="bg-gradient-to-r from-teal-500 to-indigo-600 rounded-3xl p-10 text-white mt-16 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8 animate-fade-in">
-        <div className="relative z-10 max-w-xl">
-          <h3 className="text-3xl font-black mb-2">Are you a University Partner?</h3>
-          <p className="text-white/80 text-sm leading-relaxed">
-            Collaborate with EthioJob to recruit students directly, set up campus-exclusive interviews, and bring professional career training modules directly to your graduating class.
-          </p>
-        </div>
-        <button className="bg-white text-teal-600 hover:bg-teal-50 transition font-bold py-3 px-8 rounded-xl shrink-0 text-sm relative z-10 shadow-lg">
-          Partner With Us
-        </button>
-        <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-white/5 rounded-full blur-2xl"></div>
       </div>
     </div>
   );

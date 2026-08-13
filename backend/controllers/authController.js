@@ -7,7 +7,7 @@ const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/user');
 const { sendTokenResponse, generateAccessToken } = require('../utils/jwt');
 const { sendEmail, emailTemplates, getClientURL } = require('../config/email');
-const { asyncHandler } = require('../utils/helpers');
+const { asyncHandler, notifyAllAdmins } = require('../utils/helpers');
 const { parseResumeSkills } = require('../utils/resumeParser');
 const { AppError } = require('../middleware/errorHandler');
 
@@ -59,6 +59,20 @@ exports.register = asyncHandler(async (req, res, next) => {
     }
   }
 
+  // Notify admins of a new registration (never blocks the signup flow)
+  const displayName = `${user.firstName} ${user.lastName}`.trim();
+  const isEmployer = user.role === 'employer';
+  notifyAllAdmins({
+    type: isEmployer ? 'new_employer_registration' : 'new_user_registration',
+    title: isEmployer ? 'New employer registered' : 'New user registered',
+    message: isEmployer
+      ? `${displayName} (${user.email}) registered as an employer on the platform.`
+      : `${displayName} (${user.email}) joined the platform as a job seeker.`,
+    link: '/admin/users',
+    data: { userId: user._id, role: user.role },
+    sender: user._id,
+  });
+
   sendTokenResponse(user, 201, res, 'Registration successful! Please check your email to verify your account.');
 });
 
@@ -80,8 +94,19 @@ exports.login = asyncHandler(async (req, res, next) => {
     return next(new AppError('Invalid email or password.', 401));
   }
 
-  if (user.isSuspended) {
+  if (user.isSuspended || user.status === 'suspended') {
     return next(new AppError('Your account has been suspended. Please contact support.', 403));
+  }
+
+  if (user.status === 'rejected' || user.status === 'pending') {
+    return next(
+      new AppError(
+        user.status === 'rejected'
+          ? 'Your account was not approved. Please contact support for more information.'
+          : 'Your account is awaiting approval. Please check back later.',
+        403
+      )
+    );
   }
 
   if (!user.isEmailVerified) {
