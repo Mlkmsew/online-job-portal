@@ -334,7 +334,7 @@ const JobCard = ({ job, onApprove, onReject, actionLoading }) => {
                   type="button"
                   disabled={actionLoading}
                   onClick={() => onApprove(job)}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#1769E0] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#0D5BC4] disabled:opacity-50"
                 >
                   <FiCheckCircle className="h-3.5 w-3.5" />
                   {actionLoading === job._id ? (t('admin.manageJobs.approving') || 'Approving...') : (t('admin.manageJobs.approve') || 'Approve')}
@@ -351,7 +351,7 @@ const JobCard = ({ job, onApprove, onReject, actionLoading }) => {
               </>
             )}
             {isPublished && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF2FE] px-3 py-1.5 text-xs font-semibold text-[#1769E0]">
                 <FiStar className="h-3.5 w-3.5" /> {t('admin.status.live') || 'Live'}
               </span>
             )}
@@ -366,7 +366,7 @@ const JobCard = ({ job, onApprove, onReject, actionLoading }) => {
 // Feature card (bottom section)
 // ─────────────────────────────────────────────────────────────────────────────
 const FEATURES = [
-  { key: 'quality', icon: FiShield, tint: 'bg-emerald-50 text-emerald-600', ring: 'ring-emerald-100' },
+  { key: 'quality', icon: FiShield, tint: 'bg-[#EAF2FE] text-[#1769E0]', ring: 'ring-emerald-100' },
   { key: 'opportunities', icon: FiTrendingUp, tint: 'bg-sky-50 text-sky-600', ring: 'ring-sky-100' },
   { key: 'notifications', icon: FiSend, tint: 'bg-amber-50 text-amber-600', ring: 'ring-amber-100' },
   { key: 'growth', icon: FiUsers, tint: 'bg-violet-50 text-violet-600', ring: 'ring-violet-100' },
@@ -528,7 +528,7 @@ const AdminManageJobs = () => {
             type="button"
             onClick={() => dispatch(fetchAdminJobs({ limit: 200 }))}
             disabled={jobsLoading}
-            className="inline-flex items-center gap-2 rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-700/20 transition hover:bg-emerald-800 disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+            className="inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#1769E0]/20 transition hover:bg-[#0D5BC4] disabled:opacity-50 dark:bg-[#1769E0] dark:hover:bg-[#0D5BC4]"
           >
             <FiRefreshCw className={`h-4 w-4 ${jobsLoading ? 'animate-spin' : ''}`} />
             {t('admin.manageJobs.refresh') || 'Refresh'}
@@ -547,8 +547,8 @@ const AdminManageJobs = () => {
                 onClick={() => setTab(card.key)}
                 className={`group relative overflow-hidden rounded-3xl border p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ${
                   isActive
-                    ? 'border-emerald-300 bg-white shadow-md dark:border-emerald-600 dark:bg-gray-800'
-                    : 'border-gray-100 bg-white hover:border-emerald-200 dark:border-gray-700 dark:bg-gray-800'
+                    ? 'border-[#1769E0] bg-white shadow-md dark:border-[#1769E0] dark:bg-gray-800'
+                    : 'border-gray-100 bg-white hover:border-[#1769E0] dark:border-gray-700 dark:bg-gray-800'
                 }`}
               >
                 {/* bottom accent line */}
@@ -637,7 +637,7 @@ const AdminManageJobs = () => {
                 <button
                   type="button"
                   onClick={() => setTab('All')}
-                  className="mt-7 inline-flex items-center gap-2 rounded-full bg-emerald-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-700/25 transition hover:-translate-y-0.5 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                  className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#1769E0]/25 transition hover:-translate-y-0.5 hover:bg-[#0D5BC4] dark:bg-[#1769E0] dark:hover:bg-[#0D5BC4]"
                 >
                   {t('admin.manageJobs.viewAllJobs') || 'View All Jobs'}
                   <FiEye className="h-4 w-4" />

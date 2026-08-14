@@ -22,7 +22,7 @@ exports.getCategories = asyncHandler(async (req, res) => {
               $expr: {
                 $and: [
                   { $eq: ['$category', '$$categoryId'] },
-                  { $eq: ['$status', 'active'] },
+                  { $in: ['$status', ['published', 'active']] },
                   { $eq: ['$isApproved', true] },
                 ],
               },

@@ -14,7 +14,7 @@ const InterviewRoundProgress = ({ interview, onScheduleLastInterview, onBack }) 
           <h2 className="text-2xl font-semibold text-slate-900">Next Round</h2>
           <p className="mt-1 text-sm text-slate-600">Track the interview journey and schedule the next round.</p>
         </div>
-        <button type="button" onClick={onScheduleLastInterview} className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white">Schedule Last Interview</button>
+        <button type="button" onClick={onScheduleLastInterview} className="rounded-full bg-[#1769E0] px-4 py-2 text-sm font-medium text-white">Schedule Last Interview</button>
       </div>
 
       <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5">

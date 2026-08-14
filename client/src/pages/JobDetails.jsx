@@ -287,7 +287,7 @@ const JobDetails = () => {
           <FiAlertTriangle className="mx-auto mb-4 h-14 w-14 text-red-500" />
           <h2 className="mb-2 text-2xl font-bold text-slate-900">Job Not Found</h2>
           <p className="mb-6 text-sm text-slate-500">The job post you are looking for does not exist or has been closed.</p>
-          <button onClick={() => navigate('/jobs')} className="rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white">
+          <button onClick={() => navigate('/jobs')} className="rounded-full bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white">
             Back to Browse Jobs
           </button>
         </div>
@@ -305,7 +305,7 @@ const JobDetails = () => {
       <div className="w-full max-w-full px-0 sm:px-4">
         <button
           onClick={() => navigate('/jobs')}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 transition hover:text-emerald-800"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[#1769E0] transition hover:text-[#1769E0]"
         >
           <FiArrowLeft className="h-4 w-4" /> Back to Jobs
         </button>
@@ -365,7 +365,7 @@ const JobDetails = () => {
                               navigate(`/jobs/${id}/apply`);
                             }
                           }}
-                          className="rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
+                          className="rounded-full bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#1769E0]/20 transition hover:bg-[#0D5BC4]"
                         >
                           {hasApplied ? t('dashboard.jobCard.saved') : deadlinePassed ? t('jobs.expired') : t('jobs.apply')}
                         </button>
@@ -526,7 +526,7 @@ const JobDetails = () => {
                 </div>
                 <div className="grid gap-4 lg:grid-cols-2">
                   {similarJobs.map((sim) => (
-                    <Link key={sim._id} to={`/jobs/${sim._id}`} className="rounded-[22px] border border-slate-200 bg-slate-50 p-5 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-white">
+                    <Link key={sim._id} to={`/jobs/${sim._id}`} className="rounded-[22px] border border-slate-200 bg-slate-50 p-5 transition hover:-translate-y-0.5 hover:border-[#1769E0] hover:bg-white">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <h4 className="font-semibold text-slate-900">{sim.title}</h4>
@@ -540,7 +540,7 @@ const JobDetails = () => {
                         <span className="inline-flex items-center gap-2"><FiMapPin className="h-4 w-4" />{sim.location?.city ? `${sim.location.city}, ${sim.location.region}` : sim.location?.region || 'Location'}</span>
                         <span>{sim.salary?.min && sim.salary?.max ? `ETB ${sim.salary.min.toLocaleString()}-${sim.salary.max.toLocaleString()}` : 'Negotiable'}</span>
                       </div>
-                      <button type="button" className="mt-4 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
+                      <button type="button" className="mt-4 rounded-full bg-[#1769E0] px-4 py-2 text-sm font-semibold text-white">
                         Apply
                       </button>
                     </Link>
@@ -597,7 +597,7 @@ const JobDetails = () => {
               </div>
 
               {job.company?.website && (
-                <a href={job.company.website} target="_blank" rel="noreferrer" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                <a href={job.company.website} target="_blank" rel="noreferrer" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1769E0] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0D5BC4]">
                   View Company Profile <FiExternalLink className="h-4 w-4" />
                 </a>
               )}
@@ -642,7 +642,7 @@ const JobDetails = () => {
                 )}
               </div>
 
-              <button type="button" onClick={handleSendMessage} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700">
+              <button type="button" onClick={handleSendMessage} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1769E0] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0D5BC4]">
                 <FiMessageSquare className="h-4 w-4" /> {isOwner ? 'Edit Recruiter Info' : 'Send Message'}
               </button>
             </div>

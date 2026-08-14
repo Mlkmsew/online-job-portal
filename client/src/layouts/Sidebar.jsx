@@ -114,7 +114,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           </div>
 
           {/* ── User Profile Block ── */}
-          <div className="px-5 py-4 border-b border-[#E1E8E4] dark:border-[#23483D]">
+          <div className="px-5 py-4 border-b border-[#E5EAF1] dark:border-[#1E293B]">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--primary)] text-white text-base font-bold overflow-hidden shadow-sm">
                 {user?.avatar ? (
@@ -161,18 +161,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   </div>
                   {item.badge && item.badge === 'messages' ? (
                     unreadMessages > 0 ? (
-                      <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#087F5B] dark:bg-[#16A36F] px-1.5 text-[10px] font-bold text-white">
+                      <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#1769E0] dark:bg-[#1769E0] px-1.5 text-[10px] font-bold text-white">
                         {unreadMessages > 99 ? '99+' : unreadMessages}
                       </span>
                     ) : null
                   ) : item.badge === 'notifications' ? (
                     unreadNotifications > 0 ? (
-                      <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#087F5B] dark:bg-[#16A36F] px-1.5 text-[10px] font-bold text-white">
+                      <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#1769E0] dark:bg-[#1769E0] px-1.5 text-[10px] font-bold text-white">
                         {unreadNotifications > 99 ? '99+' : unreadNotifications}
                       </span>
                     ) : null
                   ) : item.badge ? (
-                    <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#087F5B] dark:bg-[#16A36F] px-1.5 text-[10px] font-bold text-white">
+                    <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#1769E0] dark:bg-[#1769E0] px-1.5 text-[10px] font-bold text-white">
                       {item.badge}
                     </span>
                   ) : null}
@@ -183,7 +183,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           </nav>
 
           {/* ── Logout Button ── */}
-          <div className="px-3 py-3 border-t border-[#E1E8E4] dark:border-[#23483D] z-10">
+          <div className="px-3 py-3 border-t border-[#E5EAF1] dark:border-[#1E293B] z-10">
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 w-full rounded-xl px-3.5 py-2.5 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors"

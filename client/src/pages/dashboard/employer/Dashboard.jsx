@@ -409,7 +409,7 @@ const EmployerDashboard = () => {
             <button
               type="button"
               onClick={() => navigate('/employer/company')}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#087F5B]/30 bg-emerald-50/50 dark:bg-emerald-950/30 px-3.5 py-1.5 text-xs font-bold text-[#087F5B] dark:text-[#25C58A] hover:bg-emerald-100/60 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#087F5B]/30 bg-[#EAF2FE]/50 dark:bg-emerald-950/30 px-3.5 py-1.5 text-xs font-bold text-[#087F5B] dark:text-[#25C58A] hover:bg-[#DCEAFD]/60 transition"
             >
               <FiEdit3 className="w-3.5 h-3.5" />
               <span>{t('dashboard.editProfile')}</span>
@@ -467,7 +467,7 @@ const EmployerDashboard = () => {
               <button
                 type="button"
                 onClick={() => navigate('/employer/company')}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#087F5B] px-4 py-2 text-xs font-bold text-white hover:bg-[#0A6B4E] transition"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#1769E0] px-4 py-2 text-xs font-bold text-white hover:bg-[#0D5BC4] transition"
               >
                 <FiEdit3 className="w-3.5 h-3.5" />
                 {t('dashboard.completeCompanyProfile')}

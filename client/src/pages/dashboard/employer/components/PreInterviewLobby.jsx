@@ -113,7 +113,7 @@ const PreInterviewLobby = ({ interview, onReschedule, onStartInterview, onBack }
 
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={onReschedule} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Reschedule</button>
-            <button type="button" onClick={onStartInterview} className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white">Start Interview</button>
+            <button type="button" onClick={onStartInterview} className="rounded-full bg-[#1769E0] px-4 py-2 text-sm font-medium text-white">Start Interview</button>
             <button type="button" onClick={onBack} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Back</button>
           </div>
         </div>

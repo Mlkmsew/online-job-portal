@@ -337,7 +337,7 @@ const Settings = () => {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-60 transition shadow-md shadow-emerald-600/10"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1769E0] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#0D5BC4] disabled:opacity-60 transition shadow-md shadow-emerald-600/10"
             >
               {saving && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
               {saving ? (t('common.loading') || 'Saving...') : (t('common.save') || 'Save Changes')}
@@ -484,7 +484,7 @@ const Settings = () => {
                 <button
                   type="submit"
                   disabled={passwordSaving}
-                  className="inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded-xl bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-60 transition shadow-sm"
+                  className="inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded-xl bg-[#1769E0] text-xs font-bold text-white hover:bg-[#0D5BC4] disabled:opacity-60 transition shadow-sm"
                 >
                   {passwordSaving && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                   {passwordSaving ? 'Updating...' : 'Update Password'}

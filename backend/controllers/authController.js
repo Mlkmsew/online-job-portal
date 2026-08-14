@@ -704,6 +704,38 @@ exports.uploadCV = asyncHandler(async (req, res, next) => {
       location: analysis.location,
       rawText: analysis.text,
     };
+
+    // Auto-populate the profile from CV data when the field is missing.
+    if (analysis.professionalTitle && !user.headline) {
+      user.headline = analysis.professionalTitle;
+    }
+    if (analysis.professionalTitle && !user.currentRole) {
+      user.currentRole = analysis.professionalTitle;
+    }
+    if (analysis.experienceYears != null) {
+      user.experienceYears = analysis.experienceYears;
+    }
+    if (analysis.location && !user.location) {
+      user.location = { region: analysis.location };
+    }
+    if (Array.isArray(analysis.languages) && analysis.languages.length > 0 && (!Array.isArray(user.languages) || user.languages.length === 0)) {
+      user.languages = analysis.languages.map((name) => ({ name, level: 'Native' }));
+    }
+    const prefs = user.jobPreferences || {};
+    if (Array.isArray(analysis.preferredJobTypes) && analysis.preferredJobTypes.length > 0) {
+      prefs.preferredJobTypes = Array.from(new Set([...(prefs.preferredJobTypes || []), ...analysis.preferredJobTypes]));
+    }
+    if (analysis.industry && !(Array.isArray(prefs.industries) && prefs.industries.length > 0)) {
+      prefs.industries = [analysis.industry];
+    }
+    if (analysis.location && !prefs.preferredLocation) {
+      prefs.preferredLocation = analysis.location;
+    }
+    user.jobPreferences = prefs;
+    if (analysis.industry && !(Array.isArray(user.careerInterests) && user.careerInterests.length > 0)) {
+      user.careerInterests = [analysis.industry];
+    }
+
     user.calculateProfileCompleteness();
     await user.save({ validateBeforeSave: false });
   } catch (error) {

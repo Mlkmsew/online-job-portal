@@ -66,7 +66,7 @@ const AccessibilityPanel = () => {
         aria-label={`${label}: ${checked ? 'On' : 'Off'}`}
         onClick={() => onChange(!checked)}
         className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-          checked ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-600'
+          checked ? 'bg-[#1769E0]' : 'bg-gray-300 dark:bg-gray-600'
         }`}
       >
         <span
@@ -98,7 +98,7 @@ const AccessibilityPanel = () => {
             aria-pressed={value === opt.value}
             className={`px-3 py-1 text-xs rounded-full border transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 ${
               value === opt.value
-                ? 'bg-primary-500 text-white border-primary-500'
+                ? 'bg-[#1769E0] text-white border-primary-500'
                 : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-primary-400'
             }`}
           >
@@ -118,7 +118,7 @@ const AccessibilityPanel = () => {
         aria-label="Open Accessibility Settings"
         aria-expanded={isOpen}
         aria-controls="a11y-panel"
-        className="fixed bottom-6 left-6 z-[60] w-14 h-14 bg-primary-500 hover:bg-primary-600 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all focus:outline-none focus:ring-4 focus:ring-primary-300"
+        className="fixed bottom-6 left-6 z-[60] w-14 h-14 bg-[#1769E0] hover:bg-[#0D5BC4] text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all focus:outline-none focus:ring-4 focus:ring-primary-300"
       >
         <FaUniversalAccess className="text-2xl" />
       </button>

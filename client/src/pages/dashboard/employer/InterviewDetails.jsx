@@ -90,7 +90,7 @@ const CompletedInterviewHeader = ({ onBack, title, status, onReschedule, onCance
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={onReschedule} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">{t('interviews.reschedule')}</button>
         <button type="button" disabled={!isCompleted} onClick={onCancel} className="rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 disabled:cursor-not-allowed disabled:opacity-50">{t('common.cancel')}</button>
-        <button type="button" onClick={onEdit} className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white">{t('common.edit')}</button>
+        <button type="button" onClick={onEdit} className="rounded-full bg-[#1769E0] px-4 py-2 text-sm font-medium text-white">{t('common.edit')}</button>
       </div>
     </div>
   );
@@ -227,7 +227,7 @@ const NotesCard = ({ notes, editing, onEdit, onSave, onCancel, noteDraft, setNot
       <div className="mt-4 space-y-3">
         <textarea value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} rows="6" className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none" />
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={onSave} className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white">Save Notes</button>
+          <button type="button" onClick={onSave} className="rounded-full bg-[#1769E0] px-4 py-2 text-sm font-medium text-white">Save Notes</button>
           <button type="button" onClick={onCancel} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Cancel Editing</button>
         </div>
       </div>
@@ -265,7 +265,7 @@ const FeedbackCard = ({ evaluation, onSaveEvaluation, rating, setRating, recomme
   <div className="rounded-3xl border border-slate-200 bg-white p-5">
     <div className="flex items-center justify-between">
       <h3 className="text-lg font-semibold text-slate-900">Evaluation</h3>
-      <button type="button" onClick={onSaveEvaluation} className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white">Save Evaluation</button>
+      <button type="button" onClick={onSaveEvaluation} className="rounded-full bg-[#1769E0] px-4 py-2 text-sm font-medium text-white">Save Evaluation</button>
     </div>
     <div className="mt-4 grid gap-4">
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -356,7 +356,7 @@ const ActionSidebar = ({ interview, onMoveToNextRound, onSendFeedback, onShareFe
     </div>
 
     <div className="space-y-2">
-      <button type="button" onClick={onMoveToNextRound} className="w-full rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white">Move to Next Round</button>
+      <button type="button" onClick={onMoveToNextRound} className="w-full rounded-full bg-[#1769E0] px-4 py-2.5 text-sm font-medium text-white">Move to Next Round</button>
       <button type="button" onClick={onSendFeedback} className="w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700">Send Feedback to Candidate</button>
       <button type="button" onClick={onShareFeedback} className="w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700">Share Feedback with Team</button>
       <button type="button" onClick={onArchive} className="w-full rounded-full border border-rose-200 px-4 py-2.5 text-sm font-medium text-rose-700">Archive Interview</button>
@@ -804,7 +804,7 @@ const InterviewDetails = () => {
               </div>
               <div className="flex justify-end gap-3">
                 <button type="button" onClick={() => setShowEditModal(false)} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Cancel</button>
-                <button type="submit" className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white">Save</button>
+                <button type="submit" className="rounded-full bg-[#1769E0] px-4 py-2 text-sm font-medium text-white">Save</button>
               </div>
             </form>
           </div>

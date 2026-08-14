@@ -116,7 +116,7 @@ const AdminProfile = () => {
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={avatarUploading}
-              className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-emerald-600 text-white shadow transition hover:bg-emerald-700 disabled:opacity-50 dark:border-gray-900"
+              className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#1769E0] text-white shadow transition hover:bg-[#0D5BC4] disabled:opacity-50 dark:border-gray-900"
               aria-label={t('admin.profile.changePicture', { defaultValue: 'Change profile picture' })}
             >
               <FiCamera className="h-4 w-4" />

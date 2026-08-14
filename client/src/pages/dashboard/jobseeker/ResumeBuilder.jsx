@@ -19,6 +19,7 @@ import TemplateFilter from '../../../components/resume/templates/TemplateFilter'
 import TemplateToolbar from '../../../components/resume/templates/TemplateToolbar';
 import TemplateCard from '../../../components/resume/templates/TemplateCard';
 import { getTemplateDefinition, getTemplateDefinitions, getTemplateComponent, resolveTemplateId } from '../../../components/resume/templates/config';
+import { calculateResumeCompletion, withResumeScore } from '../../../utils/resumeCompletion';
 
 // Predefined suggestion examples for Experience
 const DUTY_EXAMPLES = [
@@ -173,6 +174,7 @@ const ResumeBuilder = () => {
     languages: [{ name: '', level: 'Select', isDone: false }],
     summary: { text: '' },
     interests: { text: '' },
+    certifications: [],
     photo: null
   });
 
@@ -345,12 +347,14 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
 
       if (stored) {
         const parsed = JSON.parse(stored);
-        setResumes(Array.isArray(parsed) ? parsed : []);
+        const scored = (Array.isArray(parsed) ? parsed : []).map((resume) => withResumeScore(resume));
+        setResumes(scored);
+        localStorage.setItem(resumeStorageKey, JSON.stringify(scored));
       } else if (legacyStored) {
         const parsed = JSON.parse(legacyStored);
-        const migratedResumes = Array.isArray(parsed) ? parsed : [];
-        setResumes(migratedResumes);
-        localStorage.setItem(resumeStorageKey, JSON.stringify(migratedResumes));
+        const scored = (Array.isArray(parsed) ? parsed : []).map((resume) => withResumeScore(resume));
+        setResumes(scored);
+        localStorage.setItem(resumeStorageKey, JSON.stringify(scored));
         localStorage.removeItem('ethiojob_resumes');
       } else {
         setResumes([]);
@@ -371,8 +375,9 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
   }, [resumeStorageKey]);
 
   const saveToStorage = (updatedResumes) => {
-    setResumes(updatedResumes);
-    localStorage.setItem(resumeStorageKey, JSON.stringify(updatedResumes));
+    const scored = (Array.isArray(updatedResumes) ? updatedResumes : []).map((resume) => withResumeScore(resume));
+    setResumes(scored);
+    localStorage.setItem(resumeStorageKey, JSON.stringify(scored));
   };
 
   const handleOpenTitleModal = () => {
@@ -442,7 +447,62 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     // Persist current resumes state to localStorage
     saveToStorage(resumes);
     setSaveMessage('Saved successfully');
-    toast.success('Saved successfully');
+
+    // Sync the created CV data into the job seeker profile so it can be used
+    // for matching and personalized job recommendations.
+    try {
+      const profile = activeResume.profile || {};
+      const resumePayload = {};
+      if (profile.firstName) resumePayload.firstName = profile.firstName;
+      if (profile.lastName) resumePayload.lastName = profile.lastName;
+      if (profile.profession) {
+        resumePayload.headline = profile.profession;
+        resumePayload.currentRole = profile.profession;
+      }
+      if (activeResume.summary?.text) resumePayload.bio = activeResume.summary.text;
+      if (profile.phone) resumePayload.phone = profile.phone;
+      if (profile.city || profile.stateProvince || profile.streetAddress) {
+        resumePayload.location = {
+          city: profile.city || '',
+          address: profile.streetAddress || '',
+          region: profile.stateProvince || '',
+        };
+      }
+      const skills = (activeResume.skills || []).map((s) => s?.name || s).filter(Boolean);
+      if (skills.length) resumePayload.skillNames = skills;
+      const languages = (activeResume.languages || [])
+        .filter((l) => l && (l.name || typeof l === 'string'))
+        .map((l) => (typeof l === 'string' ? { name: l, level: 'Fluent' } : { name: l.name, level: l.level || 'Fluent' }))
+        .filter((l) => l.name);
+      if (languages.length) resumePayload.languages = languages;
+      if (activeResume.education?.degree) {
+        resumePayload.educationDetails = [{
+          degree: [activeResume.education.degree, activeResume.education.fieldOfStudy].filter(Boolean).join(' in '),
+          institution: activeResume.education.schoolName || '',
+          startDate: activeResume.education.startDate || '',
+          endDate: activeResume.education.currentStudy ? '' : (activeResume.education.endDate || ''),
+          location: [activeResume.education.city, activeResume.education.state].filter(Boolean).join(', '),
+        }];
+      }
+      if (activeResume.experience?.jobTitle) {
+        resumePayload.experienceDetails = [{
+          title: activeResume.experience.jobTitle,
+          company: activeResume.experience.employer || '',
+          startDate: activeResume.experience.startDate || '',
+          endDate: activeResume.experience.currentWork ? '' : (activeResume.experience.endDate || ''),
+          location: [activeResume.experience.city, activeResume.experience.state].filter(Boolean).join(', '),
+          description: activeResume.experience.duties || '',
+        }];
+      }
+      if (Object.keys(resumePayload).length > 0) {
+        await dispatch(updateProfile(resumePayload)).unwrap();
+        setSaveMessage('Saved and profile updated');
+        toast.success('CV saved and profile updated');
+      }
+    } catch (err) {
+      console.error('Failed to sync CV data to profile:', err);
+      toast.success('Saved successfully');
+    }
   };
 
   const handleNextTab = () => {
@@ -1471,7 +1531,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                       <span className="font-semibold text-gray-700 dark:text-gray-300">{resume.score}%</span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mt-1 overflow-hidden">
-                      <div className="bg-primary-500 h-2 rounded-full transition-all duration-300" style={{ width: `${resume.score}%` }} />
+                      <div className="bg-primary-500 h-2 rounded-full transition-all duration-700 ease-out" style={{ width: `${resume.score}%` }} />
                     </div>
                   </div>
 
@@ -2354,7 +2414,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                                   setSkillEditorIndex(index);
                                   handleToggleSkillDone(index);
                                 }}
-                                className={`inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition ${skill.isDone ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                                className={`inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition ${skill.isDone ? 'bg-[#EAF2FE] text-[#1769E0] border border-[#1769E0]' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
                               >
                                 {skill.isDone ? 'Completed' : 'Done'}
                               </button>
@@ -2505,7 +2565,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                                   <button
                                     type="button"
                                     onClick={() => handleToggleLanguageDone(index)}
-                                    className={`inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition ${language?.isDone ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                                    className={`inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition ${language?.isDone ? 'bg-[#EAF2FE] text-[#1769E0] border border-[#1769E0]' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
                                   >
                                     {language?.isDone ? 'Completed' : 'Done'}
                                   </button>
@@ -2648,7 +2708,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                 <button
                   type="button"
                   onClick={handleSaveForm}
-                  className="flex items-center gap-1.5 rounded-lg bg-green-500 px-6 py-2.5 font-bold text-white shadow transition hover:bg-green-600"
+                  className="flex items-center gap-1.5 rounded-lg bg-[#1769E0] px-6 py-2.5 font-bold text-white shadow transition hover:bg-[#0D5BC4]"
                 >
                   <FiSave /> Save
                 </button>
@@ -2679,6 +2739,22 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
             <div className="max-h-[780px] overflow-auto rounded-[18px] border border-slate-200 bg-slate-50 p-3 min-w-0 dark:border-gray-700 dark:bg-gray-900/50">
               <div className="resume-preview-scaled pt-6 overflow-hidden relative">
                 {renderLivePreview(activeResume)}
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">CV Score</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Based on completed sections of your CV</p>
+                </div>
+                <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">{activeResume.score}%</span>
+              </div>
+              <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-gray-700">
+                <div
+                  className="h-2.5 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-700 ease-out"
+                  style={{ width: `${activeResume.score}%` }}
+                />
               </div>
             </div>
 

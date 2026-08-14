@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 /**
  * DashboardBackground Component
  * Renders ONE unified global background color system across all dashboards (Admin, Employer, Job Seeker).
- * Light mode: #F6F8F7 soft ivory base.
- * Dark mode: #0B1714 deep dark green-charcoal base.
+ * Light mode: #F7F9FC soft blue-ivory base.
+ * Dark mode: #0B1220 deep navy base.
  */
 const DashboardBackground = ({ variant = 'jobseeker' }) => {
   const mouseRef = useRef({ x: 50, y: 50 });
@@ -57,33 +57,33 @@ const DashboardBackground = ({ variant = 'jobseeker' }) => {
   // Admin: clean, premium neutral gradient background for admin UI.
   if (variant === 'admin') {
     return (
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden transition-colors duration-300 dark:bg-[#0B1714]">
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden transition-colors duration-300 dark:bg-[#0B1220]">
         <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(135deg, #E8F0ED 0%, #DDE9E5 100%)' }}
+          style={{ background: 'linear-gradient(135deg, #EEF2F8 0%, #E2E9F5 100%)' }}
         />
         <div
           className="absolute inset-0 hidden dark:block"
-          style={{ background: 'linear-gradient(135deg, #0E211B 0%, #091512 100%)' }}
+          style={{ background: 'linear-gradient(135deg, #0B1220 0%, #080E1A 100%)' }}
         />
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#F6F8F7] dark:bg-[#0B1714] transition-colors duration-300">
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#F7F9FC] dark:bg-[#0B1220] transition-colors duration-300">
       {/* 1. Global Base Ambient Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#F6F8F7] via-[#F0F4F2] to-[#E8EFEA] dark:from-[#0B1714] dark:via-[#10231E] dark:to-[#091512]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F7F9FC] via-[#EEF3FA] to-[#E4ECF7] dark:from-[#0B1220] dark:via-[#101A2E] dark:to-[#080E1A]" />
 
       {/* 2. Soft Ambient Blurred Orbs */}
       <div className="absolute inset-0 overflow-hidden opacity-60 dark:opacity-40">
         <div
-          className={`absolute -top-32 -left-32 h-[500px] w-[500px] rounded-full blur-[110px] bg-[#087F5B]/10 dark:bg-[#16A36F]/15 ${
+          className={`absolute -top-32 -left-32 h-[500px] w-[500px] rounded-full blur-[110px] bg-[#1769E0]/10 dark:bg-[#3B82F6]/15 ${
             reducedMotion ? '' : 'animate-pulse'
           }`}
         />
         <div
-          className={`absolute top-1/3 -right-32 h-[600px] w-[600px] rounded-full blur-[130px] bg-[#D9A441]/08 dark:bg-[#D9A441]/12 ${
+          className={`absolute top-1/3 -right-32 h-[600px] w-[600px] rounded-full blur-[130px] bg-[#3B82F6]/08 dark:bg-[#4D8DF0]/12 ${
             reducedMotion ? '' : 'animate-pulse'
           }`}
           style={{ animationDuration: '9s' }}
@@ -101,7 +101,7 @@ const DashboardBackground = ({ variant = 'jobseeker' }) => {
         <div
           className="absolute inset-0 transition-opacity duration-700 ease-out"
           style={{
-            background: `radial-gradient(600px circle at ${mousePos.x}% ${mousePos.y}%, rgba(8, 127, 91, 0.05), transparent 80%)`,
+            background: `radial-gradient(600px circle at ${mousePos.x}% ${mousePos.y}%, rgba(23, 105, 224, 0.05), transparent 80%)`,
           }}
         />
       )}

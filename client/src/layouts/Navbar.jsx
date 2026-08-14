@@ -3,7 +3,7 @@
 // WCAG 2.2 AA: ARIA labels, keyboard nav, focus management
 // ============================================
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { FiMenu, FiX, FiBriefcase, FiUser, FiLogOut } from 'react-icons/fi';
@@ -18,6 +18,7 @@ const Navbar = () => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const mobileMenuRef = useRef(null);
 
   // Close mobile menu on route change or Escape
@@ -47,58 +48,87 @@ const Navbar = () => {
     return '/dashboard';
   };
 
+  const navItems = [
+    { to: '/', label: t('nav.home', { defaultValue: 'Home' }) },
+    { to: '/jobs', label: t('nav.findJobs', { defaultValue: 'Find Jobs' }) },
+    { to: '/companies', label: t('nav.companies', { defaultValue: 'Companies' }) },
+    { to: '/jobs', label: t('nav.categories', { defaultValue: 'Categories' }) },
+    { to: '/about', label: t('nav.about', { defaultValue: 'About Us' }) },
+    { to: '/contact', label: t('nav.contact', { defaultValue: 'Contact' }) },
+  ];
+
+  const isActive = (to) => {
+    if (to === '/') return location.pathname === '/';
+    return location.pathname.startsWith(to);
+  };
+
   return (
     <nav
-      className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50"
+      className="relative sticky top-0 z-50"
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="container-custom">
-        <div className="flex justify-between items-center h-16">
+      {/* Hero-matching background: same career SVG + navy gradient */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/images/hero-bg-career.svg')" }}
+        aria-hidden="true"
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#06152B]/95 via-[#0A2A5E]/90 to-[#0E3A7A]/85" aria-hidden="true" />
+
+      <div className="relative container-custom">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2" aria-label={t('aria.homepage') || 'OnlineJob Portal - Go to homepage'}>
-            <FiBriefcase className="w-8 h-8 text-primary-500" aria-hidden="true" />
-            <span className="text-2xl font-bold text-primary-500">{t('common.appName')}</span>
+            <FiBriefcase className="w-8 h-8 text-emerald-400" aria-hidden="true" />
+            <span className="text-[23px] font-extrabold leading-tight text-white">
+              OnlineJob <span className="text-emerald-400">Portal</span>
+            </span>
           </Link>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-6" role="menubar">
-            <Link to="/jobs" className="text-gray-700 dark:text-gray-300 hover:text-primary-500 transition" role="menuitem">
-              {t('nav.jobs')}
-            </Link>
-            <Link to="/companies" className="text-gray-700 dark:text-gray-300 hover:text-primary-500 transition" role="menuitem">
-              {t('nav.companies')}
-            </Link>
-            <Link to="/about" className="text-gray-700 dark:text-gray-300 hover:text-primary-500 transition" role="menuitem">
-              {t('nav.about')}
-            </Link>
-            <Link to="/contact" className="text-gray-700 dark:text-gray-300 hover:text-primary-500 transition" role="menuitem">
-              {t('nav.contact')}
-            </Link>
-            <Link to="/career-guide" className="text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 transition" role="menuitem">
-              {t('nav.careerGuide')}
-            </Link>
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                to={item.to}
+                className={`pb-1 text-base transition ${
+                  isActive(item.to)
+                    ? 'border-b-2 border-emerald-400 font-semibold text-emerald-400'
+                    : 'font-medium text-sky-100 hover:text-white'
+                }`}
+                role="menuitem"
+              >
+                {item.label}
+              </Link>
+            ))}
 
-            <LanguageSwitcher />
+            <LanguageSwitcher light />
             <DarkModeToggle />
 
             {isAuthenticated ? (
               <>
-                <Link to={getDashboardLink()} className="btn btn-ghost" aria-label="Go to your dashboard">
+                <Link to={getDashboardLink()} className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-white/10 hover:text-white" aria-label="Go to your dashboard">
                   <FiUser className="mr-2" aria-hidden="true" />
                   {t('nav.dashboard')}
                 </Link>
-                <button onClick={handleLogout} className="btn btn-ghost" aria-label="Log out of your account">
+                <button onClick={handleLogout} className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-white/10 hover:text-white" aria-label="Log out of your account">
                   <FiLogOut className="mr-2" aria-hidden="true" />
                   {t('nav.logout')}
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="btn btn-ghost">
+                <Link
+                  to="/login"
+                  className="inline-flex items-center justify-center rounded-lg border border-white/70 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
                   {t('nav.login')}
                 </Link>
-                <Link to="/register" className="btn btn-primary">
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center rounded-lg bg-[#1769E0] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#0D4FB0]"
+                >
                   {t('nav.register')}
                 </Link>
               </>
@@ -108,7 +138,7 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden text-gray-700 dark:text-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="md:hidden text-white p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
             aria-expanded={isOpen}
             aria-controls="mobile-menu"
             aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'}
@@ -126,42 +156,38 @@ const Navbar = () => {
             role="menu"
             aria-label="Mobile navigation"
           >
-            <Link to="/jobs" className="block text-gray-700 dark:text-gray-300 hover:text-primary-500 py-2" role="menuitem" onClick={() => setIsOpen(false)}>
-              {t('nav.jobs')}
-            </Link>
-            <Link to="/companies" className="block text-gray-700 dark:text-gray-300 hover:text-primary-500 py-2" role="menuitem" onClick={() => setIsOpen(false)}>
-              {t('nav.companies')}
-            </Link>
-            <Link to="/about" className="block text-gray-700 dark:text-gray-300 hover:text-primary-500 py-2" role="menuitem" onClick={() => setIsOpen(false)}>
-              {t('nav.about')}
-            </Link>
-            <Link to="/contact" className="block text-gray-700 dark:text-gray-300 hover:text-primary-500 py-2" role="menuitem" onClick={() => setIsOpen(false)}>
-              {t('nav.contact')}
-            </Link>
-            <Link to="/career-guide" className="block text-teal-600 dark:text-teal-400 font-semibold hover:text-teal-700 py-2" role="menuitem" onClick={() => setIsOpen(false)}>
-              {t('nav.careerGuide')}
-            </Link>
-            
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                to={item.to}
+                className={`block py-2 text-base ${isActive(item.to) ? 'font-semibold text-emerald-400' : 'font-medium text-sky-100 hover:text-white'}`}
+                role="menuitem"
+                onClick={() => setIsOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+
             <div className="flex items-center gap-4 py-2">
-              <LanguageSwitcher />
+              <LanguageSwitcher light />
               <DarkModeToggle />
             </div>
-            
+
             {isAuthenticated ? (
               <>
-                <Link to={getDashboardLink()} className="block btn btn-ghost w-full text-left" role="menuitem" onClick={() => setIsOpen(false)}>
+                <Link to={getDashboardLink()} className="block btn btn-ghost w-full text-left text-sky-100" role="menuitem" onClick={() => setIsOpen(false)}>
                   {t('nav.dashboard')}
                 </Link>
-                <button onClick={() => { handleLogout(); setIsOpen(false); }} className="block btn btn-ghost w-full text-left" role="menuitem">
+                <button onClick={() => { handleLogout(); setIsOpen(false); }} className="block btn btn-ghost w-full text-left text-sky-100" role="menuitem">
                   {t('nav.logout')}
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login" className="block btn btn-ghost w-full text-left" role="menuitem" onClick={() => setIsOpen(false)}>
+                <Link to="/login" className="block w-full rounded-lg border border-white/70 px-5 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-white/10" role="menuitem" onClick={() => setIsOpen(false)}>
                   {t('nav.login')}
                 </Link>
-                <Link to="/register" className="block btn btn-primary w-full text-left" role="menuitem" onClick={() => setIsOpen(false)}>
+                <Link to="/register" className="block w-full rounded-lg bg-[#1769E0] px-5 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-[#0D4FB0]" role="menuitem" onClick={() => setIsOpen(false)}>
                   {t('nav.register')}
                 </Link>
               </>

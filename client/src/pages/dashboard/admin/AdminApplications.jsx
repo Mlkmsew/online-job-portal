@@ -228,7 +228,7 @@ const AdminApplications = () => {
             onClick={() => { if (card.key !== 'total') { setStatusFilter(card.key); setPage(1); } }}
             className={`rounded-3xl border p-4 text-left transition hover:shadow-sm ${
               statusFilter === card.key
-                ? 'border-emerald-300 bg-emerald-50 shadow-sm dark:border-emerald-600 dark:bg-emerald-900/20'
+                ? 'border-[#1769E0] bg-[#EAF2FE] shadow-sm dark:border-[#1769E0] dark:bg-emerald-900/20'
                 : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
             }`}
           >
@@ -260,7 +260,7 @@ const AdminApplications = () => {
               onClick={() => { setStatusFilter(key); setPage(1); }}
               className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
                 statusFilter === key
-                  ? 'border-emerald-600 bg-emerald-600 text-white'
+                  ? 'border-[#1769E0] bg-[#1769E0] text-white'
                   : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'
               }`}
             >
@@ -353,7 +353,7 @@ const AdminApplications = () => {
                             target="_blank"
                             rel="noreferrer"
                             title={fileName || (t('admin.applications.viewCv') || 'View CV')}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-emerald-300 hover:text-emerald-700 dark:border-gray-700 dark:text-gray-300"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-[#1769E0] hover:text-[#1769E0] dark:border-gray-700 dark:text-gray-300"
                           >
                             <FiFileText className="h-3.5 w-3.5" />
                             {fileName ? fileName.slice(0, 18) + (fileName.length > 18 ? '…' : '') : (t('admin.applications.viewCv') || 'View CV')}
@@ -382,7 +382,7 @@ const AdminApplications = () => {
                             type="button"
                             onClick={() => setSelectedApp(app)}
                             title={t('admin.applications.viewDetails') || 'View details'}
-                            className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-emerald-300 hover:text-emerald-700 dark:border-gray-700 dark:text-gray-300"
+                            className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-[#1769E0] hover:text-[#1769E0] dark:border-gray-700 dark:text-gray-300"
                           >
                             <FiEye className="h-3.5 w-3.5" /> {t('admin.applications.view') || 'View'}
                           </button>
@@ -390,7 +390,7 @@ const AdminApplications = () => {
                             <a
                               href={`${rUrl}${rUrl.includes('?') ? '&' : '?'}download=1`}
                               title={t('admin.applications.downloadCv') || 'Download CV'}
-                              className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-emerald-300 hover:text-emerald-700 dark:border-gray-700 dark:text-gray-300"
+                              className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-[#1769E0] hover:text-[#1769E0] dark:border-gray-700 dark:text-gray-300"
                             >
                               <FiDownload className="h-3.5 w-3.5" />
                             </a>
@@ -509,13 +509,13 @@ const AdminApplications = () => {
                       href={resumeUrl(selectedApp)}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                      className="inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0D5BC4]"
                     >
                       <FiEye className="h-4 w-4" /> {t('admin.applications.viewCv') || 'View CV'}
                     </a>
                     <a
                       href={`${resumeUrl(selectedApp)}?download=1`}
-                      className="inline-flex items-center gap-2 rounded-full border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                      className="inline-flex items-center gap-2 rounded-full border border-[#1769E0] px-4 py-2 text-sm font-semibold text-[#1769E0] transition hover:bg-[#EAF2FE]"
                     >
                       <FiDownload className="h-4 w-4" /> {t('admin.applications.downloadCv') || 'Download CV'}
                     </a>

@@ -170,7 +170,7 @@ const Pagination = ({ page, totalPages, from, to, total, onPage }) => {
               onClick={() => onPage(p)}
               className={`${btn} ${
                 p === page
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-[#1769E0] text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
               }`}
             >
@@ -207,7 +207,7 @@ const UserRow = ({ user }) => {
         <Link to={`/admin/users/${user._id}`} className="flex min-w-0 items-center gap-3">
           <Avatar user={user} size="h-10 w-10" text="text-xs" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-gray-900 group-hover:text-emerald-700 dark:text-white dark:group-hover:text-emerald-400">
+            <p className="truncate text-sm font-bold text-gray-900 group-hover:text-[#1769E0] dark:text-white dark:group-hover:text-emerald-400">
               {user.firstName} {user.lastName}
             </p>
             <p className="truncate text-xs text-gray-400">#{String(user._id).slice(-6).toUpperCase()}</p>
@@ -246,7 +246,7 @@ const UserCard = ({ user }) => {
   return (
     <Link
       to={`/admin/users/${user._id}`}
-      className="group rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-emerald-700"
+      className="group rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#1769E0] hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-[#1769E0]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">

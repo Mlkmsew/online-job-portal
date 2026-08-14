@@ -36,7 +36,7 @@ const InterviewEvaluation = ({ interview, form, onChange, onSaveDraft, onSubmit,
         </div>
         <div className="flex flex-wrap gap-3">
           <button type="button" onClick={onSaveDraft} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">Save as Draft</button>
-          <button type="button" onClick={onSubmit} className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white">Submit Feedback</button>
+          <button type="button" onClick={onSubmit} className="rounded-full bg-[#1769E0] px-4 py-2 text-sm font-medium text-white">Submit Feedback</button>
         </div>
       </div>
 

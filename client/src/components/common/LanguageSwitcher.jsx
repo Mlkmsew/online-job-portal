@@ -3,12 +3,13 @@
 // ============================================
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaGlobe, FaCheck } from 'react-icons/fa';
+import { FiChevronDown } from 'react-icons/fi';
+import { FaCheck } from 'react-icons/fa';
 
 const languages = [
-  { code: 'en', name: 'English', flag: '🌐' },
-  { code: 'am', name: 'አማርኛ', flag: '🌐' },
-  { code: 'om', name: 'Afaan Oromoo', flag: '🌐' },
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'am', name: 'አማርኛ', flag: '🇪🇹' },
+  { code: 'om', name: 'Afaan Oromoo', flag: '🇪🇹' },
 ];
 
 const normalizeLanguageCode = (code) => {
@@ -20,7 +21,7 @@ const normalizeLanguageCode = (code) => {
   return 'en';
 };
 
-const LanguageSwitcher = () => {
+const LanguageSwitcher = ({ light = false }) => {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -61,13 +62,20 @@ const LanguageSwitcher = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors ${
+          light
+            ? 'hover:bg-white/10'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+        }`}
         aria-label="Select Language"
+        aria-haspopup="true"
+        aria-expanded={isOpen}
       >
-        <FaGlobe className="text-gray-600 dark:text-gray-300" />
-        <span className="hidden md:inline text-sm font-medium text-gray-700 dark:text-gray-200">
-          {currentLanguage.flag} {currentLanguage.name}
+        <span className="text-base leading-none" aria-hidden="true">{currentLanguage.flag}</span>
+        <span className={`hidden md:inline text-sm font-medium ${light ? 'text-sky-100' : 'text-gray-700 dark:text-gray-200'}`}>
+          {currentLanguage.name}
         </span>
+        <FiChevronDown className={`transition-transform ${light ? 'text-sky-200' : 'text-gray-500'} ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (

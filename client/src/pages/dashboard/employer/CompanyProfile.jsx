@@ -392,7 +392,7 @@ const CompanyProfile = () => {
       const url = company ? `/companies/${company._id}` : '/companies';
       const method = company ? api.put : api.post;
       await method(url, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        skipGlobalErrorToast: true,
       });
 
       toast.success(company ? t('employer.companyProfile.success.updated') : t('employer.companyProfile.success.submitted'));
@@ -515,7 +515,7 @@ const CompanyProfile = () => {
                     accept="image/png,image/jpeg,image/svg+xml"
                     onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
                     disabled={!isEditing}
-                    className="mx-auto block w-full cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-primary-600 file:text-white hover:file:bg-primary-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                    className="mx-auto block w-full cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#1769E0] file:text-white hover:file:bg-[#0D5BC4] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                   />
                   {logoPreview && isEditing && (
                     <button
@@ -550,7 +550,7 @@ const CompanyProfile = () => {
                     accept="image/png,image/jpeg,image/svg+xml"
                     onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
                     disabled={!isEditing}
-                    className="mx-auto block w-full cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-primary-600 file:text-white hover:file:bg-primary-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                    className="mx-auto block w-full cursor-pointer rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#1769E0] file:text-white hover:file:bg-[#0D5BC4] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                   />
                   {coverPreview && isEditing && (
                     <button

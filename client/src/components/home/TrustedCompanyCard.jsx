@@ -23,7 +23,7 @@ const TrustedCompanyCard = ({ company }) => {
   return (
     <Link
       to={`/companies/${company._id}`}
-      className="group flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg hover:shadow-emerald-500/10"
+      className="group flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#1769E0] hover:shadow-lg hover:shadow-emerald-500/10"
     >
       <div className="relative">
         <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-slate-100 text-base font-bold text-slate-700 shadow-2xs">

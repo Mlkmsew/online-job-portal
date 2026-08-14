@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { updateProfile, uploadAvatar, uploadCV, deleteAvatar } from '../../../store/slices/authSlice';
+import { calculateProfileCompletion } from '../../../utils/resumeCompletion';
 import { toast } from 'react-hot-toast';
 import {
   FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, FiClock,
@@ -60,22 +61,7 @@ const getInitialFormData = (user) => {
   };
 };
 
-const calculateProfileStrength = (user) => {
-  let score = 0;
-  if (user?.avatar) score += 10;
-  if (user?.headline) score += 10;
-  if (user?.bio) score += 10;
-  if (user?.gender) score += 5;
-  if (user?.phone) score += 5;
-  const hasSkills = (Array.isArray(user?.skillNames) && user.skillNames.length > 0) || (Array.isArray(user?.skills) && user.skills.length > 0);
-  if (hasSkills) score += 15;
-  const hasExp = (Array.isArray(user?.experienceDetails) && user.experienceDetails.length > 0) || Boolean(user?.experience);
-  if (hasExp) score += 20;
-  const hasEdu = (Array.isArray(user?.educationDetails) && user.educationDetails.length > 0) || (Array.isArray(user?.education) && user.education.length > 0);
-  if (hasEdu) score += 15;
-  if (user?.cv) score += 10;
-  return Math.min(100, score);
-};
+const calculateProfileStrength = (user) => calculateProfileCompletion(user);
 
 /* ── Main Component ────────────────────────────────────────────────────────── */
 const JobSeekerProfile = () => {
@@ -327,13 +313,13 @@ const JobSeekerProfile = () => {
       {/* ═════════════════════════════════════════════════════════════════════
           HEADER CARD — 100% REAL DATABASE DATA ONLY (NO HARDCODED MOCKS)
          ═════════════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#de6640] via-[#d6455b] to-[#bd2669] p-6 text-white shadow-lg">
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1769E0] via-[#0D5BC4] to-[#14213D] p-6 text-white shadow-lg">
         
         {/* Top-Right Progress Bar & Percentage */}
         <div className="sm:absolute sm:top-5 sm:right-6 flex flex-col items-end mb-4 sm:mb-0">
           <div className="w-48 h-3.5 bg-white/90 rounded-full overflow-hidden p-0.5 shadow-inner">
             <div
-              className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+              className="h-full bg-[#7DD3FC] rounded-full transition-all duration-500"
               style={{ width: `${profileStrength}%` }}
             />
           </div>
@@ -347,7 +333,7 @@ const JobSeekerProfile = () => {
           <div className="md:col-span-5 flex items-start gap-4">
               {/* Avatar Circle with replace button at bottom-left and delete button at bottom-right */}
               <div className="relative flex-shrink-0 group">
-                <div className="h-28 w-28 overflow-hidden rounded-full border-2 border-amber-300/90 bg-slate-200 shadow-md flex items-center justify-center">
+                <div className="h-28 w-28 overflow-hidden rounded-full border-2 border-white/70 bg-slate-200 shadow-md flex items-center justify-center">
                   {user?.avatar ? (
                     <img src={user.avatar} alt="Profile" className="h-full w-full object-cover" />
                   ) : (
@@ -359,7 +345,7 @@ const JobSeekerProfile = () => {
                 <button
                   type="button"
                   onClick={() => avatarInputRef.current?.click()}
-                  className="absolute bottom-1 left-0 flex h-7 w-7 items-center justify-center rounded-full bg-white text-amber-700 shadow-md transition hover:scale-110"
+                  className="absolute bottom-1 left-0 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#1769E0] shadow-md transition hover:scale-110"
                   title={user?.avatar ? t('profile.replaceCV') : t('profile.uploadCV')}
                 >
                   <FiCamera className="h-3.5 w-3.5" />
@@ -481,15 +467,15 @@ const JobSeekerProfile = () => {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-[#1769E0]">
               <FiUser className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.bioInformation')}</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[#1769E0]">{t('profile.bioInformation')}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('bio')}
-            className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#1769E0] hover:text-[#0D5BC4] transition"
           >
             <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editBio')}
           </button>
@@ -535,7 +521,7 @@ const JobSeekerProfile = () => {
             <button
               type="button"
               onClick={() => openAddModal('bio')}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-[#1769E0] hover:bg-blue-100 transition"
             >
               <FiPlus className="h-4 w-4" /> {t('profile.addBio')}
             </button>
@@ -548,15 +534,15 @@ const JobSeekerProfile = () => {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-[#1769E0]">
               <FiBookOpen className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.education')}</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[#1769E0]">{t('profile.education')}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('education')}
-            className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#1769E0] hover:text-[#0D5BC4] transition"
           >
             <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editEducation')}
           </button>
@@ -565,11 +551,11 @@ const JobSeekerProfile = () => {
         {educationItems.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {educationItems.map((edu, idx) => (
-              <div key={idx} className="group relative rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 transition hover:border-orange-200 hover:bg-white">
+              <div key={idx} className="group relative rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 transition hover:border-blue-200 hover:bg-white">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">{edu.degree || t('employer.postJob.educationRequired')}</h3>
-                    <p className="text-xs font-semibold text-orange-600 mt-0.5">{edu.institution || t('profile.education')}</p>
+                    <p className="text-xs font-semibold text-[#1769E0] mt-0.5">{edu.institution || t('profile.education')}</p>
                     {(edu.startDate || edu.endDate || edu.location) && (
                       <p className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
                         {(edu.startDate || edu.endDate) && (
@@ -595,7 +581,7 @@ const JobSeekerProfile = () => {
                     <button
                       type="button"
                       onClick={() => openEditModal('education', idx, edu)}
-                      className="p-1.5 text-slate-400 hover:text-orange-600 transition"
+                      className="p-1.5 text-slate-400 hover:text-[#1769E0] transition"
                       title={t('common.edit')}
                     >
                       <FiEdit2 className="h-3.5 w-3.5" />
@@ -620,7 +606,7 @@ const JobSeekerProfile = () => {
             <button
               type="button"
               onClick={() => openAddModal('education')}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-[#1769E0] hover:bg-blue-100 transition"
             >
               <FiPlus className="h-4 w-4" /> {t('profile.addEducation')}
             </button>
@@ -633,15 +619,15 @@ const JobSeekerProfile = () => {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-[#1769E0]">
               <FiBriefcase className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.workExperience')}</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[#1769E0]">{t('profile.workExperience')}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('experience')}
-            className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#1769E0] hover:text-[#0D5BC4] transition"
           >
             <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editExperience')}
           </button>
@@ -650,11 +636,11 @@ const JobSeekerProfile = () => {
         {experienceItems.length > 0 ? (
           <div className="space-y-4">
             {experienceItems.map((exp, idx) => (
-              <div key={idx} className="group relative rounded-xl border border-slate-200/80 bg-slate-50/40 p-4 transition hover:border-orange-200 hover:bg-white">
+              <div key={idx} className="group relative rounded-xl border border-slate-200/80 bg-slate-50/40 p-4 transition hover:border-blue-200 hover:bg-white">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <h3 className="text-sm font-bold text-slate-900">{exp.title || t('employer.postJob.jobTitle')}</h3>
-                    <p className="text-xs font-semibold text-orange-600">{exp.company || t('jobs.company')}</p>
+                    <p className="text-xs font-semibold text-[#1769E0]">{exp.company || t('jobs.company')}</p>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 pt-0.5">
                       {(exp.startDate || exp.endDate) && (
                         <span className="flex items-center gap-1">
@@ -678,7 +664,7 @@ const JobSeekerProfile = () => {
                     <button
                       type="button"
                       onClick={() => openEditModal('experience', idx, exp)}
-                      className="p-1.5 text-slate-400 hover:text-orange-600 transition"
+                      className="p-1.5 text-slate-400 hover:text-[#1769E0] transition"
                       title={t('common.edit')}
                     >
                       <FiEdit2 className="h-3.5 w-3.5" />
@@ -703,7 +689,7 @@ const JobSeekerProfile = () => {
             <button
               type="button"
               onClick={() => openAddModal('experience')}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-[#1769E0] hover:bg-blue-100 transition"
             >
               <FiPlus className="h-4 w-4" /> {t('profile.addExperience')}
             </button>
@@ -716,15 +702,15 @@ const JobSeekerProfile = () => {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-[#1769E0]">
               <FiStar className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.skills') || 'Skills'}</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[#1769E0]">{t('profile.skills') || 'Skills'}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('skills')}
-            className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#1769E0] hover:text-[#0D5BC4] transition"
           >
             <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editSkills') || 'Edit Skills'}
           </button>
@@ -735,7 +721,7 @@ const JobSeekerProfile = () => {
             {skillNames.map((skill, idx) => (
               <span
                 key={idx}
-                className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50/80 px-3.5 py-1.5 text-xs font-bold text-orange-800"
+                className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50/80 px-3.5 py-1.5 text-xs font-bold text-[#1769E0]"
               >
                 {skill}
               </span>
@@ -748,7 +734,7 @@ const JobSeekerProfile = () => {
             <button
               type="button"
               onClick={() => openAddModal('skills')}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-[#1769E0] hover:bg-blue-100 transition"
             >
               <FiPlus className="h-4 w-4" /> {t('profile.addSkills') || 'Add Skills'}
             </button>
@@ -761,15 +747,15 @@ const JobSeekerProfile = () => {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-[#1769E0]">
               <FiGlobe className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.languages') || 'Languages'}</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[#1769E0]">{t('profile.languages') || 'Languages'}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('languages')}
-            className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#1769E0] hover:text-[#0D5BC4] transition"
           >
             <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editLanguages') || 'Edit Languages'}
           </button>
@@ -781,13 +767,13 @@ const JobSeekerProfile = () => {
               <div key={idx} className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/60 px-4 py-2.5">
                 <div>
                   <p className="text-xs font-bold text-slate-800">{lang.name || 'Language'}</p>
-                  <p className="text-[11px] font-medium text-orange-600">{lang.level || 'Proficiency'}</p>
+                  <p className="text-[11px] font-medium text-[#1769E0]">{lang.level || 'Proficiency'}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => openEditModal('languages', idx, lang)}
-                    className="p-1 text-slate-400 hover:text-orange-600 transition"
+                    className="p-1 text-slate-400 hover:text-[#1769E0] transition"
                     title="Edit"
                   >
                     <FiEdit2 className="h-3 w-3" />
@@ -811,7 +797,7 @@ const JobSeekerProfile = () => {
             <button
               type="button"
               onClick={() => openAddModal('languages')}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-[#1769E0] hover:bg-blue-100 transition"
             >
               <FiPlus className="h-4 w-4" /> {t('profile.addLanguage') || 'Add Language'}
             </button>
@@ -824,15 +810,15 @@ const JobSeekerProfile = () => {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-[#1769E0]">
               <FiLink className="h-4 w-4" />
             </span>
-            <h2 className="text-xs font-black uppercase tracking-wider text-orange-600">{t('profile.portfolio') || 'Portfolio & Projects'}</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[#1769E0]">{t('profile.portfolio') || 'Portfolio & Projects'}</h2>
           </div>
           <button
             type="button"
             onClick={() => openAddModal('portfolio')}
-            className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 transition"
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#1769E0] hover:text-[#0D5BC4] transition"
           >
             <FiEdit2 className="h-3.5 w-3.5" /> {t('profile.editPortfolio') || 'Edit Portfolio'}
           </button>
@@ -841,13 +827,13 @@ const JobSeekerProfile = () => {
         {portfolioItems.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {portfolioItems.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 transition hover:border-orange-200 hover:bg-white">
+              <div key={idx} className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 transition hover:border-blue-200 hover:bg-white">
                 <div className="min-w-0 pr-2">
                   <a
                     href={item.url?.startsWith('http') ? item.url : `https://${item.url}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:underline truncate"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#1769E0] hover:underline truncate"
                   >
                     {item.label || item.url || 'Project Link'}
                     <FiExternalLink className="h-3 w-3 flex-shrink-0" />
@@ -859,7 +845,7 @@ const JobSeekerProfile = () => {
                   <button
                     type="button"
                     onClick={() => openEditModal('portfolio', idx, item)}
-                    className="p-1 text-slate-400 hover:text-orange-600 transition"
+                    className="p-1 text-slate-400 hover:text-[#1769E0] transition"
                     title="Edit"
                   >
                     <FiEdit2 className="h-3.5 w-3.5" />
@@ -883,7 +869,7 @@ const JobSeekerProfile = () => {
             <button
               type="button"
               onClick={() => openAddModal('portfolio')}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-[#1769E0] hover:bg-blue-100 transition"
             >
               <FiPlus className="h-4 w-4" /> {t('profile.addPortfolio') || 'Add Project / Link'}
             </button>
@@ -893,7 +879,7 @@ const JobSeekerProfile = () => {
         {/* CV Document Attachment Banner */}
         <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-[#1769E0]">
               <FiFileText className="h-5 w-5" />
             </div>
             <div>
@@ -907,13 +893,13 @@ const JobSeekerProfile = () => {
                 href={resumeUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-bold text-orange-700 hover:bg-orange-50 transition"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-[#1769E0] hover:bg-blue-50 transition"
               >
                 <FiExternalLink className="h-3.5 w-3.5" />
                 {t('common.view') || 'View'}
               </a>
             )}
-            <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-bold text-orange-700 hover:bg-orange-50 transition">
+            <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-[#1769E0] hover:bg-blue-50 transition">
               <FiUploadCloud className="h-3.5 w-3.5" />
               {resumeUploaded ? (t('profile.replaceCV') || 'Replace CV') : (t('profile.uploadCV') || 'Upload CV')}
               <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCVSelect} />
@@ -973,7 +959,7 @@ const JobSeekerProfile = () => {
                       <button
                         type="button"
                         onClick={() => avatarInputRef.current?.click()}
-                        className="px-3 py-1.5 rounded-lg bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 transition flex items-center gap-1 shadow-sm"
+                        className="px-3 py-1.5 rounded-lg bg-[#1769E0] text-white text-xs font-semibold hover:bg-[#0D5BC4] transition flex items-center gap-1 shadow-sm"
                       >
                         <FiCamera className="w-3.5 h-3.5" /> {user?.avatar ? 'Replace Photo' : 'Upload Photo'}
                       </button>
@@ -995,7 +981,7 @@ const JobSeekerProfile = () => {
                         type="text"
                         value={modalItemData.firstName || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, firstName: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
                         required
                       />
                     </div>
@@ -1005,7 +991,7 @@ const JobSeekerProfile = () => {
                         type="text"
                         value={modalItemData.lastName || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, lastName: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
                         required
                       />
                     </div>
@@ -1016,7 +1002,7 @@ const JobSeekerProfile = () => {
                     <select
                       value={modalItemData.gender || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, gender: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
                     >
                       <option value="">Select Gender</option>
                       <option value="Male">Male</option>
@@ -1033,7 +1019,7 @@ const JobSeekerProfile = () => {
                       placeholder="e.g. Senior Full Stack Developer"
                       value={modalItemData.headline || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, headline: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
                     />
                   </div>
 
@@ -1045,7 +1031,7 @@ const JobSeekerProfile = () => {
                         placeholder="+251..."
                         value={modalItemData.phone || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, phone: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
                       />
                     </div>
                     <div>
@@ -1055,7 +1041,7 @@ const JobSeekerProfile = () => {
                         placeholder="e.g. Addis Ababa"
                         value={modalItemData.city || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, city: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
                       />
                     </div>
                   </div>
@@ -1067,7 +1053,7 @@ const JobSeekerProfile = () => {
                       placeholder="Address details"
                       value={modalItemData.address || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, address: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
                     />
                   </div>
                 </div>
@@ -1082,7 +1068,7 @@ const JobSeekerProfile = () => {
                       placeholder="Summarize your professional experience, goals, and key strengths..."
                       value={modalItemData.bio || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, bio: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-900 outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
                     />
                   </div>
 
@@ -1094,7 +1080,7 @@ const JobSeekerProfile = () => {
                         placeholder="e.g. Team Lead"
                         value={modalItemData.currentRole || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, currentRole: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                     <div>
@@ -1104,7 +1090,7 @@ const JobSeekerProfile = () => {
                         placeholder="e.g. 5"
                         value={modalItemData.experienceYears || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, experienceYears: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                   </div>
@@ -1117,7 +1103,7 @@ const JobSeekerProfile = () => {
                         placeholder="e.g. $60,000 / yr"
                         value={modalItemData.salaryExpectation || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, salaryExpectation: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                     <div>
@@ -1127,7 +1113,7 @@ const JobSeekerProfile = () => {
                         placeholder="e.g. Immediately"
                         value={modalItemData.availability || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, availability: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                   </div>
@@ -1143,7 +1129,7 @@ const JobSeekerProfile = () => {
                       placeholder="e.g. B.Sc. in Computer Science"
                       value={modalItemData.degree || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, degree: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       required
                     />
                   </div>
@@ -1154,7 +1140,7 @@ const JobSeekerProfile = () => {
                       placeholder="e.g. Addis Ababa University"
                       value={modalItemData.institution || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, institution: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       required
                     />
                   </div>
@@ -1166,7 +1152,7 @@ const JobSeekerProfile = () => {
                         placeholder="e.g. 2018"
                         value={modalItemData.startDate || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, startDate: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                     <div>
@@ -1176,7 +1162,7 @@ const JobSeekerProfile = () => {
                         placeholder="e.g. 2022"
                         value={modalItemData.endDate || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, endDate: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                   </div>
@@ -1187,7 +1173,7 @@ const JobSeekerProfile = () => {
                       placeholder="e.g. Addis Ababa, Ethiopia"
                       value={modalItemData.location || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, location: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                     />
                   </div>
                   <div>
@@ -1197,7 +1183,7 @@ const JobSeekerProfile = () => {
                       placeholder="Relevant coursework, honors, or activities..."
                       value={modalItemData.description || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, description: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-[#1769E0]"
                     />
                   </div>
                 </div>
@@ -1212,7 +1198,7 @@ const JobSeekerProfile = () => {
                       placeholder="e.g. Software Engineer"
                       value={modalItemData.title || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, title: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       required
                     />
                   </div>
@@ -1223,7 +1209,7 @@ const JobSeekerProfile = () => {
                       placeholder="e.g. Tech Solutions Inc."
                       value={modalItemData.company || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, company: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       required
                     />
                   </div>
@@ -1235,7 +1221,7 @@ const JobSeekerProfile = () => {
                         placeholder="e.g. Jan 2022"
                         value={modalItemData.startDate || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, startDate: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                     <div>
@@ -1245,7 +1231,7 @@ const JobSeekerProfile = () => {
                         placeholder="e.g. Present"
                         value={modalItemData.endDate || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, endDate: e.target.value })}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                   </div>
@@ -1256,7 +1242,7 @@ const JobSeekerProfile = () => {
                       placeholder="e.g. Remote / Addis Ababa"
                       value={modalItemData.location || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, location: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                     />
                   </div>
                   <div>
@@ -1266,7 +1252,7 @@ const JobSeekerProfile = () => {
                       placeholder="Describe your role, accomplishments, and tech stack used..."
                       value={modalItemData.description || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, description: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-[#1769E0]"
                     />
                   </div>
                 </div>
@@ -1283,12 +1269,12 @@ const JobSeekerProfile = () => {
                         value={skillInput}
                         onChange={(e) => setSkillInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkillTagToModal(); } }}
-                        className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                        className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                       <button
                         type="button"
                         onClick={addSkillTagToModal}
-                        className="rounded-xl bg-orange-600 px-4 py-2 text-xs font-bold text-white hover:bg-orange-700 transition"
+                        className="rounded-xl bg-[#1769E0] px-4 py-2 text-xs font-bold text-white hover:bg-[#0D5BC4] transition"
                       >
                         Add Tag
                       </button>
@@ -1300,12 +1286,12 @@ const JobSeekerProfile = () => {
                     <div className="flex flex-wrap gap-2 min-h-[60px] p-3 rounded-xl bg-slate-50 border border-slate-200">
                       {(modalItemData.skills || []).length > 0 ? (
                         modalItemData.skills.map((sk, i) => (
-                          <span key={i} className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-800">
+                          <span key={i} className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-[#1769E0]">
                             {sk}
                             <button
                               type="button"
                               onClick={() => removeSkillTagFromModal(i)}
-                              className="text-orange-700 hover:text-red-600 transition"
+                              className="text-[#1769E0] hover:text-red-600 transition"
                             >
                               <FiX className="h-3 w-3" />
                             </button>
@@ -1328,7 +1314,7 @@ const JobSeekerProfile = () => {
                       placeholder="e.g. Amharic, English"
                       value={modalItemData.name || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, name: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       required
                     />
                   </div>
@@ -1337,7 +1323,7 @@ const JobSeekerProfile = () => {
                     <select
                       value={modalItemData.level || 'Fluent'}
                       onChange={(e) => setModalItemData({ ...modalItemData, level: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                     >
                       <option value="Native / Bilingual">Native / Bilingual</option>
                       <option value="Fluent">Fluent</option>
@@ -1358,7 +1344,7 @@ const JobSeekerProfile = () => {
                       placeholder="e.g. Personal Portfolio Website"
                       value={modalItemData.label || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, label: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       required
                     />
                   </div>
@@ -1369,7 +1355,7 @@ const JobSeekerProfile = () => {
                       placeholder="https://github.com/..."
                       value={modalItemData.url || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, url: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       required
                     />
                   </div>
@@ -1387,7 +1373,7 @@ const JobSeekerProfile = () => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-5 py-2 text-xs font-bold text-white hover:bg-orange-700 transition disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#1769E0] px-5 py-2 text-xs font-bold text-white hover:bg-[#0D5BC4] transition disabled:opacity-60"
                 >
                   {saving ? t('common.loading') : t('common.save')}
                 </button>

@@ -165,7 +165,7 @@ const AdminReports = () => {
           <button
             type="button"
             onClick={fetchReports}
-            className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+            className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0D5BC4]"
           >
             <FiRefreshCw className="h-4 w-4" />
             {t('admin.reports.refresh') || 'Refresh'}

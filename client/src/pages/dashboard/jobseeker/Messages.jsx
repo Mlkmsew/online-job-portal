@@ -340,7 +340,7 @@ const Messages = () => {
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 transition"
+          className="inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-5 py-3 text-white font-semibold hover:bg-[#0D5BC4] transition"
         >
           <FiPlus className="w-4 h-4" /> {t('messages.startNewConversation') || 'Start a new conversation'}
         </button>
@@ -378,7 +378,7 @@ const Messages = () => {
                     key={conversation._id}
                     type="button"
                     onClick={() => handleSelectConversation(conversation)}
-                    className={`w-full text-left rounded-3xl border px-4 py-4 transition ${selectedConversation?._id === conversation._id ? 'border-emerald-300 bg-emerald-50 dark:bg-gray-900' : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'} `}
+                    className={`w-full text-left rounded-3xl border px-4 py-4 transition ${selectedConversation?._id === conversation._id ? 'border-[#1769E0] bg-[#EAF2FE] dark:bg-gray-900' : 'border-gray-200 dark:border-gray-700 hover:border-[#1769E0]'} `}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div>
@@ -438,7 +438,7 @@ const Messages = () => {
                               <button type="button" onClick={(e) => { e.stopPropagation(); handleCancelEdit(); }} className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/20">
                                 {t('common.cancel')}
                               </button>
-                              <button type="button" onClick={(e) => { e.stopPropagation(); handleSaveEditedMessage(); }} className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100">
+                              <button type="button" onClick={(e) => { e.stopPropagation(); handleSaveEditedMessage(); }} className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-[#1769E0] hover:bg-[#DCEAFD]">
                                 {t('common.save')}
                               </button>
                             </div>
@@ -499,7 +499,7 @@ const Messages = () => {
                     placeholder={t('messages.typePlaceholder') || 'Type your message...'}
                     className="flex-1 rounded-3xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500"
                   />
-                  <button type="submit" disabled={!inputMessage.trim() || isSending} className="inline-flex items-center gap-2 rounded-3xl bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300">
+                  <button type="submit" disabled={!inputMessage.trim() || isSending} className="inline-flex items-center gap-2 rounded-3xl bg-[#1769E0] px-5 py-3 text-white font-semibold hover:bg-[#0D5BC4] disabled:cursor-not-allowed disabled:bg-[#A8C8F5]">
                     <FiSend className="w-4 h-4" /> {t('common.submit')}
                   </button>
                 </div>
@@ -552,7 +552,7 @@ const Messages = () => {
                 <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-full border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">
                   {t('common.cancel')}
                 </button>
-                <button type="submit" disabled={isSending} className="rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300">
+                <button type="submit" disabled={isSending} className="rounded-full bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0D5BC4] disabled:cursor-not-allowed disabled:bg-[#A8C8F5]">
                   {isSending ? t('common.loading') : t('messages.startConversation') || 'Start conversation'}
                 </button>
               </div>

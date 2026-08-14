@@ -92,7 +92,7 @@ const AlertCard = ({ notification, onView }) => {
           <button
             type="button"
             onClick={() => onView(notification)}
-            className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+            className="rounded-full bg-[#1769E0] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0D5BC4] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
           >
             {t('jobs.viewDetails')}
           </button>
@@ -248,7 +248,7 @@ const JobAlerts = () => {
                 type="button"
                 onClick={handleMarkAllRead}
                 disabled={markingAll}
-                className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                className="rounded-full border border-[#1769E0] bg-[#EAF2FE] px-4 py-2 text-sm font-semibold text-[#1769E0] transition hover:bg-[#DCEAFD] disabled:opacity-50 dark:border-[#1769E0] dark:bg-emerald-900/20 dark:text-emerald-400"
               >
                 {markingAll ? t('common.loading') : t('jobAlerts.markAllRead') || 'Mark all read'}
               </button>

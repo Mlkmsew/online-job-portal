@@ -338,7 +338,7 @@ const JobSeekerProfileView = ({ user }) => {
                 href={resumeUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#1769E0] bg-[#EAF2FE] px-4 py-2 text-xs font-bold text-[#1769E0] transition hover:bg-[#DCEAFD]"
               >
                 <FiEye className="h-3.5 w-3.5" />
                 {t('admin.userProfile.viewCV', { defaultValue: 'View CV' })}
@@ -346,7 +346,7 @@ const JobSeekerProfileView = ({ user }) => {
               <a
                 href={resumeUrl}
                 download={resumeName}
-                className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#1769E0] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#0D5BC4]"
               >
                 <FiDownload className="h-3.5 w-3.5" />
                 {t('admin.userProfile.downloadCV', { defaultValue: 'Download CV' })}
@@ -368,13 +368,13 @@ const JobSeekerProfileView = ({ user }) => {
                 href={item.url?.startsWith('http') ? item.url : `https://${item.url}`}
                 target="_blank"
                 rel="noreferrer"
-                className="group flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 transition hover:border-emerald-200 hover:bg-white"
+                className="group flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 transition hover:border-[#1769E0] hover:bg-white"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-emerald-700">{item.label || item.url}</p>
+                  <p className="truncate text-sm font-bold text-[#1769E0]">{item.label || item.url}</p>
                   <p className="truncate text-xs text-slate-400">{item.url}</p>
                 </div>
-                <FiExternalLink className="h-4 w-4 flex-shrink-0 text-slate-400 group-hover:text-emerald-600" />
+                <FiExternalLink className="h-4 w-4 flex-shrink-0 text-slate-400 group-hover:text-[#1769E0]" />
               </a>
             ))}
           </div>
@@ -477,7 +477,7 @@ const EmployerProfileView = ({ user, company, jobs }) => {
                 <Link
                   key={job._id}
                   to={`/admin/jobs`}
-                  className="group rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-emerald-200 hover:bg-white"
+                  className="group rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-[#1769E0] hover:bg-white"
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
@@ -538,7 +538,7 @@ const ConfirmModal = ({ title, message, confirmLabel, loading, onConfirm, onCanc
           type="button"
           disabled={loading}
           onClick={onConfirm}
-          className={`rounded-full px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+          className={`rounded-full px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#1769E0] hover:bg-[#0D5BC4]'}`}
         >
           {loading ? (t('admin.users.processing', { defaultValue: 'Processing...' })) : confirmLabel}
         </button>
@@ -790,7 +790,7 @@ const UserProfile = () => {
                   type="button"
                   onClick={() => setConfirmAction(action)}
                   className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold text-white shadow-sm transition ${
-                    action.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                    action.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#1769E0] hover:bg-[#0D5BC4]'
                   }`}
                 >
                   <FiCheckCircle className="h-4 w-4" />

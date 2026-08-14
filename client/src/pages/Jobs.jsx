@@ -609,7 +609,7 @@ const Jobs = () => {
                     setPage(1);
                     fetchJobs();
                   }}
-                  className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                  className="rounded-full bg-[#1769E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0D5BC4]"
                 >
                   {t('common.apply') || 'Apply filters'}
                 </button>
@@ -628,7 +628,7 @@ const Jobs = () => {
                 <FiBriefcase className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-4 text-xl font-semibold text-gray-900 dark:text-gray-100">{t('jobs.noJobsMatched') || 'No jobs matched your filters'}</h3>
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('jobs.noJobsMatchedHint') || 'Try changing your keywords, location or category to see more results.'}</p>
-                <button onClick={handleResetFilters} className="mt-6 rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
+                <button onClick={handleResetFilters} className="mt-6 rounded-full bg-[#1769E0] px-6 py-3 text-sm font-semibold text-white hover:bg-[#0D5BC4]">
                   {t('common.clearAll') || 'Clear Filters'}
                 </button>
               </div>
@@ -649,7 +649,7 @@ const Jobs = () => {
                               )}
                             </div>
                             <div>
-                              <Link to={`/jobs/${job._id}`} className="text-xl font-bold text-gray-900 dark:text-white hover:text-emerald-600 transition">
+                              <Link to={`/jobs/${job._id}`} className="text-xl font-bold text-gray-900 dark:text-white hover:text-[#1769E0] transition">
                                 {job.title}
                               </Link>
                               <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mt-1">{job.company?.name || 'Company'}</p>
@@ -718,14 +718,14 @@ const Jobs = () => {
                           <button
                             type="button"
                             onClick={() => handleToggleBookmark(job)}
-                            className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition ${savedJobMap[job._id] ? 'bg-emerald-700 text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200'}`}
+                            className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition ${savedJobMap[job._id] ? 'bg-[#1769E0] text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200'}`}
                           >
                             <FiBookmark className="h-4 w-4" />
                             {savedJobMap[job._id] ? (t('savedJobs.saved') || 'Saved') : (t('savedJobs.saveJob') || 'Save Job')}
                           </button>
                           <Link
                             to={`/jobs/${job._id}`}
-                            className="inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
+                            className="inline-flex w-full items-center justify-center rounded-full bg-[#1769E0] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0D5BC4]"
                           >
                             {t('jobs.applyNow') || 'Apply Now'}
                           </Link>
@@ -756,7 +756,7 @@ const Jobs = () => {
                         key={pageNumber}
                         type="button"
                         onClick={() => setPage(pageNumber)}
-                        className={`rounded-full px-4 py-2 text-sm font-semibold ${pageNumber === page ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-950 dark:text-gray-300'}`}
+                        className={`rounded-full px-4 py-2 text-sm font-semibold ${pageNumber === page ? 'bg-[#1769E0] text-white' : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-950 dark:text-gray-300'}`}
                       >
                         {pageNumber}
                       </button>

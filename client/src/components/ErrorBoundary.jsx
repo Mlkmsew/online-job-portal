@@ -34,7 +34,7 @@ class ErrorBoundary extends Component {
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                className="rounded-xl bg-[#1769E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0D5BC4]"
               >
                 Reload
               </button>

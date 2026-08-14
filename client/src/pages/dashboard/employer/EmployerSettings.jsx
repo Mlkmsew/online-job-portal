@@ -590,7 +590,7 @@ const EmployerSettings = () => {
                   <button
                     type="button"
                     onClick={() => setShowPasswordEditor(true)}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-[#1769E0] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0D5BC4]"
                   >
                     <FiShield className="h-4 w-4" />
                     {t('employer.settings.security.changePassword')}
@@ -641,7 +641,7 @@ const EmployerSettings = () => {
                     <button
                       type="button"
                       onClick={handlePasswordUpdate}
-                      className="rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                      className="rounded-2xl bg-[#1769E0] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0D5BC4]"
                     >
                       {t('employer.settings.saveChanges')}
                     </button>
@@ -685,7 +685,7 @@ const EmployerSettings = () => {
                         <button
                           type="button"
                           onClick={() => toggleNotificationPreference(item.key)}
-                          className={`relative inline-flex h-7 w-12 items-center rounded-full ${notificationSettings[item.key] ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                          className={`relative inline-flex h-7 w-12 items-center rounded-full ${notificationSettings[item.key] ? 'bg-[#1769E0]' : 'bg-slate-300'}`}
                         >
                           <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${notificationSettings[item.key] ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
@@ -708,7 +708,7 @@ const EmployerSettings = () => {
                         onClick={() => setNotificationSettings((prev) => ({ ...prev, frequency: option.value }))}
                         className={`rounded-2xl border p-3 text-left text-sm font-medium transition ${
                           notificationSettings.frequency === option.value
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                            ? 'border-emerald-500 bg-[#EAF2FE] text-[#1769E0]'
                             : 'border-slate-200 bg-white text-slate-700'
                         }`}
                       >
@@ -723,7 +723,7 @@ const EmployerSettings = () => {
                 <button type="button" className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
                   {t('common.reset')}
                 </button>
-                <button type="button" onClick={saveSettings} className="rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                <button type="button" onClick={saveSettings} className="rounded-2xl bg-[#1769E0] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0D5BC4]">
                   {t('employer.settings.notifications.savePreferences')}
                 </button>
               </div>
@@ -879,7 +879,7 @@ const EmployerSettings = () => {
                       <button
                         type="button"
                         onClick={() => toggleCompanyPref(item.key)}
-                        className={`relative inline-flex h-7 w-12 items-center rounded-full ${companyPreferences[item.key] ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                        className={`relative inline-flex h-7 w-12 items-center rounded-full ${companyPreferences[item.key] ? 'bg-[#1769E0]' : 'bg-slate-300'}`}
                       >
                         <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${companyPreferences[item.key] ? 'translate-x-6' : 'translate-x-1'}`} />
                       </button>
@@ -892,7 +892,7 @@ const EmployerSettings = () => {
                 <button type="button" className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
                   {t('common.cancel')}
                 </button>
-                <button type="button" onClick={saveSettings} className="rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                <button type="button" onClick={saveSettings} className="rounded-2xl bg-[#1769E0] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0D5BC4]">
                   {t('employer.settings.saveChanges')}
                 </button>
               </div>
@@ -1133,7 +1133,7 @@ const EmployerSettings = () => {
                         type="button"
                         className={`rounded-2xl px-4 py-2 text-sm font-semibold text-white ${
                           appearanceSettings.primaryColor === 'Green'
-                            ? 'bg-emerald-600'
+                            ? 'bg-[#1769E0]'
                             : appearanceSettings.primaryColor === 'Blue'
                               ? 'bg-sky-600'
                               : appearanceSettings.primaryColor === 'Purple'
@@ -1207,7 +1207,7 @@ const EmployerSettings = () => {
                         <button
                           type="button"
                           onClick={() => togglePrivacy(item.key)}
-                          className={`relative inline-flex h-7 w-12 items-center rounded-full ${privacySettings[item.key] ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                          className={`relative inline-flex h-7 w-12 items-center rounded-full ${privacySettings[item.key] ? 'bg-[#1769E0]' : 'bg-slate-300'}`}
                         >
                           <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${privacySettings[item.key] ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
@@ -1231,7 +1231,7 @@ const EmployerSettings = () => {
                         <button
                           type="button"
                           onClick={() => togglePrivacy(item.key)}
-                          className={`relative inline-flex h-7 w-12 items-center rounded-full ${privacySettings[item.key] ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                          className={`relative inline-flex h-7 w-12 items-center rounded-full ${privacySettings[item.key] ? 'bg-[#1769E0]' : 'bg-slate-300'}`}
                         >
                           <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${privacySettings[item.key] ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
@@ -1256,7 +1256,7 @@ const EmployerSettings = () => {
                         <button
                           type="button"
                           onClick={() => togglePrivacy(item.key)}
-                          className={`relative inline-flex h-7 w-12 items-center rounded-full ${privacySettings[item.key] ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                          className={`relative inline-flex h-7 w-12 items-center rounded-full ${privacySettings[item.key] ? 'bg-[#1769E0]' : 'bg-slate-300'}`}
                         >
                           <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${privacySettings[item.key] ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
@@ -1267,7 +1267,7 @@ const EmployerSettings = () => {
               </div>
 
               <div className="mt-6 flex justify-end">
-                <button type="button" onClick={saveSettings} className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                <button type="button" onClick={saveSettings} className="rounded-2xl bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0D5BC4]">
                   {t('employer.settings.privacy.savePrivacy')}
                 </button>
               </div>
@@ -1390,7 +1390,7 @@ const EmployerSettings = () => {
             <button
               type="button"
               onClick={saveSettings}
-              className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#1769E0] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0D5BC4]"
             >
               {t('employer.settings.saveChanges')}
             </button>
@@ -1421,7 +1421,7 @@ const EmployerSettings = () => {
                 onClick={() => setActiveTab(tab.value)}
                 className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium transition ${
                   isActive
-                    ? 'bg-white text-emerald-700 shadow-sm ring-1 ring-emerald-100'
+                    ? 'bg-white text-[#1769E0] shadow-sm ring-1 ring-emerald-100'
                     : 'text-slate-600 hover:bg-white/80 hover:text-slate-900'
                 }`}
               >
@@ -1512,7 +1512,7 @@ const EmployerSettings = () => {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                  className="rounded-2xl bg-[#1769E0] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0D5BC4]"
                 >
                   {t('employer.settings.security.updatePasswordBtn')}
                 </button>

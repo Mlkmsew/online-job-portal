@@ -378,7 +378,7 @@ const AdminDashboard = () => {
                   onClick={() => setRange(key)}
                   className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
                     range === key
-                      ? 'bg-[#087F5B] text-white dark:bg-[#16A36F] dark:text-white'
+                      ? 'bg-[#1769E0] text-white dark:bg-[#1769E0] dark:text-white'
                       : 'text-[var(--text-secondary)] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                   }`}
                 >
@@ -417,7 +417,7 @@ const AdminDashboard = () => {
                 <button
                   type="button"
                   onClick={() => setRefreshKey((k) => k + 1)}
-                  className="mt-1 rounded-full px-3 py-1 text-xs font-semibold bg-[#087F5B] text-white dark:bg-[#16A36F]"
+                  className="mt-1 rounded-full px-3 py-1 text-xs font-semibold bg-[#1769E0] text-white dark:bg-[#1769E0]"
                 >
                   {label('admin.retry', 'Retry')}
                 </button>

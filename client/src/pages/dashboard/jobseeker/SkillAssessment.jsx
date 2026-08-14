@@ -42,7 +42,7 @@ const SkillAssessment = () => {
         </div>
         <Link
           to="/dashboard/find-jobs"
-          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 text-white px-5 py-3 font-semibold shadow-lg hover:bg-emerald-700 transition"
+          className="inline-flex items-center gap-2 rounded-full bg-[#1769E0] text-white px-5 py-3 font-semibold shadow-lg hover:bg-[#0D5BC4] transition"
         >
           <FiSearch className="w-4 h-4" /> Search Jobs
         </Link>
@@ -76,7 +76,7 @@ const SkillAssessment = () => {
             <button
               type="button"
               onClick={() => setShowResults(!showResults)}
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-white font-semibold hover:bg-emerald-700 transition"
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-5 py-3 text-white font-semibold hover:bg-[#0D5BC4] transition"
             >
               {showResults ? 'Refresh results' : 'Begin assessment'} <FiArrowRight className="w-4 h-4" />
             </button>
@@ -168,7 +168,7 @@ const SkillAssessment = () => {
               </div>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Add recent projects and measurable results to increase your score and match quality.</p>
-            <Link to="/dashboard/profile" className="mt-6 inline-flex items-center justify-center rounded-full bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
+            <Link to="/dashboard/profile" className="mt-6 inline-flex items-center justify-center rounded-full bg-[#1769E0] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0D5BC4]">
               Improve profile
             </Link>
           </div>

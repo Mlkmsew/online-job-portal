@@ -73,7 +73,7 @@ const CareerResources = () => {
               <Link
                 key={item.title}
                 to={item.path}
-                className="group block rounded-3xl border border-gray-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-emerald-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                className="group block rounded-3xl border border-gray-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#1769E0] hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-700">

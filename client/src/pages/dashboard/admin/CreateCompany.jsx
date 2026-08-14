@@ -149,7 +149,7 @@ const FileUploadField = ({ label, required = false, file, onFileChange, accept, 
             <button
               type="button"
               onClick={openPicker}
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-700 dark:bg-gray-800 dark:text-emerald-300"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#1769E0] bg-white px-3 py-1.5 text-xs font-bold text-[#1769E0] transition hover:bg-[#EAF2FE] dark:border-[#1769E0] dark:bg-gray-800 dark:text-emerald-300"
             >
               <FiUploadCloud className="h-3.5 w-3.5" />
               {t('admin.createCompany.upload.replace', { defaultValue: 'Replace' })}
@@ -177,11 +177,11 @@ const FileUploadField = ({ label, required = false, file, onFileChange, accept, 
           onDrop={onDrop}
           className={`flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-8 text-center transition ${
             dragOver
-              ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-900/30'
-              : 'border-slate-200 bg-slate-50/60 hover:border-emerald-300 hover:bg-emerald-50/40 dark:border-gray-700 dark:bg-gray-800/50'
+              ? 'border-emerald-400 bg-[#EAF2FE] dark:border-emerald-500 dark:bg-emerald-900/30'
+              : 'border-slate-200 bg-slate-50/60 hover:border-[#1769E0] hover:bg-[#EAF2FE]/40 dark:border-gray-700 dark:bg-gray-800/50'
           }`}
         >
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#EAF2FE] text-[#1769E0] dark:bg-emerald-900/40 dark:text-emerald-300">
             {imageOnly ? <FiImage className="h-6 w-6" /> : <FiUploadCloud className="h-6 w-6" />}
           </span>
           <span className="text-sm font-bold text-slate-700 dark:text-gray-200">
@@ -191,7 +191,7 @@ const FileUploadField = ({ label, required = false, file, onFileChange, accept, 
             {t('admin.createCompany.upload.dragDrop', { defaultValue: 'Drag & drop or click to browse' })}
           </span>
           <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-500 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700">
-            <FiCheckCircle className="h-3 w-3 text-emerald-500" />
+            <FiCheckCircle className="h-3 w-3 text-[#1769E0]" />
             {acceptLabel}
           </span>
         </button>
@@ -397,7 +397,7 @@ const CreateCompany = () => {
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-10 flex-shrink-0 items-center gap-2 rounded-full border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-emerald-300 hover:text-emerald-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            className="inline-flex h-10 flex-shrink-0 items-center gap-2 rounded-full border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-[#1769E0] hover:text-[#1769E0] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
             aria-label={t('admin.createCompany.back', { defaultValue: 'Back to Companies' })}
             title={t('admin.createCompany.back', { defaultValue: 'Back to Companies' })}
           >
@@ -723,7 +723,7 @@ const CreateCompany = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-6 py-3 text-sm font-bold text-white shadow-md shadow-[#1769E0]/20 transition hover:bg-[#0D5BC4] disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>

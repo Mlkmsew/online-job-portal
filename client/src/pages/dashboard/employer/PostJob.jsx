@@ -550,7 +550,7 @@ const PostJob = () => {
                       key={`${skill}-${index}`}
                       type="button"
                       onClick={() => removeSkillTag('technical', index)}
-                      className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-200"
+                      className="inline-flex items-center gap-2 rounded-full bg-[#EAF2FE] px-3 py-1 text-sm font-semibold text-[#1769E0] transition hover:bg-emerald-200"
                     >
                       {skill}
                       <span className="text-xs">×</span>

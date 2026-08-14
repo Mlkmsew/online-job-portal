@@ -303,7 +303,7 @@ const DetailsModal = ({ record, onClose, onAction, busy }) => {
               type="button"
               onClick={() => onAction('verified')}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#1769E0] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#0D5BC4] disabled:opacity-50"
             >
               <FiCheckCircle className="h-4 w-4" /> Verify
             </button>

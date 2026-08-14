@@ -264,7 +264,7 @@ const calculateCertificationMatch = (job, user) => {
 };
 
 /**
- * 5. LOCATION MATCHING (Weight = 5%)
+ * 5. LOCATION MATCHING (Weight = 10%)
  */
 const calculateLocationMatch = (job, user) => {
   if (!job?.workMode || job.workMode === 'Remote' || job.isRemote) return 100;
@@ -285,6 +285,107 @@ const calculateLocationMatch = (job, user) => {
 };
 
 /**
+ * 6. JOB TYPE & CAREER PREFERENCE MATCHING (Weight = 10%)
+ * Compares the job's employment type and industry against the user's stated
+ * career preferences (preferred job types, industries, career interests).
+ */
+const normalizeJobType = (value) => {
+  if (!value) return '';
+  const map = {
+    'full time': 'fulltime',
+    'full-time': 'fulltime',
+    fulltime: 'fulltime',
+    'part time': 'parttime',
+    'part-time': 'parttime',
+    parttime: 'parttime',
+    contract: 'contract',
+    internship: 'internship',
+    freelance: 'freelance',
+    temporary: 'temporary',
+    'on site': 'onsite',
+    onsite: 'onsite',
+    remote: 'remote',
+    hybrid: 'hybrid',
+  };
+  return map[String(value).toLowerCase().trim()] || String(value).toLowerCase().trim();
+};
+
+const extractUserPreferences = (user) => {
+  const prefs = user?.jobPreferences || {};
+  const jobTypes = new Set([
+    ...(Array.isArray(prefs.preferredJobTypes) ? prefs.preferredJobTypes : []),
+    ...(Array.isArray(prefs.jobTypes) ? prefs.jobTypes : []),
+  ]);
+  const industries = new Set([
+    ...(Array.isArray(prefs.industries) ? prefs.industries : []),
+    ...(Array.isArray(prefs.preferredIndustries) ? prefs.preferredIndustries : []),
+  ]);
+  const interests = new Set([
+    ...(Array.isArray(prefs.careerInterests) ? prefs.careerInterests : []),
+    ...(Array.isArray(user?.careerInterests) ? user.careerInterests : []),
+  ]);
+  // Also derive preferences from resume analysis / headline when available
+  if (user?.resumeAnalysis?.careerInterests) {
+    (Array.isArray(user.resumeAnalysis.careerInterests)
+      ? user.resumeAnalysis.careerInterests
+      : [user.resumeAnalysis.careerInterests]
+    ).forEach((v) => v && interests.add(v));
+  }
+  return { jobTypes, industries, interests };
+};
+
+const calculatePreferenceMatch = (job, user) => {
+  const { jobTypes, industries, interests } = extractUserPreferences(user);
+  const hasPreferences = jobTypes.size + industries.size + interests.size > 0;
+  if (!hasPreferences) return 70; // Neutral fallback when no stated preferences
+
+  let score = 0;
+  let matched = 0;
+  let total = 0;
+
+  const jobTypeNorm = normalizeJobType(job?.jobType);
+  if (jobTypeNorm && jobTypes.size > 0) {
+    total += 1;
+    if (Array.from(jobTypes).some((t) => normalizeJobType(t) === jobTypeNorm)) matched += 1;
+  }
+
+  const jobIndustry = String(job?.industry || job?.category?.name || '').toLowerCase().trim();
+  if (jobIndustry && industries.size > 0) {
+    total += 1;
+    if (Array.from(industries).some((ind) => String(ind).toLowerCase().includes(jobIndustry) || jobIndustry.includes(String(ind).toLowerCase()))) matched += 1;
+  }
+  if (jobIndustry && interests.size > 0) {
+    total += 1;
+    if (Array.from(interests).some((int) => String(int).toLowerCase().includes(jobIndustry) || jobIndustry.includes(String(int).toLowerCase()))) matched += 1;
+  }
+
+  if (total === 0) return 70;
+  return Math.round((matched / total) * 100);
+};
+
+/**
+ * Build a human-readable reason explaining why the job is recommended.
+ */
+const buildMatchReason = (user, job, skillResult, experienceScore) => {
+  const matched = skillResult?.matchedSkills || [];
+  let reason = '';
+
+  if (matched.length > 0) {
+    const skillList = matched.slice(0, 3).join(', ');
+    const years = Number(user?.experienceYears ?? user?.resumeAnalysis?.experienceYears ?? 0) || 0;
+    reason = `Strong match based on your ${skillList}${years > 0 ? ` and ${years} year${years === 1 ? '' : 's'} of experience` : ''}.`;
+  } else if (experienceScore >= 80) {
+    reason = `Strong match based on your ${experienceScore === 100 ? '' : ''}experience and background.`;
+  } else if (skillResult?.score >= 40) {
+    reason = 'Good match based on your profile skills and background.';
+  } else {
+    reason = 'Potential match based on your profile.';
+  }
+
+  return reason;
+};
+
+/**
  * Main Job Match Calculation Function
  */
 const calculateJobMatch = (job, user) => {
@@ -297,14 +398,18 @@ const calculateJobMatch = (job, user) => {
   const educationScore = calculateEducationMatch(job, user);
   const certificationScore = calculateCertificationMatch(job, user);
   const locationScore = calculateLocationMatch(job, user);
+  const preferenceScore = calculatePreferenceMatch(job, user);
 
-  // Overall Score Calculation: 50% Skills + 20% Exp + 15% Edu + 10% Cert + 5% Loc
+  // Skills (incl. certifications) folded into the 40% skills weight.
+  const combinedSkillScore = Math.round(skillResult.score * 0.85 + certificationScore * 0.15);
+
+  // Overall Score: 40% Skills + 25% Exp + 15% Edu + 10% Location + 10% Preferences
   const totalScore = Math.round(
-    skillResult.score * 0.50 +
-    experienceScore * 0.20 +
+    combinedSkillScore * 0.40 +
+    experienceScore * 0.25 +
     educationScore * 0.15 +
-    certificationScore * 0.10 +
-    locationScore * 0.05
+    locationScore * 0.10 +
+    preferenceScore * 0.10
   );
 
   const matchScore = Math.max(0, Math.min(100, totalScore));
@@ -315,6 +420,7 @@ const calculateJobMatch = (job, user) => {
     educationScore,
     certificationScore,
     locationScore,
+    preferenceScore,
     matchedSkills: skillResult.matchedSkills,
     missingSkills: skillResult.missingSkills,
   };
@@ -334,12 +440,16 @@ const calculateJobMatch = (job, user) => {
   if (locationScore === 100) {
     why.push('Location preference matched');
   }
+  if (preferenceScore === 100) {
+    why.push('Job type & career preferences matched');
+  }
 
   return {
     score: matchScore,
     matchScore,
     matchedSkills: skillResult.matchedSkills,
     missingSkills: skillResult.missingSkills,
+    reason: buildMatchReason(user, job, skillResult, experienceScore),
     details,
     why,
   };

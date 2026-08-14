@@ -60,8 +60,8 @@ const Register = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-2">
-            <FiBriefcase className="w-10 h-10 text-primary-500" />
-            <span className="text-3xl font-bold text-primary-500">{t('common.appName')}</span>
+            <FiBriefcase className="w-10 h-10 text-[#1769E0]" />
+            <span className="text-3xl font-bold text-[#1769E0]">{t('common.appName')}</span>
           </div>
           <p className="text-gray-600 dark:text-gray-400">{t('common.tagline')}</p>
         </div>

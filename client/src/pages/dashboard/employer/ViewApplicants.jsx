@@ -412,7 +412,7 @@ const ViewApplicants = () => {
             // trigger CSV export (placeholder) — kept client-only
             toast('Exporting CSV...');
           }}
-          className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+          className="inline-flex items-center gap-2 rounded-full border border-[#1769E0] bg-white px-4 py-2 text-sm font-medium text-[#1769E0] hover:bg-[#EAF2FE]"
         >
           <Download className="h-4 w-4" /> {t('employer.applicants.exportCsv')}
         </button>
@@ -457,7 +457,7 @@ const ViewApplicants = () => {
                 type="button"
                 onClick={() => selectedJob && window.open(`/jobs/${selectedJob._id}`, '_blank')}
                 disabled={!selectedJob}
-                className="ml-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="ml-4 inline-flex items-center gap-2 rounded-full border border-[#1769E0] bg-white px-4 py-2 text-sm font-medium text-[#1769E0] transition hover:bg-[#EAF2FE] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t('employer.applicants.viewJobDetails')}
                 <ArrowRight className="h-4 w-4" />
@@ -562,7 +562,7 @@ const ViewApplicants = () => {
                               <p className="mt-3 whitespace-pre-line text-sm text-slate-700">{shortCoverLetter}</p>
                             </div>
                             {isCoverLetterTruncated && (
-                              <button type="button" onClick={() => handleProfileOpen(application)} className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">{t('employer.applicants.readMore')}</button>
+                              <button type="button" onClick={() => handleProfileOpen(application)} className="text-sm font-semibold text-[#1769E0] hover:text-[#1769E0]">{t('employer.applicants.readMore')}</button>
                             )}
                           </div>
                         </div>
@@ -607,7 +607,7 @@ const ViewApplicants = () => {
                           <button
                             type="button"
                             onClick={() => window.open(`${api.defaults.baseURL}/applications/${application._id}/resume`, '_blank')}
-                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700"
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#1769E0] hover:text-[#1769E0]"
                           >
                             <ExternalLink className="h-4 w-4" /> {t('employer.applicants.viewResume')}
                           </button>
@@ -620,7 +620,7 @@ const ViewApplicants = () => {
                           <div className="flex items-center justify-between gap-3 rounded-2xl bg-white p-3">
                             <span className="font-medium">{t('employer.applicants.website')}</span>
                             {portfolio ? (
-                              <a href={portfolio} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700">
+                              <a href={portfolio} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[#1769E0] hover:text-[#1769E0]">
                                 <Link2 className="h-4 w-4" /> {t('employer.applicants.visit')}
                               </a>
                             ) : (
@@ -630,7 +630,7 @@ const ViewApplicants = () => {
                           <div className="flex items-center justify-between gap-3 rounded-2xl bg-white p-3">
                             <span className="font-medium">{t('employer.applicants.github')}</span>
                             {github ? (
-                              <a href={github} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700">
+                              <a href={github} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[#1769E0] hover:text-[#1769E0]">
                                 <FileText className="h-4 w-4" /> {t('employer.applicants.open')}
                               </a>
                             ) : (
@@ -640,7 +640,7 @@ const ViewApplicants = () => {
                           <div className="flex items-center justify-between gap-3 rounded-2xl bg-white p-3">
                             <span className="font-medium">{t('employer.applicants.linkedin')}</span>
                             {linkedin ? (
-                              <a href={linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700">
+                              <a href={linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[#1769E0] hover:text-[#1769E0]">
                                 <ExternalLink className="h-4 w-4" /> {t('employer.applicants.open')}
                               </a>
                             ) : (
@@ -670,16 +670,16 @@ const ViewApplicants = () => {
                       <div>
                         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('employer.applicants.actions')}</p>
                         <div className="mt-2 flex flex-wrap gap-2">
-                          <button type="button" onClick={() => handleInterviewOpen(application)} className="inline-flex items-center gap-2 rounded-full border border-emerald-600 bg-white px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50">
+                          <button type="button" onClick={() => handleInterviewOpen(application)} className="inline-flex items-center gap-2 rounded-full border border-[#1769E0] bg-white px-4 py-2 text-sm font-semibold text-[#1769E0] transition hover:bg-[#EAF2FE]">
                             <CalendarDays className="h-4 w-4" /> {t('interviews.scheduleInterview')}
                           </button>
-                          <button type="button" onClick={() => handleAction(application._id, 'shortlist')} className="inline-flex items-center gap-2 rounded-full border border-emerald-600 bg-white px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50">
+                          <button type="button" onClick={() => handleAction(application._id, 'shortlist')} className="inline-flex items-center gap-2 rounded-full border border-[#1769E0] bg-white px-4 py-2 text-sm font-semibold text-[#1769E0] transition hover:bg-[#EAF2FE]">
                             <Star className="h-4 w-4" /> {t('employer.applicants.shortlist')}
                           </button>
-                          <button type="button" onClick={() => handleProfileOpen(application)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700">
+                          <button type="button" onClick={() => handleProfileOpen(application)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#1769E0] hover:text-[#1769E0]">
                             <User className="h-4 w-4" /> {t('employer.applicants.fullProfile')}
                           </button>
-                          <button type="button" onClick={() => handleAction(application._id, 'hire')} className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                          <button type="button" onClick={() => handleAction(application._id, 'hire')} className="inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0D5BC4]">
                             <CheckCircle className="h-4 w-4" /> {t('employer.applicants.hire')}
                           </button>
                           <button type="button" onClick={() => handleAction(application._id, 'reject')} className="inline-flex items-center gap-2 rounded-full border border-rose-600 bg-white px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50">
@@ -708,7 +708,7 @@ const ViewApplicants = () => {
                         type="button"
                         disabled={savingNoteId === application._id}
                         onClick={() => handleNoteSave(application._id)}
-                        className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0D5BC4] disabled:opacity-50"
                       >
                         <Send className="h-4 w-4" /> {savingNoteId === application._id ? t('common.saving') : t('interviews.saveNotes')}
                       </button>
@@ -913,7 +913,7 @@ const ViewApplicants = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <button type="button" onClick={() => window.open(`${api.defaults.baseURL}/applications/${activeProfile._id}/resume`, '_blank')} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">View</button>
-                        <button type="button" onClick={() => window.open(`${api.defaults.baseURL}/applications/${activeProfile._id}/resume?download=1`, '_blank')} className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Download</button>
+                        <button type="button" onClick={() => window.open(`${api.defaults.baseURL}/applications/${activeProfile._id}/resume?download=1`, '_blank')} className="inline-flex items-center gap-2 rounded-md bg-[#1769E0] px-3 py-2 text-sm font-semibold text-white">Download</button>
                         <button type="button" onClick={() => { const w = window.open(`${api.defaults.baseURL}/applications/${activeProfile._id}/resume`, '_blank'); if (w) { w.focus(); setTimeout(() => w.print(), 700); } }} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">Print</button>
                       </div>
                     </div>
@@ -921,15 +921,15 @@ const ViewApplicants = () => {
                     <div className="mt-4 grid gap-4 md:grid-cols-3">
                       <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
                         <p className="text-xs text-slate-400">Website</p>
-                        {activeProfile.applicant?.portfolioUrl ? <a href={createProfileUrl(activeProfile.applicant.portfolioUrl)} target="_blank" rel="noreferrer" className="text-sm text-emerald-600">Visit</a> : <p className="text-sm text-slate-500">Not provided</p>}
+                        {activeProfile.applicant?.portfolioUrl ? <a href={createProfileUrl(activeProfile.applicant.portfolioUrl)} target="_blank" rel="noreferrer" className="text-sm text-[#1769E0]">Visit</a> : <p className="text-sm text-slate-500">Not provided</p>}
                       </div>
                       <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
                         <p className="text-xs text-slate-400">GitHub</p>
-                        {activeProfile.applicant?.githubUrl ? <a href={createProfileUrl(activeProfile.applicant.githubUrl)} target="_blank" rel="noreferrer" className="text-sm text-emerald-600">Open</a> : <p className="text-sm text-slate-500">Not provided</p>}
+                        {activeProfile.applicant?.githubUrl ? <a href={createProfileUrl(activeProfile.applicant.githubUrl)} target="_blank" rel="noreferrer" className="text-sm text-[#1769E0]">Open</a> : <p className="text-sm text-slate-500">Not provided</p>}
                       </div>
                       <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
                         <p className="text-xs text-slate-400">LinkedIn</p>
-                        {activeProfile.applicant?.linkedinUrl ? <a href={createProfileUrl(activeProfile.applicant.linkedinUrl)} target="_blank" rel="noreferrer" className="text-sm text-emerald-600">Open</a> : <p className="text-sm text-slate-500">Not provided</p>}
+                        {activeProfile.applicant?.linkedinUrl ? <a href={createProfileUrl(activeProfile.applicant.linkedinUrl)} target="_blank" rel="noreferrer" className="text-sm text-[#1769E0]">Open</a> : <p className="text-sm text-slate-500">Not provided</p>}
                       </div>
                     </div>
                   </div>
@@ -1042,7 +1042,7 @@ const ViewApplicants = () => {
                       <div>
                         <textarea rows={3} placeholder="Add a private note..." className="textarea w-full border-slate-200" id="newNote" aria-label="Add private note" />
                         <div className="mt-2 flex justify-end gap-2">
-                          <button type="button" onClick={() => { const el = document.getElementById('newNote'); if (!el) return; const value = (el.value || '').toString().trim(); if (!value) return; const noteObj = { author: user?.firstName || 'You', date: new Date().toISOString(), content: value }; /* append locally */ if (!Array.isArray(activeProfile.employerNotes)) activeProfile.employerNotes = []; activeProfile.employerNotes.unshift(noteObj); el.value = ''; /* attempt to save via existing API */ handleNoteSave(activeProfile._id); }} className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Save Note</button>
+                          <button type="button" onClick={() => { const el = document.getElementById('newNote'); if (!el) return; const value = (el.value || '').toString().trim(); if (!value) return; const noteObj = { author: user?.firstName || 'You', date: new Date().toISOString(), content: value }; /* append locally */ if (!Array.isArray(activeProfile.employerNotes)) activeProfile.employerNotes = []; activeProfile.employerNotes.unshift(noteObj); el.value = ''; /* attempt to save via existing API */ handleNoteSave(activeProfile._id); }} className="inline-flex items-center gap-2 rounded-md bg-[#1769E0] px-3 py-2 text-sm font-semibold text-white">Save Note</button>
                         </div>
                       </div>
                     </div>
@@ -1080,9 +1080,9 @@ const ViewApplicants = () => {
                           </select>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          <button type="button" onClick={() => handleInterviewOpen(activeProfile)} className="inline-flex items-center gap-2 rounded-md border border-emerald-600 bg-white px-3 py-2 text-sm font-semibold text-emerald-600">Schedule Interview</button>
-                          <button type="button" onClick={() => { if (window.confirm('Shortlist this candidate?')) handleAction(activeProfile._id,'shortlist'); }} className="inline-flex items-center gap-2 rounded-md border border-emerald-600 bg-white px-3 py-2 text-sm font-semibold text-emerald-600">Shortlist</button>
-                          <button type="button" onClick={() => { if (window.confirm('Are you sure you want to hire this candidate?')) handleAction(activeProfile._id,'hire'); }} className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Hire</button>
+                          <button type="button" onClick={() => handleInterviewOpen(activeProfile)} className="inline-flex items-center gap-2 rounded-md border border-[#1769E0] bg-white px-3 py-2 text-sm font-semibold text-[#1769E0]">Schedule Interview</button>
+                          <button type="button" onClick={() => { if (window.confirm('Shortlist this candidate?')) handleAction(activeProfile._id,'shortlist'); }} className="inline-flex items-center gap-2 rounded-md border border-[#1769E0] bg-white px-3 py-2 text-sm font-semibold text-[#1769E0]">Shortlist</button>
+                          <button type="button" onClick={() => { if (window.confirm('Are you sure you want to hire this candidate?')) handleAction(activeProfile._id,'hire'); }} className="inline-flex items-center gap-2 rounded-md bg-[#1769E0] px-3 py-2 text-sm font-semibold text-white">Hire</button>
                           <button type="button" onClick={() => { if (window.confirm('Are you sure you want to reject this candidate?')) handleAction(activeProfile._id,'reject'); }} className="inline-flex items-center gap-2 rounded-md border border-rose-600 bg-white px-3 py-2 text-sm font-semibold text-rose-600">Reject</button>
                         </div>
                       </div>

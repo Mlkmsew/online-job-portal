@@ -60,6 +60,13 @@ const userSchema = new mongoose.Schema(
             certifications: [String],
             rawText: String,
         },
+        careerInterests: [String],
+        jobPreferences: {
+            preferredJobTypes: [String],
+            industries: [String],
+            careerInterests: [String],
+            preferredLocation: String,
+        },
 
         // Status & security
         isActive: { type: Boolean, default: true },

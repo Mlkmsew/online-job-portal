@@ -50,14 +50,13 @@ exports.getCompanies = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, count: data.length, pagination, data });
 });
 
-// @desc    Get trusted companies (verified + approved + active) with open job counts
+// @desc    Get trusted companies (approved + active) with open job counts
 // @route   GET /api/companies/trusted
 // @access  Public
 exports.getTrustedCompanies = asyncHandler(async (req, res) => {
   const companies = await Company.find({
     isApproved: true,
     isActive: true,
-    isVerified: true,
   })
     .select('name slug logo industry isVerified location companySize')
     .limit(20)

@@ -347,7 +347,7 @@ const ManageCategories = () => {
                 <button
                   type="button"
                   onClick={() => openEdit(category)}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:text-emerald-300"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-[#1769E0] hover:bg-[#EAF2FE] hover:text-[#1769E0] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:text-emerald-300"
                 >
                   <FiEdit2 className="h-4 w-4" />
                   {t('admin.categories.editCategory', { defaultValue: 'Edit' })}

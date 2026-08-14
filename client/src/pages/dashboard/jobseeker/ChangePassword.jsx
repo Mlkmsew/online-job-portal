@@ -93,7 +93,7 @@ const ChangePassword = () => {
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-md bg-[#1769E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0D5BC4] disabled:opacity-60"
           >
             {loading ? 'Updating...' : 'Update Password'}
           </button>

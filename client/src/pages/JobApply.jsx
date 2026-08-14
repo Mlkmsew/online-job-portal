@@ -418,7 +418,7 @@ const JobApply = () => {
           <FiCheckCircle className="mx-auto mb-4 h-14 w-14 text-emerald-600" />
           <h2 className="mb-2 text-2xl font-bold text-slate-900">Job Not Found</h2>
           <p className="mb-6 text-sm text-slate-500">The job you are trying to apply for cannot be found.</p>
-          <button onClick={() => navigate('/jobs')} className="rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white">
+          <button onClick={() => navigate('/jobs')} className="rounded-full bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white">
             Back to Jobs
           </button>
         </div>
@@ -429,7 +429,7 @@ const JobApply = () => {
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1300px] space-y-6">
-        <Link to={`/jobs/${id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 transition hover:text-emerald-800">
+        <Link to={`/jobs/${id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-[#1769E0] transition hover:text-[#1769E0]">
           <FiArrowLeft className="h-4 w-4" /> Back to Job Details
         </Link>
 
@@ -501,7 +501,7 @@ const JobApply = () => {
                         <h3 className="text-lg font-semibold text-slate-900">Applicant Information</h3>
                         <p className="mt-1 text-sm text-slate-500">This information is taken from your profile.</p>
                       </div>
-                      <Link to="/dashboard/profile" className="inline-flex items-center gap-2 rounded-full border border-emerald-600 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">
+                      <Link to="/dashboard/profile" className="inline-flex items-center gap-2 rounded-full border border-[#1769E0] bg-[#EAF2FE] px-4 py-2 text-sm font-semibold text-[#1769E0] transition hover:bg-[#DCEAFD]">
                         <FiEdit2 className="h-4 w-4" />
                         Edit Profile
                       </Link>
@@ -539,7 +539,7 @@ const JobApply = () => {
                               setUploadProgress(100);
                             }
                           }}
-                          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${user?.cv ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 text-slate-500 cursor-not-allowed'}`}
+                          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${user?.cv ? 'bg-[#1769E0] text-white hover:bg-[#0D5BC4]' : 'bg-slate-100 text-slate-500 cursor-not-allowed'}`}
                           disabled={!user?.cv}
                         >
                           Use Profile CV
@@ -572,7 +572,7 @@ const JobApply = () => {
                       <button
                         type="button"
                         onClick={() => resumeInputRef.current?.click()}
-                        className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-5 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+                        className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#1769E0] bg-white px-5 py-2 text-sm font-semibold text-[#1769E0] shadow-sm transition hover:bg-[#EAF2FE]"
                       >
                         <FiChevronRight className="h-4 w-4" />
                         Browse files
@@ -607,7 +607,7 @@ const JobApply = () => {
                           <button
                             type="button"
                             onClick={() => resumeInputRef.current?.click()}
-                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm border border-emerald-200 transition hover:bg-emerald-50"
+                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1769E0] shadow-sm border border-[#1769E0] transition hover:bg-[#EAF2FE]"
                           >
                             Replace Resume
                           </button>
@@ -641,7 +641,7 @@ const JobApply = () => {
                           <button
                             type="button"
                             onClick={() => resumeInputRef.current?.click()}
-                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm border border-emerald-200 transition hover:bg-emerald-50"
+                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1769E0] shadow-sm border border-[#1769E0] transition hover:bg-[#EAF2FE]"
                           >
                             Replace Resume
                           </button>
@@ -834,7 +834,7 @@ const JobApply = () => {
 
                   <button
                     type="submit"
-                    className="w-full rounded-full bg-emerald-600 px-5 py-4 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    className="w-full rounded-full bg-[#1769E0] px-5 py-4 text-base font-semibold text-white transition hover:bg-[#0D5BC4] disabled:cursor-not-allowed disabled:bg-slate-300"
                     disabled={applying || !agreeAccurate || !agreeShare}
                   >
                     {applying ? (
@@ -867,7 +867,7 @@ const JobApply = () => {
                               handleApply(undefined, true);
                             }}
                             disabled={applying}
-                            className="rounded-full bg-emerald-600 px-6 py-3 text-base font-semibold text-white"
+                            className="rounded-full bg-[#1769E0] px-6 py-3 text-base font-semibold text-white"
                           >
                             {applying ? 'Submitting...' : 'Yes, submit'}
                           </button>

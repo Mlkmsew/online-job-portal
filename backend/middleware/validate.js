@@ -7,10 +7,15 @@ const { validationResult, body, param, query } = require('express-validator');
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    const failed = errors.array().map((e) => ({ field: e.path, message: e.msg }));
+    console.warn(
+      `[validate] ${req.method} ${req.originalUrl} failed validation ->`,
+      failed.map((f) => `${f.field}: ${f.message}`).join(' | ')
+    );
     return res.status(400).json({
       success: false,
       message: 'Validation failed',
-      errors: errors.array().map((e) => ({ field: e.path, message: e.msg })),
+      errors: failed,
     });
   }
   next();
@@ -120,7 +125,7 @@ const companyValidator = [
   body('website')
     .optional({ checkFalsy: true })
     .trim()
-    .isURL({ require_protocol: true })
+    .isURL({ require_protocol: true, require_tld: false })
     .withMessage('Website must be a valid URL, including http:// or https://'),
   body('email').optional({ checkFalsy: true }).trim().isEmail().withMessage('Please provide a valid email address').normalizeEmail(),
   body('phone')

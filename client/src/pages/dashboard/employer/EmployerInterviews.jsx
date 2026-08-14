@@ -729,7 +729,7 @@ const EmployerInterviews = () => {
               <button
                 type="button"
                 onClick={openScheduleModal}
-                className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition duration-200 hover:bg-emerald-700"
+                className="rounded-full bg-[#1769E0] px-4 py-2 text-sm font-medium text-white transition duration-200 hover:bg-[#0D5BC4]"
               >
                 {t('interviews.scheduleNew')}
               </button>
@@ -779,7 +779,7 @@ const EmployerInterviews = () => {
                 <button
                   type="button"
                   onClick={openScheduleModal}
-                  className="rounded-full bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition duration-200 hover:bg-emerald-700"
+                  className="rounded-full bg-[#1769E0] px-3 py-2 text-sm font-medium text-white transition duration-200 hover:bg-[#0D5BC4]"
                 >
                   {t('interviews.newInterview')}
                 </button>
@@ -901,7 +901,7 @@ const EmployerInterviews = () => {
                         <div className="flex flex-wrap gap-2">
                           {['scheduled', 'upcoming'].includes(status) ? (
                             <>
-                              <button type="button" aria-label="Start Interview" onClick={() => startInterviewWorkflow(interview)} className="inline-flex items-center gap-2 rounded-full border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50">
+                              <button type="button" aria-label="Start Interview" onClick={() => startInterviewWorkflow(interview)} className="inline-flex items-center gap-2 rounded-full border border-[#1769E0] px-3 py-2 text-sm font-medium text-[#1769E0] transition hover:bg-[#EAF2FE]">
                                 <PlayCircle className="h-4 w-4" /> {t('interviews.startInterview')}
                               </button>
                               <button type="button" onClick={() => openEditModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
@@ -960,7 +960,7 @@ const EmployerInterviews = () => {
                   key={pageNumber}
                   type="button"
                   onClick={() => setPage(pageNumber)}
-                  className={`h-9 w-9 rounded-full text-sm font-semibold transition ${page === pageNumber ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                  className={`h-9 w-9 rounded-full text-sm font-semibold transition ${page === pageNumber ? 'bg-[#1769E0] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
                 >
                   {pageNumber}
                 </button>
@@ -1003,7 +1003,7 @@ const EmployerInterviews = () => {
                     <button
                       key={key}
                       type="button"
-                      className={`flex h-10 items-center justify-center rounded-xl text-sm font-medium transition ${isInterviewDay ? 'bg-emerald-600 text-white shadow' : 'text-slate-600 hover:bg-slate-100'}`}
+                      className={`flex h-10 items-center justify-center rounded-xl text-sm font-medium transition ${isInterviewDay ? 'bg-[#1769E0] text-white shadow' : 'text-slate-600 hover:bg-slate-100'}`}
                     >
                       {date.getDate()}
                     </button>
@@ -1065,7 +1065,7 @@ const EmployerInterviews = () => {
                 <button
                   type="button"
                   onClick={() => toast.success(t('interviews.reminderEnabledSuccess') || 'Reminder enabled.')}
-                  className="mt-3 rounded-full bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
+                  className="mt-3 rounded-full bg-[#1769E0] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#0D5BC4]"
                 >
                   {t('interviews.enableReminder')}
                 </button>

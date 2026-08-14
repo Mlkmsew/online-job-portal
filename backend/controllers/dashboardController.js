@@ -39,7 +39,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
       (await Application.find({ applicant: userId }).select('job')).map((app) => app.job?.toString()).filter(Boolean)
     );
 
-    const jobs = await Job.find({ status: 'active', isApproved: true })
+    const jobs = await Job.find({ status: { $in: ['published', 'active'] }, isApproved: true })
       .populate('company', 'name logo location')
       .populate('skillsRequired', 'name')
       .sort({ createdAt: -1 });
@@ -57,6 +57,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
         matchedSkills: match.matchedSkills || [],
         missingSkills: match.missingSkills || [],
         matchReasons: match.why || [],
+        reason: match.reason || '',
         matchDetails: match.details || {},
       };
     });
@@ -83,15 +84,25 @@ exports.getDashboard = asyncHandler(async (req, res) => {
   // Saved jobs
   const saved = await Bookmark.find({ user: userId }).populate('job', 'title slug company').limit(10);
 
-  // Active, approved jobs for the seeker dashboard
-  const dashboardJobs = await Job.find({
-    status: 'active',
+  // Active, approved jobs for the seeker dashboard — recently posted and
+  // ranked by how well they match the job seeker's profile.
+  const recentJobs = await Job.find({
+    status: { $in: ['published', 'active'] },
     isApproved: true,
   })
     .sort({ createdAt: -1 })
-    .limit(3)
+    .limit(10)
     .populate('company', 'name logo')
     .populate('category', 'name');
+
+  const dashboardJobs = recentJobs
+    .map((job) => {
+      const match = calculateJobMatch(job, user);
+      return { job, score: match.matchScore ?? 0 };
+    })
+    .sort((a, b) => b.score - a.score || new Date(b.job.createdAt) - new Date(a.job.createdAt))
+    .slice(0, 3)
+    .map(({ job }) => job);
   console.log('Dashboard jobs fetched:', dashboardJobs.length, 'jobs');
 
   // Resume & certificates info
@@ -131,6 +142,8 @@ exports.getDashboard = asyncHandler(async (req, res) => {
     success: true,
     data: {
       profileCompleteness: user.profileCompleteness || 0,
+      profileComplete: (user.profileCompleteness || 0) >= 70,
+      canRecommend: canRecommendJobs(user),
       upcomingInterviews,
       unreadMessages,
       unreadNotifications,

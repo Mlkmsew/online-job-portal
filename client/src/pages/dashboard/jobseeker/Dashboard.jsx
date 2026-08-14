@@ -400,8 +400,8 @@ const JobSeekerDashboard = () => {
   };
 
   const getMatchBadgeClass = (score) => {
-    if (score >= 85) return 'bg-emerald-50 text-emerald-700';
-    if (score >= 70) return 'bg-teal-50 text-teal-700';
+    if (score >= 85) return 'bg-blue-50 text-blue-700';
+    if (score >= 70) return 'bg-sky-50 text-sky-700';
     if (score >= 50) return 'bg-amber-50 text-amber-700';
     return 'bg-slate-100 text-slate-700';
   };
@@ -415,7 +415,7 @@ const JobSeekerDashboard = () => {
       return 'bg-sky-50 text-sky-700';
     }
     if (['accepted', 'selected', 'hired', 'offer'].includes(normalized)) {
-      return 'bg-emerald-50 text-emerald-700';
+      return 'bg-blue-50 text-blue-700';
     }
     if (['rejected', 'not selected', 'declined'].includes(normalized)) {
       return 'bg-rose-50 text-rose-700';
@@ -489,7 +489,7 @@ const JobSeekerDashboard = () => {
               <div className="absolute right-0 z-[60] mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border p-3 shadow-xl" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                 <div className="flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--border)' }}>
                   <h4 className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{t('dashboard.notifications.title')}</h4>
-                  <Link to="/dashboard/job-alerts" className="text-xs font-semibold text-[#087F5B] dark:text-[#16A36F] hover:underline">{t('dashboard.notifications.viewAll')}</Link>
+                  <Link to="/dashboard/job-alerts" className="text-xs font-semibold text-[#1769E0] dark:text-[#60A5FA] hover:underline">{t('dashboard.notifications.viewAll')}</Link>
                 </div>
                 <div className="mt-2 max-h-52 overflow-auto sidebar-scroll">
                   {jobAlerts.length === 0 ? (
@@ -497,7 +497,7 @@ const JobSeekerDashboard = () => {
                   ) : (
                     jobAlerts.slice(0, 5).map((alert) => (
                       <div key={alert._id} className="flex items-start gap-2.5 border-b py-2.5 last:border-b-0" style={{ borderColor: 'var(--border)' }}>
-                        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#087F5B]/10 dark:bg-[#16A36F]/20 text-[#087F5B] dark:text-[#25C58A]">
+                        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#1769E0]/10 dark:bg-[#60A5FA]/20 text-[#1769E0] dark:text-[#93C5FD]">
                           <FiBell className="h-3.5 w-3.5" />
                         </div>
                         <div className="text-xs min-w-0 flex-1">
@@ -523,7 +523,7 @@ const JobSeekerDashboard = () => {
             >
               <FiMail className="h-4.5 w-4.5" />
               {unreadMessages > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#087F5B] dark:bg-[#16A36F] px-1 text-[9px] font-bold text-white">
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#1769E0] dark:bg-[#60A5FA] px-1 text-[9px] font-bold text-white">
                   {unreadMessages}
                 </span>
               )}
@@ -534,7 +534,7 @@ const JobSeekerDashboard = () => {
                 <h4 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{t('dashboard.messages.title')}</h4>
                 <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>{t('dashboard.messages.subtitle')}</p>
                 <div className="mt-3 pt-2 border-t text-right" style={{ borderColor: 'var(--border)' }}>
-                  <Link to="/dashboard/messages" className="text-xs font-bold text-[#087F5B] dark:text-[#16A36F] hover:underline">{t('dashboard.messages.openInbox')}</Link>
+                  <Link to="/dashboard/messages" className="text-xs font-bold text-[#1769E0] dark:text-[#60A5FA] hover:underline">{t('dashboard.messages.openInbox')}</Link>
                 </div>
               </div>
             )}
@@ -548,7 +548,7 @@ const JobSeekerDashboard = () => {
               className="flex items-center gap-2.5 rounded-full border px-3 py-1.5 shadow-2xs transition hover:opacity-80"
               style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
             >
-              <div className="h-7 w-7 overflow-hidden rounded-full bg-[#087F5B] dark:bg-[#16A36F] text-white text-xs font-bold flex items-center justify-center">
+              <div className="h-7 w-7 overflow-hidden rounded-full bg-[#1769E0] dark:bg-[#60A5FA] text-white text-xs font-bold flex items-center justify-center">
                 {user?.avatar ? (
                   <img src={user.avatar} alt={user?.firstName || 'User'} className="h-full w-full object-cover" />
                 ) : (
@@ -564,23 +564,23 @@ const JobSeekerDashboard = () => {
                   <button
                     type="button"
                     onClick={() => { setShowProfileMenu(false); navigate('/dashboard/profile'); }}
-                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors hover:bg-slate-50 dark:hover:bg-[#18342C]"
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors hover:bg-slate-50 dark:hover:bg-[#172554]"
                     style={{ color: 'var(--text-primary)' }}
                   >
-                    <FiUser className="h-4 w-4 text-[#087F5B] dark:text-[#16A36F]" /> {t('dashboard.userMenu.viewProfile')}
+                    <FiUser className="h-4 w-4 text-[#1769E0] dark:text-[#60A5FA]" /> {t('dashboard.userMenu.viewProfile')}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setShowProfileMenu(false); navigate('/dashboard/resume'); }}
-                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors hover:bg-slate-50 dark:hover:bg-[#18342C]"
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors hover:bg-slate-50 dark:hover:bg-[#172554]"
                     style={{ color: 'var(--text-primary)' }}
                   >
-                    <FiFileText className="h-4 w-4 text-[#087F5B] dark:text-[#16A36F]" /> {t('dashboard.userMenu.uploadNewCV')}
+                    <FiFileText className="h-4 w-4 text-[#1769E0] dark:text-[#60A5FA]" /> {t('dashboard.userMenu.uploadNewCV')}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setShowProfileMenu(false); navigate('/dashboard/settings'); }}
-                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors hover:bg-slate-50 dark:hover:bg-[#18342C]"
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors hover:bg-slate-50 dark:hover:bg-[#172554]"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     <FiBriefcase className="h-4 w-4" style={{ color: 'var(--text-secondary)' }} /> {t('dashboard.userMenu.settings')}
@@ -604,7 +604,7 @@ const JobSeekerDashboard = () => {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: t('dashboard.totalApplications'), value: normalizedApplications.length, icon: FiFileText, iconClass: 'bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-900/40' },
-          { label: t('dashboard.profileViews'), value: profileViews, icon: FiBriefcase, iconClass: 'bg-[#087F5B]/10 dark:bg-[#16A36F]/20 text-[#087F5B] dark:text-[#25C58A] border border-[#087F5B]/20 dark:border-[#16A36F]/30' },
+          { label: t('dashboard.profileViews'), value: profileViews, icon: FiBriefcase, iconClass: 'bg-[#1769E0]/10 dark:bg-[#60A5FA]/20 text-[#1769E0] dark:text-[#93C5FD] border border-[#1769E0]/20 dark:border-[#60A5FA]/30' },
           { label: t('dashboard.savedJobs'), value: normalizedBookmarks.length, icon: FiBookmark, iconClass: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/40' },
           { label: t('dashboard.upcomingInterviews'), value: upcomingInterviews.length, icon: FiCalendar, iconClass: 'bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/40' },
         ].map((item) => {
@@ -625,8 +625,8 @@ const JobSeekerDashboard = () => {
         })}
       </div>
 
-      {/* ── CV Promotion Banner — Unified Ethiopian Green Theme ── */}
-      <div className="relative overflow-hidden rounded-3xl bg-[#033024] dark:bg-[#10231E] p-6 text-white shadow-lg border border-emerald-800/40">
+      {/* ── CV Promotion Banner — Unified Blue Theme ── */}
+      <div className="relative overflow-hidden rounded-3xl bg-[#0f172a] dark:bg-[#1e3a8a] p-6 text-white shadow-lg border border-[#1e3a8a]/40">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#F3E5AB]">{t('dashboard.cvBanner.tagline')}</p>
@@ -660,31 +660,47 @@ const JobSeekerDashboard = () => {
             <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{t('dashboard.recommendedJobs.title')}</h2>
             <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{t('dashboard.recommendedJobs.subtitle')}</p>
           </div>
-          <Link to="/dashboard/find-jobs" className="text-xs font-bold text-[#087F5B] dark:text-[#16A36F] hover:underline">{t('dashboard.recommendedJobs.viewAllMatches')}</Link>
+          <Link to="/dashboard/find-jobs" className="text-xs font-bold text-[#1769E0] dark:text-[#60A5FA] hover:underline">{t('dashboard.recommendedJobs.viewAllMatches')}</Link>
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {recommendedJobs.length === 0 ? (
-            <div className="col-span-full rounded-[20px] border border-dashed border-[#E4E7EC] bg-[#F8FAFC] p-8 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00A86B]/10 text-[#00A86B] mb-3">
-                <FiZap className="h-6 w-6" />
+            dashboardData?.profileComplete ? (
+              <div className="col-span-full rounded-[20px] border border-dashed border-[#E4E7EC] bg-[#F8FAFC] p-8 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1769E0]/10 text-[#1769E0] mb-3">
+                  <FiSearch className="h-6 w-6" />
+                </div>
+                <h3 className="font-bold text-[#101828] text-base mb-1">{t('dashboard.recommendedJobs.noMatchingTitle')}</h3>
+                <p className="text-[#667085] text-xs max-w-md mx-auto mb-4">{t('dashboard.recommendedJobs.noMatchingSubtitle')}</p>
+                <Link
+                  to="/dashboard/find-jobs"
+                  className="dashboard-btn inline-flex items-center gap-2 rounded-xl bg-[#1769E0] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#0D5BC4] shadow-xs"
+                >
+                  <FiSearch className="w-4 h-4" /> {t('dashboard.recommendedJobs.browseJobsBtn')}
+                </Link>
               </div>
-              <h3 className="font-bold text-[#101828] text-base mb-1">{t('dashboard.recommendedJobs.noMatchesTitle')}</h3>
-              <p className="text-[#667085] text-xs max-w-md mx-auto mb-4">{t('dashboard.recommendedJobs.noMatchesSubtitle')}</p>
-              <button
-                type="button"
-                onClick={() => navigate('/dashboard/profile')}
-                className="dashboard-btn inline-flex items-center gap-2 rounded-xl bg-[#00A86B] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#00875A] shadow-xs"
-              >
-                <FiUser className="w-4 h-4" /> {t('dashboard.recommendedJobs.completeProfileBtn')}
-              </button>
-            </div>
+            ) : (
+              <div className="col-span-full rounded-[20px] border border-dashed border-[#E4E7EC] bg-[#F8FAFC] p-8 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1769E0]/10 text-[#1769E0] mb-3">
+                  <FiZap className="h-6 w-6" />
+                </div>
+                <h3 className="font-bold text-[#101828] text-base mb-1">{t('dashboard.recommendedJobs.noMatchesTitle')}</h3>
+                <p className="text-[#667085] text-xs max-w-md mx-auto mb-4">{t('dashboard.recommendedJobs.noMatchesSubtitle')}</p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard/profile')}
+                  className="dashboard-btn inline-flex items-center gap-2 rounded-xl bg-[#1769E0] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#0D5BC4] shadow-xs"
+                >
+                  <FiUser className="w-4 h-4" /> {t('dashboard.recommendedJobs.completeProfileBtn')}
+                </button>
+              </div>
+            )
           ) : (
             recommendedJobs.map((job) => {
               const score = job.matchScore ?? job.matchPercentage ?? 0;
               const matchBadgeClass =
                 score >= 80
-                  ? 'bg-emerald-50 text-[#00A86B] border-emerald-200'
+                  ? 'bg-blue-50 text-[#1769E0] border-blue-200'
                   : score >= 60
                   ? 'bg-sky-50 text-sky-700 border-sky-200'
                   : 'bg-amber-50 text-amber-700 border-amber-200';
@@ -703,7 +719,7 @@ const JobSeekerDashboard = () => {
                       <button
                         type="button"
                         onClick={() => handleBookmark(job._id || job.jobId)}
-                        className="rounded-xl border border-[#E4E7EC] bg-[#F8FAFC] p-2 text-[#667085] hover:bg-[#00A86B]/10 hover:text-[#00A86B] transition flex-shrink-0"
+                        className="rounded-xl border border-[#E4E7EC] bg-[#F8FAFC] p-2 text-[#667085] hover:bg-[#1769E0]/10 hover:text-[#1769E0] transition flex-shrink-0"
                         title={t('dashboard.jobCard.saveJob')}
                       >
                         <FiBookmark className="h-4 w-4" />
@@ -722,7 +738,7 @@ const JobSeekerDashboard = () => {
                         <p className="text-[10px] font-bold uppercase tracking-wider text-[#98A2B3]">{t('dashboard.jobCard.matchedSkills')}</p>
                         <div className="mt-1 flex flex-wrap gap-1">
                           {job.matchedSkills.slice(0, 3).map((sk, idx) => (
-                            <span key={idx} className="rounded-md bg-emerald-50 text-[#00A86B] text-[11px] px-2 py-0.5 font-medium border border-emerald-100">
+                            <span key={idx} className="rounded-md bg-blue-50 text-[#1769E0] text-[11px] px-2 py-0.5 font-medium border border-blue-100">
                               ✓ {sk}
                             </span>
                           ))}
@@ -746,6 +762,14 @@ const JobSeekerDashboard = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* Short reason */}
+                    {job.reason && (
+                      <p className="mt-3 text-[11px] leading-relaxed text-[#475467]">
+                        <span className="font-semibold text-[#1769E0]">{t('dashboard.jobCard.matchReason')}: </span>
+                        {job.reason}
+                      </p>
+                    )}
                   </div>
 
                   <div className="mt-5 pt-3 border-t border-[#E4E7EC] flex items-center justify-between gap-2">
@@ -753,13 +777,22 @@ const JobSeekerDashboard = () => {
                       <FiZap className="w-3.5 h-3.5" />
                       {score}% {matchLabel}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/jobs/${job._id || job.jobId}`)}
-                      className="dashboard-btn rounded-xl bg-[#00A86B] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#00875A] shadow-xs"
-                    >
-                      {t('dashboard.jobCard.applyNow')}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/jobs/${job._id || job.jobId}`)}
+                        className="dashboard-btn rounded-xl border border-[#E4E7EC] bg-[#F8FAFC] px-3.5 py-2 text-xs font-bold text-[#667085] hover:bg-[#1769E0]/10 hover:text-[#1769E0] shadow-xs"
+                      >
+                        {t('dashboard.jobCard.viewJob')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/jobs/${job._id || job.jobId}?apply=1`)}
+                        className="dashboard-btn rounded-xl bg-[#1769E0] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#0D5BC4] shadow-xs"
+                      >
+                        {t('dashboard.jobCard.applyNow')}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -775,7 +808,7 @@ const JobSeekerDashboard = () => {
             <h2 className="text-lg font-bold text-[#101828]">{t('dashboard.latestOpportunities.title')}</h2>
             <p className="text-xs font-medium text-[#667085]">{t('dashboard.latestOpportunities.subtitle')}</p>
           </div>
-          <Link to="/dashboard/find-jobs" className="text-xs font-bold text-[#00A86B] hover:underline">{t('dashboard.latestOpportunities.viewAllJobs')}</Link>
+          <Link to="/dashboard/find-jobs" className="text-xs font-bold text-[#1769E0] hover:underline">{t('dashboard.latestOpportunities.viewAllJobs')}</Link>
         </div>
 
         <div className="mt-5 space-y-3">
@@ -798,7 +831,7 @@ const JobSeekerDashboard = () => {
                   <button
                     type="button"
                     onClick={() => navigate(`/jobs/${job._id}`)}
-                    className="dashboard-btn rounded-xl bg-[#00A86B] px-4 py-2 text-xs font-bold text-white hover:bg-[#00875A] shadow-xs"
+                    className="dashboard-btn rounded-xl bg-[#1769E0] px-4 py-2 text-xs font-bold text-white hover:bg-[#0D5BC4] shadow-xs"
                   >
                     {t('dashboard.jobCard.applyNow')}
                   </button>
@@ -816,7 +849,7 @@ const JobSeekerDashboard = () => {
         </div>
 
         <div className="mt-6 text-center">
-          <Link to="/dashboard/find-jobs" className="dashboard-btn inline-flex items-center gap-2 rounded-xl bg-[#00A86B] px-6 py-3 text-xs font-bold text-white hover:bg-[#00875A] shadow-sm">
+          <Link to="/dashboard/find-jobs" className="dashboard-btn inline-flex items-center gap-2 rounded-xl bg-[#1769E0] px-6 py-3 text-xs font-bold text-white hover:bg-[#0D5BC4] shadow-sm">
             {t('dashboard.latestOpportunities.browseMore')}
             <FiArrowRight className="h-4 w-4" />
           </Link>

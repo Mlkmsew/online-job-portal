@@ -659,7 +659,7 @@ const AdminMessages = () => {
         <button
           type="button"
           onClick={() => setNewMessageOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-700/20 transition hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+          className="inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#1769E0]/20 transition hover:bg-[#0D5BC4] dark:bg-[#1769E0] dark:hover:bg-[#0D5BC4]"
         >
           <FiPlus className="h-4 w-4" />
           {t('admin.messages.newMessage') || 'New Message'}
@@ -693,8 +693,8 @@ const AdminMessages = () => {
                 onClick={() => setFilter(f.key)}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   filter === f.key
-                    ? 'bg-emerald-700 text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-gray-900 dark:text-gray-300'
+                    ? 'bg-[#1769E0] text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-[#EAF2FE] hover:text-[#1769E0] dark:bg-gray-900 dark:text-gray-300'
                 }`}
               >
                 {f.label}
@@ -732,7 +732,7 @@ const AdminMessages = () => {
                 <button
                   type="button"
                   onClick={() => setNewMessageOpen(true)}
-                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-800"
+                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#0D5BC4]"
                 >
                   <FiPlus className="h-4 w-4" /> {t('admin.messages.newMessage') || 'New Message'}
                 </button>
@@ -763,7 +763,7 @@ const AdminMessages = () => {
                       onClick={() => handleSelectConversation(conversation)}
                       className={`group relative flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition ${
                         isActive
-                          ? 'bg-emerald-50 dark:bg-emerald-900/30'
+                          ? 'bg-[#EAF2FE] dark:bg-emerald-900/30'
                           : 'hover:bg-gray-50 dark:hover:bg-gray-900'
                       }`}
                     >
@@ -958,7 +958,7 @@ const AdminMessages = () => {
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); handleSaveEditedMessage(); }}
-                                  className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                  className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-[#1769E0] transition hover:bg-[#DCEAFD]"
                                 >
                                   {t('common.save') || 'Save'}
                                 </button>
@@ -976,7 +976,7 @@ const AdminMessages = () => {
                                   target="_blank"
                                   rel="noreferrer"
                                   onClick={(e) => e.stopPropagation()}
-                                  className={`flex items-center gap-3 px-4 py-3 ${isMine ? 'bg-emerald-500/40' : 'bg-gray-50 dark:bg-gray-900'}`}
+                                  className={`flex items-center gap-3 px-4 py-3 ${isMine ? 'bg-[#1769E0]/40' : 'bg-gray-50 dark:bg-gray-900'}`}
                                 >
                                   <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${isMine ? 'bg-white/20' : 'bg-emerald-100 text-emerald-700'}`}>
                                     <FiFile className="h-5 w-5" />
@@ -1079,7 +1079,7 @@ const AdminMessages = () => {
                         <button
                           type="button"
                           onClick={() => setEmojiOpen((o) => !o)}
-                          className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-gray-800"
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-[#1769E0] dark:hover:bg-gray-800"
                           aria-label="Add emoji"
                         >
                           <FiSmile className="h-4.5 w-4.5" />
@@ -1107,7 +1107,7 @@ const AdminMessages = () => {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-emerald-300 hover:text-emerald-600 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
+                    className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-[#1769E0] hover:text-[#1769E0] disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
                     aria-label="Attach file"
                   >
                     {uploading ? <FiLoader className="h-4 w-4 animate-spin" /> : <FiPaperclip className="h-4 w-4" />}
@@ -1116,7 +1116,7 @@ const AdminMessages = () => {
                     type="button"
                     onClick={handleSend}
                     disabled={sending || !selectedParticipant || (!input.trim() && !pendingFile)}
-                    className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md shadow-emerald-600/25 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+                    className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-full bg-[#1769E0] text-white shadow-md shadow-[#1769E0]/25 transition hover:bg-[#0D5BC4] disabled:cursor-not-allowed disabled:bg-[#A8C8F5] dark:bg-[#1769E0] dark:hover:bg-[#1769E0]"
                     aria-label="Send message"
                   >
                     {sending ? <FiLoader className="h-4 w-4 animate-spin" /> : <FiSend className="h-4 w-4" />}
@@ -1172,8 +1172,8 @@ const AdminMessages = () => {
                   onClick={() => setRecipientRole(r.key)}
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                     recipientRole === r.key
-                      ? 'bg-emerald-700 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-emerald-50 dark:bg-gray-800 dark:text-gray-300'
+                      ? 'bg-[#1769E0] text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-[#EAF2FE] dark:bg-gray-800 dark:text-gray-300'
                   }`}
                 >
                   {r.label}
@@ -1200,7 +1200,7 @@ const AdminMessages = () => {
                       type="button"
                       onClick={() => setSelectedRecipient(active ? null : r)}
                       className={`flex w-full items-center gap-3 px-4 py-3 text-left transition ${
-                        active ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                        active ? 'bg-[#EAF2FE] dark:bg-emerald-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
                       <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold ${avatarMeta}`}>
@@ -1244,7 +1244,7 @@ const AdminMessages = () => {
                     type="button"
                     onClick={handleStartConversation}
                     disabled={sending || !newMessageText.trim()}
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#0D5BC4] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {sending ? <FiLoader className="h-4 w-4 animate-spin" /> : <FiSend className="h-4 w-4" />}
                     {t('admin.messages.sendMessage') || 'Send'}

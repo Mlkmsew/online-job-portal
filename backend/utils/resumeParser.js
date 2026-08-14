@@ -161,6 +161,75 @@ const parseLocation = (text) => {
   return null;
 };
 
+const parseProfessionalTitle = (text) => {
+  if (!text || !text.trim()) return null;
+  // Look for a headline near the top of the resume
+  const firstLines = text.slice(0, 1200).replace(/\r/g, '\n').split('\n').map((l) => l.trim()).filter(Boolean);
+  const titlePatterns = [
+    /(?:professional (?:title|summary)|job title|position|role)[:\-\s]+([a-z0-9 ,.\/&]+)/i,
+    /^(?:senior|junior|lead|mid|entry)[ a-z]* (?:developer|engineer|designer|manager|analyst|specialist|consultant|officer|associate|administrator|accountant|nurse|teacher|scientist|architect|writer|coordinator)[ a-z]*$/i,
+  ];
+  for (let i = 0; i < Math.min(firstLines.length, 8); i++) {
+    const line = firstLines[i];
+    if (/^(senior|junior|lead|mid|entry|full stack|software|frontend|backend|devops|data|product|project|content|graphic|marketing|sales|human resources|hr|finance|accounting)/i.test(line)) {
+      return line.length <= 60 ? line : null;
+    }
+    for (const pattern of titlePatterns) {
+      const match = line.match(pattern);
+      if (match && match[1] && match[1].length <= 60) return match[1].trim();
+    }
+  }
+  return null;
+};
+
+const parseLanguages = (text) => {
+  if (!text || !text.trim()) return [];
+  const normalized = text.replace(/\r/g, ' ').replace(/\n/g, ' ');
+  const known = ['amharic', 'english', 'oromo', 'afan oromo', 'tigrigna', 'tigrinya', 'somali', 'arabic', 'french', 'german', 'italian', 'spanish', 'swahili', 'chinese', 'hindi'];
+  const found = new Set();
+  known.forEach((lang) => {
+    const re = new RegExp(`\\b${lang}\\b`, 'i');
+    if (re.test(normalized)) found.add(lang.charAt(0).toUpperCase() + lang.slice(1));
+  });
+  return Array.from(found).slice(0, 5);
+};
+
+const parsePreferredJobTypes = (text) => {
+  if (!text || !text.trim()) return [];
+  const normalized = text.toLowerCase();
+  const types = [];
+  const typeMap = [
+    { key: 'full time', match: /full[-\s]?time/ },
+    { key: 'part time', match: /part[-\s]?time/ },
+    { key: 'contract', match: /\bcontract\b/ },
+    { key: 'internship', match: /\binternship\b/ },
+    { key: 'freelance', match: /\bfreelance\b/ },
+    { key: 'remote', match: /\bremote\b/ },
+    { key: 'hybrid', match: /\bhybrid\b/ },
+  ];
+  typeMap.forEach(({ key, match }) => {
+    if (match.test(normalized)) types.push(key);
+  });
+  return types.slice(0, 4);
+};
+
+const parseIndustry = (text) => {
+  if (!text || !text.trim()) return null;
+  const normalized = text.toLowerCase();
+  const industries = [
+    'information technology', 'software', 'technology', 'healthcare', 'health', 'finance',
+    'banking', 'education', 'engineering', 'agriculture', 'marketing', 'sales',
+    'construction', 'telecommunication', 'media', 'logistics', 'transport', 'manufacturing',
+    'hospitality', 'government', 'legal', 'customer service',
+  ];
+  for (const industry of industries) {
+    if (normalized.includes(industry)) {
+      return industry.charAt(0).toUpperCase() + industry.slice(1);
+    }
+  }
+  return null;
+};
+
 const parseResumeSkills = async (resumeUrl) => {
   const text = await extractTextFromResumeUrl(resumeUrl);
   const skills = await extractSkillsFromText(text);
@@ -176,6 +245,10 @@ const parseResumeSkills = async (resumeUrl) => {
     education,
     certifications,
     location,
+    professionalTitle: parseProfessionalTitle(text),
+    languages: parseLanguages(text),
+    preferredJobTypes: parsePreferredJobTypes(text),
+    industry: parseIndustry(text),
   };
 };
 

@@ -247,7 +247,7 @@ const AdminHeaderActions = () => {
           aria-label={t('admin.header.notifications', { defaultValue: 'Notifications' })}
           aria-haspopup="true"
           aria-expanded={openMenu === 'bell'}
-          className="relative flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:border-emerald-300 hover:text-emerald-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+          className="relative flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:border-[#1769E0] hover:text-[#1769E0] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
         >
           <FiBell className="h-5 w-5" />
           {unreadCount > 0 && (
@@ -275,7 +275,7 @@ const AdminHeaderActions = () => {
                   type="button"
                   onClick={handleMarkAllRead}
                   disabled={markingAll}
-                  className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
+                  className="inline-flex items-center gap-1 rounded-full bg-[#EAF2FE] px-2.5 py-1 text-xs font-semibold text-[#1769E0] transition hover:bg-[#DCEAFD] disabled:opacity-50 dark:bg-[#1769E0]/10 dark:text-emerald-300 dark:hover:bg-[#0D5BC4]/20"
                 >
                   <FiCheckCircle className="h-3.5 w-3.5" />
                   {markingAll
@@ -366,7 +366,7 @@ const AdminHeaderActions = () => {
                   closeMenu();
                   navigate('/admin/notifications');
                 }}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-[#1769E0] transition hover:bg-[#EAF2FE] dark:text-emerald-300 dark:hover:bg-[#0D5BC4]/10"
               >
                 {t('admin.header.viewAllNotifications', { defaultValue: 'View all notifications' })}
               </button>
@@ -383,7 +383,7 @@ const AdminHeaderActions = () => {
           aria-label={t('admin.header.adminProfileMenu', { defaultValue: 'Admin profile menu' })}
           aria-haspopup="true"
           aria-expanded={openMenu === 'avatar'}
-          className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-emerald-600 text-sm font-bold text-white shadow-sm transition hover:ring-2 hover:ring-emerald-200 dark:border-gray-700"
+          className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-[#1769E0] text-sm font-bold text-white shadow-sm transition hover:ring-2 hover:ring-emerald-200 dark:border-gray-700"
         >
           {user?.avatar ? (
             <img src={user.avatar} alt={profileName} className="h-full w-full object-cover" />

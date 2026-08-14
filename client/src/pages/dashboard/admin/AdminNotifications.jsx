@@ -189,7 +189,7 @@ const AdminNotifications = () => {
             onClick={() => switchTab(tab.key)}
             className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition ${
               activeTab === tab.key
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-[#1769E0] text-white shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
             }`}
             aria-pressed={activeTab === tab.key}
@@ -234,7 +234,7 @@ const AdminNotifications = () => {
                     type="button"
                     onClick={() => handleNotificationClick(notification)}
                     className={`flex w-full items-start gap-4 px-4 py-4 text-left transition hover:bg-gray-50 dark:hover:bg-gray-800 sm:px-5 ${
-                      notification.isRead ? '' : 'bg-emerald-50/40 dark:bg-emerald-500/5'
+                      notification.isRead ? '' : 'bg-[#EAF2FE]/40 dark:bg-[#1769E0]/5'
                     }`}
                   >
                     <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${meta.cls}`}>
@@ -252,7 +252,7 @@ const AdminNotifications = () => {
                           {notification.title}
                         </span>
                         {!notification.isRead && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF2FE] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#1769E0] dark:bg-[#1769E0]/15 dark:text-emerald-300">
                             {t('admin.notifications.unreadBadge', { defaultValue: 'Unread' })}
                           </span>
                         )}

@@ -92,7 +92,7 @@ const InterviewRoom = ({ interview, notes, onNotesChange, onSaveNotes, onFinishI
           <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-slate-900">Interview Notes</h3>
-              <button type="button" onClick={onSaveNotes} className="rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white">Save Notes</button>
+              <button type="button" onClick={onSaveNotes} className="rounded-full bg-[#1769E0] px-3 py-1.5 text-sm font-medium text-white">Save Notes</button>
             </div>
             <div className="mt-3 flex gap-2">
               {tabs.map((tab) => (
