@@ -9,6 +9,71 @@ const { asyncHandler, paginate, createNotification } = require('../utils/helpers
 const { AppError } = require('../middleware/errorHandler');
 const { sendEmail, emailTemplates } = require('../config/email');
 const { calculateMatchScore } = require('../utils/matching');
+const { cloudinary } = require('../config/cloudinary');
+const path = require('path');
+const fs = require('fs');
+
+// Parse a Cloudinary delivery URL into resource type, public id and format.
+// Returns null for non-Cloudinary URLs.
+const parseCloudinaryUrl = (url) => {
+  try {
+    const parsed = new URL(url);
+    if (!/res\.cloudinary\.com$/i.test(parsed.hostname)) return null;
+    const segments = parsed.pathname.split('/').filter(Boolean);
+    const uploadIdx = segments.indexOf('upload');
+    if (uploadIdx === -1) return null;
+    const resourceType = segments[uploadIdx - 1];
+    // Everything after 'upload', skipping any version (v123) segment
+    let assetSegments = segments.slice(uploadIdx + 1);
+    if (assetSegments.length && /^v\d+$/.test(assetSegments[0])) {
+      assetSegments = assetSegments.slice(1);
+    }
+    if (!assetSegments.length) return null;
+    const filename = assetSegments[assetSegments.length - 1];
+    const lastDot = filename.lastIndexOf('.');
+    const publicId = [
+      ...assetSegments.slice(0, -1),
+      lastDot !== -1 ? filename.slice(0, lastDot) : filename,
+    ].join('/');
+    return {
+      resourceType,
+      publicId,
+      format: lastDot !== -1 ? filename.slice(lastDot + 1) : '',
+    };
+  } catch {
+    return null;
+  }
+};
+
+// Stream a Cloudinary-hosted file through the backend using the authenticated
+// admin download API (public delivery URLs are rejected by the account ACL).
+const streamCloudinaryFile = async (url, res, downloadName) => {
+  const info = parseCloudinaryUrl(url);
+  if (!info) return false;
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const params = { public_id: info.publicId, timestamp, type: 'upload' };
+  if (info.format) params.format = info.format;
+
+  const signature = cloudinary.utils.api_sign_request(params, process.env.CLOUDINARY_API_SECRET);
+  const qs = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${params[key]}`)
+    .join('&');
+  const downloadUrl = `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/${info.resourceType}/download?${qs}&signature=${signature}&api_key=${process.env.CLOUDINARY_API_KEY}`;
+
+  const response = await fetch(downloadUrl);
+  if (!response.ok) {
+    throw new AppError('Unable to download resume from storage.', 502);
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const contentType = response.headers.get('content-type') || 'application/octet-stream';
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
+  res.send(buffer);
+  return true;
+};
 
 const getNotificationTypeForStatus = (status) => {
   const normalizedStatus = (status || '').toLowerCase();
@@ -77,7 +142,17 @@ const logRequestUser = (req, message) => {
 // @route   POST /api/applications
 // @access  Private (Job Seeker)
 exports.applyJob = asyncHandler(async (req, res, next) => {
-  const { job: jobId, coverLetter, useProfileCV } = req.body;
+  const {
+    job: jobId,
+    coverLetter,
+    useProfileCV,
+    expectedSalary,
+    isSalaryNegotiable,
+    availability,
+    portfolioUrl,
+    githubUrl,
+    linkedinUrl,
+  } = req.body;
 
   const job = await Job.findById(jobId).populate('company postedBy');
   if (!job) return next(new AppError('Job not found.', 404));
@@ -146,6 +221,12 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
       useProfileCV,
       resumeUrl: req.file ? req.file.path : req.user.cv,
       matchScore,
+      expectedSalary,
+      isSalaryNegotiable: isSalaryNegotiable === 'true' || isSalaryNegotiable === true,
+      availability,
+      portfolioUrl,
+      githubUrl,
+      linkedinUrl,
     });
   } catch (error) {
     if (error.code === 11000) {
@@ -389,18 +470,30 @@ exports.downloadResume = asyncHandler(async (req, res, next) => {
   const url = application.resumeUrl || application.applicant.cv;
   if (!url) return next(new AppError('No resume available for this applicant.', 404));
 
+  const downloadName = `${application.applicant.firstName || 'applicant'}-resume${path.extname(url)}`;
+
+  // Cloudinary-hosted resumes: stream through the backend so the authenticated
+  // employer always receives the file, regardless of the account's delivery ACL.
+  if (/^https?:\/\//i.test(url) && parseCloudinaryUrl(url)) {
+    try {
+      await streamCloudinaryFile(url, res, downloadName);
+      return;
+    } catch (error) {
+      if (error instanceof AppError) return next(error);
+      return next(new AppError('Unable to download resume from storage.', 502));
+    }
+  }
+
   // If URL looks like http(s), redirect for download; otherwise assume local file path
   if (/^https?:\/\//i.test(url)) {
     return res.redirect(url);
   }
 
   // Local file path -> stream
-  const path = require('path');
-  const fs = require('fs');
   const filePath = path.isAbsolute(url) ? url : path.join(process.cwd(), url);
   if (!fs.existsSync(filePath)) return next(new AppError('Resume file not found on server.', 404));
 
-  res.download(filePath, `${application.applicant.firstName || 'applicant'}-resume${path.extname(filePath)}`);
+  res.download(filePath, downloadName);
 });
 
 // @desc    Export employer applications as CSV

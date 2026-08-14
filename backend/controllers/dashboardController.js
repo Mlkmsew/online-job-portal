@@ -32,47 +32,51 @@ exports.getDashboard = asyncHandler(async (req, res) => {
       .populate('employer', 'firstName lastName'),
   ]);
 
-  // Recommended jobs: build recommendations based on match scoring engine
+  // Recommended jobs: build recommendations based on match scoring engine.
+  // Only generated once the job seeker has uploaded a CV.
+  const canRecommend = canRecommendJobs(user);
   let recommended = [];
-  try {
-    const appliedJobIds = new Set(
-      (await Application.find({ applicant: userId }).select('job')).map((app) => app.job?.toString()).filter(Boolean)
-    );
+  if (canRecommend) {
+    try {
+      const appliedJobIds = new Set(
+        (await Application.find({ applicant: userId }).select('job')).map((app) => app.job?.toString()).filter(Boolean)
+      );
 
-    const jobs = await Job.find({ status: { $in: ['published', 'active'] }, isApproved: true })
-      .populate('company', 'name logo location')
-      .populate('skillsRequired', 'name')
-      .sort({ createdAt: -1 });
+      const jobs = await Job.find({ status: { $in: ['published', 'active'] }, isApproved: true })
+        .populate('company', 'name logo location')
+        .populate('skillsRequired', 'name')
+        .sort({ createdAt: -1 });
 
-    const unappliedJobs = jobs.filter((j) => !appliedJobIds.has(j._id.toString()));
+      const unappliedJobs = jobs.filter((j) => !appliedJobIds.has(j._id.toString()));
 
-    const scoredJobs = unappliedJobs.map((job) => {
-      const match = calculateJobMatch(job, user);
-      const score = match.matchScore ?? match.score ?? 0;
-      return {
-        ...job.toObject(),
-        jobId: job._id.toString(),
-        matchPercentage: score,
-        matchScore: score,
-        matchedSkills: match.matchedSkills || [],
-        missingSkills: match.missingSkills || [],
-        matchReasons: match.why || [],
-        reason: match.reason || '',
-        matchDetails: match.details || {},
-      };
-    });
+      const scoredJobs = unappliedJobs.map((job) => {
+        const match = calculateJobMatch(job, user);
+        const score = match.matchScore ?? match.score ?? 0;
+        return {
+          ...job.toObject(),
+          jobId: job._id.toString(),
+          matchPercentage: score,
+          matchScore: score,
+          matchedSkills: match.matchedSkills || [],
+          missingSkills: match.missingSkills || [],
+          matchReasons: match.why || [],
+          reason: match.reason || '',
+          matchDetails: match.details || {},
+        };
+      });
 
-    let filtered = scoredJobs.filter((j) => j.matchScore >= 40);
-    if (filtered.length < 2) {
-      filtered = scoredJobs;
+      let filtered = scoredJobs.filter((j) => j.matchScore >= 40);
+      if (filtered.length < 2) {
+        filtered = scoredJobs;
+      }
+
+      recommended = filtered
+        .sort((a, b) => b.matchScore - a.matchScore || new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 8);
+    } catch (error) {
+      console.error('Dashboard recommendation generation failed:', error);
+      recommended = [];
     }
-
-    recommended = filtered
-      .sort((a, b) => b.matchScore - a.matchScore || new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 8);
-  } catch (error) {
-    console.error('Dashboard recommendation generation failed:', error);
-    recommended = [];
   }
 
   // Recently applied jobs
@@ -143,7 +147,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
     data: {
       profileCompleteness: user.profileCompleteness || 0,
       profileComplete: (user.profileCompleteness || 0) >= 70,
-      canRecommend: canRecommendJobs(user),
+      canRecommend,
       upcomingInterviews,
       unreadMessages,
       unreadNotifications,

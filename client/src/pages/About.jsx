@@ -43,9 +43,9 @@ const About = () => {
             </div>
 
             {/* RIGHT — Professional image */}
-            <div className="relative flex items-stretch justify-center overflow-hidden bg-gradient-to-br from-[#EAF2FE] via-[#E7F6EF] to-[#DFF0EB]">
+            <div className="relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#EAF2FE] via-[#E7F6EF] to-[#DFF0EB]">
               <img
-                src="/images/hero-team-cutout.png"
+                src="/images/hero-people.png"
                 onError={(e) => {
                   e.target.onerror = null;
                   e.target.style.display = 'none';

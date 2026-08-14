@@ -49,26 +49,53 @@ const Navbar = () => {
   };
 
   const navItems = [
-    { to: '/', label: t('nav.home', { defaultValue: 'Home' }) },
-    { to: '/jobs', label: t('nav.findJobs', { defaultValue: 'Find Jobs' }) },
-    { to: '/companies', label: t('nav.companies', { defaultValue: 'Companies' }) },
-    { to: '/jobs', label: t('nav.categories', { defaultValue: 'Categories' }) },
-    { to: '/about', label: t('nav.about', { defaultValue: 'About Us' }) },
-    { to: '/contact', label: t('nav.contact', { defaultValue: 'Contact' }) },
+    { to: '/', label: t('nav.home', { defaultValue: 'Home' }), match: '/' },
+    { to: '/jobs', label: t('nav.findJobs', { defaultValue: 'Find Jobs' }), match: '/jobs', categories: false },
+    { to: '/companies', label: t('nav.companies', { defaultValue: 'Companies' }), match: '/companies' },
+    { to: '/jobs', label: t('nav.categories', { defaultValue: 'Categories' }), match: '/jobs', categories: true },
+    { to: '/about', label: t('nav.about', { defaultValue: 'About Us' }), match: '/about' },
+    { to: '/contact', label: t('nav.contact', { defaultValue: 'Contact' }), match: '/contact' },
   ];
 
-  const isActive = (to) => {
-    if (to === '/') return location.pathname === '/';
-    return location.pathname.startsWith(to);
+  const isActive = (item) => {
+    const { match, categories } = item;
+    if (match === '/') return location.pathname === '/';
+    if (categories) return location.pathname === match && location.search.includes('category=');
+    return location.pathname === match;
   };
+
+  // Dark navy navbar background applies to every page regardless of route.
+  const navShellClass = 'relative sticky top-0 z-50 pb-10';
+
+  const logoIconClass = 'text-emerald-400';
+  const logoTitleClass = 'text-white';
+  const logoAccentClass = 'text-emerald-400';
+
+  const desktopLinkClass = (active) =>
+    `rounded-lg px-4 py-2 text-base transition ${
+      active
+        ? 'border border-[#1769E0] bg-[#1769E0] font-semibold text-white'
+        : 'font-medium text-sky-100 hover:bg-white/5 hover:text-white'
+    }`;
+
+  const mobileLinkClass = (active) =>
+    `block rounded-lg px-4 py-2 text-base transition ${
+      active ? 'border border-[#1769E0] bg-[#1769E0] font-semibold text-white' : 'font-medium text-sky-100 hover:bg-white/5 hover:text-white'
+    }`;
+
+  const ghostLinkClass =
+    'inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-white/10 hover:text-white';
+
+  const hamburgerClass =
+    'md:hidden text-white p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981]';
 
   return (
     <nav
-      className="relative sticky top-0 z-50"
+      className={navShellClass}
       role="navigation"
       aria-label="Main navigation"
     >
-      {/* Hero-matching background: same career SVG + navy gradient */}
+      {/* Dark navy hero-matching background */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/images/hero-bg-career.svg')" }}
@@ -77,12 +104,12 @@ const Navbar = () => {
       <div className="absolute inset-0 bg-gradient-to-r from-[#06152B]/95 via-[#0A2A5E]/90 to-[#0E3A7A]/85" aria-hidden="true" />
 
       <div className="relative container-custom">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-[72px]">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2" aria-label={t('aria.homepage') || 'OnlineJob Portal - Go to homepage'}>
-            <FiBriefcase className="w-8 h-8 text-emerald-400" aria-hidden="true" />
-            <span className="text-[23px] font-extrabold leading-tight text-white">
-              OnlineJob <span className="text-emerald-400">Portal</span>
+            <FiBriefcase className={`w-8 h-8 ${logoIconClass}`} aria-hidden="true" />
+            <span className={`text-[23px] font-extrabold leading-tight ${logoTitleClass}`}>
+              OnlineJob <span className={logoAccentClass}>Portal</span>
             </span>
           </Link>
 
@@ -92,27 +119,23 @@ const Navbar = () => {
               <Link
                 key={item.label}
                 to={item.to}
-                className={`pb-1 text-base transition ${
-                  isActive(item.to)
-                    ? 'border-b-2 border-emerald-400 font-semibold text-emerald-400'
-                    : 'font-medium text-sky-100 hover:text-white'
-                }`}
+                className={desktopLinkClass(isActive(item))}
                 role="menuitem"
               >
                 {item.label}
               </Link>
             ))}
 
-            <LanguageSwitcher light />
+            <LanguageSwitcher light={true} />
             <DarkModeToggle />
 
             {isAuthenticated ? (
               <>
-                <Link to={getDashboardLink()} className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-white/10 hover:text-white" aria-label="Go to your dashboard">
+                <Link to={getDashboardLink()} className={ghostLinkClass} aria-label="Go to your dashboard">
                   <FiUser className="mr-2" aria-hidden="true" />
                   {t('nav.dashboard')}
                 </Link>
-                <button onClick={handleLogout} className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-white/10 hover:text-white" aria-label="Log out of your account">
+                <button onClick={handleLogout} className={ghostLinkClass} aria-label="Log out of your account">
                   <FiLogOut className="mr-2" aria-hidden="true" />
                   {t('nav.logout')}
                 </button>
@@ -138,7 +161,7 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden text-white p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            className={hamburgerClass}
             aria-expanded={isOpen}
             aria-controls="mobile-menu"
             aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'}
@@ -152,7 +175,7 @@ const Navbar = () => {
           <div
             id="mobile-menu"
             ref={mobileMenuRef}
-            className="md:hidden py-4 space-y-4"
+            className={`md:hidden py-4 space-y-4`}
             role="menu"
             aria-label="Mobile navigation"
           >
@@ -160,7 +183,7 @@ const Navbar = () => {
               <Link
                 key={item.label}
                 to={item.to}
-                className={`block py-2 text-base ${isActive(item.to) ? 'font-semibold text-emerald-400' : 'font-medium text-sky-100 hover:text-white'}`}
+                className={mobileLinkClass(isActive(item))}
                 role="menuitem"
                 onClick={() => setIsOpen(false)}
               >
@@ -169,7 +192,7 @@ const Navbar = () => {
             ))}
 
             <div className="flex items-center gap-4 py-2">
-              <LanguageSwitcher light />
+              <LanguageSwitcher light={true} />
               <DarkModeToggle />
             </div>
 

@@ -264,11 +264,15 @@
       "logout": "Ba'i"
     },
     "status": {
+      "submitted": "Dhiyaateera",
       "underReview": "Gammaggama Jira",
       "interview": "Interviyuu",
       "shortlisted": "Calalamera",
+      "selected": "Filamaniiru",
+      "hired": "Qacarameera",
       "accepted": "Fudhatameera",
-      "rejected": "Kufisameera"
+      "rejected": "Kufisameera",
+      "notSelected": "Hin filatamne"
     },
     "overview": "Waliigala",
     "applications": "Iyyannoowwan",

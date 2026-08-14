@@ -8,9 +8,8 @@ const hasProfileSkills = (user) => {
 
 const canRecommendJobs = (user) => {
   if (!user) return false;
-  const hasResume = Boolean(user?.cv || (Array.isArray(user?.resumeAnalysis?.skills) && user.resumeAnalysis.skills.length > 0));
-  const hasDetails = Boolean(user?.headline || user?.bio || (Array.isArray(user?.educationDetails) && user.educationDetails.length > 0));
-  return hasResume || hasProfileSkills(user) || hasDetails;
+  // Job recommendations are only generated once the job seeker has uploaded a CV.
+  return Boolean(user.cv);
 };
 
 module.exports = { canRecommendJobs, hasProfileSkills };

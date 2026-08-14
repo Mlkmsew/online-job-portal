@@ -194,6 +194,7 @@
     "salary": "Salary",
     "negotiable": "Negotiable",
     "applyNow": "Apply Now",
+    "applied": "Applied",
     "viewDetails": "View Details"
   },
   "dashboard": {
@@ -220,7 +221,13 @@
       "completeProfileBtn": "Complete My Profile",
       "noMatchingTitle": "No matching jobs available right now.",
       "noMatchingSubtitle": "We couldn't find any jobs that match your profile at the moment. Check back soon or explore more opportunities.",
-      "browseJobsBtn": "Browse More Jobs"
+      "browseJobsBtn": "Browse More Jobs",
+      "noCVTitle": "Please upload your CV to see recommended jobs",
+      "noCVSubtitle": "Recommendations are powered by your resume. Upload your CV so we can match you with the right opportunities.",
+      "uploadCVBtn": "Upload CV",
+      "recErrorTitle": "Could not load recommended jobs",
+      "recErrorSubtitle": "Something went wrong while loading your recommendations. Please try again.",
+      "retryBtn": "Retry"
     },
     "latestOpportunities": {
       "title": "Latest Opportunities",
@@ -263,11 +270,15 @@
       "logout": "Logout"
     },
     "status": {
+      "submitted": "Submitted",
       "underReview": "Under Review",
       "interview": "Interview",
       "shortlisted": "Shortlisted",
+      "selected": "Selected",
+      "hired": "Hired",
       "accepted": "Accepted",
-      "rejected": "Rejected"
+      "rejected": "Rejected",
+      "notSelected": "Not Selected"
     },
     "overview": "Overview",
     "applications": "Applications",

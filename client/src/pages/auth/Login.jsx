@@ -116,7 +116,6 @@ const Login = () => {
                 <FiMail className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-[#1769E0]" />
                 <input
                   type="email"
-                  defaultValue="solomontadesse6763@gmail.com"
                   {...register('email', { required: 'Email is required' })}
                   className="w-full rounded-xl border border-[#E2E8F0] bg-white py-3.5 pr-4 pl-12 text-[#0F172A] placeholder-slate-400 transition outline-none focus:border-[#1769E0] focus:ring-2 focus:ring-[#1769E0]/30"
                   placeholder="you@example.com"

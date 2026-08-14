@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   FiBell, FiMapPin, FiBriefcase, FiClock,
-  FiCheckCircle, FiInbox, FiRefreshCw,
+  FiCheckCircle, FiInbox, FiRefreshCw, FiTrash2,
 } from 'react-icons/fi';
-import { getJobAlertNotifications, markJobAlertRead } from '../../../services/jobSearchService';
+import { getJobAlertNotifications, markJobAlertRead, deleteJobAlertNotification } from '../../../services/jobSearchService';
 import api from '../../../services/api';
 
 // ── Relative time helper ─────────────────────────────────────────────────────
@@ -20,7 +20,7 @@ const relativeTime = (dateStr) => {
 };
 
 // ── Single alert card ────────────────────────────────────────────────────────
-const AlertCard = ({ notification, onView }) => {
+const AlertCard = ({ notification, onView, onDelete, deleting }) => {
   const { t } = useTranslation();
   const { data = {}, isRead, createdAt } = notification;
   const jobTitle    = data.jobTitle    || t('dashboard.jobCard.jobTitle');
@@ -87,14 +87,24 @@ const AlertCard = ({ notification, onView }) => {
           </div>
         </div>
 
-        {/* Right – View Job button */}
-        <div className="flex flex-shrink-0 items-center sm:ml-4">
+        {/* Right – View Job + Delete buttons */}
+        <div className="flex flex-shrink-0 items-center gap-2 sm:ml-4">
           <button
             type="button"
             onClick={() => onView(notification)}
             className="rounded-full bg-[#1769E0] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0D5BC4] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
           >
             {t('jobs.viewDetails')}
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(notification)}
+            disabled={deleting}
+            aria-label={t('common.delete') || 'Delete alert'}
+            title={t('common.delete') || 'Delete alert'}
+            className="rounded-full border border-gray-200 p-2.5 text-gray-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 disabled:opacity-50 dark:border-gray-700 dark:text-gray-500 dark:hover:border-rose-700 dark:hover:bg-rose-900/20 dark:hover:text-rose-400"
+          >
+            <FiTrash2 className={`h-4 w-4 ${deleting ? 'animate-pulse' : ''}`} />
           </button>
         </div>
       </div>
@@ -140,6 +150,7 @@ const JobAlerts = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -188,6 +199,19 @@ const JobAlerts = () => {
       console.error('Failed to mark all as read:', err);
     } finally {
       setMarkingAll(false);
+    }
+  };
+
+  const handleDelete = async (notification) => {
+    if (deletingId) return;
+    setDeletingId(notification._id);
+    try {
+      await deleteJobAlertNotification(notification._id);
+      setNotifications((prev) => prev.filter((n) => n._id !== notification._id));
+    } catch (err) {
+      console.error('Failed to delete alert:', err);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -270,6 +294,8 @@ const JobAlerts = () => {
                 key={notification._id}
                 notification={notification}
                 onView={handleView}
+                onDelete={handleDelete}
+                deleting={deletingId === notification._id}
               />
             ))}
           </div>

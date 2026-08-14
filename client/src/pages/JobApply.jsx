@@ -236,6 +236,11 @@ const JobApply = () => {
       return;
     }
 
+    if (user?.role && user.role !== 'jobseeker') {
+      navigate(`/jobs/${id}`);
+      return;
+    }
+
     const fetchJobDetails = async () => {
       setLoading(true);
       try {
@@ -249,7 +254,24 @@ const JobApply = () => {
       }
     };
 
+    const fetchApplicationStatus = async () => {
+      try {
+        const response = await api.get('/applications/my', {
+          params: { job: id, limit: 1 },
+        });
+        const applications = Array.isArray(response.data?.data) ? response.data.data : [];
+        const application = applications.find((a) => (a.job?._id || a.job)?.toString() === id.toString()) || null;
+        if (application) {
+          setHasApplied(true);
+          setApplicationStatus(application.status || 'Submitted');
+        }
+      } catch (err) {
+        console.error('Failed to load application status', err);
+      }
+    };
+
     fetchJobDetails();
+    fetchApplicationStatus();
   }, [id, isAuthenticated, authLoading, navigate]);
 
   useEffect(() => {
@@ -349,6 +371,11 @@ const JobApply = () => {
 
     if (!user?.role || user.role !== 'jobseeker') {
       toast.error('Only job seekers can apply for jobs.');
+      return;
+    }
+
+    if (hasApplied) {
+      toast.error('You have already applied for this job.');
       return;
     }
 
@@ -466,6 +493,28 @@ const JobApply = () => {
 
           <div className="grid gap-6 p-6 xl:grid-cols-[1.75fr_0.95fr] xl:items-start">
             <main className="space-y-6">
+              {hasApplied ? (
+                <section className="rounded-[28px] border border-emerald-200 bg-emerald-50 p-8 shadow-sm">
+                  <div className="flex flex-col items-center gap-4 text-center">
+                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                      <FiCheckCircle className="h-8 w-8" />
+                    </span>
+                    <div>
+                      <h2 className="text-xl font-bold text-emerald-800">You have already applied for this job.</h2>
+                      <p className="mt-2 text-sm text-emerald-700">
+                        {applicationStatus ? `Status: ${applicationStatus}` : 'Your application has been submitted successfully.'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/jobs/${id}`)}
+                      className="rounded-full border border-emerald-300 bg-white px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                    >
+                      Back to Job Details
+                    </button>
+                  </div>
+                </section>
+              ) : (
               <section className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 shadow-sm">
                 <div className="mb-5">
                   <h2 className="text-xl font-semibold text-slate-900">Application Form</h2>
@@ -884,6 +933,7 @@ const JobApply = () => {
                   )}
                 </form>
               </section>
+              )}
             </main>
 
             <aside className="space-y-6 xl:sticky xl:top-6">

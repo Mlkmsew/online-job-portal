@@ -30,14 +30,14 @@ import {
 } from 'lucide-react';
 
 const STATUS_OPTIONS = [
-  { value: 'Submitted', labelKey: 'dashboard.status.underReview' },
+  { value: 'Submitted', labelKey: 'dashboard.status.submitted' },
   { value: 'Reviewed', labelKey: 'dashboard.status.underReview' },
   { value: 'Shortlisted', labelKey: 'dashboard.status.shortlisted' },
   { value: 'Interview', labelKey: 'dashboard.status.interview' },
-  { value: 'Selected', labelKey: 'dashboard.status.accepted' },
-  { value: 'Hired', labelKey: 'dashboard.status.accepted' },
+  { value: 'Selected', labelKey: 'dashboard.status.selected' },
+  { value: 'Hired', labelKey: 'dashboard.status.hired' },
   { value: 'Rejected', labelKey: 'dashboard.status.rejected' },
-  { value: 'Not Selected', labelKey: 'dashboard.status.rejected' },
+  { value: 'Not Selected', labelKey: 'dashboard.status.notSelected' },
 ];
 
 const SORT_OPTIONS = [
@@ -117,6 +117,69 @@ const createProfileUrl = (url) => {
   const value = url?.trim();
   if (!value) return null;
   return value.startsWith('http') ? value : `https://${value}`;
+};
+
+const formatApplicantLocation = (location) => {
+  if (!location) return 'Not provided';
+  if (typeof location === 'string') return location;
+  if (typeof location === 'object') {
+    const parts = [location.city, location.region, location.address, location.name].filter(Boolean);
+    return parts.length ? parts.join(', ') : 'Not provided';
+  }
+  return 'Not provided';
+};
+
+const getApplicantLocation = (applicant = {}) => {
+  const location = formatApplicantLocation(applicant.location);
+  if (location !== 'Not provided') return location;
+  const resumeLocation = applicant.resumeAnalysis?.location;
+  if (typeof resumeLocation === 'string' && resumeLocation.trim()) return resumeLocation.trim();
+  return 'Not provided';
+};
+
+const formatApplicantEducation = (applicant = {}) => {
+  if (Array.isArray(applicant.education) && applicant.education.length) {
+    return applicant.education
+      .map((item) => (typeof item === 'string' ? item : item?.degree || item?.institution))
+      .filter(Boolean)
+      .join(', ');
+  }
+  if (typeof applicant.education === 'string' && applicant.education.trim()) return applicant.education;
+  if (Array.isArray(applicant.educationDetails) && applicant.educationDetails.length) {
+    return applicant.educationDetails
+      .map((item) => [item.degree, item.institution].filter(Boolean).join(' — '))
+      .filter(Boolean)
+      .join(', ');
+  }
+  const resumeEducation = applicant.resumeAnalysis?.education;
+  if (Array.isArray(resumeEducation) && resumeEducation.length) return resumeEducation.join(', ');
+  if (typeof resumeEducation === 'string' && resumeEducation.trim()) return resumeEducation;
+  return 'Not provided';
+};
+
+const getExperienceYears = (application, applicant) =>
+  applicant.experienceYears || applicant.resumeAnalysis?.experienceYears || application.resumeAnalysis?.experienceYears;
+
+const getExperienceSummary = (application, applicant) => {
+  if (applicant.experience) return applicant.experience;
+  const years = getExperienceYears(application, applicant);
+  if (years) return `${years} years`;
+  if (Array.isArray(applicant.experienceDetails) && applicant.experienceDetails.length) {
+    return `${applicant.experienceDetails.length} role${applicant.experienceDetails.length > 1 ? 's' : ''}`;
+  }
+  return 'Not provided';
+};
+
+const getApplicantPortfolio = (application, applicant) => {
+  const items = Array.isArray(applicant.portfolio) ? applicant.portfolio : [];
+  const github = items.find((p) => /github/i.test(p.label || ''))?.url;
+  const linkedin = items.find((p) => /linkedin/i.test(p.label || ''))?.url;
+  const website = application.portfolioUrl || applicant.portfolioUrl || items[0]?.url || '';
+  return {
+    website: createProfileUrl(website),
+    github: createProfileUrl(application.githubUrl || applicant.githubUrl || github),
+    linkedin: createProfileUrl(application.linkedinUrl || applicant.linkedinUrl || linkedin),
+  };
 };
 
 const ViewApplicants = () => {
@@ -297,6 +360,17 @@ const ViewApplicants = () => {
 
   const handleProfileOpen = (application) => {
     setActiveProfile(application);
+  };
+
+  const handleViewResume = async (applicationId) => {
+    try {
+      const response = await api.get(`/applications/${applicationId}/resume`, { responseType: 'blob' });
+      const blobUrl = window.URL.createObjectURL(response.data);
+      window.open(blobUrl, '_blank');
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Unable to view resume.');
+    }
   };
 
   const renderSkeleton = () => (
@@ -483,18 +557,16 @@ const ViewApplicants = () => {
             const applicant = application.applicant || {};
             const job = application.job || {};
             const skills = Array.isArray(applicant.skills) ? applicant.skills : [];
-            const location = applicant.location?.city || applicant.location?.name || applicant.location || 'Not provided';
-            const education = Array.isArray(applicant.education) ? applicant.education.join(', ') : applicant.education || application.resumeAnalysis?.education?.join(', ') || 'Not provided';
-            const experience = applicant.experience || application.resumeAnalysis?.experienceYears ? `${application.resumeAnalysis.experienceYears} years` : 'Not provided';
+            const location = getApplicantLocation(applicant);
+            const education = formatApplicantEducation(applicant);
+            const experience = getExperienceSummary(application, applicant);
             const isNew = Date.now() - new Date(application.appliedAt || application.createdAt).getTime() < 48 * 60 * 60 * 1000;
             const matchScore = application.matchScore || 0;
             const matchTone = getMatchTone(matchScore);
             const resumeUrl = application.resumeUrl || applicant.cv || '';
             const fileName = getFileNameFromUrl(resumeUrl);
             const resumeDate = formatDate(application.appliedAt || application.createdAt);
-            const portfolio = createProfileUrl(applicant.portfolioUrl);
-            const github = createProfileUrl(applicant.githubUrl);
-            const linkedin = createProfileUrl(applicant.linkedinUrl);
+            const { website: portfolio, github, linkedin } = getApplicantPortfolio(application, applicant);
             const shortCoverLetter = truncateLines(application.coverLetter || 'No cover letter provided.', 4);
             const coverLetterLines = (application.coverLetter || '').split('\n').filter(Boolean).length;
             const isCoverLetterTruncated = coverLetterLines > 4 || (application.coverLetter || '').length > 220;
@@ -606,7 +678,7 @@ const ViewApplicants = () => {
                         <div className="mt-4 flex flex-wrap gap-2">
                           <button
                             type="button"
-                            onClick={() => window.open(`${api.defaults.baseURL}/applications/${application._id}/resume`, '_blank')}
+                            onClick={() => handleViewResume(application._id)}
                             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#1769E0] hover:text-[#1769E0]"
                           >
                             <ExternalLink className="h-4 w-4" /> {t('employer.applicants.viewResume')}
@@ -839,15 +911,15 @@ const ViewApplicants = () => {
                     <div className="mt-4 grid gap-2 sm:grid-cols-2">
                       <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
                         <p className="text-xs text-slate-400">Experience</p>
-                        <p className="mt-1 text-sm text-slate-800">{activeProfile.applicant?.experience || application.resumeAnalysis?.experienceYears ? `${application.resumeAnalysis?.experienceYears || activeProfile.applicant?.experience} years` : 'Not provided'}</p>
+                        <p className="mt-1 text-sm text-slate-800">{activeProfile.applicant?.experience || activeProfile.applicant?.resumeAnalysis?.experienceYears ? `${activeProfile.applicant?.resumeAnalysis?.experienceYears || activeProfile.applicant?.experience} years` : 'Not provided'}</p>
                       </div>
                       <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
                         <p className="text-xs text-slate-400">Education</p>
-                        <p className="mt-1 text-sm text-slate-800">{Array.isArray(activeProfile.applicant?.education) ? activeProfile.applicant.education.join(', ') : activeProfile.applicant?.education || 'Not provided'}</p>
+                        <p className="mt-1 text-sm text-slate-800">{formatApplicantEducation(activeProfile.applicant)}</p>
                       </div>
                       <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
                         <p className="text-xs text-slate-400">Location</p>
-                        <p className="mt-1 text-sm text-slate-800">{activeProfile.applicant?.location || 'Not provided'}</p>
+                        <p className="mt-1 text-sm text-slate-800">{getApplicantLocation(activeProfile.applicant)}</p>
                       </div>
                       <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
                         <p className="text-xs text-slate-400">Availability</p>
@@ -940,8 +1012,8 @@ const ViewApplicants = () => {
                   <div className="rounded-2xl border border-slate-100 bg-white p-4 md:col-span-2">
                     <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Experience</p>
                     <div className="mt-4 space-y-4">
-                      {Array.isArray(activeProfile.applicant?.work) && activeProfile.applicant.work.length ? (
-                        activeProfile.applicant.work.map((job, idx) => (
+                      {Array.isArray(activeProfile.applicant?.experienceDetails) && activeProfile.applicant.experienceDetails.length ? (
+                        activeProfile.applicant.experienceDetails.map((job, idx) => (
                           <div key={idx} className="rounded-lg border border-slate-100 p-3">
                             <div className="flex items-center justify-between">
                               <div>
@@ -952,6 +1024,8 @@ const ViewApplicants = () => {
                             </div>
                           </div>
                         ))
+                      ) : activeProfile.applicant?.experience ? (
+                        <p className="text-sm text-slate-600">{activeProfile.applicant.experience}</p>
                       ) : (
                         <p className="text-sm text-slate-500">No experience provided.</p>
                       )}
@@ -962,11 +1036,23 @@ const ViewApplicants = () => {
                   <div className="rounded-2xl border border-slate-100 bg-white p-4">
                     <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Education</p>
                     <div className="mt-4 space-y-3">
-                      {Array.isArray(activeProfile.applicant?.educationList) && activeProfile.applicant.educationList.length ? (
-                        activeProfile.applicant.educationList.map((edu, idx) => (
+                      {Array.isArray(activeProfile.applicant?.educationDetails) && activeProfile.applicant.educationDetails.length ? (
+                        activeProfile.applicant.educationDetails.map((edu, idx) => (
                           <div key={idx}>
                             <div className="font-semibold text-slate-900">{edu.degree || 'Degree'}</div>
-                            <div className="text-sm text-slate-600">{edu.university || 'University'} • {edu.year || ''}</div>
+                            <div className="text-sm text-slate-600">{edu.institution || 'Institution'}{edu.endDate ? ` • ${edu.endDate}` : ''}</div>
+                          </div>
+                        ))
+                      ) : Array.isArray(activeProfile.applicant?.education) && activeProfile.applicant.education.length ? (
+                        activeProfile.applicant.education.map((edu, idx) => (
+                          <div key={idx}>
+                            <div className="font-semibold text-slate-900">{edu}</div>
+                          </div>
+                        ))
+                      ) : Array.isArray(activeProfile.applicant?.resumeAnalysis?.education) && activeProfile.applicant.resumeAnalysis.education.length ? (
+                        activeProfile.applicant.resumeAnalysis.education.map((edu, idx) => (
+                          <div key={idx}>
+                            <div className="font-semibold text-slate-900">{edu}</div>
                           </div>
                         ))
                       ) : (

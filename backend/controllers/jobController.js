@@ -247,34 +247,6 @@ exports.createJob = asyncHandler(async (req, res, next) => {
   company.totalJobs += 1;
   await company.save({ validateBeforeSave: false });
 
-  // Notify job seekers whose profile matches this job
-  try {
-    const User = require('../models/user');
-    const { calculateJobMatch } = require('../utils/matching');
-    const { createNotification } = require('../utils/helpers');
-
-    const jobseekers = await User.find({ role: 'jobseeker', isActive: { $ne: false } }).limit(50);
-    for (const seeker of jobseekers) {
-      try {
-        const matchResult = calculateJobMatch(job, seeker);
-        if (matchResult && matchResult.score > 20) {
-          await createNotification({
-            recipient: seeker._id,
-            type: 'new_job',
-            title: `New Job Match: ${job.title}`,
-            message: `${company.name || 'An employer'} posted a new job "${job.title}" matching your profile.`,
-            link: `/jobs/${job._id}`,
-            data: { jobId: job._id },
-          });
-        }
-      } catch (err) {
-        // ignore individual match error
-      }
-    }
-  } catch (err) {
-    console.error('Job match notification background dispatch error:', err.message);
-  }
-
   // Notify admins that a new job is awaiting approval.
   try {
     const { notifyAllAdmins } = require('../utils/helpers');
@@ -446,6 +418,17 @@ exports.getRecommendations = asyncHandler(async (req, res, next) => {
   const userId = req.user.id || req.user._id;
   const user = await User.findById(userId).select('-password');
   if (!user) return next(new AppError('User not found.', 404));
+
+  // Recommendations require an uploaded CV.
+  if (!user.cv) {
+    return res.status(200).json({
+      success: true,
+      count: 0,
+      recommendations: [],
+      data: [],
+      message: 'Upload your CV to get job recommendations.',
+    });
+  }
 
   // Get job IDs user has already applied to
   const appliedJobIds = new Set(

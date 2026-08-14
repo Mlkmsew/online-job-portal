@@ -499,14 +499,28 @@ const MyApplications = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => toast(t('applications.rescheduleSent') || 'Reschedule request sent')}
+                        onClick={() => {
+                          const employerId = selectedInterview?.employer?._id || selectedApp?.job?.postedBy?._id || '';
+                          const employerEmail = selectedInterview?.employer?.email || selectedApp?.job?.postedBy?.email || '';
+                          const params = new URLSearchParams();
+                          if (employerId) params.set('recipient', employerId);
+                          if (employerEmail) params.set('recipientEmail', employerEmail);
+                          navigate(`/dashboard/messages${params.toString() ? `?${params.toString()}` : ''}`);
+                        }}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                       >
                         <FiClock className="h-4 w-4" /> {t('applications.rescheduleRequest')}
                       </button>
                       <button
                         type="button"
-                        onClick={() => toast(t('applications.messageSent') || 'Message sent to employer')}
+                        onClick={() => {
+                          const employerId = selectedInterview?.employer?._id || selectedApp?.job?.postedBy?._id || '';
+                          const employerEmail = selectedInterview?.employer?.email || selectedApp?.job?.postedBy?.email || '';
+                          const params = new URLSearchParams();
+                          if (employerId) params.set('recipient', employerId);
+                          if (employerEmail) params.set('recipientEmail', employerEmail);
+                          navigate(`/dashboard/messages${params.toString() ? `?${params.toString()}` : ''}`);
+                        }}
                         className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                       >
                         <FiMail className="h-4 w-4" /> {t('applications.contactEmployer')}

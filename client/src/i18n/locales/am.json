@@ -290,11 +290,15 @@
       "logout": "ውጣ"
     },
     "status": {
+      "submitted": "ቀርቧል",
       "underReview": "በግምገማ ላይ",
       "interview": "ቃለ መጠይቅ",
       "shortlisted": "እጩ ተመረጠ",
+      "selected": "ተመርጧል",
+      "hired": "ተቀጥሯል",
       "accepted": "ተቀባይነት አግኝቷል",
-      "rejected": "ተቀባይነት አላገኘም"
+      "rejected": "ተቀባይነት አላገኘም",
+      "notSelected": "አልተመረጠም"
     },
     "overview": "አጠቃላይ እይታ",
     "applications": "ማመልከቻዎች",

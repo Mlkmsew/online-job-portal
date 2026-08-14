@@ -60,6 +60,7 @@ import EmployerInterviews from './pages/dashboard/employer/EmployerInterviews';
 import InterviewDetails from './pages/dashboard/employer/InterviewDetails';
 import EmployerMessages from './pages/dashboard/employer/EmployerMessages';
 import EmployerSettings from './pages/dashboard/employer/EmployerSettings';
+import EmployerChangePassword from './pages/dashboard/employer/ChangePassword';
 import ViewApplicants from './pages/dashboard/employer/ViewApplicants';
 import CompanyProfile from './pages/dashboard/employer/CompanyProfile';
 
@@ -158,6 +159,7 @@ const AppRoutes = () => {
             <Route path="interviews/:id" element={<InterviewDetails />} />
             <Route path="messages" element={<EmployerMessages />} />
             <Route path="settings" element={<EmployerSettings />} />
+            <Route path="settings/change-password" element={<EmployerChangePassword />} />
             <Route path="applicants" element={<ViewApplicants />} />
             <Route path="applicants/:jobId" element={<ViewApplicants />} />
             <Route path="company" element={<CompanyProfile />} />

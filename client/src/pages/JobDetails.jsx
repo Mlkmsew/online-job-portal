@@ -84,6 +84,7 @@ const JobDetails = () => {
   const isAdmin = user?.role === 'admin';
   const [hasApplied, setHasApplied] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState('');
+  const [similarAppliedMap, setSimilarAppliedMap] = useState({});
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkId, setBookmarkId] = useState(null);
   const canUseProfileCV = Boolean(user?.cv);
@@ -219,20 +220,27 @@ const JobDetails = () => {
     if (!isAuthenticated || !isJobSeeker || !job) {
       setHasApplied(false);
       setApplicationStatus('');
+      setSimilarAppliedMap({});
       return;
     }
 
     const fetchApplicationStatus = async () => {
       try {
         const response = await api.get('/applications/my', {
-          params: { job: job._id, limit: 1 },
+          params: { limit: 200 },
         });
         const applications = Array.isArray(response.data?.data) ? response.data.data : [];
-        // Match against the currently viewed job, not just the user's first record.
-        const application = applications.find((a) => (a.job?._id || a.job)?.toString() === job._id.toString()) || null;
-        if (application) {
+        // Build a map of applied jobs for this seeker (used for main + similar jobs)
+        const appliedMap = {};
+        applications.forEach((application) => {
+          const appliedJobId = application.job?._id || application.job;
+          if (appliedJobId) appliedMap[appliedJobId.toString()] = application.status || 'Submitted';
+        });
+        setSimilarAppliedMap(appliedMap);
+        const currentId = job._id.toString();
+        if (appliedMap[currentId]) {
           setHasApplied(true);
-          setApplicationStatus(application.status || 'Submitted');
+          setApplicationStatus(appliedMap[currentId]);
         } else {
           setHasApplied(false);
           setApplicationStatus('');
@@ -354,21 +362,32 @@ const JobDetails = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-3">
-                    {(!isEmployer && !isAdmin) && (
+                    {isJobSeeker && (
                       <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!isAuthenticated) {
-                              handleVisitorApply();
-                            } else {
-                              navigate(`/jobs/${id}/apply`);
-                            }
-                          }}
-                          className="rounded-full bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#1769E0]/20 transition hover:bg-[#0D5BC4]"
-                        >
-                          {hasApplied ? t('dashboard.jobCard.saved') : deadlinePassed ? t('jobs.expired') : t('jobs.apply')}
-                        </button>
+                        {hasApplied ? (
+                          <button
+                            type="button"
+                            disabled
+                            className="inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-600"
+                          >
+                            <FiCheckCircle className="h-4 w-4" />
+                            {t('jobs.applied') || 'Applied'}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!isAuthenticated) {
+                                handleVisitorApply();
+                              } else {
+                                navigate(`/jobs/${id}/apply`);
+                              }
+                            }}
+                            className="rounded-full bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#1769E0]/20 transition hover:bg-[#0D5BC4]"
+                          >
+                            {deadlinePassed ? t('jobs.expired') : t('jobs.applyNow')}
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => {
@@ -540,9 +559,16 @@ const JobDetails = () => {
                         <span className="inline-flex items-center gap-2"><FiMapPin className="h-4 w-4" />{sim.location?.city ? `${sim.location.city}, ${sim.location.region}` : sim.location?.region || 'Location'}</span>
                         <span>{sim.salary?.min && sim.salary?.max ? `ETB ${sim.salary.min.toLocaleString()}-${sim.salary.max.toLocaleString()}` : 'Negotiable'}</span>
                       </div>
-                      <button type="button" className="mt-4 rounded-full bg-[#1769E0] px-4 py-2 text-sm font-semibold text-white">
-                        Apply
-                      </button>
+                      {isJobSeeker && (similarAppliedMap[sim._id] ? (
+                        <span className="mt-4 inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-600">
+                          <FiCheckCircle className="h-4 w-4" />
+                          {t('jobs.applied') || 'Applied'}
+                        </span>
+                      ) : (
+                        <button type="button" onClick={(e) => { e.preventDefault(); navigate(`/jobs/${sim._id}/apply`); }} className="mt-4 rounded-full bg-[#1769E0] px-4 py-2 text-sm font-semibold text-white">
+                          {t('jobs.applyNow') || 'Apply Now'}
+                        </button>
+                      ))}
                     </Link>
                   ))}
                 </div>

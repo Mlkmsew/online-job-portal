@@ -18,4 +18,5 @@ export const deleteJobAlert = (id) => api.delete(`${ALERT_BASE}/${id}`);
 export const getJobAlertNotifications = (params = {}) =>
   api.get('/notifications', { params: { type: 'new_job', limit: 50, ...params } });
 export const markJobAlertRead = (id) => api.put(`/notifications/${id}/read`);
+export const deleteJobAlertNotification = (id) => api.delete(`/notifications/${id}`);
 

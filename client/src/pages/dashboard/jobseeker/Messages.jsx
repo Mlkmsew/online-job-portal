@@ -13,6 +13,8 @@ const Messages = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const conversationIdFromUrl = searchParams.get('conversationId');
+  const recipientFromUrl = searchParams.get('recipient');
+  const recipientEmailFromUrl = searchParams.get('recipientEmail');
   const location = useLocation();
 
   const basePath = location.pathname.startsWith('/employer')
@@ -227,6 +229,24 @@ const Messages = () => {
       loadMessages(conversationIdFromUrl);
     }
   }, [conversationIdFromUrl, conversations]);
+
+  useEffect(() => {
+    if (!recipientFromUrl) return;
+    if (isLoading || conversations.length === 0) return;
+
+    const match = conversations.find((c) =>
+      (c.participants || []).some((participant) => participant?._id?.toString() === recipientFromUrl.toString())
+    );
+    if (match) {
+      setSelectedConversation(match);
+      loadMessages(match._id);
+      return;
+    }
+    if (recipientEmailFromUrl) {
+      setNewConversationEmail(recipientEmailFromUrl);
+      setIsModalOpen(true);
+    }
+  }, [recipientFromUrl, recipientEmailFromUrl, conversations, isLoading]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');

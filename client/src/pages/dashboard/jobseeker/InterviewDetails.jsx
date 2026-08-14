@@ -12,6 +12,7 @@ import {
   FiColumns,
   FiCheckCircle,
   FiXCircle,
+  FiMail,
 } from 'react-icons/fi';
 import api from '../../../services/api';
 

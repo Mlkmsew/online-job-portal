@@ -14,6 +14,7 @@ import {
   FiDollarSign,
   FiX,
   FiBookmark,
+  FiCheckCircle,
 } from 'react-icons/fi';
 import { REGIONS, CITIES, REGION_CITIES } from '../constants/locations';
 
@@ -26,12 +27,14 @@ const Jobs = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const isJobSeeker = user?.role === 'jobseeker';
 
 
   const [jobs, setJobs] = useState([]);
   const [categories, setCategories] = useState([]);
   const [skills, setSkills] = useState([]);
   const [savedJobMap, setSavedJobMap] = useState({});
+  const [appliedJobMap, setAppliedJobMap] = useState({});
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState('');
@@ -134,6 +137,29 @@ const Jobs = () => {
     };
 
     loadBookmarks();
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    const loadApplications = async () => {
+      if (!isAuthenticated || !isJobSeeker) {
+        setAppliedJobMap({});
+        return;
+      }
+      try {
+        const res = await api.get('/applications/my', { params: { limit: 200 } });
+        const applications = Array.isArray(res.data?.data) ? res.data.data : [];
+        const map = {};
+        applications.forEach((application) => {
+          const jobId = application.job?._id || application.job;
+          if (jobId) map[jobId.toString()] = application.status || 'Applied';
+        });
+        setAppliedJobMap(map);
+      } catch (error) {
+        console.error('Failed to load applied jobs:', error);
+      }
+    };
+
+    loadApplications();
   }, [isAuthenticated]);
 
   const userSkills = useMemo(() => {
@@ -715,20 +741,34 @@ const Jobs = () => {
                             </div>
                           )}
 
-                          <button
-                            type="button"
-                            onClick={() => handleToggleBookmark(job)}
-                            className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition ${savedJobMap[job._id] ? 'bg-[#1769E0] text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200'}`}
-                          >
-                            <FiBookmark className="h-4 w-4" />
-                            {savedJobMap[job._id] ? (t('savedJobs.saved') || 'Saved') : (t('savedJobs.saveJob') || 'Save Job')}
-                          </button>
-                          <Link
-                            to={`/jobs/${job._id}`}
-                            className="inline-flex w-full items-center justify-center rounded-full bg-[#1769E0] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0D5BC4]"
-                          >
-                            {t('jobs.applyNow') || 'Apply Now'}
-                          </Link>
+                          {appliedJobMap[job._id] ? (
+                            <span className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-600 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+                              <FiCheckCircle className="h-4 w-4" />
+                              {t('jobs.applied') || 'Applied'}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleBookmark(job)}
+                              className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition ${savedJobMap[job._id] ? 'bg-[#1769E0] text-white' : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200'}`}
+                            >
+                              <FiBookmark className="h-4 w-4" />
+                              {savedJobMap[job._id] ? (t('savedJobs.saved') || 'Saved') : (t('savedJobs.saveJob') || 'Save Job')}
+                            </button>
+                          )}
+                          {isJobSeeker && (appliedJobMap[job._id] ? (
+                            <span className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-600 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+                              <FiCheckCircle className="h-4 w-4" />
+                              {t('jobs.applied') || 'Applied'}
+                            </span>
+                          ) : (
+                            <Link
+                              to={`/jobs/${job._id}`}
+                              className="inline-flex w-full items-center justify-center rounded-full bg-[#1769E0] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0D5BC4]"
+                            >
+                              {t('jobs.applyNow') || 'Apply Now'}
+                            </Link>
+                          ))}
                           <Link
                             to={`/jobs/${job._id}`}
                             className="inline-flex w-full items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200"

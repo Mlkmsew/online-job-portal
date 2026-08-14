@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../../../services/api';
 import { logoutUser, setUser } from '../../../store/slices/authSlice';
@@ -32,6 +33,7 @@ const tabs = [
 
 const EmployerSettings = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Account');
   const [account, setAccount] = useState({
     fullName: 'Employer',
@@ -589,7 +591,7 @@ const EmployerSettings = () => {
                 <div className="mt-6">
                   <button
                     type="button"
-                    onClick={() => setShowPasswordEditor(true)}
+                    onClick={() => navigate('/employer/settings/change-password')}
                     className="inline-flex items-center gap-2 rounded-2xl bg-[#1769E0] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0D5BC4]"
                   >
                     <FiShield className="h-4 w-4" />

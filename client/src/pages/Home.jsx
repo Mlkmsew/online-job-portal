@@ -4,6 +4,7 @@
 // ============================================
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -14,13 +15,7 @@ import {
   FiFileText,
   FiUsers,
   FiHeart,
-  FiCode,
   FiDollarSign,
-  FiTool,
-  FiBookOpen,
-  FiTrendingUp,
-  FiClipboard,
-  FiGlobe,
   FiShield,
   FiAward,
   FiSend,
@@ -35,8 +30,10 @@ import {
   FiCheckCircle,
   FiBarChart2,
   FiDatabase,
+  FiGlobe,
 } from 'react-icons/fi';
-import { FaBuilding, FaCog, FaHandshake } from 'react-icons/fa';
+import { Code2, LineChart, Cog, HeartPulse, GraduationCap, Megaphone, ClipboardList, HeartHandshake } from 'lucide-react';
+import { FaBuilding } from 'react-icons/fa';
 import api from '../services/api';
 
 /* ──────────────────────────────────────────────
@@ -44,14 +41,54 @@ import api from '../services/api';
    ────────────────────────────────────────────── */
 
 const CATEGORIES = [
-  { name: 'IT & Software', icon: FiCode, jobs: '124 Jobs', color: 'bg-blue-100 text-blue-700' },
-  { name: 'Accounting & Finance', icon: FiDollarSign, jobs: '86 Jobs', color: 'bg-indigo-100 text-indigo-700' },
-  { name: 'Engineering', icon: FiTool, jobs: '95 Jobs', color: 'bg-cyan-100 text-cyan-700' },
-  { name: 'Healthcare', icon: FiHeart, jobs: '72 Jobs', color: 'bg-rose-100 text-rose-700' },
-  { name: 'Education', icon: FiBookOpen, jobs: '64 Jobs', color: 'bg-amber-100 text-amber-700' },
-  { name: 'Marketing', icon: FiTrendingUp, jobs: '58 Jobs', color: 'bg-purple-100 text-purple-700' },
-  { name: 'Administration', icon: FiClipboard, jobs: '49 Jobs', color: 'bg-teal-100 text-teal-700' },
-  { name: 'NGO & Development', icon: FiGlobe, jobs: '77 Jobs', color: 'bg-emerald-100 text-emerald-700' },
+  {
+    name: 'IT & Software',
+    icon: Code2,
+    jobs: '124 Jobs',
+    iconBg: 'bg-blue-100 text-blue-700 group-hover:bg-blue-700',
+  },
+  {
+    name: 'Accounting & Finance',
+    icon: LineChart,
+    jobs: '86 Jobs',
+    iconBg: 'bg-indigo-100 text-indigo-700 group-hover:bg-indigo-700',
+  },
+  {
+    name: 'Engineering',
+    icon: Cog,
+    jobs: '95 Jobs',
+    iconBg: 'bg-cyan-100 text-cyan-700 group-hover:bg-cyan-700',
+  },
+  {
+    name: 'Healthcare',
+    icon: HeartPulse,
+    jobs: '72 Jobs',
+    iconBg: 'bg-rose-100 text-rose-700 group-hover:bg-rose-700',
+  },
+  {
+    name: 'Education',
+    icon: GraduationCap,
+    jobs: '64 Jobs',
+    iconBg: 'bg-amber-100 text-amber-700 group-hover:bg-amber-600',
+  },
+  {
+    name: 'Marketing',
+    icon: Megaphone,
+    jobs: '58 Jobs',
+    iconBg: 'bg-purple-100 text-purple-700 group-hover:bg-purple-700',
+  },
+  {
+    name: 'Administration',
+    icon: ClipboardList,
+    jobs: '49 Jobs',
+    iconBg: 'bg-teal-100 text-teal-700 group-hover:bg-teal-700',
+  },
+  {
+    name: 'NGO & Development',
+    icon: HeartHandshake,
+    jobs: '77 Jobs',
+    iconBg: 'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-700',
+  },
 ];
 
 const STATS = [
@@ -72,29 +109,29 @@ const FEATURES = [
 
 const TESTIMONIALS = [
   {
-    name: 'Hanna Bekele',
+    name: 'Melkamsew Alehegn',
     role: 'Software Engineer',
     company: 'Ethio Telecom',
     rating: 5,
-    initials: 'HB',
+    initials: 'MA',
     color: 'bg-blue-600',
     text: 'I found my dream job in less than two weeks. The CV builder made my profile look professional and recruiters started reaching out to me.',
   },
   {
-    name: 'Yonas Tadesse',
+    name: 'Jemal Yimer',
     role: 'HR Manager',
     company: 'Dashen Bank',
     rating: 5,
-    initials: 'YT',
+    initials: 'JY',
     color: 'bg-indigo-600',
     text: 'As an employer, we receive high-quality, well-matched candidates. The platform saved us weeks of manual screening and hiring time.',
   },
   {
-    name: 'Sara Mohammed',
+    name: 'Solomon Tadesse',
     role: 'Registered Nurse',
     company: 'Tikur Anbessa Hospital',
     rating: 4,
-    initials: 'SM',
+    initials: 'ST',
     color: 'bg-cyan-600',
     text: 'The job alerts matched my skills perfectly. I applied to three positions and got an interview within a week. Highly recommended!',
   },
@@ -203,6 +240,8 @@ const Stars = ({ rating }) => (
 const Home = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
+  const isJobSeeker = user?.role === 'jobseeker';
 
   // Hero search state
   const [keyword, setKeyword] = useState('');
@@ -467,31 +506,36 @@ const Home = () => {
           <SectionHeading
             id="categories-heading"
             eyebrow={t('home.categoriesEyebrow', { defaultValue: 'Browse by field' })}
-            title={t('home.popularCategories', { defaultValue: 'Explore Popular Job Categories' })}
-            subtitle={t('home.categoriesSubtitle', { defaultValue: 'Find opportunities across the industries that are hiring in Ethiopia right now.' })}
+            title={t('home.popularCategories', { defaultValue: 'Popular Job Categories' })}
+            subtitle={t('home.categoriesSubtitle', { defaultValue: 'Explore 12 industry categories with thousands of opportunities.' })}
           />
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {CATEGORIES.map((cat) => (
               <Link
                 key={cat.name}
                 to={`/jobs?category=${encodeURIComponent(slugify(cat.name))}`}
-                className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl"
+                className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl"
               >
-                <span className={`inline-flex h-14 w-14 items-center justify-center rounded-2xl ${cat.color} transition-transform duration-300 group-hover:scale-110`}>
-                  <cat.icon className="h-6 w-6" aria-hidden="true" />
+                <span className={`inline-flex h-14 w-14 items-center justify-center rounded-2xl transition-colors duration-300 group-hover:scale-105 group-hover:text-white ${cat.iconBg}`}>
+                  <cat.icon className="h-7 w-7" strokeWidth={1.75} aria-hidden="true" />
                 </span>
-                <h3 className="mt-4 text-lg font-bold text-[#0F172A] group-hover:text-blue-700">{cat.name}</h3>
-                <p className="mt-1 text-sm font-medium text-slate-500">{cat.jobs}</p>
+                <h3 className="mt-5 text-lg font-bold leading-snug text-[#0F172A] transition-colors duration-300 group-hover:text-[#1769E0]">
+                  {cat.name}
+                </h3>
+                <p className="mt-1.5 text-sm font-medium text-slate-500">{cat.jobs}</p>
+                <span className="absolute right-5 top-6 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:bg-blue-50 group-hover:text-[#1769E0] group-hover:opacity-100 -translate-x-2">
+                  <FiArrowRight className="h-4 w-4" aria-hidden="true" />
+                </span>
               </Link>
             ))}
           </div>
           <div className="mt-12 text-center">
             <Link
               to="/jobs"
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-blue-600 px-6 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-50"
+              className="group inline-flex items-center gap-2 rounded-full border-2 border-[#1769E0] px-8 py-3.5 text-sm font-bold text-[#1769E0] transition-all duration-300 hover:bg-[#1769E0] hover:text-white hover:shadow-lg hover:shadow-blue-200"
             >
               {t('home.viewAllCategories', { defaultValue: 'View All Categories' })}
-              <FiArrowRight className="h-4 w-4" aria-hidden="true" />
+              <FiArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
             </Link>
           </div>
         </div>
@@ -573,13 +617,15 @@ const Home = () => {
                   >
                     {t('home.viewDetails', { defaultValue: 'View Details' })}
                   </Link>
-                  <Link
-                    to={jobIdIsReal(job.id) ? '/register' : `/jobs/${job.id}/apply`}
-                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-blue-700"
-                  >
-                    {t('home.applyNow', { defaultValue: 'Apply Now' })}
-                    <FiArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
+                  {isJobSeeker && (
+                    <Link
+                      to={jobIdIsReal(job.id) ? '/register' : `/jobs/${job.id}/apply`}
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-blue-700"
+                    >
+                      {t('home.applyNow', { defaultValue: 'Apply Now' })}
+                      <FiArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}

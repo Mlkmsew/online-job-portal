@@ -17,6 +17,14 @@ const applicationSchema = new mongoose.Schema(
     useProfileCV: { type: Boolean, default: false },
     matchScore: { type: Number, default: 0 },
 
+    // Screening answers captured at apply time
+    expectedSalary: { type: String },
+    isSalaryNegotiable: { type: Boolean, default: false },
+    availability: { type: String },
+    portfolioUrl: { type: String },
+    githubUrl: { type: String },
+    linkedinUrl: { type: String },
+
     // Status Tracking
     status: {
       type: String,

@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import {
   FiArrowRight,
   FiAward,
+  FiAlertCircle,
   FiBell,
   FiBookOpen,
   FiBookmark,
@@ -25,6 +26,7 @@ import {
   FiPlusCircle,
   FiSearch,
   FiTarget,
+  FiUploadCloud,
   FiUser,
   FiZap,
 } from 'react-icons/fi';
@@ -61,6 +63,10 @@ const JobSeekerDashboard = () => {
   const [notificationCount, setNotificationCount] = useState(null);
   const [messageCount, setMessageCount] = useState(null);
 
+  // Recommended jobs state (only loaded when the job seeker has uploaded a CV)
+  const [recLoading, setRecLoading] = useState(true);
+  const [recError, setRecError] = useState(null);
+
   const isMounted = useRef(false);
   const lastFetchId = useRef(0);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -72,6 +78,8 @@ const JobSeekerDashboard = () => {
       setIsRefreshing(true);
     }
     setErrorMessage(null);
+    setRecError(null);
+    setRecLoading(true);
     const fetchId = ++lastFetchId.current;
 
     try {
@@ -113,6 +121,7 @@ const JobSeekerDashboard = () => {
       } else if (dashboardRes.status === 'rejected') {
         console.error('Dashboard stats failed:', dashboardRes.reason);
         setErrorMessage('Unable to load dashboard overview.');
+        setRecError('Unable to load recommended jobs right now.');
       }
 
       const normalizedApps = normalizeArrayResponse(appsRes);
@@ -141,9 +150,11 @@ const JobSeekerDashboard = () => {
       console.error('Unexpected error fetching dashboard stats:', err);
       if (isMounted.current) {
         setErrorMessage('We could not load your dashboard data right now.');
+        setRecError('Unable to load recommended jobs right now.');
       }
     } finally {
       if (fetchId === lastFetchId.current && isMounted.current) {
+        setRecLoading(false);
         if (initial) {
           setLoading(false);
         } else {
@@ -162,7 +173,15 @@ const JobSeekerDashboard = () => {
     };
   }, []);
 
+  // Re-fetch the dashboard (and recommendations) whenever the CV/resume status
+  // changes, so an uploaded CV immediately unlocks Recommended Jobs. The initial
+  // fetch is handled by the mount effect above, so this only fires on changes.
+  const didInitialCvFetch = useRef(false);
   useEffect(() => {
+    if (!didInitialCvFetch.current) {
+      didInitialCvFetch.current = true;
+      return;
+    }
     if (!isMounted.current) return;
     if (user?.cv) {
       fetchDashboardData();
@@ -664,7 +683,57 @@ const JobSeekerDashboard = () => {
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {recommendedJobs.length === 0 ? (
+          {recLoading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-2xs animate-pulse">
+                <div className="h-3 w-24 rounded bg-[#E4E7EC]"></div>
+                <div className="mt-3 h-5 w-3/4 rounded bg-[#E4E7EC]"></div>
+                <div className="mt-3 flex gap-1.5">
+                  <div className="h-5 w-20 rounded-md bg-[#E4E7EC]"></div>
+                  <div className="h-5 w-16 rounded-md bg-[#E4E7EC]"></div>
+                </div>
+                <div className="mt-4 h-3 w-full rounded bg-[#F1F3F7]"></div>
+                <div className="mt-2 h-3 w-2/3 rounded bg-[#F1F3F7]"></div>
+                <div className="mt-5 flex items-center justify-between border-t border-[#E4E7EC] pt-3">
+                  <div className="h-6 w-20 rounded-full bg-[#E4E7EC]"></div>
+                  <div className="flex gap-2">
+                    <div className="h-8 w-16 rounded-xl bg-[#E4E7EC]"></div>
+                    <div className="h-8 w-16 rounded-xl bg-[#E4E7EC]"></div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : !resumeHasCV ? (
+            <div className="col-span-full rounded-[20px] border border-dashed border-[#E4E7EC] bg-[#F8FAFC] p-8 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1769E0]/10 text-[#1769E0] mb-3">
+                <FiUploadCloud className="h-6 w-6" />
+              </div>
+              <h3 className="font-bold text-[#101828] text-base mb-1">{t('dashboard.recommendedJobs.noCVTitle', { defaultValue: 'Please upload your CV to see recommended jobs' })}</h3>
+              <p className="text-[#667085] text-xs max-w-md mx-auto mb-4">{t('dashboard.recommendedJobs.noCVSubtitle', { defaultValue: 'Recommendations are powered by your resume. Upload your CV so we can match you with the right opportunities.' })}</p>
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard/profile')}
+                className="dashboard-btn inline-flex items-center gap-2 rounded-xl bg-[#1769E0] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#0D5BC4] shadow-xs"
+              >
+                <FiUploadCloud className="w-4 h-4" /> {t('dashboard.recommendedJobs.uploadCVBtn', { defaultValue: 'Upload CV' })}
+              </button>
+            </div>
+          ) : recError ? (
+            <div className="col-span-full rounded-[20px] border border-dashed border-[#E4E7EC] bg-[#F8FAFC] p-8 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 mb-3">
+                <FiAlertCircle className="h-6 w-6" />
+              </div>
+              <h3 className="font-bold text-[#101828] text-base mb-1">{t('dashboard.recommendedJobs.recErrorTitle', { defaultValue: 'Could not load recommended jobs' })}</h3>
+              <p className="text-[#667085] text-xs max-w-md mx-auto mb-4">{t('dashboard.recommendedJobs.recErrorSubtitle', { defaultValue: 'Something went wrong while loading your recommendations. Please try again.' })}</p>
+              <button
+                type="button"
+                onClick={() => fetchDashboardData()}
+                className="dashboard-btn inline-flex items-center gap-2 rounded-xl bg-[#1769E0] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#0D5BC4] shadow-xs"
+              >
+                {t('dashboard.recommendedJobs.retryBtn', { defaultValue: 'Retry' })}
+              </button>
+            </div>
+          ) : recommendedJobs.length === 0 ? (
             dashboardData?.profileComplete ? (
               <div className="col-span-full rounded-[20px] border border-dashed border-[#E4E7EC] bg-[#F8FAFC] p-8 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1769E0]/10 text-[#1769E0] mb-3">
