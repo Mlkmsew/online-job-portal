@@ -2,7 +2,7 @@
 // Application Controller
 // ============================================
 const Application = require('../models/Application');
-const Job = require('../models/Job');
+const Job = require('../models/job');
 const User = require('../models/user');
 const Interview = require('../models/Interview');
 const { asyncHandler, paginate, createNotification } = require('../utils/helpers');

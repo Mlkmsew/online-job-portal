@@ -2,7 +2,7 @@
 // Bookmark Controller
 // ============================================
 const Bookmark = require('../models/Bookmark');
-const Job = require('../models/Job');
+const Job = require('../models/job');
 const { asyncHandler, paginate } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 

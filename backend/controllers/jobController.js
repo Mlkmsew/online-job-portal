@@ -1,7 +1,7 @@
 // ============================================
 // Job Controller
 // ============================================
-const Job = require('../models/Job');
+const Job = require('../models/job');
 const Company = require('../models/Company');
 const Bookmark = require('../models/Bookmark');
 const { asyncHandler, paginate, escapeRegex } = require('../utils/helpers');

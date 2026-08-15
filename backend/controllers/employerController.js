@@ -1,5 +1,5 @@
 const { asyncHandler } = require('../utils/helpers');
-const Job = require('../models/Job');
+const Job = require('../models/job');
 const Application = require('../models/Application');
 const Interview = require('../models/Interview');
 const Notification = require('../models/Notification');

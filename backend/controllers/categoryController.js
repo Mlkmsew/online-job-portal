@@ -2,7 +2,7 @@
 // Category Controller (Public)
 // ============================================
 const Category = require('../models/Category');
-const Job = require('../models/Job');
+const Job = require('../models/job');
 const { asyncHandler } = require('../utils/helpers');
 
 // @desc    Get all categories with active job counts

@@ -2,7 +2,7 @@
 // Company Controller
 // ============================================
 const Company = require('../models/Company');
-const Job = require('../models/Job');
+const Job = require('../models/job');
 const { asyncHandler, paginate, escapeRegex, notifyAllAdmins } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 

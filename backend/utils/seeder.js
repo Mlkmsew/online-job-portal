@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const connectDB = require('../config/db');
 const User = require('../models/user');
 const Company = require('../models/Company');
-const Job = require('../models/Job');
+const Job = require('../models/job');
 const Category = require('../models/Category');
 const Skill = require('../models/Skill');
 

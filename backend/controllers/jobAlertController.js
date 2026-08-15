@@ -1,4 +1,4 @@
-const JobAlert = require('../models/JobAlert');
+const JobAlert = require('../models/jobAlert');
 const { asyncHandler } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 
