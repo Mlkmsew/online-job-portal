@@ -1,0 +1,3 @@
+# Render Static Site SPA fallback: serve index.html for all client-side routes
+# (BrowserRouter deep links like /dashboard, /jobs/:id)
+/* /index.html 200

@@ -38,21 +38,35 @@ connectDB();
 // Security & Essential Middleware
 // ============================================
 app.use(helmet()); // Set security headers
+
+// Trust the first proxy hop so req.ip / rate limiting work behind Render's proxy
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
+const isProduction = process.env.NODE_ENV === 'production';
+
+// In production only CLIENT_URL is allowed; local/LAN origins are dev-only conveniences
 const allowedOrigins = [
   process.env.CLIENT_URL,
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://172.16.3.110:5173',
+  ...(isProduction ? [] : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://172.16.3.110:5173']),
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || origin.startsWith('http://172.16.')) {
-        callback(null, true);
-        return;
+      // Allow non-browser requests (health checks, curl, server-to-server)
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
+      // Development-only LAN/localhost allowances
+      if (
+        !isProduction &&
+        (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || origin.startsWith('http://172.16.'))
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

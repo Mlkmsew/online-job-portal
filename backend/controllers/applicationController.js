@@ -474,6 +474,7 @@ exports.downloadResume = asyncHandler(async (req, res, next) => {
 
   // Cloudinary-hosted resumes: stream through the backend so the authenticated
   // employer always receives the file, regardless of the account's delivery ACL.
+  // Supports both 'image' and 'raw' Cloudinary resource types.
   if (/^https?:\/\//i.test(url) && parseCloudinaryUrl(url)) {
     try {
       await streamCloudinaryFile(url, res, downloadName);
@@ -484,9 +485,10 @@ exports.downloadResume = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // If URL looks like http(s), redirect for download; otherwise assume local file path
+  // Unsupported http(s) resume URL: return a controlled error instead of
+  // blindly redirecting the client to an arbitrary external URL.
   if (/^https?:\/\//i.test(url)) {
-    return res.redirect(url);
+    return next(new AppError('Resume URL is not a supported Cloudinary file.', 422));
   }
 
   // Local file path -> stream

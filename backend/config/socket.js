@@ -5,13 +5,29 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+// In production only CLIENT_URL is allowed; local/LAN origins are dev-only conveniences
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  ...(isProduction ? [] : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://172.16.3.110:5173']),
+].filter(Boolean);
+
+const isOriginAllowed = (origin) => {
+  if (!origin || allowedOrigins.includes(origin)) return true;
+  if (!isProduction && (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1') || origin.startsWith('http://172.16.'))) {
+    return true;
+  }
+  return false;
+};
+
 let io;
 const userSocketMap = new Map(); // userId -> socketId mapping
 
 const initializeSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:5173',
+      origin: isOriginAllowed,
       methods: ['GET', 'POST'],
       credentials: true,
     },
