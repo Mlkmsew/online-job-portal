@@ -72,12 +72,41 @@ const educationKeywords = {
 };
 
 /**
+ * Extract the user's soft skills. Soft skills are stored in a dedicated
+ * category so they can contribute to matching without ever being treated
+ * as technical/job skills.
+ */
+const extractUserSoftSkills = (user) => {
+  const soft = new Set();
+
+  if (Array.isArray(user?.softSkills)) {
+    user.softSkills.forEach((s) => {
+      if (s) soft.add(String(s));
+    });
+  }
+
+  return Array.from(soft);
+};
+
+/**
  * Extract user skills from all profile fields
  */
 const extractUserSkillNames = (user) => {
   const skills = new Set();
 
-  // 1. Direct skills array (objects or strings)
+  // Stored soft skills must never be treated as technical skills, even when
+  // the technical skill list is empty and we fall back to legacy fields.
+  const softSkillNames = new Set(extractUserSoftSkills(user).map(normalizeSkillName).filter(Boolean));
+
+  // 1. Categorized technical skills (preferred). Soft skills live in a
+  //    separate field and must not be treated as technical skills.
+  if (Array.isArray(user?.technicalSkills) && user.technicalSkills.length > 0) {
+    user.technicalSkills.forEach((s) => {
+      if (s) skills.add(String(s));
+    });
+  }
+
+  // 2. Direct skills array (objects or strings)
   if (Array.isArray(user?.skills)) {
     user.skills.forEach((s) => {
       const name = typeof s === 'object' ? s.name || s.title : String(s);
@@ -85,14 +114,19 @@ const extractUserSkillNames = (user) => {
     });
   }
 
-  // 2. SkillNames string array
-  if (Array.isArray(user?.skillNames)) {
+  // 3. Legacy combined skill names — only used when no categorized
+  //    technical skills are present. Entries that are stored as soft skills
+  //    are skipped so they are not treated as technical skills.
+  if (skills.size === 0 && Array.isArray(user?.skillNames)) {
     user.skillNames.forEach((s) => {
-      if (s) skills.add(String(s));
+      if (!s) return;
+      const name = String(s);
+      if (softSkillNames.has(normalizeSkillName(name))) return;
+      skills.add(name);
     });
   }
 
-  // 3. Resume analysis skills
+  // 4. Resume analysis skills
   if (Array.isArray(user?.resumeAnalysis?.skills)) {
     user.resumeAnalysis.skills.forEach((s) => {
       const name = typeof s === 'object' ? s.name || s.title : String(s);
@@ -101,6 +135,36 @@ const extractUserSkillNames = (user) => {
   }
 
   return Array.from(skills).filter(Boolean);
+};
+
+/**
+ * Soft skill matching: compare the user's stored soft skills against the
+ * job's soft skill requirements. Returns a small bonus (max +5 points) so
+ * soft skills can contribute to the overall match without inflating the
+ * technical skill score.
+ */
+const calculateSoftSkillMatch = (job, user) => {
+  const jobSoft = Array.isArray(job?.skills?.soft) ? job.skills.soft : [];
+  if (jobSoft.length === 0) return { matched: [], bonus: 0 };
+
+  const userSoft = extractUserSoftSkills(user);
+  if (userSoft.length === 0) return { matched: [], bonus: 0 };
+
+  const userNorm = new Set(userSoft.map(normalizeSkillName).filter(Boolean));
+  const matched = jobSoft.filter((jobSkill) => {
+    const norm = normalizeSkillName(jobSkill);
+    if (!norm) return false;
+    if (userNorm.has(norm)) return true;
+    return userSoft.some((uSkill) => {
+      const uNorm = normalizeSkillName(uSkill);
+      return uNorm && (uNorm.includes(norm) || norm.includes(uNorm));
+    });
+  });
+
+  const ratio = matched.length / jobSoft.length;
+  const bonus = Math.round(ratio * 5);
+
+  return { matched: Array.from(new Set(matched)), bonus };
 };
 
 /**
@@ -139,6 +203,7 @@ const calculateSkillMatch = (job, user) => {
   });
 
   const jobRawSkills = extractJobRequiredSkills(job);
+  const softMatch = calculateSoftSkillMatch(job, user);
 
   if (jobRawSkills.length === 0) {
     // Fallback if job has no explicit skills list: check job title/description against user skills
@@ -147,11 +212,12 @@ const calculateSkillMatch = (job, user) => {
       const norm = normalizeSkillName(s);
       return norm && jobText.includes(norm);
     });
-    const score = userRawSkills.length > 0 ? Math.min(100, Math.round((matched.length / Math.max(1, userRawSkills.length)) * 100)) : 50;
+    const baseScore = userRawSkills.length > 0 ? Math.min(100, Math.round((matched.length / Math.max(1, userRawSkills.length)) * 100)) : 50;
     return {
-      score,
+      score: Math.min(100, baseScore + softMatch.bonus),
       matchedSkills: matched,
       missingSkills: [],
+      softMatchedSkills: softMatch.matched,
     };
   }
 
@@ -177,12 +243,14 @@ const calculateSkillMatch = (job, user) => {
   });
 
   const matchRatio = matchedSkills.length / jobRawSkills.length;
-  const score = Math.round(matchRatio * 100);
+  const baseScore = Math.round(matchRatio * 100);
+  const score = Math.min(100, baseScore + softMatch.bonus);
 
   return {
     score,
     matchedSkills: Array.from(new Set(matchedSkills)),
     missingSkills: Array.from(new Set(missingSkills)),
+    softMatchedSkills: softMatch.matched,
   };
 };
 
@@ -454,6 +522,7 @@ const calculateJobMatch = (job, user) => {
     locationScore,
     matchedSkills: skillResult.matchedSkills,
     missingSkills: skillResult.missingSkills,
+    softMatchedSkills: skillResult.softMatchedSkills || [],
   };
 
   const why = [];

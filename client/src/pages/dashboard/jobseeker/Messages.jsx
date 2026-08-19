@@ -43,6 +43,7 @@ const Messages = () => {
   const messagesEndRef = useRef(null);
   const actionMenuRef = useRef(null);
   const editTextareaRef = useRef(null);
+  const openedForRecipientRef = useRef(null);
 
   useEffect(() => {
     if (!successMessage) return undefined;
@@ -235,21 +236,21 @@ const Messages = () => {
 
   useEffect(() => {
     if (!recipientFromUrl) return;
-    if (isLoading || conversations.length === 0) return;
 
     const match = conversations.find((c) =>
       (c.participants || []).some((participant) => participant?._id?.toString() === recipientFromUrl.toString())
     );
     if (match) {
+      setIsModalOpen(false);
       setSelectedConversation(match);
       loadMessages(match._id);
       return;
     }
-    if (recipientEmailFromUrl) {
-      setNewConversationEmail(recipientEmailFromUrl);
-      setIsModalOpen(true);
-    }
-  }, [recipientFromUrl, recipientEmailFromUrl, conversations, isLoading]);
+    if (openedForRecipientRef.current === recipientFromUrl.toString()) return;
+    openedForRecipientRef.current = recipientFromUrl.toString();
+    setNewConversationEmail(recipientEmailFromUrl || '');
+    setIsModalOpen(true);
+  }, [recipientFromUrl, recipientEmailFromUrl, conversations]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');

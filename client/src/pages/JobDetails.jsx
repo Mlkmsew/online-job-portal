@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
+import { sendMessage } from '../services/messageService';
 import toast from 'react-hot-toast';
 import {
   FiMapPin,
@@ -15,7 +16,6 @@ import {
   FiShare2,
   FiFlag,
   FiMessageSquare,
-  FiShield,
   FiDollarSign,
   FiUsers,
   FiAward,
@@ -81,12 +81,15 @@ const JobDetails = () => {
 
   const isJobSeeker = user?.role === 'jobseeker';
   const isEmployer = user?.role === 'employer';
-  const isAdmin = user?.role === 'admin';
   const [hasApplied, setHasApplied] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState('');
   const [similarAppliedMap, setSimilarAppliedMap] = useState({});
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkId, setBookmarkId] = useState(null);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+  const [messageEmail, setMessageEmail] = useState('');
+  const [messageContent, setMessageContent] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const canUseProfileCV = Boolean(user?.cv);
   const applicantName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.name || 'Applicant';
   const applicantEmail = user?.email || 'Not provided';
@@ -166,12 +169,6 @@ const JobDetails = () => {
       ? job.benefits.split('\n').map((item) => item.trim()).filter(Boolean)
       : [];
 
-  const accessibilityItems = [
-    { label: 'Disability Friendly', value: job?.accessibility?.disabilityFriendly },
-    { label: 'Remote Friendly', value: job?.accessibility?.remoteFriendly },
-    { label: 'Accommodation Available', value: Boolean(job?.accessibility?.accommodations) },
-  ];
-
   const toggleBookmark = async () => {
     try {
       if (isBookmarked && bookmarkId) {
@@ -195,17 +192,41 @@ const JobDetails = () => {
     navigate('/login');
   };
 
-  const handleReportJob = () => {
-    toast.success('Thank you. The job report has been submitted.');
-  };
-
   const handleCopyJob = () => {
     navigator.clipboard.writeText(`${window.location.origin}/jobs/${job._id}`);
     toast.success('Job link copied to clipboard.');
   };
 
   const handleSendMessage = () => {
-    toast.success(isOwner ? 'Edit recruiter info is coming soon.' : 'Message recruiter coming soon.');
+    if (isOwner) {
+      toast.success('Edit recruiter info is coming soon.');
+      return;
+    }
+    setMessageEmail(job?.company?.recruiter?.email || job?.company?.email || job?.postedBy?.email || '');
+    setMessageContent('');
+    setIsMessageModalOpen(true);
+  };
+
+  const handleSubmitNewMessage = async (e) => {
+    e.preventDefault();
+    if (!messageEmail.trim() || !messageContent.trim() || isSendingMessage) return;
+
+    setIsSendingMessage(true);
+    try {
+      await sendMessage({
+        recipientId: messageEmail.trim(),
+        content: messageContent.trim(),
+      });
+      toast.success(t('messages.startSuccess') || 'Conversation started successfully.');
+      setIsMessageModalOpen(false);
+      setMessageEmail('');
+      setMessageContent('');
+    } catch (err) {
+      console.error('Start conversation failed:', err);
+      toast.error(err.response?.data?.message || t('messages.startFailed') || 'Unable to start conversation.');
+    } finally {
+      setIsSendingMessage(false);
+    }
   };
 
   useEffect(() => {
@@ -407,9 +428,6 @@ const JobDetails = () => {
                     <button type="button" onClick={handleCopyJob} className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
                       {t('jobs.share')}
                     </button>
-                    <button type="button" onClick={handleReportJob} className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                      {t('common.error')}
-                    </button>
                   </div>
                 </div>
 
@@ -421,7 +439,6 @@ const JobDetails = () => {
                 <StatCard icon={FiBookOpen} label="Education" value={job.educationRequired || 'Not specified'} />
                 <StatCard icon={FiUsers} label="Open Positions" value={job.numberOfPositions || 1} />
                 <StatCard icon={FiClock} label="Deadline" value={formatDate(job.applicationDeadline)} />
-                <StatCard icon={FiZap} label="Views" value={job.views ?? 0} />
                 <StatCard icon={FiUsers} label="Applicants" value={applicantCount} />
               </div>
             </div>
@@ -520,18 +537,6 @@ const JobDetails = () => {
                   </SectionCard>
                 )}
 
-                <SectionCard icon={FiShield} title="Accessibility" subtitle="Inclusive workplace support" accent="emerald">
-                  <div className="flex flex-wrap gap-2">
-                    {accessibilityItems.map((item) => (
-                      <span key={item.label} className="rounded-full bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
-                        {item.label}
-                      </span>
-                    ))}
-                  </div>
-                  {job?.accessibility?.description && (
-                    <p className="mt-4 text-sm leading-7 text-slate-600">{job.accessibility.description}</p>
-                  )}
-                </SectionCard>
               </div>
             </div>
 
@@ -689,6 +694,51 @@ const JobDetails = () => {
           </aside>
         </div>
       </div>
+
+      {isMessageModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
+          <div className="my-8 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">{t('messages.startNewConversation') || 'Start a new conversation'}</h2>
+                <p className="text-sm text-gray-500">{t('messages.newConversationSubtitle') || 'Enter the recipient email and your first message.'}</p>
+              </div>
+              <button type="button" onClick={() => setIsMessageModalOpen(false)} className="text-gray-500 hover:text-gray-900">{t('common.cancel')}</button>
+            </div>
+            <form onSubmit={handleSubmitNewMessage} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">{t('auth.email')}</label>
+                <input
+                  value={messageEmail}
+                  onChange={(e) => setMessageEmail(e.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500"
+                  placeholder="recipient@example.com"
+                  type="email"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">{t('dashboard.messages.title')}</label>
+                <textarea
+                  value={messageContent}
+                  onChange={(e) => setMessageContent(e.target.value)}
+                  className="mt-2 w-full min-h-[150px] rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500"
+                  placeholder={t('messages.typePlaceholder') || 'Write your message here...'}
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={() => setIsMessageModalOpen(false)} className="rounded-full border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                  {t('common.cancel')}
+                </button>
+                <button type="submit" disabled={isSendingMessage} className="rounded-full bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0D5BC4] disabled:cursor-not-allowed disabled:bg-[#A8C8F5]">
+                  {isSendingMessage ? t('common.loading') : (t('messages.startConversation') || 'Start conversation')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

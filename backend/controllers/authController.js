@@ -522,7 +522,7 @@ exports.refreshToken = asyncHandler(async (req, res, next) => {
 exports.updateProfile = asyncHandler(async (req, res) => {
   const allowedFields = [
     'firstName', 'lastName', 'phone', 'headline', 'currentRole', 'bio', 'dateOfBirth',
-    'gender', 'location', 'skills', 'skillNames', 'languages', 'education', 'educationDetails', 'experience', 'experienceDetails',
+    'gender', 'location', 'skills', 'skillNames', 'technicalSkills', 'softSkills', 'languages', 'education', 'educationDetails', 'experience', 'experienceDetails',
     'experienceYears', 'salaryExpectation', 'availability', 'portfolio', 'socialLinks', 'jobPreferences',
     'certificates', 'avatar', 'avatarPublicId',
   ];
@@ -542,6 +542,21 @@ exports.updateProfile = asyncHandler(async (req, res) => {
   }
 
   const userId = req.user.id || req.user._id;
+
+  // Keep the combined skillNames in sync with the categorized skills so the
+  // rest of the app (job matching, resume builder, CV parsing, completeness)
+  // keeps seeing every skill while technical and soft stay separate.
+  if (updates.technicalSkills !== undefined || updates.softSkills !== undefined) {
+    const existing = await User.findById(userId);
+    const technical = updates.technicalSkills !== undefined ? updates.technicalSkills : (existing?.technicalSkills || []);
+    const soft = updates.softSkills !== undefined ? updates.softSkills : (existing?.softSkills || []);
+    updates.skillNames = Array.from(
+      new Set([...(Array.isArray(technical) ? technical : []), ...(Array.isArray(soft) ? soft : [])]
+        .map((s) => String(s).trim())
+        .filter(Boolean))
+    );
+  }
+
   const user = await User.findByIdAndUpdate(
     userId,
     { $set: updates, ...(Object.keys(unsetFields).length ? { $unset: unsetFields } : {}) },

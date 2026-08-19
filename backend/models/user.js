@@ -27,6 +27,8 @@ const userSchema = new mongoose.Schema(
         location: Object,
         skills: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Skill' }],
         skillNames: [String],
+        technicalSkills: [String],
+        softSkills: [String],
         languages: [{ name: String, level: String }],
         portfolio: [{ label: String, url: String }],
         certificates: [{ name: String, url: String, publicId: String, issuer: String, issueDate: Date }],

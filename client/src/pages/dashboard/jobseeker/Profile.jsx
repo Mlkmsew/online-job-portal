@@ -9,6 +9,7 @@ import {
   FiPlus, FiTrash2, FiX, FiCamera, FiStar,
   FiAward, FiGlobe, FiLink, FiEdit2, FiUploadCloud, FiExternalLink,
   FiFileText, FiBookOpen, FiCalendar, FiBarChart2, FiChevronDown, FiFile,
+  FiCode, FiUsers,
 } from 'react-icons/fi';
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
@@ -29,6 +30,11 @@ const getInitialFormData = (user) => {
       ? user.skills.map((s) => (typeof s === 'object' ? s.name : s)).filter(Boolean)
       : [];
 
+  const technicalSkills =
+    Array.isArray(user?.technicalSkills) && user.technicalSkills.length > 0
+      ? user.technicalSkills
+      : skillNames;
+
   return {
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -46,6 +52,8 @@ const getInitialFormData = (user) => {
     salaryExpectation: user?.salaryExpectation || '',
     availability: user?.availability || '',
     skills: skillNames,
+    technicalSkills,
+    softSkills: Array.isArray(user?.softSkills) ? user.softSkills : [],
     experienceDetails: Array.isArray(user?.experienceDetails)
       ? user.experienceDetails
       : user?.experience
@@ -79,6 +87,7 @@ const JobSeekerProfile = () => {
   const [editingItemIndex, setEditingItemIndex] = useState(null);
   const [modalItemData, setModalItemData] = useState({});
   const [skillInput, setSkillInput] = useState('');
+  const [softSkillInput, setSoftSkillInput] = useState('');
 
   const avatarInputRef = useRef(null);
 
@@ -152,6 +161,19 @@ const JobSeekerProfile = () => {
     return [];
   }, [user]);
 
+  const technicalSkillNames = useMemo(
+    () =>
+      Array.isArray(user?.technicalSkills) && user.technicalSkills.length > 0
+        ? user.technicalSkills
+        : skillNames,
+    [user, skillNames]
+  );
+
+  const softSkillNames = useMemo(
+    () => (Array.isArray(user?.softSkills) ? user.softSkills : []),
+    [user]
+  );
+
   const experienceItems = useMemo(() => {
     if (Array.isArray(user?.experienceDetails) && user.experienceDetails.length > 0) return user.experienceDetails;
     if (user?.experience) return [{ title: 'Work History', company: '', location: '', startDate: '', endDate: '', description: user.experience }];
@@ -175,6 +197,12 @@ const JobSeekerProfile = () => {
   const persistProfile = async (updatedFields, successMessage = 'Profile updated successfully') => {
     setSaving(true);
     try {
+      const technicalSkills = updatedFields.technicalSkills !== undefined
+        ? parseSkillTags(updatedFields.technicalSkills)
+        : parseSkillTags(formData.technicalSkills);
+      const softSkills = updatedFields.softSkills !== undefined
+        ? parseSkillTags(updatedFields.softSkills)
+        : parseSkillTags(formData.softSkills);
       const payload = {
         firstName: updatedFields.firstName !== undefined ? updatedFields.firstName : formData.firstName,
         lastName: updatedFields.lastName !== undefined ? updatedFields.lastName : formData.lastName,
@@ -187,7 +215,9 @@ const JobSeekerProfile = () => {
         experienceYears: updatedFields.experienceYears !== undefined ? updatedFields.experienceYears : formData.experienceYears,
         salaryExpectation: updatedFields.salaryExpectation !== undefined ? updatedFields.salaryExpectation : formData.salaryExpectation,
         availability: updatedFields.availability !== undefined ? updatedFields.availability : formData.availability,
-        skillNames: updatedFields.skills !== undefined ? parseSkillTags(updatedFields.skills) : parseSkillTags(formData.skills),
+        technicalSkills,
+        softSkills,
+        skillNames: [...technicalSkills, ...softSkills],
         experienceDetails: updatedFields.experienceDetails !== undefined ? updatedFields.experienceDetails : formData.experienceDetails,
         educationDetails: updatedFields.educationDetails !== undefined ? updatedFields.educationDetails : formData.educationDetails,
         languages: updatedFields.languages !== undefined ? updatedFields.languages : formData.languages,
@@ -337,8 +367,12 @@ const JobSeekerProfile = () => {
     }
     if (type === 'bio') setModalItemData({ bio: formData.bio || '', currentRole: formData.currentRole || '', experienceYears: formData.experienceYears || '', salaryExpectation: formData.salaryExpectation || '', availability: formData.availability || '' });
     if (type === 'skills') {
-      setModalItemData({ skills: [...(formData.skills || [])] });
+      setModalItemData({
+        technicalSkills: [...(formData.technicalSkills || [])],
+        softSkills: [...(formData.softSkills || [])],
+      });
       setSkillInput('');
+      setSoftSkillInput('');
     }
   };
 
@@ -376,7 +410,10 @@ const JobSeekerProfile = () => {
         availability: modalItemData.availability,
       }, 'Bio & overview updated.');
     } else if (activeModal === 'skills') {
-      await persistProfile({ skills: modalItemData.skills }, 'Skills updated.');
+      await persistProfile({
+        technicalSkills: Array.isArray(modalItemData.technicalSkills) ? modalItemData.technicalSkills : [],
+        softSkills: Array.isArray(modalItemData.softSkills) ? modalItemData.softSkills : [],
+      }, 'Skills updated.');
     } else if (['education', 'experience', 'languages', 'portfolio'].includes(activeModal)) {
       const sectionKey = activeModal === 'education' ? 'educationDetails' : activeModal === 'experience' ? 'experienceDetails' : activeModal;
       const currentList = [...(formData[sectionKey] || [])];
@@ -389,19 +426,35 @@ const JobSeekerProfile = () => {
     }
   };
 
-  const addSkillTagToModal = () => {
-    const tag = skillInput.trim();
+  const isTechnicalCategory = (category) => category === 'technicalSkills';
+
+  const addSkillTagToModal = (category) => {
+    const key = isTechnicalCategory(category) ? 'technicalSkills' : 'softSkills';
+    const input = isTechnicalCategory(category) ? skillInput : softSkillInput;
+    const tag = input.trim();
     if (!tag) return;
-    const current = modalItemData.skills || [];
-    if (!current.some((s) => s.toLowerCase() === tag.toLowerCase())) {
-      setModalItemData({ skills: [...current, tag] });
+    const current = Array.isArray(modalItemData[key]) ? modalItemData[key] : [];
+    if (!current.some((s) => String(s).toLowerCase() === tag.toLowerCase())) {
+      setModalItemData({ ...modalItemData, [key]: [...current, tag] });
     }
-    setSkillInput('');
+    if (isTechnicalCategory(category)) setSkillInput('');
+    else setSoftSkillInput('');
   };
 
-  const removeSkillTagFromModal = (idx) => {
-    const current = modalItemData.skills || [];
-    setModalItemData({ skills: current.filter((_, i) => i !== idx) });
+  const removeSkillTagFromModal = (category, idx) => {
+    const key = isTechnicalCategory(category) ? 'technicalSkills' : 'softSkills';
+    const current = Array.isArray(modalItemData[key]) ? modalItemData[key] : [];
+    setModalItemData({ ...modalItemData, [key]: current.filter((_, i) => i !== idx) });
+  };
+
+  const editSkillTagFromModal = (category, idx) => {
+    const key = isTechnicalCategory(category) ? 'technicalSkills' : 'softSkills';
+    const current = Array.isArray(modalItemData[key]) ? modalItemData[key] : [];
+    const value = current[idx];
+    if (!value) return;
+    setModalItemData({ ...modalItemData, [key]: current.filter((_, i) => i !== idx) });
+    if (isTechnicalCategory(category)) setSkillInput(String(value));
+    else setSoftSkillInput(String(value));
   };
 
   return (
@@ -813,16 +866,49 @@ const JobSeekerProfile = () => {
           </button>
         </div>
 
-        {skillNames.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {skillNames.map((skill, idx) => (
-              <span
-                key={idx}
-                className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50/80 px-3.5 py-1.5 text-xs font-bold text-[#1769E0]"
-              >
-                {skill}
-              </span>
-            ))}
+        {technicalSkillNames.length > 0 || softSkillNames.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="min-w-0" data-testid="technical-skills-group">
+              <h3 className="mb-2.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-700">
+                <FiCode className="h-3.5 w-3.5 text-[#1769E0]" />
+                {t('profile.technicalSkills') || 'Technical Skills'}
+              </h3>
+              {technicalSkillNames.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {technicalSkillNames.map((skill, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50/80 px-3.5 py-1.5 text-xs font-bold text-[#1769E0]"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs italic text-slate-400">{t('profile.noTechnicalSkills') || 'No technical skills added yet.'}</p>
+              )}
+            </div>
+
+            <div className="min-w-0" data-testid="soft-skills-group">
+              <h3 className="mb-2.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-700">
+                <FiUsers className="h-3.5 w-3.5 text-[#1769E0]" />
+                {t('profile.softSkills') || 'Soft Skills'}
+              </h3>
+              {softSkillNames.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {softSkillNames.map((skill, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50/80 px-3.5 py-1.5 text-xs font-bold text-[#1769E0]"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs italic text-slate-400">{t('profile.noSoftSkills') || 'No soft skills added yet.'}</p>
+              )}
+            </div>
           </div>
         ) : (
           <div className="py-6 text-center">
@@ -1414,46 +1500,107 @@ const JobSeekerProfile = () => {
               )}
 
               {activeModal === 'skills' && (
-                <div className="space-y-4 text-xs">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1.5">Add Skill Tag</label>
+                <div className="space-y-5 text-xs">
+                  {/* Technical Skills */}
+                  <div data-testid="modal-technical-skills-group">
+                    <label className="mb-1.5 flex items-center gap-1.5 font-bold text-slate-700">
+                      <FiCode className="h-3.5 w-3.5 text-[#1769E0]" />
+                      {t('profile.technicalSkills') || 'Technical Skills'}
+                    </label>
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="Type skill and press Add"
+                        placeholder="e.g. Java, Python, React"
                         value={skillInput}
                         onChange={(e) => setSkillInput(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkillTagToModal(); } }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkillTagToModal('technicalSkills'); } }}
                         className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                       <button
                         type="button"
-                        onClick={addSkillTagToModal}
+                        onClick={() => addSkillTagToModal('technicalSkills')}
                         className="rounded-xl bg-[#1769E0] px-4 py-2 text-xs font-bold text-white hover:bg-[#0D5BC4] transition"
                       >
-                        Add Tag
+                        Add
                       </button>
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-2">Current Skills List</label>
-                    <div className="flex flex-wrap gap-2 min-h-[60px] p-3 rounded-xl bg-slate-50 border border-slate-200">
-                      {(modalItemData.skills || []).length > 0 ? (
-                        modalItemData.skills.map((sk, i) => (
+                    <div className="flex flex-wrap gap-2 min-h-[44px] p-3 mt-2 rounded-xl bg-slate-50 border border-slate-200">
+                      {(modalItemData.technicalSkills || []).length > 0 ? (
+                        modalItemData.technicalSkills.map((sk, i) => (
                           <span key={i} className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-[#1769E0]">
                             {sk}
                             <button
                               type="button"
-                              onClick={() => removeSkillTagFromModal(i)}
+                              onClick={() => editSkillTagFromModal('technicalSkills', i)}
+                              className="text-[#1769E0] hover:text-blue-800 transition"
+                              title="Edit"
+                            >
+                              <FiEdit2 className="h-3 w-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeSkillTagFromModal('technicalSkills', i)}
                               className="text-[#1769E0] hover:text-red-600 transition"
+                              title="Delete"
                             >
                               <FiX className="h-3 w-3" />
                             </button>
                           </span>
                         ))
                       ) : (
-                        <p className="text-slate-400 text-xs">No skills listed yet.</p>
+                        <p className="text-slate-400 text-xs">{t('profile.noTechnicalSkills') || 'No technical skills listed yet.'}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Soft Skills */}
+                  <div data-testid="modal-soft-skills-group">
+                    <label className="mb-1.5 flex items-center gap-1.5 font-bold text-slate-700">
+                      <FiUsers className="h-3.5 w-3.5 text-[#1769E0]" />
+                      {t('profile.softSkills') || 'Soft Skills'}
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. Communication, Teamwork"
+                        value={softSkillInput}
+                        onChange={(e) => setSoftSkillInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkillTagToModal('softSkills'); } }}
+                        className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addSkillTagToModal('softSkills')}
+                        className="rounded-xl bg-[#1769E0] px-4 py-2 text-xs font-bold text-white hover:bg-[#0D5BC4] transition"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 min-h-[44px] p-3 mt-2 rounded-xl bg-slate-50 border border-slate-200">
+                      {(modalItemData.softSkills || []).length > 0 ? (
+                        modalItemData.softSkills.map((sk, i) => (
+                          <span key={i} className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-[#1769E0]">
+                            {sk}
+                            <button
+                              type="button"
+                              onClick={() => editSkillTagFromModal('softSkills', i)}
+                              className="text-[#1769E0] hover:text-blue-800 transition"
+                              title="Edit"
+                            >
+                              <FiEdit2 className="h-3 w-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeSkillTagFromModal('softSkills', i)}
+                              className="text-[#1769E0] hover:text-red-600 transition"
+                              title="Delete"
+                            >
+                              <FiX className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-slate-400 text-xs">{t('profile.noSoftSkills') || 'No soft skills listed yet.'}</p>
                       )}
                     </div>
                   </div>

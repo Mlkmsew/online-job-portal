@@ -55,6 +55,25 @@ const enrichUserFromResume = (user, resume) => {
   if (Array.isArray(resume.softSkills)) resume.softSkills.forEach(collectSkill);
   if (skillNames.size > 0) merged.skillNames = Array.from(skillNames);
 
+  // Keep the categorized skill lists separate so the matching engine can use
+  // technical skills without treating resume soft skills as technical ones.
+  if (Array.isArray(resume.skills) && resume.skills.length > 0) {
+    const tech = new Set(Array.isArray(merged.technicalSkills) ? merged.technicalSkills : []);
+    resume.skills.forEach((s) => {
+      const name = typeof s === 'object' ? s.name || s.title || s.label : String(s);
+      if (name) tech.add(String(name));
+    });
+    merged.technicalSkills = Array.from(tech);
+  }
+  if (Array.isArray(resume.softSkills) && resume.softSkills.length > 0) {
+    const soft = new Set(Array.isArray(merged.softSkills) ? merged.softSkills : []);
+    resume.softSkills.forEach((s) => {
+      const name = typeof s === 'object' ? s.name || s.title || s.label : String(s);
+      if (name) soft.add(String(name));
+    });
+    merged.softSkills = Array.from(soft);
+  }
+
   if (merged.experienceYears == null && Array.isArray(resume.experience) && resume.experience.length > 0) {
     merged.experienceYears = resume.experience.length;
   }

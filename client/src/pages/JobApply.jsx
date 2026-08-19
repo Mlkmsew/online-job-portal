@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { FiArrowLeft, FiMapPin, FiBriefcase, FiCalendar, FiCheckCircle, FiDollarSign, FiZap, FiShield, FiUser, FiEdit2, FiDownloadCloud, FiUploadCloud, FiChevronRight, FiCheck } from 'react-icons/fi';
+import { FiArrowLeft, FiMapPin, FiBriefcase, FiCalendar, FiCheckCircle, FiDollarSign, FiZap, FiShield, FiUser, FiEdit2, FiDownloadCloud, FiUploadCloud, FiChevronRight, FiCheck, FiChevronDown, FiTrash2, FiFile } from 'react-icons/fi';
 
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
 const ALLOWED_RESUME_EXTENSIONS = ['pdf', 'doc', 'docx'];
@@ -29,6 +29,139 @@ const validateResumeFile = (selectedFile) => {
   }
 
   return '';
+};
+
+const formatPhoneInput = (raw) => {
+  const cleaned = raw.replace(/[^\d+]/g, '');
+  if (cleaned.startsWith('+')) {
+    const digits = cleaned.slice(1).replace(/\D/g, '');
+    return `+251${digits.replace(/^251/, '').slice(0, 9)}`;
+  }
+  const digits = cleaned.replace(/\D/g, '');
+  return `09${digits.replace(/^0?9?/, '').slice(0, 8)}`;
+};
+
+const getScreeningRestriction = (label) => {
+  const text = String(label || '').toLowerCase();
+  if (text.includes('phone') || text.includes('mobile') || text.includes('telephone') || text.includes('contact')) {
+    return {
+      maxLength: 13,
+      pattern: /^(\+251\d{9}|09\d{8})$/,
+      hint: 'Invalid phone number.',
+    };
+  }
+  if (text.includes('portfolio') || text.includes('github') || text.includes('linkedin') || text.includes('link') || text.includes('website')) {
+    return { maxLength: 20, optional: true };
+  }
+  if (text.includes('name')) {
+    return { maxLength: 13 };
+  }
+  return null;
+};
+
+const escapePdfText = (value) =>
+  String(value ?? '')
+    .replace(/[^\x20-\x7E]/g, ' ')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const resumeToTextLines = (resume) => {
+  const lines = [];
+  const push = (value) => {
+    const text = escapePdfText(value);
+    if (text) lines.push(text);
+  };
+
+  const profile = resume?.profile || {};
+  push([profile.firstName, profile.middleName, profile.lastName].filter(Boolean).join(' '));
+  push([profile.jobTitle, profile.headline].filter(Boolean).join(' - '));
+  push([profile.email, profile.phone].filter(Boolean).join(' | '));
+  push([profile.city, profile.address].filter(Boolean).join(', '));
+  if (resume?.summary) push(resume.summary);
+
+  const addSection = (title, items) => {
+    if (!Array.isArray(items) || items.length === 0) return;
+    lines.push(title.toUpperCase());
+    items.forEach((item) => {
+      if (typeof item === 'string') {
+        push(item);
+      } else if (item && typeof item === 'object') {
+        const heading = [
+          item.role || item.position || item.degree || item.title,
+          item.company || item.institution || item.organization,
+          item.startDate,
+          item.endDate,
+          item.level,
+        ].filter(Boolean).join(' - ');
+        push(heading);
+        push(item.description || item.summary || item.details);
+      }
+    });
+  };
+
+  addSection('EXPERIENCE', resume?.experience);
+  addSection('EDUCATION', resume?.education);
+  addSection('PROJECTS', resume?.projects);
+  addSection('CERTIFICATIONS', resume?.certifications);
+  addSection('LANGUAGES', resume?.languages);
+
+  const skills = resume?.skills;
+  if (skills) {
+    lines.push('SKILLS');
+    if (Array.isArray(skills)) {
+      skills.forEach((s) => push(typeof s === 'string' ? s : s?.name || s?.skill));
+    } else if (typeof skills === 'object' && skills !== null) {
+      Object.entries(skills).forEach(([key, value]) => {
+        const list = Array.isArray(value) ? value.join(', ') : String(value ?? '');
+        if (list.trim()) push(`${key}: ${list}`);
+      });
+    }
+  }
+
+  return lines;
+};
+
+const createTextPdf = (textLines, title = 'Resume') => {
+  const streamContent = `BT
+/F1 11 Tf
+50 780 Td
+15 TL
+${textLines.map((line) => `(${line}) Tj\nT*`).join('\n')}
+ET`;
+  const objects = [];
+  let offset = 0;
+
+  const write = (obj) => {
+    const body = `${obj}\n`;
+    objects.push({ offset, body });
+    offset += body.length;
+  };
+
+  write('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj');
+  write('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj');
+  write('3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj');
+  write(`4 0 obj\n<< /Length ${streamContent.length} >>\nstream\n${streamContent}\nendstream\nendobj`);
+  write('5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj');
+
+  const xrefOffset = offset;
+  let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  objects.forEach((o) => {
+    xref += `${String(o.offset).padStart(10, '0')} 00000 n \n`;
+  });
+  const trailer = `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  const pdf = `%PDF-1.4\n${objects.map((o) => o.body).join('')}${xref}${trailer}`;
+  return new File([pdf], `${title.replace(/[^\w-]+/g, '_') || 'Resume'}.pdf`, { type: 'application/pdf' });
+};
+
+const formatResumeDate = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
 const JobApply = () => {
@@ -65,14 +198,15 @@ const JobApply = () => {
   const [hasApplied, setHasApplied] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState('');
   const [applicationReference, setApplicationReference] = useState('');
+  const [isResumeMenuOpen, setIsResumeMenuOpen] = useState(false);
+  const [builderCVs, setBuilderCVs] = useState([]);
+  const [activeBuilderCV, setActiveBuilderCV] = useState(null);
 
   const resumeInputRef = useRef(null);
   const submittingRef = useRef(false);
-  const applicantSectionRef = useRef(null);
-  const resumeSectionRef = useRef(null);
-  const coverLetterSectionRef = useRef(null);
-  const screeningSectionRef = useRef(null);
-  const reviewSectionRef = useRef(null);
+  const resumeMenuRef = useRef(null);
+  const resumeStorageKey = `ethiojob_resumes_${user?._id || user?.id || user?.email || localStorage.getItem('token') || 'guest'}`;
+  const activeCVStorageKey = `ethiojob_active_cv_${user?._id || user?.id || user?.email || localStorage.getItem('token') || 'guest'}`;
   const applicantName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.name || 'Applicant';
   const applicantEmail = user?.email || 'Not provided';
   const applicantPhone = user?.phone || user?.mobile || 'Not provided';
@@ -180,36 +314,45 @@ const JobApply = () => {
     { id: 5, label: 'Review & Submit' },
   ];
 
-  const sectionRefs = [
-    { id: 1, ref: applicantSectionRef },
-    { id: 2, ref: resumeSectionRef },
-    { id: 3, ref: coverLetterSectionRef },
-    { id: 4, ref: screeningSectionRef },
-    { id: 5, ref: reviewSectionRef },
-  ];
-
   const [activeStep, setActiveStep] = useState(1);
 
+  const stepCompletion = useMemo(
+    () => [
+      Boolean(applicantName && applicantEmail && applicantPhone && userLocation),
+      Boolean(file || useProfileCV),
+      coverLetter.length >= 150,
+      Boolean((expectedSalary || isSalaryNegotiable) && availability) &&
+        jobApplicationFields.every(
+          (field) =>
+            !field.required ||
+            getScreeningRestriction(field.label)?.optional ||
+            String(applicationFieldAnswers[field._id] || '').trim()
+        ),
+      Boolean(agreeAccurate && agreeShare),
+    ],
+    [
+      applicantName,
+      applicantEmail,
+      applicantPhone,
+      userLocation,
+      file,
+      useProfileCV,
+      coverLetter,
+      expectedSalary,
+      isSalaryNegotiable,
+      availability,
+      jobApplicationFields,
+      applicationFieldAnswers,
+      agreeAccurate,
+      agreeShare,
+    ]
+  );
+
   useEffect(() => {
-    if (loading || !job) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((entry) => entry.isIntersecting);
-        if (visible.length === 0) return;
-        const nearest = visible.sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        const step = Number(nearest.target.dataset.step);
-        if (step) setActiveStep(step);
-      },
-      { rootMargin: '-35% 0px -50% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] }
-    );
-
-    sectionRefs.forEach(({ ref }) => {
-      if (ref.current) observer.observe(ref.current);
-    });
-    return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, job]);
+    const firstIncomplete = stepCompletion.findIndex((done) => !done);
+    const targetStep = firstIncomplete === -1 ? steps.length : firstIncomplete + 1;
+    setActiveStep((prev) => Math.max(prev, targetStep));
+  }, [stepCompletion, steps.length]);
 
   const completionPercentage = useMemo(() => {
     let score = 0;
@@ -293,6 +436,51 @@ const JobApply = () => {
     setUseProfileCV(Boolean(user?.cv));
   }, [user?.cv]);
 
+  useEffect(() => {
+    if (!isResumeMenuOpen) return undefined;
+
+    const handleOutsideClick = (event) => {
+      if (resumeMenuRef.current && !resumeMenuRef.current.contains(event.target)) {
+        setIsResumeMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('mousedown', handleOutsideClick);
+    return () => window.removeEventListener('mousedown', handleOutsideClick);
+  }, [isResumeMenuOpen]);
+
+  useEffect(() => {
+    const loadBuilderCVs = () => {
+      try {
+        const stored = localStorage.getItem(resumeStorageKey);
+        const legacyStored = localStorage.getItem('ethiojob_resumes');
+        const parsed = stored ? JSON.parse(stored) : legacyStored ? JSON.parse(legacyStored) : [];
+        setBuilderCVs(Array.isArray(parsed) ? parsed : []);
+      } catch (error) {
+        setBuilderCVs([]);
+      }
+    };
+
+    loadBuilderCVs();
+    window.addEventListener('storage', loadBuilderCVs);
+    return () => window.removeEventListener('storage', loadBuilderCVs);
+  }, [resumeStorageKey]);
+
+  useEffect(() => {
+    const loadActiveBuilderCV = () => {
+      try {
+        const activeStored = localStorage.getItem(activeCVStorageKey);
+        setActiveBuilderCV(activeStored ? JSON.parse(activeStored) : null);
+      } catch (error) {
+        setActiveBuilderCV(null);
+      }
+    };
+
+    loadActiveBuilderCV();
+    window.addEventListener('storage', loadActiveBuilderCV);
+    return () => window.removeEventListener('storage', loadActiveBuilderCV);
+  }, [activeCVStorageKey]);
+
   const handleResumeFileChange = (event) => {
     const selectedFile = event.target.files?.[0] || null;
     const validationError = validateResumeFile(selectedFile);
@@ -315,6 +503,40 @@ const JobApply = () => {
     setResumePreviewUrl(URL.createObjectURL(selectedFile));
     setUploadProgress(100);
     setResumeError('');
+  };
+
+  const handleSelectBuilderCV = (resume) => {
+    setIsResumeMenuOpen(false);
+    if (!resume) return;
+    try {
+      const pdfFile = createTextPdf(resumeToTextLines(resume), resume?.title || 'Resume');
+      if (resumePreviewUrl) {
+        URL.revokeObjectURL(resumePreviewUrl);
+      }
+      setFile(pdfFile);
+      setUseProfileCV(false);
+      setResumePreviewUrl(URL.createObjectURL(pdfFile));
+      setUploadProgress(100);
+      setResumeError('');
+      toast.success(`Resume "${resume?.title || 'Untitled'}" selected.`);
+    } catch (error) {
+      console.error('Failed to generate resume PDF from builder CV:', error);
+      toast.error('Could not use this builder CV as a resume.');
+    }
+  };
+
+  const handleUseProfileCV = () => {
+    setIsResumeMenuOpen(false);
+    if (user?.cv) {
+      setUseProfileCV(true);
+      setFile(null);
+      setUploadProgress(100);
+    } else if (activeBuilderCV) {
+      handleSelectBuilderCV(activeBuilderCV);
+    } else {
+      toast.error('No profile CV found. Please upload a CV in your profile first.');
+      navigate('/dashboard/profile');
+    }
   };
 
   const handlePreviewResume = () => {
@@ -357,10 +579,14 @@ const JobApply = () => {
     jobApplicationFields.forEach((field) => {
       const value = String(applicationFieldAnswers[field._id] || '').trim();
       const errorKey = `field_${field._id}`;
-      if (field.required && !value) {
+      const restriction = getScreeningRestriction(field.label);
+      const isRequired = field.required && !restriction?.optional;
+      if (isRequired && !value) {
         errors[errorKey] = 'This field is required.';
       } else if (value && field.type === 'url' && !validateUrl(value)) {
         errors[errorKey] = 'Enter a valid URL.';
+      } else if (value && restriction?.pattern && !restriction.pattern.test(value)) {
+        errors[errorKey] = restriction.hint;
       }
     });
 
@@ -577,7 +803,7 @@ const JobApply = () => {
                     </div>
                   </div>
 
-                  <div ref={applicantSectionRef} data-step="1" className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold text-slate-900">Applicant Information</h3>
@@ -605,7 +831,7 @@ const JobApply = () => {
                     </div>
                   </div>
 
-                  <div ref={resumeSectionRef} data-step="2" className={`rounded-[28px] border ${formErrors.resume ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'} p-6 shadow-sm`}>
+                  <div className={`rounded-[28px] border ${formErrors.resume ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'} p-6 shadow-sm`}>
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold text-slate-900">Resume</h3>
@@ -614,25 +840,87 @@ const JobApply = () => {
                       <div className="flex flex-wrap gap-3">
                         <button
                           type="button"
-                          onClick={() => {
-                            if (user?.cv) {
-                              setUseProfileCV(true);
-                              setFile(null);
-                              setUploadProgress(100);
-                            }
-                          }}
-                          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${user?.cv ? 'bg-[#1769E0] text-white hover:bg-[#0D5BC4]' : 'bg-slate-100 text-slate-500 cursor-not-allowed'}`}
-                          disabled={!user?.cv}
+                          onClick={handleUseProfileCV}
+                          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${useProfileCV ? 'bg-[#1769E0] text-white hover:bg-[#0D5BC4]' : 'border border-[#1769E0] bg-white text-[#1769E0] hover:bg-[#EAF2FE]'}`}
                         >
                           Use Profile CV
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => resumeInputRef.current?.click()}
-                          className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                        >
-                          Upload New Resume
-                        </button>
+                        <div className="relative" ref={resumeMenuRef}>
+                          <button
+                            type="button"
+                            onClick={() => setIsResumeMenuOpen((o) => !o)}
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            aria-haspopup="menu"
+                            aria-expanded={isResumeMenuOpen}
+                          >
+                            Upload New Resume
+                            <FiChevronDown className={`h-4 w-4 transition ${isResumeMenuOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          {isResumeMenuOpen && (
+                            <div role="menu" className="absolute right-0 z-30 mt-2 w-64 rounded-2xl border border-slate-200 bg-white py-1 shadow-xl">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => {
+                                  setIsResumeMenuOpen(false);
+                                  resumeInputRef.current?.click();
+                                }}
+                                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-blue-50"
+                              >
+                                <FiUploadCloud className="h-4 w-4 text-[#1769E0]" />
+                                Upload New Resume
+                              </button>
+                              {builderCVs.length > 0 && (
+                                <>
+                                  <div className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                    Resume Builder
+                                  </div>
+                                  {builderCVs.map((resume) => (
+                                    <button
+                                      key={resume?.id || resume?._id || resume?.title}
+                                      type="button"
+                                      role="menuitem"
+                                      onClick={() => handleSelectBuilderCV(resume)}
+                                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-blue-50"
+                                    >
+                                      <FiFile className="h-4 w-4 shrink-0 text-[#1769E0]" />
+                                      <span className="min-w-0 flex-1 truncate">{resume?.title || 'Untitled CV'}</span>
+                                      {resume?.updatedAt || resume?.createdAt ? (
+                                        <span className="shrink-0 text-xs text-slate-400">
+                                          {formatResumeDate(resume.updatedAt || resume.createdAt)}
+                                        </span>
+                                      ) : null}
+                                    </button>
+                                  ))}
+                                  <div className="mx-4 my-1 border-t border-slate-100" />
+                                </>
+                              )}
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={handleUseProfileCV}
+                                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-blue-50"
+                              >
+                                <FiUser className="h-4 w-4 text-[#1769E0]" />
+                                Use Profile CV
+                              </button>
+                              {file && (
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  onClick={() => {
+                                    setIsResumeMenuOpen(false);
+                                    handleRemoveResume();
+                                  }}
+                                  className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-rose-600 transition hover:bg-rose-50"
+                                >
+                                  <FiTrash2 className="h-4 w-4" />
+                                  Remove Resume
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <input
@@ -764,7 +1052,7 @@ const JobApply = () => {
                     {formErrors.resume && <p className="mt-3 text-sm text-rose-600">{formErrors.resume}</p>}
                   </div>
 
-                  <div ref={coverLetterSectionRef} data-step="3" className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="mb-5 flex items-center justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold text-slate-900">Cover Letter</h3>
@@ -790,18 +1078,20 @@ const JobApply = () => {
                     </div>
                   </div>
 
-                  <div ref={screeningSectionRef} data-step="4" className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                     <h3 className="mb-5 text-lg font-semibold text-slate-900">Screening Questions</h3>
                     <div className="grid gap-5 lg:grid-cols-2">
                       {jobApplicationFields.map((field, index) => {
                         const value = String(applicationFieldAnswers[field._id] || '');
                         const error = formErrors[`field_${field._id}`];
+                        const restriction = getScreeningRestriction(field.label);
+                        const isRequired = field.required && !restriction?.optional;
                         const sharedInputClass = `w-full rounded-[18px] border bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 ${error ? 'border-rose-400 bg-rose-50' : 'border-slate-200'}`;
                         return (
                           <label key={field._id} className="space-y-3" data-error={error ? 'true' : undefined}>
                             <span className="text-sm font-semibold text-slate-700">
                               {field.label}
-                              {field.required ? (
+                              {isRequired ? (
                                 <span className="ml-1 text-rose-500" aria-hidden="true">*</span>
                               ) : (
                                 <span className="ml-1 text-xs font-medium text-slate-400">(Optional)</span>
@@ -812,15 +1102,23 @@ const JobApply = () => {
                                 value={value}
                                 onChange={(e) => setApplicationFieldAnswers((prev) => ({ ...prev, [field._id]: e.target.value }))}
                                 rows="4"
+                                maxLength={500}
                                 className={sharedInputClass}
                               />
                             ) : (
                               <input
                                 type={field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'}
                                 value={value}
-                                onChange={(e) => setApplicationFieldAnswers((prev) => ({ ...prev, [field._id]: e.target.value }))}
+                                onChange={(e) => {
+                                  let newValue = e.target.value;
+                                  if (restriction?.pattern) {
+                                    newValue = formatPhoneInput(newValue);
+                                  }
+                                  setApplicationFieldAnswers((prev) => ({ ...prev, [field._id]: newValue }));
+                                }}
+                                maxLength={restriction?.maxLength || 200}
                                 className={sharedInputClass}
-                                placeholder={field.type === 'url' ? 'https://' : ''}
+                                placeholder={restriction?.pattern ? '09XXXXXXXX or +2519XXXXXXXX' : field.type === 'url' ? 'https://' : ''}
                               />
                             )}
                             {error && (
@@ -872,6 +1170,7 @@ const JobApply = () => {
                           type="url"
                           value={portfolioUrl}
                           onChange={(e) => setPortfolioUrl(e.target.value)}
+                          maxLength={20}
                           className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                           placeholder="https://"
                         />
@@ -882,6 +1181,7 @@ const JobApply = () => {
                           type="url"
                           value={githubUrl}
                           onChange={(e) => setGithubUrl(e.target.value)}
+                          maxLength={20}
                           className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                           placeholder="https://github.com/your-username"
                         />
@@ -892,6 +1192,7 @@ const JobApply = () => {
                           type="url"
                           value={linkedinUrl}
                           onChange={(e) => setLinkedinUrl(e.target.value)}
+                          maxLength={20}
                           className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                           placeholder="https://www.linkedin.com/in/your-name"
                         />
@@ -899,7 +1200,7 @@ const JobApply = () => {
                     </div>
                   </div>
 
-                  <section ref={reviewSectionRef} data-step="5" className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="mb-4 flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-700">
                         <FiCheckCircle className="h-5 w-5" />
