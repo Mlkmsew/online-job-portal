@@ -39,6 +39,16 @@
     "messages": "መልእክቶች",
     "settings": "ማስተካከያዎች"
   },
+  "categoriesPage": {
+    "title": "የስራ ዘርፎችን ይመልከቱ",
+    "subtitle": "ሁሉንም የኢንዱስትሪ ዘርፎች ይመርጡ እና ከክህሎትዎ ጋር የሚስማሙ ስራዎችን ያግኙ።",
+    "searchPlaceholder": "ዘርፎችን ይፈልጉ...",
+    "showingCount": "በማሳየት ላይ",
+    "categoriesLabel": "ዘርፎች",
+    "ofJobs": "ያላቸው",
+    "noSearchResults": "ከፍለጋዎ ጋር የሚዛመድ ዘርፍ የለም።",
+    "browseJobs": "ስራዎችን ይመልከቱ"
+  },
   "aria": {
     "homepage": "OnlineJob Portal - ወደ መነሻ ገጽ ይሂዱ"
   },
@@ -1583,7 +1593,10 @@
     "uploadCV": "ሲቪ ጫን",
     "replaceCV": "ሲቪ ይቀይሩ",
     "downloadCV": "ሲቪ አውርድ",
-    "deleteCV": "ሲቪ ሰርዝ"
+    "deleteCV": "ሲቪ ሰርዝ",
+    "builderCVActive": "የResume Builder ሲቪ እንደ ንቁ ሲቪዎ ተዘጋጅቷል",
+    "noBuilderCVs": "ምንም የResume Builder ሲቪዎች አልተገኙም",
+    "uploadFromFile": "ከፋይል ጫን"
   },
   "careerGuide": {
     "heroBadge": "ጠቃሚ የሙያ አገልግሎቶች",

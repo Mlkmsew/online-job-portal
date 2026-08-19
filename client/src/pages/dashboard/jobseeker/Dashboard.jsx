@@ -549,7 +549,7 @@ const JobSeekerDashboard = () => {
             </button>
 
             {showMessages && (
-              <div className="absolute right-0 z-30 mt-2 w-72 rounded-2xl border p-4 shadow-xl" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+              <div className="absolute right-0 z-30 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border p-4 shadow-xl" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                 <h4 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{t('dashboard.messages.title')}</h4>
                 <p className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>{t('dashboard.messages.subtitle')}</p>
                 <div className="mt-3 pt-2 border-t text-right" style={{ borderColor: 'var(--border)' }}>
@@ -579,7 +579,7 @@ const JobSeekerDashboard = () => {
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 z-30 mt-2 w-52 rounded-2xl border p-2 shadow-xl" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+              <div className="absolute right-0 z-30 mt-2 w-[min(13rem,calc(100vw-2rem))] rounded-2xl border p-2 shadow-xl" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                   <button
                     type="button"
                     onClick={() => { setShowProfileMenu(false); navigate('/dashboard/profile'); }}

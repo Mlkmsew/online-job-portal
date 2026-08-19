@@ -1,5 +1,6 @@
 import './shared.css';
 import { getColorTokens, getInitials, getResumeViewModel } from './templateUtils';
+import AdditionalInfoSections from './AdditionalInfoSections';
 
 export const Minimal = ({ resume, color = 'black', compact = false }) => {
   const view = getResumeViewModel(resume);
@@ -8,7 +9,8 @@ export const Minimal = ({ resume, color = 'black', compact = false }) => {
   const style = { '--accent': tokens.accent, '--accent-soft': tokens.accentSoft, '--accent-contrast': tokens.accentContrast, '--surface': '#ffffff', '--surface-alt': '#fafafa' };
 
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
-  const educations = Array.isArray(view.education) ? view.education : (view.education ? [view.education] : []);
+  const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
+  const hasContact = view.contact?.email || view.contact?.phone || view.contact?.location || view.contact?.linkedin;
 
   return (
     <div className={`resume-template-shell ${compact ? 'resume-template--compact' : ''}`}>
@@ -39,20 +41,22 @@ export const Minimal = ({ resume, color = 'black', compact = false }) => {
           </div>
 
           {/* SECTION: Personal Details */}
-          <div>
-            <div style={{ backgroundColor: '#000000', color: '#ffffff', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', marginBottom: '10px' }}>
-              Personal Details
-            </div>
-            <div style={{ fontSize: '11px', color: '#374151', lineHeight: '1.5', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              {view.contact?.location && <div>{view.contact.location}</div>}
-              <div>
-                {view.contact?.email && <span>{view.contact.email}</span>}
-                {view.contact?.email && view.contact?.phone && <span>, </span>}
-                {view.contact?.phone && <span>{view.contact.phone}</span>}
+          {hasContact && (
+            <div>
+              <div style={{ backgroundColor: '#000000', color: '#ffffff', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', marginBottom: '10px' }}>
+                Personal Details
               </div>
-              {view.contact?.linkedin && <div>LinkedIn: {view.contact.linkedin}</div>}
+              <div style={{ fontSize: '11px', color: '#374151', lineHeight: '1.5', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                {view.contact?.location && <div>{view.contact.location}</div>}
+                <div>
+                  {view.contact?.email && <span>{view.contact.email}</span>}
+                  {view.contact?.email && view.contact?.phone && <span>, </span>}
+                  {view.contact?.phone && <span>{view.contact.phone}</span>}
+                </div>
+                {view.contact?.linkedin && <div>LinkedIn: {view.contact.linkedin}</div>}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* SECTION: Profile */}
           {view.summary && (
@@ -148,6 +152,27 @@ export const Minimal = ({ resume, color = 'black', compact = false }) => {
               </div>
             </div>
           )}
+
+        {/* SECTION: Certifications */}
+          {(view.certifications || []).length > 0 && (
+            <div>
+              <div style={{ backgroundColor: '#000000', color: '#ffffff', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', marginBottom: '14px' }}>
+                Certifications
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {view.certifications.map((cert, idx) => (
+                  <div key={`cert-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>
+                      {cert.name}{cert.issuer ? ` — ${cert.issuer}` : ''}
+                    </div>
+                    {cert.year && <div style={{ fontSize: '11px', fontWeight: '600', color: '#4b5563' }}>{cert.year}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        <AdditionalInfoSections sections={view.additionalInfo} style={{ marginTop: '6px' }} />
 
         </div>
       </div>

@@ -32,7 +32,7 @@ const getSafeUser = () => {
 };
 
 const initialState = {
-  user: getSafeUser(),
+  user: localStorage.getItem('token') ? getSafeUser() : null,
   token: localStorage.getItem('token') || null,
   isAuthenticated: false,
   loading: true,
@@ -151,7 +151,7 @@ export const updatePassword = createAsyncThunk('auth/updatePassword', async ({ c
 });
 
 export const logout = createAsyncThunk('auth/logout', async () => {
-  await api.post('/auth/logout');
+  await api.post('/auth/logout', {}, { skipAuthRedirect: true });
 });
 
 const authSlice = createSlice({
@@ -176,6 +176,7 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      state.loading = false;
       clearAuthStorage();
     },
   },
@@ -295,12 +296,14 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
+        state.loading = false;
         clearAuthStorage();
       })
       .addCase(logout.rejected, (state) => {
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
+        state.loading = false;
         clearAuthStorage();
       });
   },

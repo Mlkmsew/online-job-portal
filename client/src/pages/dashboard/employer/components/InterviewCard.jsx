@@ -38,7 +38,7 @@ const InterviewCard = ({ interview, onViewDetails, onReschedule, onReminder, onC
   const candidateName = `${interview.applicant?.firstName || ''} ${interview.applicant?.lastName || ''}`.trim();
   const statusTone =
     (interview.status || 'scheduled').toLowerCase() === 'completed'
-      ? 'bg-emerald-100 text-emerald-700'
+      ? 'bg-[#DCEAFD] text-[#0A4FA8]'
       : (interview.status || 'scheduled').toLowerCase() === 'cancelled' || (interview.status || 'scheduled').toLowerCase() === 'canceled'
         ? 'bg-rose-100 text-rose-700'
         : 'bg-amber-100 text-amber-700';
@@ -46,7 +46,7 @@ const InterviewCard = ({ interview, onViewDetails, onReschedule, onReminder, onC
   const evaluationTone = evaluationStatus === t('interviews.pendingEvaluation') || evaluationStatus === 'Pending Evaluation'
     ? 'bg-slate-100 text-slate-700'
     : evaluationStatus === t('interviews.hired') || evaluationStatus === t('interviews.passed') || evaluationStatus === 'Hired' || evaluationStatus === 'Passed'
-      ? 'bg-emerald-100 text-emerald-700'
+      ? 'bg-[#DCEAFD] text-[#0A4FA8]'
       : 'bg-rose-100 text-rose-700';
 
   return (

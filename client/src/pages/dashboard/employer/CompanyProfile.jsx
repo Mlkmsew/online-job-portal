@@ -458,7 +458,7 @@ const CompanyProfile = () => {
       <div className="card p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-primary-600">{t('employer.companyProfile.breadcrumb')}</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-[#0D5BC4]">{t('employer.companyProfile.breadcrumb')}</p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">
               {t('employer.companyProfile.title')}
             </h1>
@@ -473,7 +473,7 @@ const CompanyProfile = () => {
         </div>
 
         <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
-          <div className="h-full rounded-full bg-primary-500 transition-all" style={{ width: `${completionPercent}%` }} />
+          <div className="h-full rounded-full bg-[#1769E0] transition-all" style={{ width: `${completionPercent}%` }} />
         </div>
       </div>
 
@@ -1086,19 +1086,19 @@ const CompanyProfile = () => {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <FiMapPin className="text-primary-500" />
+                <FiMapPin className="text-[#1769E0]" />
                 <span>{preview.locationCity ? `${preview.locationCity}, ` : ''}{preview.locationRegion}</span>
               </div>
               <div className="flex items-center gap-2">
-                <FiGlobe className="text-primary-500" />
+                <FiGlobe className="text-[#1769E0]" />
                 <span>{preview.website}</span>
               </div>
               <div className="flex items-center gap-2">
-                <FiMail className="text-primary-500" />
+                <FiMail className="text-[#1769E0]" />
                 <span>{preview.email}</span>
               </div>
               <div className="flex items-center gap-2">
-                <FiPhone className="text-primary-500" />
+                <FiPhone className="text-[#1769E0]" />
                 <span>{preview.phone}</span>
               </div>
             </div>
@@ -1141,11 +1141,11 @@ const CompanyProfile = () => {
                 <p className="text-sm text-gray-500 dark:text-gray-400">{preview.recruiter.position}</p>
                 <div className="mt-3 space-y-2">
                   <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                    <FiMail className="text-primary-500" />
+                    <FiMail className="text-[#1769E0]" />
                     {preview.recruiter.email}
                   </p>
                   <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                    <FiPhone className="text-primary-500" />
+                    <FiPhone className="text-[#1769E0]" />
                     {preview.recruiter.phone}
                   </p>
                 </div>
@@ -1157,7 +1157,7 @@ const CompanyProfile = () => {
                     <button
                       type="button"
                       onClick={() => openDocumentPreview(t('employer.companyProfile.previewLabels.businessLicense'), businessLicensePreview, businessLicensePreviewType, businessLicensePreviewMime)}
-                      className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 transition hover:border-primary-500 hover:text-primary-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-primary-400 dark:hover:text-primary-300 sm:text-[11px]"
+                      className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 transition hover:border-[#1769E0] hover:text-[#0D5BC4] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-[#4D8DF0] dark:hover:text-[#7FB0F0] sm:text-[11px]"
                     >
                       {t('employer.companyProfile.previewLabels.businessLicenseCount', { name: preview.businessLicense })}
                     </button>
@@ -1170,7 +1170,7 @@ const CompanyProfile = () => {
                     <button
                       type="button"
                       onClick={() => openDocumentPreview(t('employer.companyProfile.previewLabels.tinCertificate'), tinCertificatePreview, tinCertificatePreviewType, tinCertificatePreviewMime)}
-                      className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 transition hover:border-primary-500 hover:text-primary-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-primary-400 dark:hover:text-primary-300 sm:text-[11px]"
+                      className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 transition hover:border-[#1769E0] hover:text-[#0D5BC4] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-[#4D8DF0] dark:hover:text-[#7FB0F0] sm:text-[11px]"
                     >
                       {t('employer.companyProfile.previewLabels.tinCertificateCount', { name: preview.tinCertificate })}
                     </button>
@@ -1183,7 +1183,7 @@ const CompanyProfile = () => {
                     <button
                       type="button"
                       onClick={() => openDocumentPreview(t('employer.companyProfile.previewLabels.companyRegistration'), companyRegistrationPreview, companyRegistrationPreviewType, companyRegistrationPreviewMime)}
-                      className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 transition hover:border-primary-500 hover:text-primary-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-primary-400 dark:hover:text-primary-300 sm:text-[11px]"
+                      className="w-full min-w-0 overflow-hidden break-words whitespace-normal rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-700 transition hover:border-[#1769E0] hover:text-[#0D5BC4] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-[#4D8DF0] dark:hover:text-[#7FB0F0] sm:text-[11px]"
                     >
                       {t('employer.companyProfile.previewLabels.companyRegistrationCount', { name: preview.companyRegistration })}
                     </button>

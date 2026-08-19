@@ -142,8 +142,8 @@ const EmployerDashboard = () => {
           analyticsFunnel.interviewPct,
           analyticsFunnel.hiredPct,
         ],
-        backgroundColor: ['#10B981', '#A3E635', '#0D9488', '#087F5B'],
-        hoverBackgroundColor: ['#34D399', '#BEF264', '#14B8A6', '#10B981'],
+        backgroundColor: ['#4D8DF0', '#7FB0F0', '#0D5BC4', '#1769E0'],
+        hoverBackgroundColor: ['#7FB0F0', '#A8C8F5', '#4D8DF0', '#3B82F6'],
         borderWidth: 0,
       },
     ],
@@ -197,7 +197,7 @@ const EmployerDashboard = () => {
   }
 
   return (
-    <div className="space-y-8 pb-16">
+    <div className="mx-auto max-w-7xl space-y-8 pb-16">
       
       {/* ── Top Header Greeting & Right Control Bar ── */}
       <section className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -231,7 +231,7 @@ const EmployerDashboard = () => {
               <div className="absolute right-0 z-[60] mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-3 shadow-xl">
                 <div className="flex items-center justify-between border-b border-[#E1E8E4] dark:border-[#23483D] pb-2">
                   <h4 className="text-xs font-bold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.notifications.title')}</h4>
-                  <Link to="/employer/applicants" className="text-xs font-semibold text-[#087F5B] dark:text-[#16A36F] hover:underline">{t('common.viewAll')}</Link>
+                  <Link to="/employer/applicants" className="text-xs font-semibold text-[#1769E0] dark:text-[#3B82F6] hover:underline">{t('common.viewAll')}</Link>
                 </div>
                 <div className="mt-2 max-h-52 space-y-2 overflow-auto sidebar-scroll">
                   {notifications.length > 0 ? (
@@ -260,7 +260,7 @@ const EmployerDashboard = () => {
             >
               <FiMail className="w-4.5 h-4.5" />
               {unreadChatCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#087F5B] dark:bg-[#16A36F] px-1 text-[9px] font-bold text-white shadow-xs">
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#1769E0] dark:bg-[#3B82F6] px-1 text-[9px] font-bold text-white shadow-xs">
                   {unreadChatCount}
                 </span>
               )}
@@ -274,7 +274,7 @@ const EmployerDashboard = () => {
               onClick={() => setShowProfileMenu((v) => !v)}
               className="flex items-center gap-2.5 rounded-full border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] px-3 py-1.5 shadow-2xs hover:bg-gray-50 dark:hover:bg-[#18342C] transition"
             >
-              <div className="h-7 w-7 overflow-hidden rounded-full bg-[#087F5B] dark:bg-[#16A36F] text-white text-xs font-bold flex items-center justify-center">
+              <div className="h-7 w-7 overflow-hidden rounded-full bg-[#1769E0] dark:bg-[#3B82F6] text-white text-xs font-bold flex items-center justify-center">
                 {user?.avatar ? (
                   <img src={user.avatar} alt="user avatar" className="h-full w-full object-cover" />
                 ) : (
@@ -292,7 +292,7 @@ const EmployerDashboard = () => {
                   onClick={() => { setShowProfileMenu(false); navigate('/employer/company'); }}
                   className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-[#14231F] dark:text-[#F4F8F6] hover:bg-slate-50 dark:hover:bg-[#18342C]"
                 >
-                  <FiUser className="h-4 w-4 text-[#087F5B] dark:text-[#16A36F]" /> {t('sidebar.companyProfile')}
+                  <FiUser className="h-4 w-4 text-[#1769E0] dark:text-[#3B82F6]" /> {t('sidebar.companyProfile')}
                 </button>
                 <button
                   type="button"
@@ -320,7 +320,7 @@ const EmployerDashboard = () => {
         {/* Card 1: Jobs Posted */}
         <div className="rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <div className="flex items-center justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#087F5B] dark:text-[#25C58A]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF2FE] dark:bg-[#041D3F]/40 text-[#1769E0] dark:text-[#3B82F6]">
               <FiBriefcase className="w-5.5 h-5.5 stroke-[2.2]" />
             </div>
             <div className="text-right">
@@ -334,7 +334,7 @@ const EmployerDashboard = () => {
         {/* Card 2: Total Applicants */}
         <div className="rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <div className="flex items-center justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#087F5B] dark:text-[#25C58A]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF2FE] dark:bg-[#041D3F]/40 text-[#1769E0] dark:text-[#3B82F6]">
               <FiUsers className="w-5.5 h-5.5 stroke-[2.2]" />
             </div>
             <div className="text-right">
@@ -350,7 +350,7 @@ const EmployerDashboard = () => {
         {/* Card 3: Active Jobs */}
         <div className="rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <div className="flex items-center justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#087F5B] dark:text-[#25C58A]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF2FE] dark:bg-[#041D3F]/40 text-[#1769E0] dark:text-[#3B82F6]">
               <FiFlag className="w-5.5 h-5.5 stroke-[2.2]" />
             </div>
             <div className="text-right">
@@ -378,7 +378,7 @@ const EmployerDashboard = () => {
         {/* Card 5: Hired Candidates */}
         <div className="rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <div className="flex items-center justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-[#087F5B] dark:text-[#25C58A]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF2FE] dark:bg-[#041D3F]/40 text-[#1769E0] dark:text-[#3B82F6]">
               <FiCheckCircle className="w-5.5 h-5.5 stroke-[2.2]" />
             </div>
             <div className="text-right">
@@ -397,7 +397,7 @@ const EmployerDashboard = () => {
         <div className="lg:col-span-7 rounded-3xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-6 shadow-2xs">
           <div className="flex items-center justify-between border-b border-[#E1E8E4] dark:border-[#23483D] pb-5">
             <div className="flex items-center gap-3.5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-[#087F5B] dark:text-[#25C58A]">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF2FE] dark:bg-[#041D3F]/40 text-[#1769E0] dark:text-[#3B82F6]">
                 <FiUser className="w-6 h-6 stroke-[2]" />
               </div>
               <div>
@@ -409,7 +409,7 @@ const EmployerDashboard = () => {
             <button
               type="button"
               onClick={() => navigate('/employer/company')}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#087F5B]/30 bg-[#EAF2FE]/50 dark:bg-emerald-950/30 px-3.5 py-1.5 text-xs font-bold text-[#087F5B] dark:text-[#25C58A] hover:bg-[#DCEAFD]/60 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#1769E0]/30 bg-[#EAF2FE]/50 dark:bg-[#041D3F]/30 px-3.5 py-1.5 text-xs font-bold text-[#1769E0] dark:text-[#3B82F6] hover:bg-[#DCEAFD]/60 transition"
             >
               <FiEdit3 className="w-3.5 h-3.5" />
               <span>{t('dashboard.editProfile')}</span>
@@ -455,13 +455,13 @@ const EmployerDashboard = () => {
               </div>
               <p className="mt-1.5 text-xs font-bold text-[#14231F] dark:text-[#F4F8F6]">{profileCompletion}% {t('dashboard.complete')}</p>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                <div className="h-full rounded-full bg-[#087F5B] dark:bg-[#16A36F] transition-all duration-500" style={{ width: `${profileCompletion}%` }} />
+                <div className="h-full rounded-full bg-[#1769E0] dark:bg-[#3B82F6] transition-all duration-500" style={{ width: `${profileCompletion}%` }} />
               </div>
             </div>
           </div>
 
           {!activeCompany && (
-            <div className="mt-6 rounded-2xl border border-dashed border-[#087F5B]/30 bg-emerald-50/50 dark:bg-emerald-950/30 p-5 text-center">
+            <div className="mt-6 rounded-2xl border border-dashed border-[#1769E0]/30 bg-[#EAF2FE]/50 dark:bg-[#041D3F]/30 p-5 text-center">
               <p className="text-sm font-semibold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.noCompanyProfile')}</p>
               <p className="mt-1 text-xs text-[#64746E] dark:text-[#A9BBB4]">{t('dashboard.noCompanyProfileDesc')}</p>
               <button
@@ -483,8 +483,8 @@ const EmployerDashboard = () => {
               <p className="text-xs font-semibold text-[#64746E] dark:text-[#A9BBB4]">{t('dashboard.analytics.title')}</p>
               <h3 className="text-lg font-bold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.applicantFunnel')}</h3>
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 text-[11px] font-semibold text-[#087F5B] dark:text-[#25C58A]">
-              <span className="h-2 w-2 rounded-full bg-[#087F5B] dark:bg-[#25C58A] animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF2FE] dark:bg-[#041D3F]/40 px-3 py-1 text-[11px] font-semibold text-[#1769E0] dark:text-[#3B82F6]">
+              <span className="h-2 w-2 rounded-full bg-[#1769E0] dark:bg-[#3B82F6] animate-pulse" />
               {t('dashboard.liveData')}
             </span>
           </div>
@@ -497,7 +497,7 @@ const EmployerDashboard = () => {
             <div className="space-y-3 w-full sm:w-auto text-xs">
               <div className="flex items-center justify-between gap-6">
                 <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-sm bg-[#10B981]" />
+                  <span className="h-3 w-3 rounded-sm bg-[#4D8DF0]" />
                   <span className="font-semibold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.analytics.newApplications')}</span>
                 </div>
                 <span className="font-bold text-[#14231F] dark:text-[#F4F8F6]">{analyticsFunnel.newAppsPct}%</span>
@@ -505,7 +505,7 @@ const EmployerDashboard = () => {
 
               <div className="flex items-center justify-between gap-6">
                 <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-sm bg-[#A3E635]" />
+                  <span className="h-3 w-3 rounded-sm bg-[#7FB0F0]" />
                   <span className="font-semibold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.analytics.underReview')}</span>
                 </div>
                 <span className="font-bold text-[#14231F] dark:text-[#F4F8F6]">{analyticsFunnel.underReviewPct}%</span>
@@ -513,7 +513,7 @@ const EmployerDashboard = () => {
 
               <div className="flex items-center justify-between gap-6">
                 <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-sm bg-[#0D9488]" />
+                  <span className="h-3 w-3 rounded-sm bg-[#0D5BC4]" />
                   <span className="font-semibold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.analytics.interview')}</span>
                 </div>
                 <span className="font-bold text-[#14231F] dark:text-[#F4F8F6]">{analyticsFunnel.interviewPct}%</span>
@@ -521,7 +521,7 @@ const EmployerDashboard = () => {
 
               <div className="flex items-center justify-between gap-6">
                 <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-sm bg-[#087F5B]" />
+                  <span className="h-3 w-3 rounded-sm bg-[#1769E0]" />
                   <span className="font-semibold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.analytics.hired')}</span>
                 </div>
                 <span className="font-bold text-[#14231F] dark:text-[#F4F8F6]">{analyticsFunnel.hiredPct}%</span>

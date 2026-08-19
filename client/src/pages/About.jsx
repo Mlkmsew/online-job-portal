@@ -2,18 +2,41 @@
 // About Us Page - OnlineJob Portal
 // Professional About page for the Ethiopian platform
 // ============================================
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiTarget, FiEye, FiUsers, FiBriefcase } from 'react-icons/fi';
 import { FaBuilding } from 'react-icons/fa';
+import api from '../services/api';
 
-const STATS = [
-  { value: '10,000+', label: 'Job Seekers', icon: FiUsers },
-  { value: '500+', label: 'Companies', icon: FaBuilding },
-  { value: '2,000+', label: 'Active Jobs', icon: FiBriefcase },
+const STAT_ITEMS = [
+  { key: 'jobSeekers', label: 'Job Seekers', icon: FiUsers },
+  { key: 'companies', label: 'Companies', icon: FaBuilding },
+  { key: 'activeJobs', label: 'Active Jobs', icon: FiBriefcase },
 ];
 
 const About = () => {
   const { t } = useTranslation();
+  const [communityStats, setCommunityStats] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get('/stats/community')
+      .then((res) => {
+        if (active) setCommunityStats(res.data?.data || null);
+      })
+      .catch(() => {
+        if (active) setCommunityStats(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const statValue = (key) => {
+    const count = communityStats?.[key];
+    return typeof count === 'number' ? `${count.toLocaleString('en-US')}+` : '—';
+  };
 
   return (
     <div className="min-h-screen bg-[#F4F8F7] pb-16 lg:pb-24">
@@ -28,11 +51,11 @@ const About = () => {
           <div className="grid lg:grid-cols-2">
             {/* LEFT — About content */}
             <div className="flex flex-col justify-center p-8 lg:p-12">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#159B68]">
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#1769E0]">
                 {t('about.eyebrow', { defaultValue: 'About' })}
               </p>
               <h2 className="mt-3 text-3xl font-extrabold leading-tight text-[#14213D] sm:text-4xl">
-                OnlineJob <span className="text-[#159B68]">Portal</span>
+                OnlineJob <span className="text-[#1769E0]">Portal</span>
               </h2>
               <p className="mt-6 max-w-xl text-base leading-relaxed text-[#334155]">
                 {t('about.heroDescription', {
@@ -60,13 +83,13 @@ const About = () => {
           {/* ===== STATISTICS ===== */}
           <div className="border-t border-slate-100">
             <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
-              {STATS.map((stat) => (
+              {STAT_ITEMS.map((stat) => (
                 <div key={stat.label} className="flex items-center justify-center gap-4 px-6 py-7">
                   <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-[#EAF2FE] text-[#1769E0]">
                     <stat.icon className="h-5 w-5" aria-hidden="true" />
                   </span>
                   <div>
-                    <p className="text-2xl font-extrabold text-[#14213D] sm:text-3xl">{stat.value}</p>
+                    <p className="text-2xl font-extrabold text-[#14213D] sm:text-3xl">{statValue(stat.key)}</p>
                     <p className="text-sm font-medium text-slate-500">{stat.label}</p>
                   </div>
                 </div>
@@ -102,11 +125,11 @@ const About = () => {
 
           {/* OUR VISION */}
           <div className="relative overflow-hidden rounded-3xl bg-white p-8 text-center shadow-xl lg:p-10">
-            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#E7F6EF] text-[#159B68] shadow-lg">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#EAF2FE] text-[#1769E0] shadow-lg">
               <FiEye className="h-7 w-7" aria-hidden="true" />
             </span>
             <h2 className="mt-5 text-2xl font-extrabold text-[#14213D]">{t('about.visionTitle', { defaultValue: 'Our Vision' })}</h2>
-            <span className="mx-auto mt-3 block h-1 w-12 rounded-full bg-[#159B68]" aria-hidden="true" />
+            <span className="mx-auto mt-3 block h-1 w-12 rounded-full bg-[#1769E0]" aria-hidden="true" />
             <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-[#334155]">
               {t('about.visionText', {
                 defaultValue:

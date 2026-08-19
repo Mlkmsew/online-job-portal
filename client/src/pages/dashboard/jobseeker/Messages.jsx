@@ -135,7 +135,10 @@ const Messages = () => {
 
     const rect = event.currentTarget.getBoundingClientRect();
     const top = rect.top + window.scrollY + 24;
-    const left = rect.left + window.scrollX + rect.width - 180;
+    const left = Math.min(
+      Math.max(12, rect.left + window.scrollX + rect.width - 180),
+      window.innerWidth - 208 - 12
+    );
 
     setActionMenuVisible(true);
     setActionMenuMessage(message);
@@ -376,7 +379,7 @@ const Messages = () => {
             <div className="mb-4 rounded-2xl bg-red-50 p-3 text-sm text-red-700">{error}</div>
           )}
           {successMessage && (
-            <div className="mb-4 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-700">{successMessage}</div>
+            <div className="mb-4 rounded-2xl bg-blue-50 p-3 text-sm text-blue-700">{successMessage}</div>
           )}
           {conversations.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center text-gray-500">
@@ -445,14 +448,14 @@ const Messages = () => {
                       <div
                         onClick={(e) => isMine && handleOpenActionMenu(e, message)}
                         onContextMenu={(e) => isMine && handleOpenActionMenu(e, message)}
-                        className={`max-w-[85%] p-4 text-sm shadow-sm cursor-pointer ${isMine ? 'bg-emerald-600 text-white rounded-[18px_18px_4px_18px] hover:bg-emerald-500' : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 rounded-[18px_18px_18px_4px]'}`}>
+                        className={`max-w-[85%] p-4 text-sm shadow-sm cursor-pointer ${isMine ? 'bg-[#1769E0] text-white rounded-[18px_18px_4px_18px] hover:bg-[#0D5BC4]' : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 rounded-[18px_18px_18px_4px]'}`}>
                         {editMessageId === message._id ? (
                           <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
                             <textarea
                               ref={editTextareaRef}
                               value={editMessageText}
                               onChange={(e) => setEditMessageText(e.target.value)}
-                              className="w-full min-h-[120px] rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500"
+                              className="w-full min-h-[120px] rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500"
                             />
                             <div className="flex justify-end gap-2">
                               <button type="button" onClick={(e) => { e.stopPropagation(); handleCancelEdit(); }} className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/20">
@@ -469,7 +472,7 @@ const Messages = () => {
                             {message.updatedAt && message.updatedAt !== message.createdAt && (
                               <span className="mt-2 block text-[11px] opacity-80">({t('messages.edited') || 'edited'})</span>
                             )}
-                            <p className={`mt-2 text-xs ${isMine ? 'text-emerald-100 text-right' : 'text-gray-500 dark:text-gray-400 text-left'}`}>
+                            <p className={`mt-2 text-xs ${isMine ? 'text-blue-100 text-right' : 'text-gray-500 dark:text-gray-400 text-left'}`}>
                               {new Date(message.createdAt).toLocaleString()}
                             </p>
                           </>
@@ -517,7 +520,7 @@ const Messages = () => {
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     placeholder={t('messages.typePlaceholder') || 'Type your message...'}
-                    className="flex-1 rounded-3xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500"
+                    className="flex-1 rounded-3xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500"
                   />
                   <button type="submit" disabled={!inputMessage.trim() || isSending} className="inline-flex items-center gap-2 rounded-3xl bg-[#1769E0] px-5 py-3 text-white font-semibold hover:bg-[#0D5BC4] disabled:cursor-not-allowed disabled:bg-[#A8C8F5]">
                     <FiSend className="w-4 h-4" /> {t('common.submit')}
@@ -527,7 +530,7 @@ const Messages = () => {
             </>
           ) : (
             <div className="h-full rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center text-gray-500">
-              <FiMessageCircle className="mx-auto mb-4 w-12 h-12 text-emerald-500" />
+              <FiMessageCircle className="mx-auto mb-4 w-12 h-12 text-blue-500" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('messages.selectConversationTitle') || 'Select a conversation to start chatting'}</h3>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t('messages.selectConversationSubtitle') || 'Choose a recent thread or start a new conversation now.'}</p>
             </div>
@@ -536,8 +539,8 @@ const Messages = () => {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-3xl bg-white dark:bg-gray-900 p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
+          <div className="my-8 w-full max-w-2xl rounded-3xl bg-white dark:bg-gray-900 p-6 shadow-2xl">
             <div className="flex items-center justify-between gap-4 mb-6">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('messages.startNewConversation') || 'Start a new conversation'}</h2>
@@ -552,7 +555,7 @@ const Messages = () => {
                 <input
                   value={newConversationEmail}
                   onChange={(e) => setNewConversationEmail(e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500"
+                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500"
                   placeholder="recipient@example.com"
                   type="email"
                   required
@@ -563,7 +566,7 @@ const Messages = () => {
                 <textarea
                   value={newConversationMessage}
                   onChange={(e) => setNewConversationMessage(e.target.value)}
-                  className="mt-2 w-full min-h-[150px] rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-emerald-500"
+                  className="mt-2 w-full min-h-[150px] rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500"
                   placeholder={t('messages.typePlaceholder') || 'Write your message here...'}
                   required
                 />

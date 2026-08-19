@@ -86,7 +86,7 @@ const VerifyOTP = () => {
               disabled={loading}
               className="btn btn-secondary w-full"
             >
-              {loading ? t('common.loading') : t('common.reset')}
+              {loading ? t('common.loading') : t('common.resend')}
             </button>
             <button
               type="button"

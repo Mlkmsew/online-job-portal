@@ -150,7 +150,7 @@ const ResetPassword = () => {
               disabled={resending || resendCountdown > 0}
               className="text-primary-500 hover:underline disabled:text-gray-400"
             >
-              {resendCountdown > 0 ? `${resendCountdown}s` : t('common.reset')}
+              {resendCountdown > 0 ? `${resendCountdown}s` : t('common.resend')}
             </button>
           </div>
 

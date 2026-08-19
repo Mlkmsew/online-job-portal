@@ -3,13 +3,13 @@ import { CheckCircle2, Download, Mail, UserPlus, UserRoundCheck } from 'lucide-r
 const InterviewCompletedSummary = ({ interview, evaluation, onViewProfile, onBack, onShareFeedback, onNextStage }) => {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
+      <div className="rounded-3xl border border-[#A8C8F5] bg-[#EAF2FE] p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-semibold text-slate-900">Interview Completed!</h2>
             <p className="mt-1 text-sm text-slate-600">The interview record and feedback have been finalized.</p>
           </div>
-          <div className="rounded-full border border-emerald-300 bg-white px-3 py-1 text-sm font-medium text-emerald-700">Completed</div>
+          <div className="rounded-full border border-[#7FB0F0] bg-white px-3 py-1 text-sm font-medium text-[#0A4FA8]">Completed</div>
         </div>
       </div>
 

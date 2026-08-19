@@ -71,6 +71,20 @@ const jobSchema = new mongoose.Schema(
       default: 'Portal',
     },
 
+    // Employer-defined application fields/questions shown on the Apply Now page.
+    // Each field carries its own Required/Optional configuration.
+    applicationFields: [
+      {
+        label: { type: String, trim: true, maxlength: 200 },
+        type: {
+          type: String,
+          enum: ['text', 'textarea', 'url', 'number'],
+          default: 'text',
+        },
+        required: { type: Boolean, default: false },
+      },
+    ],
+
     // Status
     status: {
       type: String,

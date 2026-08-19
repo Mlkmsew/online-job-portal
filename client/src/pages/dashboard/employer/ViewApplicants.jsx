@@ -37,7 +37,6 @@ const STATUS_OPTIONS = [
   { value: 'Selected', labelKey: 'dashboard.status.selected' },
   { value: 'Hired', labelKey: 'dashboard.status.hired' },
   { value: 'Rejected', labelKey: 'dashboard.status.rejected' },
-  { value: 'Not Selected', labelKey: 'dashboard.status.notSelected' },
 ];
 
 const SORT_OPTIONS = [
@@ -50,7 +49,7 @@ const SORT_OPTIONS = [
 const getStatusStyles = (status) => {
   switch (status) {
     case 'Submitted':
-      return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      return 'bg-[#DCEAFD] text-[#0A4FA8] border-[#A8C8F5]';
     case 'Reviewed':
       return 'bg-amber-100 text-amber-700 border-amber-200';
     case 'Shortlisted':
@@ -60,7 +59,7 @@ const getStatusStyles = (status) => {
     case 'Selected':
       return 'bg-cyan-100 text-cyan-700 border-cyan-200';
     case 'Hired':
-      return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      return 'bg-[#DCEAFD] text-[#0A4FA8] border-[#A8C8F5]';
     case 'Rejected':
     case 'Not Selected':
       return 'bg-rose-100 text-rose-700 border-rose-200';
@@ -76,7 +75,7 @@ const getStatusLabel = (status, t) => {
 };
 
 const getMatchTone = (score) => {
-  if (score >= 80) return { label: 'Strong match', color: 'text-emerald-700', ring: 'stroke-emerald-500' };
+  if (score >= 80) return { label: 'Strong match', color: 'text-[#0A4FA8]', ring: 'stroke-[#1769E0]' };
   if (score >= 60) return { label: 'Good match', color: 'text-amber-700', ring: 'stroke-amber-500' };
   return { label: 'Below average', color: 'text-rose-700', ring: 'stroke-rose-500' };
 };
@@ -397,7 +396,7 @@ const ViewApplicants = () => {
             <Menu className="h-5 w-5" />
           </button>
           <div className="min-w-0">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">{t('employer.applicants.title')}</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#0D5BC4]">{t('employer.applicants.title')}</p>
             <h1 className="mt-2 text-2xl font-semibold leading-tight text-slate-900">{t('employer.applicants.title')}</h1>
             <p className="mt-1 text-sm text-slate-600">{t('employer.applicants.subtitle')}</p>
           </div>
@@ -424,9 +423,9 @@ const ViewApplicants = () => {
       </div>
 
       {/* Filter toolbar */}
-      <div className="mt-6 flex w-full items-center gap-3 bg-white p-4 rounded-2xl shadow-sm">
+      <div className="mt-6 flex w-full flex-col items-stretch gap-3 bg-white p-4 rounded-2xl shadow-sm">
         <div className="flex-1">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
             <div className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
               <Search className="h-4 w-4 text-slate-400" />
               <input
@@ -442,7 +441,7 @@ const ViewApplicants = () => {
             <select
               value={selectedJobId}
               onChange={(event) => { setSelectedJobId(event.target.value); setPage(1); }}
-              className="input min-w-[160px] md:min-w-[220px]"
+              className="input w-full xl:w-auto xl:min-w-[220px]"
               aria-label="Filter by job"
             >
               <option value="all">{t('employer.applicants.allJobs')}</option>
@@ -454,7 +453,7 @@ const ViewApplicants = () => {
             <select
               value={selectedStatus}
               onChange={(event) => { setSelectedStatus(event.target.value); setPage(1); }}
-              className="input min-w-[140px] md:min-w-[200px]"
+              className="input w-full xl:w-auto xl:min-w-[200px]"
               aria-label="Filter by status"
             >
               <option value="all">{t('employer.applicants.allStatuses')}</option>
@@ -466,7 +465,7 @@ const ViewApplicants = () => {
             <select
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value)}
-              className="input min-w-[160px] md:min-w-[220px]"
+              className="input w-full xl:w-auto xl:min-w-[220px]"
               aria-label="Sort applicants"
             >
               {SORT_OPTIONS.map((option) => (
@@ -493,10 +492,10 @@ const ViewApplicants = () => {
       </div>
 
       {/* Job summary (selected) */}
-      <div className="mt-6 w-full rounded-2xl bg-white p-4 shadow-sm border border-emerald-100">
+      <div className="mt-6 w-full rounded-2xl bg-white p-4 shadow-sm border border-[#DCEAFD]">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
-            <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
+            <div className="rounded-2xl bg-[#EAF2FE] p-3 text-[#0D5BC4]">
               <ClipboardList className="h-6 w-6" />
             </div>
             <div className="min-w-0">
@@ -507,7 +506,7 @@ const ViewApplicants = () => {
           </div>
           <div className="mt-2 flex flex-1 items-center justify-between gap-4 lg:mt-0 lg:flex-initial">
             <div className="hidden w-full lg:flex items-center justify-center">
-              <div className="grid grid-cols-4 divide-x divide-emerald-100 text-center w-full max-w-none">
+              <div className="grid grid-cols-4 divide-x divide-[#DCEAFD] text-center w-full max-w-none">
                 <div className="px-4">
                   <p className="text-xs text-slate-500">{t('dashboard.totalApplicants')}</p>
                   <p className="mt-1 text-lg font-semibold text-slate-900">{summary.applicationCount}</p>
@@ -545,8 +544,8 @@ const ViewApplicants = () => {
         renderSkeleton()
       ) : summary.applicationCount === 0 ? (
         <div className="card mt-8 flex flex-col items-center justify-center gap-4 py-16 text-center">
-          <div className="rounded-3xl bg-emerald-50 p-8">
-            <Users className="mx-auto h-12 w-12 text-emerald-600" />
+          <div className="rounded-3xl bg-[#EAF2FE] p-8">
+            <Users className="mx-auto h-12 w-12 text-[#0D5BC4]" />
           </div>
           <h2 className="text-2xl font-semibold text-slate-900">{t('employer.applicants.noApplicants')}</h2>
           <p className="max-w-none text-sm text-slate-500">{t('employer.applicants.noApplicantsSub')}</p>
@@ -581,7 +580,7 @@ const ViewApplicants = () => {
                     <div className="space-y-5 lg:col-span-1">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-100 text-emerald-700 overflow-hidden">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#DCEAFD] text-[#0A4FA8] overflow-hidden">
                             {applicant.avatar ? (
                               <img src={applicant.avatar} alt={`${applicant.firstName || 'Candidate'} avatar`} className="h-full w-full object-cover" />
                             ) : (
@@ -591,7 +590,7 @@ const ViewApplicants = () => {
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-xl font-semibold text-slate-900">{applicant.firstName || t('interviews.candidate')} {applicant.lastName || ''}</h3>
-                              {isNew && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">{t('common.new') || 'New'}</span>}
+                              {isNew && <span className="rounded-full bg-[#DCEAFD] px-2.5 py-1 text-xs font-semibold text-[#0A4FA8]">{t('common.new') || 'New'}</span>}
                             </div>
                             <p className="mt-1 text-sm text-slate-500">{t('employer.applicants.appliedFor')} {job.title || 'Unknown role'}</p>
                             <div className="mt-3 flex flex-wrap gap-3 text-sm text-slate-500">
@@ -891,7 +890,7 @@ const ViewApplicants = () => {
                 <section className="grid gap-4 md:grid-cols-3 items-start">
                   <div className="md:col-span-2">
                     <div className="flex items-center gap-4">
-                      <div className="h-16 w-16 flex-shrink-0 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center overflow-hidden">
+                      <div className="h-16 w-16 flex-shrink-0 rounded-2xl bg-[#EAF2FE] text-[#0D5BC4] flex items-center justify-center overflow-hidden">
                         {activeProfile.applicant?.avatar ? (
                           <img src={activeProfile.applicant.avatar} alt="avatar" className="h-full w-full object-cover" />
                         ) : (
@@ -934,7 +933,7 @@ const ViewApplicants = () => {
                     <div className="mt-3 flex flex-wrap gap-2">
                       {Array.isArray(activeProfile.applicant?.skills) && activeProfile.applicant.skills.length ? (
                         activeProfile.applicant.skills.map((skill) => (
-                          <span key={skill._id || skill} className="inline-flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 shadow-sm">{skill.name || skill}</span>
+                          <span key={skill._id || skill} className="inline-flex items-center gap-2 rounded-md bg-[#EAF2FE] px-3 py-1 text-sm font-medium text-[#0A4FA8] shadow-sm">{skill.name || skill}</span>
                         ))
                       ) : (
                         <span className="text-sm text-slate-500">No skills provided.</span>
@@ -953,13 +952,13 @@ const ViewApplicants = () => {
                         <div className="text-lg font-semibold text-slate-900">{activeProfile.matchScore || 0}%</div>
                       </div>
                       <div className="mt-3 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                        <div className={`h-full rounded-full ${activeProfile.matchScore >= 80 ? 'bg-emerald-500' : activeProfile.matchScore >= 60 ? 'bg-amber-400' : 'bg-rose-500'}`} style={{ width: `${activeProfile.matchScore || 0}%` }} />
+                        <div className={`h-full rounded-full ${activeProfile.matchScore >= 80 ? 'bg-[#1769E0]' : activeProfile.matchScore >= 60 ? 'bg-amber-400' : 'bg-rose-500'}`} style={{ width: `${activeProfile.matchScore || 0}%` }} />
                       </div>
 
                       <div className="mt-4 space-y-3 text-sm text-slate-700">
                         <div>
                           <div className="flex items-center justify-between"><div>Skills</div><div className="font-semibold">{activeProfile.matchScore || 0}%</div></div>
-                          <div className="mt-1 h-2 w-full rounded-full bg-slate-100 overflow-hidden"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${activeProfile.matchScore || 0}%` }} /></div>
+                          <div className="mt-1 h-2 w-full rounded-full bg-slate-100 overflow-hidden"><div className="h-full rounded-full bg-[#1769E0]" style={{ width: `${activeProfile.matchScore || 0}%` }} /></div>
                         </div>
                         <div>
                           <div className="flex items-center justify-between"><div>Experience</div><div className="font-semibold">{activeProfile.resumeAnalysis?.experienceYears ? `${Math.min(100, (activeProfile.resumeAnalysis.experienceYears / 10) * 100).toFixed(0)}%` : '—'}</div></div>
@@ -1068,7 +1067,7 @@ const ViewApplicants = () => {
                     <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Application Timeline</p>
                     <div className="mt-4 space-y-3 text-sm text-slate-600">
                       <div className="flex items-start gap-3">
-                        <div className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
+                        <div className="mt-1 h-2 w-2 rounded-full bg-[#1769E0]" />
                         <div>
                           <div className="font-semibold text-slate-900">Application Submitted</div>
                           <div className="text-xs text-slate-500">{formatDateTime(activeProfile.appliedAt || activeProfile.createdAt)}</div>

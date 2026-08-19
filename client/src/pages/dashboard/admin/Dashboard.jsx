@@ -219,7 +219,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="mx-auto max-w-7xl space-y-8 pb-12">
 
       {/* ── Admin Header ── */}
       <div className="relative z-10">

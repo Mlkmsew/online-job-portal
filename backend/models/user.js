@@ -85,6 +85,9 @@ const userSchema = new mongoose.Schema(
         // OTP for quick verification (numeric) and two-factor
         otpCode: String,
         otpExpire: Date,
+        // OTP resend throttling: max attempts then a temporary lockout
+        otpResendCount: { type: Number, default: 0 },
+        otpResendLockUntil: Date,
         twoFactorEnabled: { type: Boolean, default: false },
         twoFactorSecret: String,
         // Social providers

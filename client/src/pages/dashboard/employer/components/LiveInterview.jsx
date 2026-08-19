@@ -8,7 +8,7 @@ const LiveInterview = ({ interview, notes, onNotesChange, onSaveNotes, onEndInte
           <h2 className="text-2xl font-semibold">Live Interview</h2>
           <p className="mt-1 text-sm text-slate-400">{interview?.job?.title || 'Candidate interview'}</p>
         </div>
-        <div className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-sm text-emerald-300">In Progress</div>
+        <div className="rounded-full border border-[#1769E0]/30 bg-[#1769E0]/10 px-3 py-1 text-sm text-[#7FB0F0]">In Progress</div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]">

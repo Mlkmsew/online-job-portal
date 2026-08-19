@@ -27,10 +27,10 @@ const PALETTE = [
 ];
 
 const ChartCard = ({ title, children, emptyText }) => (
-  <div className="card p-5 border border-gray-200 shadow-sm">
-    <h2 className="text-base font-semibold text-gray-800 mb-4">{title}</h2>
+  <div className="card p-5 border border-gray-200 shadow-sm dark:border-gray-700">
+    <h2 className="mb-4 text-base font-semibold text-gray-800 dark:text-gray-200">{title}</h2>
     {children === null ? (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-400">
+      <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-400 dark:border-gray-700 dark:bg-gray-800">
         {emptyText}
       </div>
     ) : (
@@ -134,19 +134,19 @@ const AdminReports = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6">
         <div className="card p-6">
-          <div className="h-8 w-64 animate-pulse rounded bg-gray-200" />
-          <div className="mt-2 h-4 w-1/2 animate-pulse rounded bg-gray-200" />
+          <div className="h-8 w-64 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="mt-2 h-4 w-1/2 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i} className="card h-28 animate-pulse border border-gray-200 bg-gray-100" />
+            <div key={i} className="card h-28 animate-pulse border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800" />
           ))}
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="card h-80 animate-pulse border border-gray-200 bg-gray-100" />
+            <div key={i} className="card h-80 animate-pulse border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800" />
           ))}
         </div>
       </div>
@@ -155,13 +155,13 @@ const AdminReports = () => {
 
   if (error) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6">
         <div className="card p-6">
           <h1 className="text-3xl font-bold">{t('admin.reports.title') || 'Reports & Statistics'}</h1>
         </div>
-        <div className="card flex flex-col items-center justify-center border border-gray-200 p-10 text-center">
+        <div className="card flex flex-col items-center justify-center border border-gray-200 p-10 text-center dark:border-gray-700">
           <FiAlertCircle className="h-10 w-10 text-red-500" />
-          <p className="mt-4 text-sm text-gray-600">{error}</p>
+          <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">{error}</p>
           <button
             type="button"
             onClick={fetchReports}
@@ -176,16 +176,16 @@ const AdminReports = () => {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold">{t('admin.reports.title') || 'Reports & Statistics'}</h1>
-          <p className="text-gray-600 mt-2">{t('admin.reports.subtitle') || 'View platform-wide insights and performance metrics for company and job activity.'}</p>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">{t('admin.reports.subtitle') || 'View platform-wide insights and performance metrics for company and job activity.'}</p>
         </div>
         <button
           type="button"
           onClick={fetchReports}
-          className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
+          className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
         >
           <FiRefreshCw className="h-4 w-4" />
           {t('admin.reports.refresh') || 'Refresh'}
@@ -194,11 +194,11 @@ const AdminReports = () => {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {metricCards.map((metric) => (
-          <div key={metric.label} className="card flex items-center gap-4 p-5 border border-gray-200 shadow-sm">
+          <div key={metric.label} className="card flex items-center gap-4 p-5 border border-gray-200 shadow-sm dark:border-gray-700">
             <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${metric.color}`}>{metric.icon}</div>
             <div>
-              <p className="text-sm text-gray-500">{metric.label}</p>
-              <p className="mt-1 text-3xl font-semibold text-gray-900">{metric.value}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{metric.label}</p>
+              <p className="mt-1 text-3xl font-semibold text-gray-900 dark:text-white">{metric.value}</p>
             </div>
           </div>
         ))}

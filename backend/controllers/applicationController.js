@@ -138,6 +138,44 @@ const logRequestUser = (req, message) => {
   });
 };
 
+// Parse screening answers from a multipart form. The frontend sends them as a
+// JSON string under `screeningAnswers`. Falls back to an empty array.
+const parseScreeningAnswers = (raw) => {
+  if (typeof raw !== 'string' || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+// Given an employer-configured application field and the submitted answers,
+// return the trimmed answer value (or '' if not provided).
+const getAnswerValue = (field, answers) => {
+  const fieldId = field._id ? String(field._id) : null;
+  const match = answers.find(
+    (answer) =>
+      (fieldId && answer.fieldId && String(answer.fieldId) === fieldId) ||
+      (answer.question && String(answer.question).trim() === String(field.label || '').trim())
+  );
+  return String(match?.answer || '').trim();
+};
+
+// Validate that every employer-required application field has an answer.
+// Returns an array of missing field labels (empty when valid).
+const getMissingRequiredFields = (job, answers) => {
+  if (!Array.isArray(job?.applicationFields)) return [];
+  const requiredFields = job.applicationFields.filter((field) => field.required === true);
+  const missing = [];
+  for (const field of requiredFields) {
+    if (!getAnswerValue(field, answers)) {
+      missing.push(field.label || 'Required field');
+    }
+  }
+  return missing;
+};
+
 // @desc    Apply for job
 // @route   POST /api/applications
 // @access  Private (Job Seeker)
@@ -152,6 +190,7 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
     portfolioUrl,
     githubUrl,
     linkedinUrl,
+    screeningAnswers: rawScreeningAnswers,
   } = req.body;
 
   const job = await Job.findById(jobId).populate('company postedBy');
@@ -164,6 +203,23 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
   if (new Date(job.applicationDeadline) < new Date()) {
     return next(new AppError('Application deadline has passed.', 400));
   }
+
+  // Validate employer-configured required application fields. A required field
+  // must have a non-empty (after trim) answer, even if it is missing from the
+  // submitted request entirely. Optional fields may be empty or missing.
+  const screeningAnswers = parseScreeningAnswers(rawScreeningAnswers);
+  const missingRequiredFields = getMissingRequiredFields(job, screeningAnswers);
+  if (missingRequiredFields.length > 0) {
+    return next(
+      new AppError(`The following required field(s) must be completed: ${missingRequiredFields.join(', ')}`, 400)
+    );
+  }
+  const normalizedScreeningAnswers = screeningAnswers
+    .map((answer) => ({
+      question: String(answer.question || '').trim(),
+      answer: String(answer.answer || '').trim(),
+    }))
+    .filter((answer) => answer.question);
 
   // Check duplicate — an active application blocks re-applying. A withdrawn
   // application is removed so the job seeker can genuinely apply again.
@@ -227,6 +283,7 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
       portfolioUrl,
       githubUrl,
       linkedinUrl,
+      screeningAnswers: normalizedScreeningAnswers,
     });
   } catch (error) {
     if (error.code === 11000) {

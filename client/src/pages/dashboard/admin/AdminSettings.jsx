@@ -225,7 +225,7 @@ const AdminSettings = () => {
     `${user?.firstName?.charAt(0) || ''}${user?.lastName?.charAt(0) || ''}`.toUpperCase() || 'AU';
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="card">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">

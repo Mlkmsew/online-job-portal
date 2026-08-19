@@ -105,7 +105,7 @@ const ChatWidget = () => {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 w-96 h-[500px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl z-50 flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700"
+            className="fixed bottom-24 right-3 sm:right-6 w-[calc(100vw-1.5rem)] max-w-96 h-[min(500px,calc(100vh-7rem))] bg-white dark:bg-gray-800 rounded-lg shadow-2xl z-50 flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700"
           >
             {/* Chat Header */}
             <div className="bg-teal-600 text-white p-4 flex items-center justify-between">

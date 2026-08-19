@@ -71,9 +71,9 @@ const InterviewStatusComparison = ({ interviews = [] }) => {
   return (
     <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="grid gap-5 xl:grid-cols-2">
-        <div className="rounded-[24px] border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm">
+        <div className="rounded-[24px] border border-[#DCEAFD] bg-gradient-to-br from-[#EAF2FE] to-white p-5 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1769E0] text-white shadow-sm">
               <CheckCircle2 className="h-7 w-7" />
             </div>
             <div>
@@ -82,8 +82,8 @@ const InterviewStatusComparison = ({ interviews = [] }) => {
             </div>
           </div>
 
-          <div className="mt-5 rounded-[20px] border border-emerald-200 bg-white/80 p-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600">Includes</p>
+          <div className="mt-5 rounded-[20px] border border-[#A8C8F5] bg-white/80 p-4">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#0D5BC4]">Includes</p>
             <div className="mt-3 space-y-2 text-sm text-slate-700">
               {[
                 'Interviews that were conducted',
@@ -93,7 +93,7 @@ const InterviewStatusComparison = ({ interviews = [] }) => {
                 'Candidate status updated',
               ].map((item) => (
                 <div key={item} className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <CheckCircle2 className="h-4 w-4 text-[#1769E0]" />
                   <span>{item}</span>
                 </div>
               ))}
@@ -110,7 +110,7 @@ const InterviewStatusComparison = ({ interviews = [] }) => {
                   <div>{row.position}</div>
                   <div>{row.date}</div>
                   <div>
-                    <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    <span className="inline-flex rounded-full bg-[#EAF2FE] px-2.5 py-1 text-xs font-semibold text-[#0A4FA8]">
                       {row.status}
                     </span>
                   </div>
@@ -119,9 +119,9 @@ const InterviewStatusComparison = ({ interviews = [] }) => {
             )}
           </div>
 
-          <div className="mt-5 rounded-[20px] border border-emerald-200 bg-emerald-50/70 p-4">
-            <p className="text-sm font-semibold text-emerald-800">Why it matters</p>
-            <p className="mt-1 text-sm text-emerald-700">Completed interviews help recruiters evaluate candidates, review feedback, compare scores, and move hiring decisions forward.</p>
+          <div className="mt-5 rounded-[20px] border border-[#A8C8F5] bg-[#EAF2FE]/70 p-4">
+            <p className="text-sm font-semibold text-[#083D82]">Why it matters</p>
+            <p className="mt-1 text-sm text-[#0A4FA8]">Completed interviews help recruiters evaluate candidates, review feedback, compare scores, and move hiring decisions forward.</p>
           </div>
         </div>
 

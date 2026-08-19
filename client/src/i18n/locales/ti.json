@@ -30,6 +30,16 @@
     "dashboard": "ዳሽቦርድ",
     "profile": "መግለጺይ"
   },
+  "categoriesPage": {
+    "title": "ክፍልታት ስራሕ ርአ",
+    "subtitle": "ኩሎም ናይ ኢንዱስትሪ ክፍልታት ኣስምዕ ንስምዒታትካ ዝሰማማዕ ስራሕ ድለ።",
+    "searchPlaceholder": "ክፍልታት ድለ...",
+    "showingCount": "ኣርእዩ ኣሎ",
+    "categoriesLabel": "ክፍልታት",
+    "ofJobs": "ምስ",
+    "noSearchResults": "ምስ ድልየትካ ዝሰማማዕ ክፍሊ የለን።",
+    "browseJobs": "ስራሕቲ ርአ"
+  },
   "auth": {
     "login": "እቶ",
     "register": "ተመዝገብ",

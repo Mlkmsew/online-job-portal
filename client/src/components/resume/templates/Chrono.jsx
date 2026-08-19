@@ -1,5 +1,6 @@
 import './shared.css';
 import { getColorTokens, getInitials, getResumeViewModel } from './templateUtils';
+import AdditionalInfoSections from './AdditionalInfoSections';
 
 export const Chrono = ({ resume, color = 'blue', compact = false }) => {
   const view = getResumeViewModel(resume);
@@ -8,7 +9,7 @@ export const Chrono = ({ resume, color = 'blue', compact = false }) => {
   const style = { '--accent': tokens.accent, '--accent-soft': tokens.accentSoft, '--surface': '#ffffff' };
 
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
-  const educations = Array.isArray(view.education) ? view.education : (view.education ? [view.education] : []);
+  const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
   const languages = Array.isArray(view.languages) ? view.languages : [];
 
   return (
@@ -139,6 +140,28 @@ export const Chrono = ({ resume, color = 'blue', compact = false }) => {
                 </div>
               </div>
             )}
+
+          {/* Certifications Section */}
+            {(view.certifications || []).length > 0 && (
+              <div style={{ marginTop: '24px' }}>
+                <p className="resume-template__eyebrow" style={{ color: tokens.accent, fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px', marginBottom: '10px' }}>
+                  Certifications
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {view.certifications.map((cert, idx) => (
+                    <div key={`cert-${idx}`} style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#4b5563', width: '130px', flexShrink: 0 }}>{cert.year}</span>
+                      <span style={{ fontSize: '12px', color: '#111827', fontWeight: '500' }}>{cert.name}{cert.issuer ? ` — ${cert.issuer}` : ''}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <AdditionalInfoSections
+              sections={view.additionalInfo}
+              style={{ marginTop: '24px' }}
+            />
 
           </div>
         </div>

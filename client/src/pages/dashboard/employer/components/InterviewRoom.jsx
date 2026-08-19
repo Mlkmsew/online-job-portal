@@ -23,7 +23,7 @@ const InterviewRoom = ({ interview, notes, onNotesChange, onSaveNotes, onFinishI
           <p className="mt-1 text-sm text-slate-600">{interview?.job?.title || 'Interview in progress'}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">Interview in Progress</div>
+          <div className="rounded-full border border-[#A8C8F5] bg-[#EAF2FE] px-3 py-1 text-sm font-medium text-[#0A4FA8]">Interview in Progress</div>
           <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700"><Clock3 className="mr-2 inline h-4 w-4" />42:15</div>
           <button type="button" onClick={onFinishInterview} className="rounded-full bg-rose-600 px-4 py-2 text-sm font-medium text-white">End Interview</button>
         </div>

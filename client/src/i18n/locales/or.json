@@ -33,6 +33,16 @@
     "dashboard": "Dashboard",
     "profile": "Piroofaayilii Koo"
   },
+  "categoriesPage": {
+    "title": "Ramboo Hojii Daawwadhu",
+    "subtitle": "Ramboo industirii hunda savadhaa, dandeettii kee wajjin walqixxataa ta'an hojiiwwan barbaadi.",
+    "searchPlaceholder": "Ramboo barbaadi...",
+    "showingCount": "Agarsisaa jira",
+    "categoriesLabel": "ramboo",
+    "ofJobs": "wajjin",
+    "noSearchResults": "Barbaacha kee wajjin walqixxateen ramboonni hin argaman.",
+    "browseJobs": "Hojiiwwan Daawwadhu"
+  },
   "auth": {
     "login": "Seeni",
     "register": "Galmaa'i",

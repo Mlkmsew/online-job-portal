@@ -1,7 +1,7 @@
 const badgeStyles = {
   neutral: 'border-slate-200 bg-slate-50 text-slate-600',
   premium: 'border-violet-200 bg-violet-50 text-violet-700',
-  free: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  free: 'border-blue-200 bg-blue-50 text-blue-700',
 };
 
 const TemplateBadge = ({ children, tone = 'neutral', className = '' }) => {

@@ -44,7 +44,7 @@ const ChangePassword = () => {
         </button>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-lg bg-emerald-50 text-emerald-600">
+          <div className="p-3 rounded-lg bg-blue-50 text-blue-600">
             <FiLock className="w-5 h-5" />
           </div>
           <div>

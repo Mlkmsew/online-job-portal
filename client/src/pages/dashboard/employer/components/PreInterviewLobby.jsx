@@ -29,7 +29,7 @@ const PreInterviewLobby = ({ interview, onReschedule, onStartInterview, onBack }
           <h2 className="text-2xl font-semibold text-slate-900">Start Interview</h2>
           <p className="mt-1 text-sm text-slate-600">Prepare the interview room before you begin.</p>
         </div>
-        <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">Pre-Interview Lobby</div>
+        <div className="rounded-full border border-[#A8C8F5] bg-[#EAF2FE] px-3 py-1 text-sm font-medium text-[#0A4FA8]">Pre-Interview Lobby</div>
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
@@ -94,7 +94,7 @@ const PreInterviewLobby = ({ interview, onReschedule, onStartInterview, onBack }
             <div className="mt-4 space-y-3">
               {checklistItems.map((item) => (
                 <div key={item} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <CheckCircle2 className="h-5 w-5 text-[#0D5BC4]" />
                   <span>{item}</span>
                 </div>
               ))}

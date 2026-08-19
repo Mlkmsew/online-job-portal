@@ -163,6 +163,8 @@ exports.verifyOTP = asyncHandler(async (req, res, next) => {
   user.isEmailVerified = true;
   user.otpCode = undefined;
   user.otpExpire = undefined;
+  user.otpResendCount = 0;
+  user.otpResendLockUntil = undefined;
   await user.save({ validateBeforeSave: false });
 
   res.status(200).json({ success: true, message: 'Email verified successfully.' });
@@ -182,6 +184,25 @@ exports.sendOTP = asyncHandler(async (req, res, next) => {
     user = await User.findById(req.user.id);
   } else {
     return next(new AppError('Email is required.', 400));
+  }
+
+  // Throttle OTP resends: max OTP_RESEND_MAX_ATTEMPTS sends, then lock out for OTP_RESEND_LOCK_HOURS
+  const maxAttempts = parseInt(process.env.OTP_RESEND_MAX_ATTEMPTS || '3', 10);
+  const lockHours = parseInt(process.env.OTP_RESEND_LOCK_HOURS || '3', 10);
+
+  if (user.otpResendLockUntil && user.otpResendLockUntil > Date.now()) {
+    const mins = Math.ceil((user.otpResendLockUntil - Date.now()) / 60000);
+    const hours = Math.floor(mins / 60);
+    const msg = hours >= 1
+      ? `Too many OTP requests. Please try again in ${hours} hour${hours > 1 ? 's' : ''}.`
+      : `Too many OTP requests. Please try again in ${mins} minute${mins > 1 ? 's' : ''}.`;
+    return next(new AppError(msg, 429));
+  }
+
+  user.otpResendCount = (user.otpResendCount || 0) + 1;
+  if (user.otpResendCount >= maxAttempts) {
+    user.otpResendLockUntil = new Date(Date.now() + lockHours * 60 * 60 * 1000);
+    user.otpResendCount = 0;
   }
 
   const code = user.generateOTP();

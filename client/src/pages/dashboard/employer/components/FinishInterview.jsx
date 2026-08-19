@@ -8,7 +8,7 @@ const FinishInterview = ({ interview, form, onChange, onSaveDraft, onSubmit, onB
           <h2 className="text-2xl font-semibold text-slate-900">Finish Interview</h2>
           <p className="mt-1 text-sm text-slate-600">Capture the final evaluation for this interview round.</p>
         </div>
-        <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm text-emerald-700">Interview Summary</div>
+        <div className="rounded-full border border-[#A8C8F5] bg-[#EAF2FE] px-3 py-1 text-sm text-[#0A4FA8]">Interview Summary</div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">

@@ -64,7 +64,7 @@ const InterviewDetails = () => {
   const getStatusBadge = (status) => {
     const normalized = `${status || ''}`.toLowerCase();
     if (['interview scheduled', 'interview', 'scheduled interview'].includes(normalized)) return 'bg-amber-100 text-amber-800';
-    if (['completed'].includes(normalized)) return 'bg-emerald-100 text-emerald-800';
+    if (['completed'].includes(normalized)) return 'bg-blue-100 text-blue-800';
     if (['cancelled'].includes(normalized)) return 'bg-rose-100 text-rose-800';
     return 'bg-slate-100 text-slate-700';
   };

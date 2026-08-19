@@ -192,13 +192,19 @@ exports.scheduleInterview = asyncHandler(async (req, res, next) => {
   const actualLocation = meetingLocationOrLink || location;
   const actualNote = invitationNotes || notes || note;
 
-  if (!actualApplicationId || !actualDate || !actualType) {
+  if (!actualApplicationId || !actualDate || !actualTime || !actualType) {
     return next(new AppError('Missing required interview fields.', 400));
   }
 
   const scheduledDateTime = actualTime ? new Date(`${actualDate}T${actualTime}`) : new Date(actualDate);
   if (Number.isNaN(scheduledDateTime.getTime())) {
     return next(new AppError('Invalid interview date or time.', 400));
+  }
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  if (scheduledDateTime < startOfToday) {
+    return next(new AppError('Interview date cannot be in the past.', 400));
   }
 
   const appRecord = await Application.findById(actualApplicationId)

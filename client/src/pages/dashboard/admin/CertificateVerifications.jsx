@@ -157,8 +157,8 @@ const DetailsModal = ({ record, onClose, onAction, busy }) => {
 
         <div className="mt-4">
           <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Field-by-field Comparison</p>
-          <div className="overflow-hidden rounded-xl border border-slate-200">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full min-w-[480px] text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-4 py-2.5 font-bold">Field</th>
@@ -235,8 +235,8 @@ const DetailsModal = ({ record, onClose, onAction, busy }) => {
           return (
             <div className="mt-4">
               <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Profile Consistency (Document vs Account)</p>
-              <div className="overflow-hidden rounded-xl border border-slate-200">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full min-w-[480px] text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
                       <th className="px-4 py-2.5 font-bold">Field</th>
@@ -434,7 +434,7 @@ const AdminCertificateVerifications = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="mx-auto max-w-7xl space-y-6 pb-12">
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">Certificate Verification & Fraud Detection</h1>
         <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">

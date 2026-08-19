@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { format, formatDistanceToNowStrict, isToday, isTomorrow, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
-import { Award, Bell, BriefcaseBusiness, CalendarDays, ChevronLeft, ChevronRight, Clock3, Eye, FileText, Link2, Mail, MapPin, Phone, PlayCircle, Search, Sparkles, SquarePen, Star, ThumbsDown, ThumbsUp, XCircle } from 'lucide-react';
+import { Award, Bell, BriefcaseBusiness, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Eye, FileText, Link2, Mail, MapPin, Phone, PlayCircle, Search, Sparkles, SquarePen, Star, ThumbsDown, ThumbsUp, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
 import LiveInterview from './components/LiveInterview';
@@ -94,7 +94,7 @@ const normalizeStatus = (status) => `${status || 'scheduled'}`.toLowerCase();
 const getStatusBadgeClasses = (status) => {
   switch (normalizeStatus(status)) {
     case 'completed':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      return 'bg-[#EAF2FE] text-[#0A4FA8] border-[#A8C8F5]';
     case 'cancelled':
     case 'canceled':
       return 'bg-rose-50 text-rose-700 border-rose-200';
@@ -147,11 +147,13 @@ const EmployerInterviews = () => {
   const [form, setForm] = useState({
     applicationId: '',
     scheduledDate: '',
-    scheduledTime: '09:00',
-    interviewType: 'In-person',
+    scheduledTime: '',
+    interviewType: '',
     locationOrLink: '',
     notes: '',
   });
+  const [formErrors, setFormErrors] = useState({});
+  const [scheduledSummary, setScheduledSummary] = useState(null);
   const [feedback, setFeedback] = useState('');
   const [notes, setNotes] = useState('');
   const [resultByInterview, setResultByInterview] = useState({});
@@ -160,6 +162,36 @@ const EmployerInterviews = () => {
   const [assessmentForm, setAssessmentForm] = useState({ notes: '', rating: 0, strengths: '', weaknesses: '', finalDecision: 'Pending Evaluation' });
   const [workflowForm, setWorkflowForm] = useState({ notes: '', rating: '', strengths: '', weaknesses: '', recommendation: '', finalDecision: '' });
   const [workflowNotes, setWorkflowNotes] = useState('');
+
+  const nowDate = new Date();
+  const todayISO = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
+
+  const validateScheduleForm = (values) => {
+    const errors = {};
+    if (!values.applicationId) errors.candidate = 'Please select a candidate.';
+    if (!values.scheduledDate) {
+      errors.date = 'Please select an interview date.';
+    } else if (values.scheduledDate < todayISO) {
+      errors.date = 'Interview date cannot be in the past.';
+    }
+    if (!values.scheduledTime) errors.time = 'Please select an interview time.';
+    if (!values.interviewType) {
+      errors.type = 'Please select an interview type.';
+    } else if (values.interviewType === 'In-person' && !values.locationOrLink.trim()) {
+      errors.locationOrLink = 'Please provide the interview location.';
+    } else if (values.interviewType === 'Video' && !values.locationOrLink.trim()) {
+      errors.locationOrLink = 'Please provide the meeting link.';
+    }
+    return errors;
+  };
+
+  const formatTimeValue = (value) => {
+    if (!value) return '';
+    const [hours, minutes] = value.split(':').map(Number);
+    const suffix = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${String(minutes).padStart(2, '0')} ${suffix}`;
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -333,7 +365,7 @@ const EmployerInterviews = () => {
 
     const minutesUntil = differenceInMinutes(scheduledDate, currentTime);
     if (minutesUntil < 0) return { label: t('interviews.overdue'), color: 'bg-rose-500', icon: '🔴' };
-    if (minutesUntil <= 30) return { label: t('interviews.startingSoon'), color: 'bg-emerald-500', icon: '🟢' };
+    if (minutesUntil <= 30) return { label: t('interviews.startingSoon'), color: 'bg-[#1769E0]', icon: '🔵' };
     if (minutesUntil <= 120) return { label: t('interviews.laterToday'), color: 'bg-amber-500', icon: '🟡' };
     if (isToday(scheduledDate)) return { label: t('interviews.laterToday'), color: 'bg-sky-500', icon: '🔵' };
     return { label: t('interviews.future'), color: 'bg-slate-300', icon: '⚪' };
@@ -386,11 +418,13 @@ const EmployerInterviews = () => {
     setForm({
       applicationId: '',
       scheduledDate: '',
-      scheduledTime: '09:00',
-      interviewType: 'In-person',
+      scheduledTime: '',
+      interviewType: '',
       locationOrLink: '',
       notes: '',
     });
+    setFormErrors({});
+    setScheduledSummary(null);
     setFeedback('');
     setNotes('');
     setEditForm({ scheduledDate: '', scheduledTime: '', locationOrLink: '' });
@@ -529,6 +563,13 @@ const EmployerInterviews = () => {
 
   const handleScheduleSubmit = async (event) => {
     event.preventDefault();
+    const validationErrors = validateScheduleForm(form);
+    setFormErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      toast.error('Please complete the required fields to schedule the interview.');
+      return;
+    }
+
     const selectedApplication = applications.find((application) => application._id === form.applicationId);
     if (!selectedApplication) return;
 
@@ -552,8 +593,16 @@ const EmployerInterviews = () => {
         await loadData();
       }
 
-      toast.success(`Invitation email/notification sent to ${selectedApplication.applicant?.email || 'the candidate'}.`);
-      resetModal();
+      const scheduledDate = createdInterview?.scheduledDate ? new Date(createdInterview.scheduledDate) : null;
+      const selectedCandidate = interviewCandidates.find((candidate) => candidate.applicationId === form.applicationId);
+      setScheduledSummary({
+        candidateName: selectedCandidate?.fullName || `${selectedApplication.applicant?.firstName || ''} ${selectedApplication.applicant?.lastName || ''}`.trim() || 'Candidate',
+        date: scheduledDate ? format(scheduledDate, 'MMM d, yyyy') : form.scheduledDate,
+        time: scheduledDate ? format(scheduledDate, 'h:mm a') : form.scheduledTime,
+        type: form.interviewType === 'Video' ? 'Online' : form.interviewType || 'In-Person',
+        locationOrLink: form.locationOrLink.trim() || '—',
+      });
+      toast.success('Interview scheduled successfully.');
     } catch {
       toast.error('Unable to schedule the interview right now.');
     } finally {
@@ -711,17 +760,17 @@ const EmployerInterviews = () => {
   };
 
   return (
-    <div className="min-h-screen rounded-[28px] bg-slate-50 p-4 sm:p-6 lg:p-8">
+    <div className="rounded-[28px] bg-slate-50 p-4 sm:p-6 lg:p-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 xl:flex-row">
         <div className="flex-1 space-y-6">
           <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex items-start gap-3">
-                <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
+                <div className="rounded-2xl bg-[#EAF2FE] p-3 text-[#0D5BC4]">
                   <Sparkles className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">{t('interviews.dashboardTitle')}</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#0D5BC4]">{t('interviews.dashboardTitle')}</p>
                   <h1 className="mt-2 text-3xl font-semibold text-slate-900">{t('interviews.pipeline')}</h1>
                   <p className="mt-2 max-w-2xl text-sm text-slate-600">{t('interviews.pipelineSubtitle')}</p>
                 </div>
@@ -737,7 +786,7 @@ const EmployerInterviews = () => {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <MetricCard title={t('interviews.upcoming')} value={stats.upcoming} subtitle={t('interviews.scheduledInPipeline')} icon={CalendarDays} accent="bg-emerald-50 text-emerald-600" />
+            <MetricCard title={t('interviews.upcoming')} value={stats.upcoming} subtitle={t('interviews.scheduledInPipeline')} icon={CalendarDays} accent="bg-[#EAF2FE] text-[#0D5BC4]" />
             <MetricCard title={t('interviews.today')} value={stats.today} subtitle={t('interviews.onCalendarToday')} icon={Clock3} accent="bg-sky-50 text-sky-600" />
             <MetricCard title={t('interviews.completed')} value={stats.completed} subtitle={t('interviews.closedSuccessfully')} icon={Award} accent="bg-violet-50 text-violet-600" />
             <MetricCard title={t('interviews.cancelled')} value={stats.cancelled} subtitle={t('interviews.needsFollowUp')} icon={XCircle} accent="bg-rose-50 text-rose-600" />
@@ -838,7 +887,7 @@ const EmployerInterviews = () => {
                   <div key={interview._id} className="group rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-xl">
                     <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                       <div className="flex gap-4">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-base font-semibold text-emerald-700">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#EAF2FE] text-base font-semibold text-[#0A4FA8]">
                           {interview.applicant?.avatar ? (
                             <img src={interview.applicant.avatar} alt="Candidate" className="h-14 w-14 rounded-full object-cover" />
                           ) : (
@@ -858,9 +907,9 @@ const EmployerInterviews = () => {
                             )}
                           </div>
                           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                            <span className="inline-flex items-center gap-2"><BriefcaseBusiness className="h-4 w-4 text-emerald-600" />{interview.job?.title || t('interviews.jobPosition')}</span>
-                            <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4 text-emerald-600" />{interview.applicant?.email || 'Email pending'}</span>
-                            <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4 text-emerald-600" />{interview.applicant?.phone || 'Phone pending'}</span>
+                            <span className="inline-flex items-center gap-2"><BriefcaseBusiness className="h-4 w-4 text-[#0D5BC4]" />{interview.job?.title || t('interviews.jobPosition')}</span>
+                            <span className="inline-flex items-center gap-2"><Mail className="h-4 w-4 text-[#0D5BC4]" />{interview.applicant?.email || 'Email pending'}</span>
+                            <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4 text-[#0D5BC4]" />{interview.applicant?.phone || 'Phone pending'}</span>
                           </div>
 
                           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -978,21 +1027,21 @@ const EmployerInterviews = () => {
         </div>
 
         {showCalendarView && (
-          <aside className="w-full space-y-4 xl:max-w-[340px]">
+          <aside className="w-full space-y-4 overflow-x-auto xl:max-w-[340px] xl:overflow-visible">
             <div className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">{t('interviews.monthlyCalendar')}</p>
                   <h3 className="mt-1 text-lg font-semibold text-slate-900">{format(new Date(), 'MMMM yyyy')}</h3>
                 </div>
-                <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">{t('interviews.live')}</span>
+                <span className="rounded-full bg-[#EAF2FE] px-3 py-1 text-sm font-medium text-[#0A4FA8]">{t('interviews.live')}</span>
               </div>
-              <div className="mt-5 grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <div className="mt-5 grid min-w-[280px] grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
                   <span key={`${day}-${index}`}>{day}</span>
                 ))}
               </div>
-              <div className="mt-3 grid grid-cols-7 gap-2">
+              <div className="mt-3 grid min-w-[280px] grid-cols-7 gap-2">
                 {Array.from({ length: 35 }, (_, index) => {
                   const day = index - 4;
                   const date = new Date();
@@ -1003,7 +1052,7 @@ const EmployerInterviews = () => {
                     <button
                       key={key}
                       type="button"
-                      className={`flex h-10 items-center justify-center rounded-xl text-sm font-medium transition ${isInterviewDay ? 'bg-[#1769E0] text-white shadow' : 'text-slate-600 hover:bg-slate-100'}`}
+                      className={`flex h-9 w-full items-center justify-center rounded-xl text-sm font-medium transition sm:h-10 ${isInterviewDay ? 'bg-[#1769E0] text-white shadow' : 'text-slate-600 hover:bg-slate-100'}`}
                     >
                       {date.getDate()}
                     </button>
@@ -1059,9 +1108,9 @@ const EmployerInterviews = () => {
                   );
                 })}
               </div>
-              <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                <h4 className="text-sm font-semibold text-emerald-800">{t('interviews.stayOrganized')}</h4>
-                <p className="mt-1 text-sm text-emerald-700">{t('interviews.keepSynced')}</p>
+              <div className="mt-4 rounded-2xl border border-[#A8C8F5] bg-[#EAF2FE] p-4">
+                <h4 className="text-sm font-semibold text-[#083D82]">{t('interviews.stayOrganized')}</h4>
+                <p className="mt-1 text-sm text-[#0A4FA8]">{t('interviews.keepSynced')}</p>
                 <button
                   type="button"
                   onClick={() => toast.success(t('interviews.reminderEnabledSuccess') || 'Reminder enabled.')}
@@ -1142,106 +1191,182 @@ const EmployerInterviews = () => {
               <button type="button" onClick={resetModal} className="text-sm font-medium text-slate-500">Close</button>
             </div>
 
-            <form onSubmit={handleScheduleSubmit} className="mt-6 space-y-4">
-              <div>
-                <label htmlFor="candidate" className="mb-2 block text-sm font-medium text-slate-700">Candidate</label>
-                <select
-                  id="candidate"
-                  value={form.applicationId}
-                  onChange={(event) => {
-                    const applicationId = event.target.value;
-                    setForm((prev) => ({ ...prev, applicationId }));
-                    const selectedCandidate = interviewCandidates.find((candidate) => candidate.applicationId === applicationId);
-                    setSelectedApplicantId(selectedCandidate?.userId || '');
-                  }}
-                  className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
-                  disabled={candidatesLoading || interviewCandidates.length === 0}
-                  required
-                >
-                  <option value="">Select a candidate</option>
-                  {interviewCandidates.map((candidate) => (
-                    <option key={candidate.applicationId} value={candidate.applicationId}>
-                      {candidate.fullName || 'Candidate'} — {candidate.jobTitle || 'Position'} — {candidate.email || 'No email'}
-                    </option>
-                  ))}
-                </select>
-                {candidatesLoading ? (
-                  <p className="mt-2 text-sm text-slate-500">Loading candidates...</p>
-                ) : candidatesError ? (
-                  <p className="mt-2 text-sm text-rose-500">{candidatesError}</p>
-                ) : interviewCandidates.length === 0 ? (
-                  <p className="mt-2 text-sm text-slate-500">No shortlisted candidates available.</p>
-                ) : null}
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Date</label>
-                  <input
-                    type="date"
-                    value={form.scheduledDate}
-                    onChange={(event) => setForm((prev) => ({ ...prev, scheduledDate: event.target.value }))}
-                    className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
-                    required
-                  />
+            {scheduledSummary ? (
+              <div className="mt-6 rounded-3xl border border-[#A8C8F5] bg-[#EAF2FE] p-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1769E0] text-white">
+                    <CheckCircle2 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#083D82]">Interview Scheduled</h3>
+                    <p className="text-sm text-[#0A4FA8]">The candidate has been notified of the interview details.</p>
+                  </div>
                 </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">Time</label>
-                  <input
-                    type="time"
-                    value={form.scheduledTime}
-                    onChange={(event) => setForm((prev) => ({ ...prev, scheduledTime: event.target.value }))}
-                    className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
-                    required
-                  />
+
+                <div className="mt-5 space-y-3">
+                  <div className="rounded-2xl bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Candidate</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">{scheduledSummary.candidateName}</p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-white p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Date</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">{scheduledSummary.date}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Time</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">{scheduledSummary.time}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Type</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">{scheduledSummary.type}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Location/Link</p>
+                      <p className="mt-1 break-words text-sm font-semibold text-slate-900">{scheduledSummary.locationOrLink}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button type="button" onClick={resetModal} className="rounded-full bg-[#1769E0] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0D5BC4]">
+                    Done
+                  </button>
                 </div>
               </div>
+            ) : (
+              <form onSubmit={handleScheduleSubmit} className="mt-6 space-y-4">
+                <div>
+                  <label htmlFor="candidate" className="mb-2 block text-sm font-medium text-slate-700">Candidate</label>
+                  <select
+                    id="candidate"
+                    value={form.applicationId}
+                    onChange={(event) => {
+                      const applicationId = event.target.value;
+                      setForm((prev) => ({ ...prev, applicationId }));
+                      setFormErrors((prev) => ({ ...prev, candidate: undefined }));
+                      const selectedCandidate = interviewCandidates.find((candidate) => candidate.applicationId === applicationId);
+                      setSelectedApplicantId(selectedCandidate?.userId || '');
+                    }}
+                    className={`w-full rounded-2xl border px-3 py-2.5 text-sm outline-none ${formErrors.candidate ? 'border-rose-300 bg-rose-50/40' : 'border-slate-200'}`}
+                    disabled={candidatesLoading || interviewCandidates.length === 0}
+                    required
+                  >
+                    <option value="">Select a candidate</option>
+                    {interviewCandidates.map((candidate) => (
+                      <option key={candidate.applicationId} value={candidate.applicationId}>
+                        {candidate.fullName || 'Candidate'} — {candidate.jobTitle || 'Position'} — {candidate.email || 'No email'}
+                      </option>
+                    ))}
+                  </select>
+                  {candidatesLoading ? (
+                    <p className="mt-2 text-sm text-slate-500">Loading candidates...</p>
+                  ) : candidatesError ? (
+                    <p className="mt-2 text-sm text-rose-500">{candidatesError}</p>
+                  ) : interviewCandidates.length === 0 ? (
+                    <p className="mt-2 text-sm text-slate-500">No shortlisted candidates available.</p>
+                  ) : null}
+                  {formErrors.candidate && <p className="mt-1.5 text-xs text-rose-600">{formErrors.candidate}</p>}
+                </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Interview Type</label>
-                <select
-                  value={form.interviewType}
-                  onChange={(event) => setForm((prev) => ({ ...prev, interviewType: event.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
-                >
-                  <option value="In-person">In-Person</option>
-                  <option value="Video">Google Meet</option>
-                  <option value="Video">Zoom</option>
-                </select>
-              </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="interview-date" className="mb-2 block text-sm font-medium text-slate-700">Interview Date</label>
+                    <input
+                      id="interview-date"
+                      type="date"
+                      min={todayISO}
+                      value={form.scheduledDate}
+                      onChange={(event) => {
+                        setForm((prev) => ({ ...prev, scheduledDate: event.target.value }));
+                        setFormErrors((prev) => ({ ...prev, date: undefined }));
+                      }}
+                      placeholder="Select interview date"
+                      className={`w-full rounded-2xl border px-3 py-2.5 text-sm outline-none ${formErrors.date ? 'border-rose-300 bg-rose-50/40' : 'border-slate-200'}`}
+                      required
+                    />
+                    {formErrors.date && <p className="mt-1.5 text-xs text-rose-600">{formErrors.date}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="interview-time" className="mb-2 block text-sm font-medium text-slate-700">Interview Time</label>
+                    <input
+                      id="interview-time"
+                      type="time"
+                      value={form.scheduledTime}
+                      onChange={(event) => {
+                        setForm((prev) => ({ ...prev, scheduledTime: event.target.value }));
+                        setFormErrors((prev) => ({ ...prev, time: undefined }));
+                      }}
+                      placeholder="Select interview time"
+                      className={`w-full rounded-2xl border px-3 py-2.5 text-sm outline-none ${formErrors.time ? 'border-rose-300 bg-rose-50/40' : 'border-slate-200'}`}
+                      required
+                    />
+                    {formErrors.time && <p className="mt-1.5 text-xs text-rose-600">{formErrors.time}</p>}
+                    {form.scheduledTime && !formErrors.time && (
+                      <p className="mt-1.5 text-xs font-medium text-[#0A4FA8]">Selected time: {formatTimeValue(form.scheduledTime)}</p>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500">Choose the date and time when you want to interview this candidate.</p>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Location / Meeting Link</label>
-                <input
-                  type="text"
-                  value={form.locationOrLink}
-                  onChange={(event) => setForm((prev) => ({ ...prev, locationOrLink: event.target.value }))}
-                  placeholder="Conference room A or https://meet.google.com"
-                  className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
-                  required
-                />
-              </div>
+                <div>
+                  <label htmlFor="interview-type" className="mb-2 block text-sm font-medium text-slate-700">Interview Type</label>
+                  <select
+                    id="interview-type"
+                    value={form.interviewType}
+                    onChange={(event) => {
+                      setForm((prev) => ({ ...prev, interviewType: event.target.value }));
+                      setFormErrors((prev) => ({ ...prev, type: undefined, locationOrLink: undefined }));
+                    }}
+                    className={`w-full rounded-2xl border px-3 py-2.5 text-sm outline-none ${formErrors.type ? 'border-rose-300 bg-rose-50/40' : 'border-slate-200'}`}
+                    required
+                  >
+                    <option value="">Select interview type</option>
+                    <option value="In-person">In-Person</option>
+                    <option value="Video">Online</option>
+                  </select>
+                  {formErrors.type && <p className="mt-1.5 text-xs text-rose-600">{formErrors.type}</p>}
+                </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Invitation Notes</label>
-                <textarea
-                  value={form.notes}
-                  onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
-                  rows="3"
-                  placeholder="Share prep notes or reminders with the candidate"
-                  className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
-                />
-              </div>
+                <div>
+                  <label htmlFor="interview-location" className="mb-2 block text-sm font-medium text-slate-700">Location / Meeting Link</label>
+                  <input
+                    id="interview-location"
+                    type="text"
+                    value={form.locationOrLink}
+                    onChange={(event) => {
+                      setForm((prev) => ({ ...prev, locationOrLink: event.target.value }));
+                      setFormErrors((prev) => ({ ...prev, locationOrLink: undefined }));
+                    }}
+                    placeholder={form.interviewType === 'Video' ? 'https://meet.google.com/...' : form.interviewType === 'In-person' ? 'Conference room / office location' : 'Select interview type above'}
+                    className={`w-full rounded-2xl border px-3 py-2.5 text-sm outline-none ${formErrors.locationOrLink ? 'border-rose-300 bg-rose-50/40' : 'border-slate-200'}`}
+                    required
+                  />
+                  {formErrors.locationOrLink && <p className="mt-1.5 text-xs text-rose-600">{formErrors.locationOrLink}</p>}
+                </div>
 
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={resetModal} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">
-                  Cancel
-                </button>
-                <button type="submit" disabled={submitting} className="rounded-full bg-sky-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-70">
-                  {submitting ? 'Saving...' : 'Save Interview'}
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label htmlFor="interview-notes" className="mb-2 block text-sm font-medium text-slate-700">Invitation Notes</label>
+                  <textarea
+                    id="interview-notes"
+                    value={form.notes}
+                    onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
+                    rows="3"
+                    placeholder="Share prep notes or reminders with the candidate"
+                    className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={resetModal} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={submitting} className="rounded-full bg-sky-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-70">
+                    {submitting ? 'Saving...' : 'Save Interview'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

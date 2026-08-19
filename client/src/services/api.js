@@ -43,8 +43,10 @@ api.interceptors.response.use(
     
     if (error.response?.status === 401) {
       clearAuthStorage();
-      window.location.href = '/login';
-      toast.error('Session expired. Please login again.');
+      if (!error.config?.skipAuthRedirect) {
+        window.location.href = '/login';
+        toast.error('Session expired. Please login again.');
+      }
     } else if (!error.config?.skipGlobalErrorToast) {
       toast.error(message);
     }

@@ -222,7 +222,7 @@ const Settings = () => {
           <div>
             <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-100 dark:border-gray-700">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40">
+                <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40">
                   <FiUser className="w-5 h-5" />
                 </div>
                 <div>
@@ -235,7 +235,7 @@ const Settings = () => {
             <div className="flex flex-col md:flex-row gap-6 items-start">
               {/* Photo Upload & Preview */}
               <div className="flex-shrink-0 flex flex-col items-center gap-2">
-                <div className="relative w-28 h-28 rounded-full bg-slate-100 dark:bg-gray-900 overflow-hidden flex items-center justify-center border-2 border-emerald-500/30 shadow-inner">
+                <div className="relative w-28 h-28 rounded-full bg-slate-100 dark:bg-gray-900 overflow-hidden flex items-center justify-center border-2 border-blue-500/30 shadow-inner">
                   {user?.avatar ? (
                     <img src={user.avatar} alt="Profile Avatar" className="w-full h-full object-cover" />
                   ) : (
@@ -263,7 +263,7 @@ const Settings = () => {
                     disabled={avatarUploading}
                     className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 transition shadow-sm"
                   >
-                    <FiCamera className="w-3.5 h-3.5 text-emerald-600" />
+                    <FiCamera className="w-3.5 h-3.5 text-blue-600" />
                     {user?.avatar ? t('settings.replacePhoto') || 'Replace Photo' : t('settings.uploadPhoto') || 'Upload Photo'}
                   </button>
                   {user?.avatar && (
@@ -298,7 +298,7 @@ const Settings = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Enter full name"
-                    className="block w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                    className="block w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition dark:bg-gray-900 dark:border-gray-700 dark:text-white"
                   />
                 </div>
 
@@ -312,7 +312,7 @@ const Settings = () => {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+251912345678"
-                    className="block w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none transition dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                    className="block w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition dark:bg-gray-900 dark:border-gray-700 dark:text-white"
                     aria-invalid={!phoneIsValid(phone)}
                   />
                   {!phoneIsValid(phone) && <p className="mt-1 text-xs text-rose-600 font-medium">{t('settings.invalidPhone') || 'Invalid phone format (+251...).'}</p>}
@@ -324,7 +324,7 @@ const Settings = () => {
                     onClick={() => setShowPasswordModal(true)}
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
                   >
-                    <FiKey className="w-3.5 h-3.5 text-emerald-600" />
+                    <FiKey className="w-3.5 h-3.5 text-blue-600" />
                     {t('auth.resetPassword') || 'Change Password'}
                   </button>
                 </div>
@@ -337,7 +337,7 @@ const Settings = () => {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1769E0] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#0D5BC4] disabled:opacity-60 transition shadow-md shadow-emerald-600/10"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1769E0] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#0D5BC4] disabled:opacity-60 transition shadow-md shadow-blue-600/10"
             >
               {saving && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
               {saving ? (t('common.loading') || 'Saving...') : (t('common.save') || 'Save Changes')}
@@ -352,7 +352,7 @@ const Settings = () => {
         <section className="bg-white dark:bg-gray-800 rounded-[12px] shadow-sm border border-slate-200 dark:border-gray-700 p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-3 mb-5 pb-3 border-b border-slate-100 dark:border-gray-700">
-              <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40">
+              <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40">
                 <FiBell className="w-5 h-5" />
               </div>
               <div>
@@ -384,7 +384,7 @@ const Settings = () => {
                         />
                         <span
                           className={`w-11 h-6 inline-block rounded-full transition-colors ${
-                            on ? 'bg-emerald-600' : 'bg-slate-200 dark:bg-gray-700'
+                            on ? 'bg-blue-600' : 'bg-slate-200 dark:bg-gray-700'
                           }`}
                           aria-hidden="true"
                         />
@@ -403,7 +403,7 @@ const Settings = () => {
           </div>
 
           <div className="mt-6 border-t border-slate-100 dark:border-gray-700 pt-3 text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
-            <FiCheckCircle className="text-emerald-500 w-3.5 h-3.5" />
+            <FiCheckCircle className="text-blue-500 w-3.5 h-3.5" />
             {t('settings.autoSaveNotice') || 'Preferences auto-save directly to your database profile.'}
           </div>
         </section>
@@ -415,12 +415,12 @@ const Settings = () => {
           CHANGE PASSWORD MODAL DIALOG
          ═════════════════════════════════════════════════════════════════════ */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-          <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="relative my-8 w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-gray-700">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+                <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
                   <FiLock className="w-5 h-5" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('auth.resetPassword') || 'Change Password'}</h3>
@@ -443,7 +443,7 @@ const Settings = () => {
                   placeholder="Enter current password"
                   value={passwordForm.currentPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 dark:border-gray-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-xl border border-slate-200 dark:border-gray-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   required
                 />
               </div>
@@ -455,7 +455,7 @@ const Settings = () => {
                   placeholder="Enter new password"
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 dark:border-gray-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-xl border border-slate-200 dark:border-gray-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   required
                 />
               </div>
@@ -467,7 +467,7 @@ const Settings = () => {
                   placeholder="Confirm new password"
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 dark:border-gray-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-xl border border-slate-200 dark:border-gray-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   required
                 />
               </div>

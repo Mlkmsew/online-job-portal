@@ -8,7 +8,7 @@ import {
   FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, FiClock,
   FiPlus, FiTrash2, FiX, FiCamera, FiStar,
   FiAward, FiGlobe, FiLink, FiEdit2, FiUploadCloud, FiExternalLink,
-  FiFileText, FiBookOpen, FiCalendar, FiBarChart2,
+  FiFileText, FiBookOpen, FiCalendar, FiBarChart2, FiChevronDown, FiFile,
 } from 'react-icons/fi';
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
@@ -67,7 +67,7 @@ const calculateProfileStrength = (user) => calculateProfileCompletion(user);
 const JobSeekerProfile = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
+  const { user, token } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState(() => getInitialFormData(user));
   const [avatarFile, setAvatarFile] = useState(null);
@@ -82,9 +82,65 @@ const JobSeekerProfile = () => {
 
   const avatarInputRef = useRef(null);
 
+  // Replace CV dropdown state — Resume Builder CVs come from localStorage
+  const resumeStorageKey = `ethiojob_resumes_${user?._id || user?.id || user?.email || token || 'guest'}`;
+  const activeCVStorageKey = `ethiojob_active_cv_${user?._id || user?.id || user?.email || token || 'guest'}`;
+  const [cvMenuOpen, setCvMenuOpen] = useState(false);
+  const [builderCVs, setBuilderCVs] = useState([]);
+  const [activeBuilderCV, setActiveBuilderCV] = useState(null);
+  const cvMenuRef = useRef(null);
+  const cvFileInputRef = useRef(null);
+
   useEffect(() => {
     setFormData(getInitialFormData(user));
   }, [user]);
+
+  // Load Resume Builder CVs from the same localStorage the Resume Builder uses
+  useEffect(() => {
+    const loadBuilderCVs = () => {
+      try {
+        const stored = localStorage.getItem(resumeStorageKey);
+        const legacyStored = localStorage.getItem('ethiojob_resumes');
+        const parsed = stored
+          ? JSON.parse(stored)
+          : legacyStored
+          ? JSON.parse(legacyStored)
+          : [];
+        setBuilderCVs(Array.isArray(parsed) ? parsed : []);
+      } catch (error) {
+        setBuilderCVs([]);
+      }
+
+      try {
+        const activeStored = localStorage.getItem(activeCVStorageKey);
+        setActiveBuilderCV(activeStored ? JSON.parse(activeStored) : null);
+      } catch (error) {
+        setActiveBuilderCV(null);
+      }
+    };
+
+    loadBuilderCVs();
+    window.addEventListener('storage', loadBuilderCVs);
+    return () => window.removeEventListener('storage', loadBuilderCVs);
+  }, [resumeStorageKey, activeCVStorageKey]);
+
+  // Close the Replace CV dropdown on outside click / Escape
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (cvMenuRef.current && !cvMenuRef.current.contains(e.target)) {
+        setCvMenuOpen(false);
+      }
+    };
+    const handleKey = (e) => {
+      if (e.key === 'Escape') setCvMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, []);
 
   const profileStrength = useMemo(() => calculateProfileStrength(user), [user]);
 
@@ -212,11 +268,52 @@ const JobSeekerProfile = () => {
     fd.append('cv', file);
     try {
       await dispatch(uploadCV(fd)).unwrap();
+      localStorage.removeItem(activeCVStorageKey);
+      setActiveBuilderCV(null);
       toast.success('Resume / CV uploaded successfully!');
       setCvFile(null);
     } catch (err) {
       toast.error(err || 'Failed to upload resume.');
     }
+  };
+
+  /* Resume Builder CV helpers for the Replace CV dropdown */
+  const getResumeCreatedAt = (resume) => {
+    if (resume?.createdAt) return new Date(resume.createdAt);
+    const match = /resume_(\d+)/.exec(resume?.id || '');
+    if (match) {
+      const ts = Number(match[1]);
+      if (!Number.isNaN(ts)) return new Date(ts);
+    }
+    return null;
+  };
+
+  const formatResumeDate = (resume) => {
+    const d = getResumeCreatedAt(resume);
+    return d && !Number.isNaN(d.getTime())
+      ? d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+      : null;
+  };
+
+  const handleSelectBuilderCV = (resume) => {
+    const selection = {
+      id: resume.id,
+      title: resume.title || 'Untitled Resume',
+      createdAt: getResumeCreatedAt(resume)?.toISOString() || null,
+    };
+    try {
+      localStorage.setItem(activeCVStorageKey, JSON.stringify(selection));
+    } catch (error) {
+      console.error('Failed to persist active CV:', error);
+    }
+    setActiveBuilderCV(selection);
+    setCvMenuOpen(false);
+    toast.success(t('profile.builderCVActive') || 'Resume Builder CV set as your active CV');
+  };
+
+  const handleUploadFromFile = () => {
+    setCvMenuOpen(false);
+    cvFileInputRef.current?.click();
   };
 
   /* Modal item helpers */
@@ -884,7 +981,13 @@ const JobSeekerProfile = () => {
             </div>
             <div>
               <p className="text-xs font-bold text-slate-800">{t('profile.cvResume') || 'Attached Resume Document'}</p>
-              <p className="text-[11px] text-slate-500">{resumeUploaded ? resumeFileName : (t('profile.noCVUploaded') || 'No CV document uploaded yet')}</p>
+              <p className="text-[11px] text-slate-500">
+                {activeBuilderCV
+                  ? `${activeBuilderCV.title || 'Resume Builder CV'}${activeBuilderCV.createdAt ? ` • ${new Date(activeBuilderCV.createdAt).toLocaleDateString()}` : ''}`
+                  : resumeUploaded
+                  ? resumeFileName
+                  : (t('profile.noCVUploaded') || 'No CV document uploaded yet')}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -899,11 +1002,63 @@ const JobSeekerProfile = () => {
                 {t('common.view') || 'View'}
               </a>
             )}
-            <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-[#1769E0] hover:bg-blue-50 transition">
-              <FiUploadCloud className="h-3.5 w-3.5" />
-              {resumeUploaded ? (t('profile.replaceCV') || 'Replace CV') : (t('profile.uploadCV') || 'Upload CV')}
-              <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCVSelect} />
-            </label>
+            <div className="relative" ref={cvMenuRef}>
+              <button
+                type="button"
+                onClick={() => setCvMenuOpen((o) => !o)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-[#1769E0] hover:bg-blue-50 transition"
+                aria-haspopup="menu"
+                aria-expanded={cvMenuOpen}
+              >
+                <FiUploadCloud className="h-3.5 w-3.5" />
+                {resumeUploaded || activeBuilderCV ? (t('profile.replaceCV') || 'Replace CV') : (t('profile.uploadCV') || 'Upload CV')}
+                <FiChevronDown className="h-3.5 w-3.5" />
+              </button>
+
+              {cvMenuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 z-30 mt-1.5 w-72 max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
+                >
+                  {builderCVs.length > 0 ? (
+                    builderCVs.map((resume) => {
+                      const date = formatResumeDate(resume);
+                      return (
+                        <button
+                          key={resume.id || resume.title || 'resume'}
+                          type="button"
+                          role="menuitem"
+                          onClick={() => handleSelectBuilderCV(resume)}
+                          className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs text-slate-700 transition hover:bg-blue-50"
+                        >
+                          <span className="flex items-center gap-2 min-w-0">
+                            <FiFile className="h-3.5 w-3.5 flex-shrink-0 text-[#1769E0]" />
+                            <span className="truncate font-semibold">{resume.title || 'Untitled Resume'}</span>
+                          </span>
+                          {date && <span className="flex-shrink-0 text-[10px] text-slate-400">{date}</span>}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="px-3 py-2 text-xs text-slate-400 italic">{t('profile.noBuilderCVs') || 'No Resume Builder CVs found'}</div>
+                  )}
+
+                  <div className="border-t border-slate-100 mt-1 pt-1">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={handleUploadFromFile}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-bold text-[#1769E0] transition hover:bg-blue-50"
+                    >
+                      <FiUploadCloud className="h-3.5 w-3.5" />
+                      {t('profile.uploadFromFile') || 'Upload From File'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <input ref={cvFileInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCVSelect} />
+            </div>
           </div>
         </div>
       </section>
@@ -914,8 +1069,8 @@ const JobSeekerProfile = () => {
           MODAL DIALOGS FOR EDIT / ADD ACTIONS
          ═════════════════════════════════════════════════════════════════════ */}
       {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl space-y-4 my-8">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div className="my-8 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl space-y-4">
 
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">
@@ -974,7 +1129,7 @@ const JobSeekerProfile = () => {
                       )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">First Name</label>
                       <input
@@ -1023,7 +1178,7 @@ const JobSeekerProfile = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Phone Number</label>
                       <input
@@ -1072,7 +1227,7 @@ const JobSeekerProfile = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Current Role</label>
                       <input
@@ -1095,7 +1250,7 @@ const JobSeekerProfile = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Expected Salary</label>
                       <input
@@ -1144,7 +1299,7 @@ const JobSeekerProfile = () => {
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Start Date / Year</label>
                       <input
@@ -1213,7 +1368,7 @@ const JobSeekerProfile = () => {
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Start Date</label>
                       <input

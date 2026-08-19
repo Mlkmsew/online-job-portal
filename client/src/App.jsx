@@ -18,6 +18,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 // Public Pages
 import Home from './pages/Home';
 import Jobs from './pages/Jobs';
+import Categories from './pages/Categories';
 import JobDetails from './pages/JobDetails';
 import JobApply from './pages/JobApply';
 import Companies from './pages/Companies';
@@ -112,6 +113,7 @@ const AppRoutes = () => {
             <Route path="jobs" element={<Jobs />} />
             <Route path="jobs/:id" element={<JobDetails />} />
             <Route path="jobs/:id/apply" element={<JobApply />} />
+            <Route path="categories" element={<Categories />} />
             <Route path="companies" element={<Companies />} />
             <Route path="companies/:id" element={<CompanyDetails />} />
             <Route path="about" element={<About />} />

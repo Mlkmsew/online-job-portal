@@ -83,7 +83,7 @@ const CompletedInterviewHeader = ({ onBack, title, status, onReschedule, onCance
         </button>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-semibold text-slate-900">{title}</h1>
-          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">{status}</span>
+          <span className="rounded-full border border-[#A8C8F5] bg-[#EAF2FE] px-3 py-1 text-sm font-medium text-[#0A4FA8]">{status}</span>
         </div>
         <p className="mt-2 text-sm text-slate-600">{t('interviews.viewManageInfo') || 'View and manage interview information, notes, and feedback.'}</p>
       </div>
@@ -171,22 +171,22 @@ const AgendaCard = () => (
   <div className="rounded-3xl border border-slate-200 bg-white p-5">
     <div className="flex items-center justify-between">
       <h3 className="text-lg font-semibold text-slate-900">Interview Agenda</h3>
-      <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">100%</span>
+      <span className="rounded-full bg-[#EAF2FE] px-3 py-1 text-sm font-medium text-[#0A4FA8]">100%</span>
     </div>
     <div className="mt-4 h-2 rounded-full bg-slate-100">
-      <div className="h-2 w-full rounded-full bg-emerald-500" />
+      <div className="h-2 w-full rounded-full bg-[#1769E0]" />
     </div>
     <div className="mt-4 space-y-3">
       {defaultAgenda.map((item) => (
         <div key={item.label} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <CheckCircle2 className="h-5 w-5 text-[#0D5BC4]" />
             <div>
               <span className="text-sm font-medium text-slate-900">{item.label}</span>
               <p className="text-xs text-slate-500">{item.duration}</p>
             </div>
           </div>
-          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">Completed</span>
+          <span className="rounded-full bg-[#EAF2FE] px-3 py-1 text-xs font-medium text-[#0A4FA8]">Completed</span>
         </div>
       ))}
     </div>
@@ -202,7 +202,7 @@ const TimelineCard = () => (
     <div className="mt-4 space-y-4 border-l border-slate-200 pl-4">
       {mockTimeline.map((item) => (
         <div key={`${item.title}-${item.date}`} className="relative">
-          <div className="absolute -left-[1.08rem] top-1 h-3 w-3 rounded-full border-4 border-white bg-emerald-500" />
+          <div className="absolute -left-[1.08rem] top-1 h-3 w-3 rounded-full border-4 border-white bg-[#1769E0]" />
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
             <p className="text-sm font-medium text-slate-900">{item.title}</p>
             <div className="mt-1 flex flex-wrap gap-3 text-sm text-slate-600">
@@ -328,14 +328,14 @@ const ActionSidebar = ({ interview, onMoveToNextRound, onSendFeedback, onShareFe
     </div>
 
     <div className="rounded-3xl border border-slate-200 bg-white p-5">
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-700">{decision}</div>
+      <div className="rounded-2xl border border-[#A8C8F5] bg-[#EAF2FE] p-4 text-sm font-medium text-[#0A4FA8]">{decision}</div>
       <div className="mt-4 flex items-center gap-2">
         {[1, 2, 3, 4, 5].map((value) => <Star key={value} className="h-5 w-5 text-amber-500 fill-current" />)}
         <span className="ml-2 text-sm font-medium text-slate-700">5.0 / 5</span>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {['Technical Skills', 'Problem Solving', 'Communication', 'Culture Fit'].map((item) => (
-          <span key={item} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm text-emerald-700">{item}</span>
+          <span key={item} className="rounded-full border border-[#A8C8F5] bg-[#EAF2FE] px-3 py-1 text-sm text-[#0A4FA8]">{item}</span>
         ))}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">

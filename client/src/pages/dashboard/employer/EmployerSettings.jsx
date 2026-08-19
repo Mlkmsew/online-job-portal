@@ -333,7 +333,7 @@ const EmployerSettings = () => {
 
   const currentTabMeta = useMemo(() => {
     const map = {
-      Account: { icon: FiUser, accent: 'bg-emerald-100 text-emerald-700' },
+      Account: { icon: FiUser, accent: 'bg-[#DCEAFD] text-[#0A4FA8]' },
       Notifications: { icon: FiBell, accent: 'bg-amber-100 text-amber-700' },
       'Company Preferences': { icon: FiBriefcase, accent: 'bg-sky-100 text-sky-700' },
       Appearance: { icon: theme === 'Dark' ? FiMoon : FiSun, accent: 'bg-violet-100 text-violet-700' },
@@ -480,10 +480,10 @@ const EmployerSettings = () => {
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-emerald-700">{t('employer.settings.account.badge')}</p>
+                  <p className="text-sm font-medium text-[#0A4FA8]">{t('employer.settings.account.badge')}</p>
                   <h2 className="mt-2 text-2xl font-semibold text-slate-900">{t('employer.settings.account.title')}</h2>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#DCEAFD] text-[#0A4FA8]">
                   <FiUser className="h-5 w-5" />
                 </div>
               </div>
@@ -491,7 +491,7 @@ const EmployerSettings = () => {
               <div className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
                 <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                   <div className="flex items-center gap-4">
-                    <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 text-2xl font-bold text-white shadow-md">
+                    <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#1769E0] to-[#0A4FA8] text-2xl font-bold text-white shadow-md">
                       {avatarUrl ? (
                         <img src={avatarUrl} alt="Employer avatar" className="h-full w-full object-cover" />
                       ) : (
@@ -532,7 +532,7 @@ const EmployerSettings = () => {
                       <input
                         value={account.fullName}
                         onChange={(event) => setAccount((prev) => ({ ...prev, fullName: event.target.value }))}
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#1769E0] focus:ring-2 focus:ring-[#DCEAFD]"
                       />
                     </div>
 
@@ -555,7 +555,7 @@ const EmployerSettings = () => {
                           type="email"
                           value={account.workEmail}
                           onChange={(event) => setAccount((prev) => ({ ...prev, workEmail: event.target.value }))}
-                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-[#1769E0] focus:ring-2 focus:ring-[#DCEAFD]"
                         />
                       </div>
                     </div>
@@ -582,7 +582,7 @@ const EmployerSettings = () => {
                   <p className="text-sm font-medium text-slate-500">{t('employer.settings.security.badge')}</p>
                   <h3 className="mt-2 text-xl font-semibold text-slate-900">{t('employer.settings.security.title')}</h3>
                 </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#DCEAFD] text-[#0A4FA8]">
                   <FiLock className="h-5 w-5" />
                 </div>
               </div>
@@ -607,7 +607,7 @@ const EmployerSettings = () => {
                         type="password"
                         value={passwordForm.currentPassword}
                         onChange={(event) => setPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#1769E0] focus:ring-2 focus:ring-[#DCEAFD]"
                       />
                     </div>
 
@@ -617,7 +617,7 @@ const EmployerSettings = () => {
                         type="password"
                         value={passwordForm.newPassword}
                         onChange={(event) => setPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))}
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#1769E0] focus:ring-2 focus:ring-[#DCEAFD]"
                       />
                     </div>
 
@@ -627,7 +627,7 @@ const EmployerSettings = () => {
                         type="password"
                         value={passwordForm.confirmPassword}
                         onChange={(event) => setPasswordForm((prev) => ({ ...prev, confirmPassword: event.target.value }))}
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#1769E0] focus:ring-2 focus:ring-[#DCEAFD]"
                       />
                     </div>
                   </div>
@@ -710,7 +710,7 @@ const EmployerSettings = () => {
                         onClick={() => setNotificationSettings((prev) => ({ ...prev, frequency: option.value }))}
                         className={`rounded-2xl border p-3 text-left text-sm font-medium transition ${
                           notificationSettings.frequency === option.value
-                            ? 'border-emerald-500 bg-[#EAF2FE] text-[#1769E0]'
+                            ? 'border-[#1769E0] bg-[#EAF2FE] text-[#1769E0]'
                             : 'border-slate-200 bg-white text-slate-700'
                         }`}
                       >
@@ -1063,7 +1063,7 @@ const EmployerSettings = () => {
                       <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">{t('employer.settings.appearance.preview')}</p>
                       <h3 className="mt-1 text-xl font-semibold text-slate-900">{t('employer.settings.appearance.liveDashboard')}</h3>
                     </div>
-                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    <span className="rounded-full bg-[#DCEAFD] px-2.5 py-1 text-xs font-semibold text-[#0A4FA8]">
                       {appearanceSettings.theme}
                     </span>
                   </div>
@@ -1093,14 +1093,14 @@ const EmployerSettings = () => {
                           <p className="text-[11px] text-slate-400">{t('employer.settings.appearance.talentDashboard')}</p>
                         </div>
                       </div>
-                      <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-700">
+                      <span className="rounded-full bg-[#DCEAFD] px-2 py-1 text-[10px] font-semibold text-[#0A4FA8]">
                         {t('employer.settings.appearance.live')}
                       </span>
                     </div>
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       {[
-                        { labelKey: 'employer.settings.appearance.openRoles', value: '18', tone: 'bg-emerald-100 text-emerald-700' },
+                        { labelKey: 'employer.settings.appearance.openRoles', value: '18', tone: 'bg-[#DCEAFD] text-[#0A4FA8]' },
                         { labelKey: 'sidebar.interviews', value: '6', tone: 'bg-sky-100 text-sky-700' },
                         { labelKey: 'employer.settings.appearance.accepted', value: '24', tone: 'bg-violet-100 text-violet-700' },
                         { labelKey: 'employer.settings.appearance.avgScore', value: '89%', tone: 'bg-orange-100 text-orange-700' },
@@ -1119,7 +1119,7 @@ const EmployerSettings = () => {
                       </div>
                       <div className="flex items-end gap-2">
                         {[40, 58, 72, 68, 88, 96].map((height, index) => (
-                          <div key={index} className="flex-1 rounded-t-xl bg-gradient-to-t from-emerald-500 to-emerald-300" style={{ height: `${height}px` }} />
+                          <div key={index} className="flex-1 rounded-t-xl bg-gradient-to-t from-[#1769E0] to-[#7FB0F0]" style={{ height: `${height}px` }} />
                         ))}
                       </div>
                     </div>
@@ -1378,14 +1378,14 @@ const EmployerSettings = () => {
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-700">{t('employer.settings.headerBadge')}</p>
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#0A4FA8]">{t('employer.settings.headerBadge')}</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-900">{t('employer.settings.headerTitle')}</h1>
           </div>
 
           <div className="flex items-center gap-3">
             {saveMessage && (
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
-                <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#A8C8F5] bg-[#EAF2FE] px-3 py-1.5 text-sm font-medium text-[#0A4FA8]">
+                <span className="flex h-2.5 w-2.5 rounded-full bg-[#1769E0]" />
                 {saveMessage}
               </span>
             )}
@@ -1423,7 +1423,7 @@ const EmployerSettings = () => {
                 onClick={() => setActiveTab(tab.value)}
                 className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-medium transition ${
                   isActive
-                    ? 'bg-white text-[#1769E0] shadow-sm ring-1 ring-emerald-100'
+                    ? 'bg-white text-[#1769E0] shadow-sm ring-1 ring-[#DCEAFD]'
                     : 'text-slate-600 hover:bg-white/80 hover:text-slate-900'
                 }`}
               >
@@ -1461,7 +1461,7 @@ const EmployerSettings = () => {
           <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-emerald-700">{t('employer.settings.security.badge')}</p>
+                <p className="text-sm font-medium text-[#0A4FA8]">{t('employer.settings.security.badge')}</p>
                 <h3 className="mt-1 text-2xl font-semibold text-slate-900">{t('employer.settings.security.changePasswordModalTitle')}</h3>
               </div>
               <button
@@ -1480,7 +1480,7 @@ const EmployerSettings = () => {
                   type="password"
                   value={passwordForm.currentPassword}
                   onChange={(event) => setPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#1769E0] focus:ring-2 focus:ring-[#DCEAFD]"
                 />
               </div>
 
@@ -1490,7 +1490,7 @@ const EmployerSettings = () => {
                   type="password"
                   value={passwordForm.newPassword}
                   onChange={(event) => setPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#1769E0] focus:ring-2 focus:ring-[#DCEAFD]"
                 />
               </div>
 
@@ -1500,7 +1500,7 @@ const EmployerSettings = () => {
                   type="password"
                   value={passwordForm.confirmPassword}
                   onChange={(event) => setPasswordForm((prev) => ({ ...prev, confirmPassword: event.target.value }))}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#1769E0] focus:ring-2 focus:ring-[#DCEAFD]"
                 />
               </div>
 

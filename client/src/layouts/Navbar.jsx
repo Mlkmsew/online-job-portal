@@ -7,7 +7,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { FiMenu, FiX, FiBriefcase, FiUser, FiLogOut } from 'react-icons/fi';
-import { logout } from '../store/slices/authSlice';
+import { logout, logoutUser } from '../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import DarkModeToggle from '../components/common/DarkModeToggle';
@@ -15,7 +15,7 @@ import DarkModeToggle from '../components/common/DarkModeToggle';
 const Navbar = () => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,9 +36,11 @@ const Navbar = () => {
     try {
       await dispatch(logout()).unwrap();
       toast.success(t('auth.logoutSuccess'));
-      navigate('/');
     } catch (error) {
       toast.error(t('auth.logoutFailed'));
+    } finally {
+      dispatch(logoutUser());
+      navigate('/');
     }
   };
 
@@ -50,44 +52,43 @@ const Navbar = () => {
 
   const navItems = [
     { to: '/', label: t('nav.home', { defaultValue: 'Home' }), match: '/' },
-    { to: '/jobs', label: t('nav.findJobs', { defaultValue: 'Find Jobs' }), match: '/jobs', categories: false },
+    { to: '/jobs', label: t('nav.findJobs', { defaultValue: 'Find Jobs' }), match: '/jobs' },
     { to: '/companies', label: t('nav.companies', { defaultValue: 'Companies' }), match: '/companies' },
-    { to: '/jobs', label: t('nav.categories', { defaultValue: 'Categories' }), match: '/jobs', categories: true },
+    { to: '/categories', label: t('nav.categories', { defaultValue: 'Categories' }), match: '/categories' },
     { to: '/about', label: t('nav.about', { defaultValue: 'About Us' }), match: '/about' },
     { to: '/contact', label: t('nav.contact', { defaultValue: 'Contact' }), match: '/contact' },
   ];
 
   const isActive = (item) => {
-    const { match, categories } = item;
+    const { match } = item;
     if (match === '/') return location.pathname === '/';
-    if (categories) return location.pathname === match && location.search.includes('category=');
     return location.pathname === match;
   };
 
   // Dark navy navbar background applies to every page regardless of route.
   const navShellClass = 'relative sticky top-0 z-50 pb-10';
 
-  const logoIconClass = 'text-emerald-400';
+  const logoIconClass = 'text-[#60A5FA]';
   const logoTitleClass = 'text-white';
-  const logoAccentClass = 'text-emerald-400';
+  const logoAccentClass = 'text-[#60A5FA]';
 
   const desktopLinkClass = (active) =>
-    `rounded-lg px-4 py-2 text-base transition ${
+    `rounded-lg px-3 xl:px-4 py-2 text-sm xl:text-base whitespace-nowrap transition ${
       active
-        ? 'border border-[#1769E0] bg-[#1769E0] font-semibold text-white'
+        ? 'border border-[#1769E0] bg-[#1769E0] font-semibold text-white shadow-md'
         : 'font-medium text-sky-100 hover:bg-white/5 hover:text-white'
     }`;
 
   const mobileLinkClass = (active) =>
-    `block rounded-lg px-4 py-2 text-base transition ${
+    `block rounded-lg px-4 py-2.5 text-base transition ${
       active ? 'border border-[#1769E0] bg-[#1769E0] font-semibold text-white' : 'font-medium text-sky-100 hover:bg-white/5 hover:text-white'
     }`;
 
   const ghostLinkClass =
-    'inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-white/10 hover:text-white';
+    'inline-flex items-center rounded-lg px-3 xl:px-4 py-2 text-sm font-medium text-sky-100 whitespace-nowrap transition hover:bg-white/10 hover:text-white';
 
   const hamburgerClass =
-    'md:hidden text-white p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981]';
+    'lg:hidden text-white p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10B981]';
 
   return (
     <nav
@@ -95,12 +96,14 @@ const Navbar = () => {
       role="navigation"
       aria-label="Main navigation"
     >
-      {/* Dark navy hero-matching background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/images/hero-bg-career.svg')" }}
-        aria-hidden="true"
-      />
+      {/* Dark navy hero-matching background (image only on non-contact pages) */}
+      {location.pathname !== '/contact' && (
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/images/hero-bg-career.svg')" }}
+          aria-hidden="true"
+        />
+      )}
       <div className="absolute inset-0 bg-gradient-to-r from-[#06152B]/95 via-[#0A2A5E]/90 to-[#0E3A7A]/85" aria-hidden="true" />
 
       <div className="relative container-custom">
@@ -114,7 +117,7 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-6" role="menubar">
+          <div className="hidden lg:flex items-center gap-1 xl:gap-3" role="menubar">
             {navItems.map((item) => (
               <Link
                 key={item.label}
@@ -129,7 +132,11 @@ const Navbar = () => {
             <LanguageSwitcher light={true} />
             <DarkModeToggle />
 
-            {isAuthenticated ? (
+            {loading ? (
+              <span className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-sky-100" aria-hidden="true">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-300 border-t-transparent" />
+              </span>
+            ) : isAuthenticated ? (
               <>
                 <Link to={getDashboardLink()} className={ghostLinkClass} aria-label="Go to your dashboard">
                   <FiUser className="mr-2" aria-hidden="true" />
@@ -175,7 +182,7 @@ const Navbar = () => {
           <div
             id="mobile-menu"
             ref={mobileMenuRef}
-            className={`md:hidden py-4 space-y-4`}
+            className={`lg:hidden py-4 space-y-4`}
             role="menu"
             aria-label="Mobile navigation"
           >
@@ -196,7 +203,11 @@ const Navbar = () => {
               <DarkModeToggle />
             </div>
 
-            {isAuthenticated ? (
+            {loading ? (
+              <span className="block rounded-lg px-4 py-2.5 text-center text-sm font-medium text-sky-100" aria-hidden="true">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-sky-300 border-t-transparent align-middle" />
+              </span>
+            ) : isAuthenticated ? (
               <>
                 <Link to={getDashboardLink()} className="block btn btn-ghost w-full text-left text-sky-100" role="menuitem" onClick={() => setIsOpen(false)}>
                   {t('nav.dashboard')}

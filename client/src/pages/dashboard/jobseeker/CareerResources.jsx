@@ -38,11 +38,11 @@ const CareerResources = () => {
       <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">Career resources</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-blue-600">Career resources</p>
             <h1 className="mt-4 text-4xl font-black text-slate-900 dark:text-white">Train smarter and move confidently toward your next role.</h1>
             <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">Browse curated tools, articles, and guides designed to support each stage of your job search.</p>
           </div>
-          <div className="rounded-full border border-emerald-100 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700">Updated weekly</div>
+          <div className="rounded-full border border-blue-100 bg-blue-50 px-5 py-3 text-sm font-semibold text-blue-700">Updated weekly</div>
         </div>
       </div>
 
@@ -76,14 +76,14 @@ const CareerResources = () => {
                 className="group block rounded-3xl border border-gray-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#1769E0] hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
               >
                 <div className="flex items-center justify-between gap-4">
-                  <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-700">
+                  <div className="rounded-2xl bg-blue-50 p-3 text-blue-700">
                     <Icon className="w-5 h-5" />
                   </div>
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600 dark:bg-gray-900 dark:text-slate-300">{item.tag}</span>
                 </div>
                 <h3 className="mt-6 text-xl font-semibold text-slate-900 dark:text-white">{item.title}</h3>
                 <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{item.description}</p>
-                <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-emerald-700">
+                <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-blue-700">
                   <span>Explore</span>
                   <FiArrowRight className="w-4 h-4 transition group-hover:translate-x-1" />
                 </div>

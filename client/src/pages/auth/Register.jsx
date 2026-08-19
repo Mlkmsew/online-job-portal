@@ -30,7 +30,11 @@ const Register = () => {
   const password = watch('password');
 
   useEffect(() => {
-    setValue('phone', `${selectedCountry.code}${phoneLocal}`.trim(), {
+    let full = `${selectedCountry.code}${phoneLocal}`.trim();
+    if (selectedCountry.code === '+251' && phoneLocal.startsWith('0')) {
+      full = `+251${phoneLocal.slice(1)}`;
+    }
+    setValue('phone', full, {
       shouldValidate: true,
       shouldDirty: true,
     });
@@ -77,13 +81,19 @@ const Register = () => {
                 <label className="block text-sm font-medium mb-2">{t('auth.firstName')}</label>
                 <input
                   type="text"
+                  maxLength={13}
                   {...register('firstName', {
-                    required: t('common.error'),
+                    required: t('auth.firstNameRequired'),
                     pattern: {
                       value: /^[A-Za-z]+$/,
-                      message: t('common.error'),
+                      message: t('auth.firstNameLetters'),
                     },
                   })}
+                  onChange={(e) => {
+                    const filtered = e.target.value.replace(/[^A-Za-z]/g, '');
+                    if (filtered !== e.target.value) e.target.value = filtered;
+                    setValue('firstName', filtered, { shouldValidate: true });
+                  }}
                   className="input"
                   placeholder="Abebe"
                 />
@@ -94,13 +104,19 @@ const Register = () => {
                 <label className="block text-sm font-medium mb-2">{t('auth.lastName')}</label>
                 <input
                   type="text"
+                  maxLength={13}
                   {...register('lastName', {
-                    required: t('common.error'),
+                    required: t('auth.lastNameRequired'),
                     pattern: {
                       value: /^[A-Za-z]+$/,
-                      message: t('common.error'),
+                      message: t('auth.lastNameLetters'),
                     },
                   })}
+                  onChange={(e) => {
+                    const filtered = e.target.value.replace(/[^A-Za-z]/g, '');
+                    if (filtered !== e.target.value) e.target.value = filtered;
+                    setValue('lastName', filtered, { shouldValidate: true });
+                  }}
                   className="input"
                   placeholder="Bekele"
                 />
@@ -141,7 +157,16 @@ const Register = () => {
                   <input
                     type="tel"
                     value={phoneLocal}
-                    onChange={(e) => setPhoneLocal(e.target.value.replace(/[^0-9]/g, ''))}
+                    onChange={(e) => {
+                      let v = e.target.value.replace(/[^0-9]/g, '');
+                      if (selectedCountry.code === '+251') {
+                        if (v.length > 10) v = v.slice(0, 10);
+                        if (v === '') { setPhoneLocal(''); return; }
+                        if (!v.startsWith('0')) return;
+                        if (v.length >= 2 && v[1] !== '9') v = v.slice(0, 1);
+                      }
+                      setPhoneLocal(v);
+                    }}
                     className="input pl-10"
                     placeholder="912345678"
                     aria-label="Local phone number"
@@ -189,10 +214,10 @@ const Register = () => {
               <input
                 type="hidden"
                 {...register('phone', {
-                  required: t('common.error'),
+                  required: t('auth.phoneRequired'),
                   pattern: {
-                    value: /^\+251[0-9]{9}$/,
-                    message: t('common.error'),
+                    value: /^\+2519[0-9]{8}$/,
+                    message: t('auth.phoneInvalid'),
                   },
                   setValueAs: (value) => {
                     const digits = String(value || '').replace(/\D/g, '');

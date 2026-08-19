@@ -35,7 +35,7 @@ const Footer = () => {
     { to: '/', label: t('nav.home', { defaultValue: 'Home' }) },
     { to: '/jobs', label: t('nav.findJobs', { defaultValue: 'Find Jobs' }) },
     { to: '/companies', label: t('nav.companies', { defaultValue: 'Companies' }) },
-    { to: '/jobs', label: t('nav.categories', { defaultValue: 'Categories' }) },
+    { to: '/categories', label: t('nav.categories', { defaultValue: 'Categories' }) },
     { to: '/about', label: t('nav.about', { defaultValue: 'About Us' }) },
   ];
 
@@ -61,7 +61,7 @@ const Footer = () => {
   ];
 
   const renderColumnHeading = (title) => (
-    <h3 className="text-base font-semibold text-[#0F172A]">{title}</h3>
+    <h3 className="text-base font-semibold text-white dark:text-gray-100">{title}</h3>
   );
 
   const renderLinkList = (links) => (
@@ -70,10 +70,10 @@ const Footer = () => {
         <li key={link.label}>
           <Link
             to={link.to}
-            className="group inline-flex items-center gap-2 text-sm text-[#334155] transition-colors hover:text-blue-600"
+            className="group inline-flex items-center gap-2 text-sm text-[#CBD5E1] transition-colors hover:text-white dark:text-gray-400 dark:hover:text-white"
           >
             <FiChevronRight
-              className="text-blue-600 transition-transform group-hover:translate-x-0.5"
+              className="text-blue-400 transition-transform group-hover:translate-x-0.5 dark:text-blue-400"
               aria-hidden="true"
             />
             <span>{link.label}</span>
@@ -84,16 +84,16 @@ const Footer = () => {
   );
 
   return (
-    <footer className="bg-white text-[#475569]">
+    <footer className="bg-[#0B1F3A] text-[#CBD5E1] dark:bg-[#0B1F3A] dark:text-gray-300">
       <div className="container-custom py-16">
         {/* ===== 5 COLUMN FOOTER ===== */}
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {/* Column 1 — Brand */}
           <div>
             <div className="flex items-center gap-2">
-              <FiBriefcase className="h-9 w-9 text-blue-600" aria-hidden="true" />
-              <span className="text-2xl font-bold text-[#0F172A]">
-                OnlineJob <span className="text-blue-600">Portal</span>
+              <FiBriefcase className="h-9 w-9 text-blue-400 dark:text-blue-400" aria-hidden="true" />
+              <span className="text-2xl font-bold text-white dark:text-white">
+                OnlineJob <span className="text-blue-400 dark:text-blue-400">Portal</span>
               </span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed">
@@ -106,7 +106,7 @@ const Footer = () => {
                   href="#"
                   onClick={(e) => e.preventDefault()}
                   aria-label={social.label}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F1F5F9] text-[#0F172A] shadow-sm transition-colors hover:bg-blue-600 hover:text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1A2E4A] text-[#E2E8F0] transition-colors hover:bg-blue-500 hover:text-white dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-blue-500 dark:hover:text-white"
                 >
                   <social.icon className="h-3.5 w-3.5" aria-hidden="true" />
                 </a>
@@ -140,8 +140,8 @@ const Footer = () => {
         </div>
 
         {/* ===== COPYRIGHT ===== */}
-        <div className="mt-14 border-t border-[#E5E7EB] pt-8 text-center">
-          <p className="text-sm text-[#475569]">
+        <div className="mt-14 border-t border-[#274060] pt-8 text-center dark:border-gray-800">
+          <p className="text-sm text-[#94A3B8] dark:text-gray-400">
             © 2026 OnlineJob Portal. All Rights Reserved.
           </p>
         </div>
@@ -152,7 +152,7 @@ const Footer = () => {
         type="button"
         onClick={scrollToTop}
         aria-label={t('footer.backToTop')}
-        className={`fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#E2E8F0] text-[#0F172A] shadow-lg transition-all duration-300 hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+        className={`fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#E2E8F0] text-[#0F172A] shadow-lg transition-all duration-300 hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-blue-600 dark:hover:text-white ${
           showTop ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-16 opacity-0'
         }`}
       >

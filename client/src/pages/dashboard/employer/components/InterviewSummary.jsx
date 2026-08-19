@@ -8,12 +8,12 @@ const InterviewSummary = ({ interview, evaluation, onViewProfile, onBack, onShar
           <h2 className="text-2xl font-semibold text-slate-900">Interview Completed</h2>
           <p className="mt-1 text-sm text-slate-600">The interview feedback has been recorded successfully.</p>
         </div>
-        <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm text-emerald-700">Success</div>
+        <div className="rounded-full border border-[#A8C8F5] bg-[#EAF2FE] px-3 py-1 text-sm text-[#0A4FA8]">Success</div>
       </div>
 
       <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-6">
         <div className="flex items-center gap-3">
-          <CheckCircle2 className="h-10 w-10 text-emerald-600" />
+          <CheckCircle2 className="h-10 w-10 text-[#0D5BC4]" />
           <div>
             <h3 className="text-lg font-semibold text-slate-900">Interview Completed</h3>
             <p className="text-sm text-slate-600">Candidate: {`${interview?.applicant?.firstName || ''} ${interview?.applicant?.lastName || ''}`.trim()}</p>

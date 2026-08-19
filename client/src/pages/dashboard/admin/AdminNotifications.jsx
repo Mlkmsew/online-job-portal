@@ -156,7 +156,7 @@ const AdminNotifications = () => {
   const emptyState = emptyCopy();
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

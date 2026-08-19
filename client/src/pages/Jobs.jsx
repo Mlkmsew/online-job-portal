@@ -22,6 +22,18 @@ const JOB_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelanc
 const EXPERIENCE_LEVELS = ['Entry Level', 'Mid Level', 'Senior Level', 'Lead'];
 const EDUCATION_LEVELS = ['No Requirement', 'High School', 'Diploma', 'Bachelor', 'Master', 'PhD', 'Professional Certificate'];
 
+const getPageItems = (current, total) => {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const items = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) items.push('...');
+  for (let i = start; i <= end; i += 1) items.push(i);
+  if (end < total - 1) items.push('...');
+  items.push(total);
+  return items;
+};
+
 const Jobs = () => {
   const { t } = useTranslation();
   const location = useLocation();
@@ -791,16 +803,22 @@ const Jobs = () => {
                     >
                       {t('common.previous') || 'Previous'}
                     </button>
-                    {Array.from({ length: pages }, (_, index) => index + 1).map((pageNumber) => (
-                      <button
-                        key={pageNumber}
-                        type="button"
-                        onClick={() => setPage(pageNumber)}
-                        className={`rounded-full px-4 py-2 text-sm font-semibold ${pageNumber === page ? 'bg-[#1769E0] text-white' : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-950 dark:text-gray-300'}`}
-                      >
-                        {pageNumber}
-                      </button>
-                    ))}
+                    {getPageItems(page, pages).map((pageNumber, index) =>
+                      pageNumber === '...' ? (
+                        <span key={`ellipsis-${index}`} className="px-2 text-sm text-gray-400 dark:text-gray-500">
+                          …
+                        </span>
+                      ) : (
+                        <button
+                          key={pageNumber}
+                          type="button"
+                          onClick={() => setPage(pageNumber)}
+                          className={`rounded-full px-4 py-2 text-sm font-semibold ${pageNumber === page ? 'bg-[#1769E0] text-white' : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-950 dark:text-gray-300'}`}
+                        >
+                          {pageNumber}
+                        </button>
+                      )
+                    )}
                     <button
                       type="button"
                       disabled={!hasNextPage}

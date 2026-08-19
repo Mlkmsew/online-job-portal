@@ -57,9 +57,9 @@ const SkillAssessment = () => {
                 <h2 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{assessmentScore}%</h2>
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{readinessLabel}. Keep building skills that matter for your next role.</p>
               </div>
-              <div className="rounded-3xl bg-emerald-50 p-5 text-center">
+              <div className="rounded-3xl bg-blue-50 p-5 text-center">
                 <p className="text-sm text-gray-500">Core strengths</p>
-                <p className="mt-3 text-4xl font-black text-emerald-700">{userSkills.length}</p>
+                <p className="mt-3 text-4xl font-black text-blue-700">{userSkills.length}</p>
                 <p className="text-sm text-gray-500">skills identified</p>
               </div>
             </div>
@@ -89,7 +89,7 @@ const SkillAssessment = () => {
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Top skills</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Skills discovered from your profile.</p>
                 </div>
-                <FiCheckCircle className="w-5 h-5 text-emerald-600" />
+                <FiCheckCircle className="w-5 h-5 text-blue-600" />
               </div>
               <div className="space-y-2">
                 {userSkills.length > 0 ? (
@@ -110,7 +110,7 @@ const SkillAssessment = () => {
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Next skills</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Suggested skills to improve your match.</p>
                 </div>
-                <FiTrendingUp className="w-5 h-5 text-emerald-600" />
+                <FiTrendingUp className="w-5 h-5 text-blue-600" />
               </div>
               <div className="space-y-2">
                 {recommendedSkills.map((skill) => (
@@ -146,7 +146,7 @@ const SkillAssessment = () => {
                   <div key={item.label} className="rounded-3xl border border-gray-200 dark:border-gray-700 p-5 bg-slate-50 dark:bg-gray-900">
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">{item.label}</span>
-                      <span className="text-lg font-black text-emerald-600">{item.score}%</span>
+                      <span className="text-lg font-black text-blue-600">{item.score}%</span>
                     </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{item.description}</p>
                   </div>
@@ -159,7 +159,7 @@ const SkillAssessment = () => {
         <aside className="space-y-4">
           <div className="rounded-3xl border border-gray-150 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
-              <div className="rounded-2xl bg-emerald-50 text-emerald-700 p-3">
+              <div className="rounded-2xl bg-blue-50 text-blue-700 p-3">
                 <FiBookOpen className="w-5 h-5" />
               </div>
               <div>
@@ -175,7 +175,7 @@ const SkillAssessment = () => {
 
           <div className="rounded-3xl border border-gray-150 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
-              <div className="rounded-2xl bg-emerald-50 text-emerald-700 p-3">
+              <div className="rounded-2xl bg-blue-50 text-blue-700 p-3">
                 <FiShield className="w-5 h-5" />
               </div>
               <div>

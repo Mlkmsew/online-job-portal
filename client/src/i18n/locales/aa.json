@@ -30,6 +30,16 @@
     "dashboard": "Dhaashbood",
     "profile": "Yi Profile"
   },
+  "categoriesPage": {
+    "title": "Taama Rabaawa Yablee",
+    "subtitle": "Umman durralumay hoyi dulala rabaawa wagiteh gexseh taamay durraluma kokobbisa yableh.",
+    "searchPlaceholder": "Rabaawa guruy...",
+    "showingCount": "Yuy haysa",
+    "categoriesLabel": "rabaawa",
+    "ofJobs": "liya",
+    "noSearchResults": "Rabaawa guruyul oggoluk mutukka",
+    "browseJobs": "Taama Yablee"
+  },
   "auth": {
     "login": "Edde cawur",
     "register": "Oolise",

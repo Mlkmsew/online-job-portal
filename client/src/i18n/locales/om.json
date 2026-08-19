@@ -43,6 +43,16 @@
     "viewProfile": "Piroofaayilii Daawwadhu",
     "uploadNewCV": "CV Haaraa Olkaa'i"
   },
+  "categoriesPage": {
+    "title": "Ramboo Hojii Daawwadhu",
+    "subtitle": "Ramboo industirii hunda savadhaa, dandeettii kee wajjin walqixxataa ta'an hojiiwwan barbaadi.",
+    "searchPlaceholder": "Ramboo barbaadi...",
+    "showingCount": "Agarsisaa jira",
+    "categoriesLabel": "ramboo",
+    "ofJobs": "wajjin",
+    "noSearchResults": "Barbaacha kee wajjin walqixxateen ramboonni hin argaman.",
+    "browseJobs": "Hojiiwwan Daawwadhu"
+  },
   "aria": {
     "homepage": "OnlineJob Portal - Manaa deebi'i"
   },
@@ -1414,6 +1424,9 @@
     "replaceCV": "CV Jijjiiri",
     "downloadCV": "CV Buufadhu",
     "deleteCV": "CV Haqii",
+    "builderCVActive": "CV Buildeerii CV aktiivii ta'ee kan muudame",
+    "noBuilderCVs": "CVwwan Buildeerii hin argamne",
+    "uploadFromFile": "Faayilii irraa Fe'i",
     "bioInformation": "Odeeffannoo Dhuunfaa (Bio)",
     "editBio": "Bio Gulaali",
     "addBio": "Bio Dabali",

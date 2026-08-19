@@ -1,25 +1,32 @@
-// ============================================
+﻿// ============================================
 // Resume Builder Wizard Component
 // ============================================
-import { useState, useEffect } from 'react';
-import { 
-  FiFileText, FiPlus, FiUpload, FiEdit2, FiDownload, 
+import { useState, useEffect, useRef } from 'react';
+import {
+  FiFileText, FiPlus, FiUpload, FiEdit2, FiDownload,
   FiPrinter, FiInfo, FiTrash2, FiX, FiSearch, FiSave, FiPlusCircle,
   FiArrowLeft, FiArrowRight, FiTrash, FiMail, FiPhone, FiMapPin, FiCheckCircle, FiTool, FiDatabase, FiCode, FiGlobe,
-  FiCloud, FiChevronDown, FiChevronUp, FiMoreHorizontal, FiRotateCcw, FiRotateCw, FiBookOpen, FiBriefcase, FiSmile, FiImage, FiType, FiLayers, FiUser, FiGrid, FiMenu
+  FiCloud, FiChevronDown, FiChevronUp, FiChevronRight, FiMoreHorizontal, FiRotateCcw, FiRotateCw, FiBookOpen, FiBriefcase, FiSmile, FiImage, FiType, FiLayers, FiUser, FiGrid, FiMenu, FiAward, FiCheck,
+  FiArrowUp, FiArrowDown, FiUsers
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { PhoneIcon, MailIcon, LocationIcon, GlobeIcon, DotIcon } from '../../../components/icons/ResumeIcons';
-import { updateProfile } from '../../../store/slices/authSlice';
+import { uploadAvatar } from '../../../store/slices/authSlice';
+import { getResumes, createResume, updateResume, deleteResume } from '../../../services/resumeService';
 import TemplateBadge from '../../../components/resume/templates/TemplateBadge';
 import TemplateSearch from '../../../components/resume/templates/TemplateSearch';
 import TemplateFilter from '../../../components/resume/templates/TemplateFilter';
 import TemplateToolbar from '../../../components/resume/templates/TemplateToolbar';
 import TemplateCard from '../../../components/resume/templates/TemplateCard';
 import { getTemplateDefinition, getTemplateDefinitions, getTemplateComponent, resolveTemplateId } from '../../../components/resume/templates/config';
-import { calculateResumeCompletion, withResumeScore } from '../../../utils/resumeCompletion';
+import { withResumeScore, buildResumeFromProfile } from '../../../utils/resumeCompletion';
+import { hydrateResumeFromProfile, hydrateResumeListFromProfile, validateResumeForDownload } from '../../../utils/resumeBuilderData';
+import { sanitizeEthiopianPhone } from '../../../utils/helpers';
+import { TEMPLATE_COLORS, TEMPLATE_COLOR_NAMES, getTemplateTheme, getResumeThemeColor } from '../../../components/resume/templates/templateUtils';
+import { renderToStaticMarkup } from 'react-dom/server';
+import resumeTemplateCss from '../../../components/resume/templates/shared.css?raw';
 
 // Predefined suggestion examples for Experience
 const DUTY_EXAMPLES = [
@@ -80,6 +87,94 @@ const LANGUAGE_SUGGESTION_POOL = [
   'Japanese'
 ];
 
+// Section types offered by the "Add Section" flow. Projects and Interests are
+// fixed sections already present in the builder, so they are marked as such.
+const SECTION_TYPES = [
+  { key: 'awards', label: 'Awards', icon: FiAward, fixed: false },
+  { key: 'achievements', label: 'Achievements', icon: FiCheckCircle, fixed: false },
+  { key: 'volunteer', label: 'Volunteer Experience', icon: FiUsers, fixed: false },
+  { key: 'publications', label: 'Publications', icon: FiBookOpen, fixed: false },
+  { key: 'references', label: 'References', icon: FiUsers, fixed: false },
+  { key: 'memberships', label: 'Professional Memberships', icon: FiBriefcase, fixed: false },
+  { key: 'hobbies', label: 'Hobbies', icon: FiSmile, fixed: false },
+  { key: 'projects', label: 'Projects', icon: FiCode, fixed: true },
+  { key: 'interests', label: 'Interests', icon: FiGlobe, fixed: true },
+  { key: 'custom', label: 'Custom Section', icon: FiFileText, fixed: false },
+];
+
+// Helper: display order for the user-added custom sections stored in
+// `resume.additionalInfo`. `resume.sectionOrder` is the source of truth so the
+// order chosen in the builder survives save, refresh and JSON import/export.
+const getCustomSectionOrder = (resume = {}) => {
+  const keys = Object.keys(resume.additionalInfo || {});
+  const order = Array.isArray(resume.sectionOrder) ? resume.sectionOrder : [];
+  const ordered = order.filter((key) => keys.includes(key));
+  const missing = keys.filter((key) => !ordered.includes(key));
+  return [...ordered, ...missing];
+};
+
+// Build the payload sent to the /resumes API. Strips local-only fields.
+const buildBackendPayload = (resume = {}) => {
+  const payload = { ...resume };
+  delete payload._id;
+  delete payload.id;
+  delete payload.__v;
+  delete payload.user;
+  delete payload.createdAt;
+  delete payload.updatedAt;
+  return payload;
+};
+
+// Best-effort normalization of an imported JSON resume into the builder shape.
+const normalizeImportedResume = (data) => {
+  if (!data || typeof data !== 'object') return null;
+  const src = data.resume && typeof data.resume === 'object' ? data.resume : data;
+  const source = Array.isArray(src) ? (src[0] || {}) : src;
+  if (!source || typeof source !== 'object') return null;
+
+  const base = {
+    id: `resume_${Date.now()}`,
+    title: (source.title || 'Imported Resume').trim(),
+    score: 0,
+    status: 'draft',
+    template: source.template || 'modern-ats',
+    theme: source.theme && typeof source.theme === 'object' ? source.theme : { color: 'blue', primaryColor: '#2563eb' },
+    profile: { ...(source.profile || {}) },
+    summary: typeof source.summary === 'string' ? { text: source.summary } : (source.summary && typeof source.summary === 'object' ? { ...source.summary } : {}),
+    experience: source.experience,
+    education: source.education,
+    projects: Array.isArray(source.projects) ? source.projects : (source.projects ? [source.projects] : []),
+    skills: Array.isArray(source.skills) ? source.skills : [],
+    softSkills: Array.isArray(source.softSkills) ? source.softSkills : [],
+    languages: Array.isArray(source.languages) ? source.languages : [],
+    certifications: Array.isArray(source.certifications) ? source.certifications : [],
+    interests: typeof source.interests === 'string' ? { text: source.interests } : (source.interests && typeof source.interests === 'object' ? { ...source.interests } : {}),
+    additionalInfo: source.additionalInfo && typeof source.additionalInfo === 'object' ? source.additionalInfo : {},
+    sectionOrder: Array.isArray(source.sectionOrder) ? source.sectionOrder : [],
+    photo: source.photo || null,
+    dirtyFields: Array.isArray(source.dirtyFields) ? source.dirtyFields : [],
+  };
+
+  const experienceList = Array.isArray(base.experience) ? base.experience : base.experience ? [base.experience] : [];
+  const educationList = Array.isArray(base.education) ? base.education : base.education ? [base.education] : [];
+  const hasProfile = Object.values(base.profile || {}).some((v) => typeof v === 'string' && v.trim());
+  const hasExperience = experienceList.some((e) => e && Object.values(e).some((v) => typeof v === 'string' && String(v).trim()));
+  const hasEducation = educationList.some((e) => e && Object.values(e).some((v) => typeof v === 'string' && String(v).trim()));
+  const hasContent =
+    hasProfile ||
+    Boolean(base.summary?.text?.trim()) ||
+    hasExperience ||
+    hasEducation ||
+    base.skills.length > 0 ||
+    base.projects.length > 0 ||
+    base.languages.length > 0 ||
+    base.certifications.length > 0 ||
+    Object.keys(base.additionalInfo).length > 0;
+  if (!hasContent) return null;
+
+  return base;
+};
+
 const ResumeBuilder = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
@@ -123,13 +218,22 @@ const ResumeBuilder = () => {
   const [photoEditorZoom, setPhotoEditorZoom] = useState(1);
   const [photoEditorRotate, setPhotoEditorRotate] = useState(0);
 
-  const createInitialResume = (title, templateId = 'modern-ats') => ({
-    id: `resume_${Date.now()}`,
-    title: title || 'Untitled Resume',
-    score: 0,
-    status: 'draft',
-    template: templateId,
-    profile: {
+  // Custom section + import/export UI state
+  const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
+  const [customSectionTitle, setCustomSectionTitle] = useState('');
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const importFileInputRef = useRef(null);
+  const backendSyncTimer = useRef(null);
+  const pendingSyncRef = useRef(null);
+  const creatingResumeIds = useRef(new Set());
+
+  const createInitialResume = (title, templateId = 'modern-ats') => {
+    const seeded = buildResumeFromProfile(user);
+    const seededProfile = seeded.profile || {};
+    const seededEducation = seeded.education || {};
+    const seededExperience = seeded.experience || {};
+    const profile = {
       firstName: '',
       middleName: '',
       lastName: '',
@@ -147,190 +251,148 @@ const ResumeBuilder = () => {
       website: '',
       linkedIn: '',
       customField: ''
-    },
-    experience: {
-      jobTitle: '',
-      employer: '',
-      city: '',
-      state: '',
-      startDate: '',
-      endDate: '',
-      currentWork: false,
-      duties: ''
-    },
-    education: {
-      schoolName: '',
-      city: '',
-      state: '',
-      degree: '',
-      fieldOfStudy: '',
-      startDate: '',
-      endDate: '',
-      currentStudy: false
-    },
-    projects: [{ title: '', description: '' }],
-    skills: [{ name: '' }],
-    softSkills: [''],
-    languages: [{ name: '', level: 'Select', isDone: false }],
-    summary: { text: '' },
-    interests: { text: '' },
-    certifications: [],
-    photo: null
-  });
+    };
+    return {
+      id: `resume_${Date.now()}`,
+      title: title || 'Untitled Resume',
+      score: 0,
+      status: 'draft',
+      template: templateId,
+      profile: {
+        ...profile,
+        ...seededProfile,
+        firstName: seededProfile.firstName || '',
+        middleName: '',
+        lastName: seededProfile.lastName || '',
+        gender: seededProfile.gender || '',
+        profession: seededProfile.profession || '',
+        streetAddress: seededProfile.streetAddress || '',
+        city: seededProfile.city || '',
+        stateProvince: seededProfile.stateProvince || '',
+        phone: seededProfile.phone || '',
+        email: seededProfile.email || '',
+        website: seededProfile.website || '',
+        linkedIn: seededProfile.linkedIn || ''
+      },
+      experience: {
+        jobTitle: seededExperience.jobTitle || '',
+        employer: seededExperience.employer || '',
+        city: seededExperience.city || '',
+        state: seededExperience.state || '',
+        startDate: seededExperience.startDate || '',
+        endDate: seededExperience.endDate || '',
+        currentWork: false,
+        duties: seededExperience.duties || ''
+      },
+      education: {
+        schoolName: seededEducation.schoolName || '',
+        city: seededEducation.city || '',
+        state: seededEducation.state || '',
+        degree: seededEducation.degree || '',
+        fieldOfStudy: seededEducation.fieldOfStudy || '',
+        startDate: seededEducation.startDate || '',
+        endDate: seededEducation.endDate || '',
+        currentStudy: false
+      },
+      projects: [{ title: '', description: '' }],
+      skills: (seeded.skills && seeded.skills.length ? seeded.skills : [{ name: '' }]).map((skill) => (typeof skill === 'object' ? { ...skill, level: skill.level || 'Select', isDone: !!skill.isDone } : { name: skill, level: 'Select', isDone: false })),
+      softSkills: (seeded.softSkills && seeded.softSkills.length ? seeded.softSkills : ['']),
+      languages: (seeded.languages && seeded.languages.length ? seeded.languages : [{ name: '', level: 'Select', isDone: false }]).map((language) => (typeof language === 'object' ? { ...language, level: language.level || 'Select', isDone: !!language.isDone } : { name: language, level: 'Select', isDone: false })),
+      summary: { text: seeded.summary?.text || '' },
+      interests: { text: '' },
+      certifications: seeded.certifications || [],
+      photo: seeded.photo ? { dataUrl: seeded.photo.dataUrl || seeded.photo.url || null, url: seeded.photo.url || seeded.photo.dataUrl || null, fileName: seeded.photo.fileName || 'profile-photo' } : null,
+      theme: getTemplateTheme(getTemplateDefinition(templateId)?.accent || 'blue'),
+      additionalInfo: {},
+      sectionOrder: [],
+      dirtyFields: []
+    };
+  };
 
   const handleDownloadPDF = (resume) => {
+    const hydratedResume = hydrateResumeFromProfile(resume, user);
+    const issues = validateResumeForDownload(hydratedResume);
+    if (issues.length > 0) {
+      toast.error(issues[0]);
+      return;
+    }
+
+    const templateId = resolveTemplateId(hydratedResume?.template);
+    const templateDefinition = getTemplateDefinition(templateId);
+    const TemplateComponent = templateDefinition?.component || getTemplateComponent(templateId);
+    const accentColor = getResumeThemeColor(hydratedResume, templateDefinition);
+
+    const fullName = [hydratedResume.profile?.firstName, hydratedResume.profile?.middleName, hydratedResume.profile?.lastName].filter(Boolean).join(' ').trim();
+    const safeName = fullName.replace(/[^\w-]+/g, '_') || 'CV';
+    const fileName = `${safeName}_CV.pdf`;
+
     const printWindow = window.open('', '_blank');
-    const technicalSkills = (resume.skills || []).map(s => `<li>${s.name || ''}${s.level ? ` — ${s.level}` : ''}</li>`).join('');
-    const softSkills = (resume.softSkills || []).filter(Boolean).map(skill => `<li>${skill}</li>`).join('');
-const languages = (resume.languages || []).filter(Boolean).map(lang => {
-    if (typeof lang === 'object') return `${lang.name || ''}${lang.level && lang.level !== 'Select' ? ` — ${lang.level}` : ''}`.trim();
-    return lang;
-  }).filter(Boolean).map(lang => `<li>${lang}</li>`).join('');
-    const projects = (resume.projects || []).filter(p => p.title || p.description).map((project) => `
-        <div class="project-entry">
-          <div class="project-title">${project.title || 'Project title'}</div>
-          <p class="project-description">${project.description || 'Project details'}</p>
-        </div>
-      `).join('');
+    if (!printWindow) return;
 
-    const content = `
-      <html>
-      <head>
-        <title>${resume.title || 'Resume'} - CV</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet" />
-        <style>
-          body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; margin: 0; color: #0f172a; background: #f8fafc; }
-          .page { max-width: 900px; margin: 24px auto; background: white; box-shadow: 0 20px 70px rgba(15, 23, 42, 0.12); display: flex; }
-          .sidebar { width: 300px; background: #0b5137; color: #f8fafc; padding: 32px 28px; display: flex; flex-direction: column; gap: 24px; }
-          .sidebar h2 { margin: 0; font-size: 24px; letter-spacing: 0.02em; font-family: 'Montserrat', system-ui, sans-serif; }
-          .topbar-title { font-family: 'Montserrat', system-ui, sans-serif; }
-          .sidebar p.subtitle { color: #d1fae5; margin: 0; font-size: 14px; line-height: 1.6; }
-          .sidebar .section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 12px; color: #d1fae5; }
-          .sidebar .info-item { margin-bottom: 12px; font-size: 13px; line-height: 1.7; }
-          .sidebar .info-item span { display: block; color: #a7f3d0; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; }
-          .sidebar .badge { display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,.1); border-radius: 999px; font-size: 12px; padding: 8px 12px; margin-bottom: 8px; }
-          .content { flex: 1; padding: 32px 36px; }
-          .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
-          .topbar-title { margin: 0; font-size: 34px; letter-spacing: -0.04em; line-height: 1.05; }
-          .topbar-subtitle { margin: 6px 0 0; color: #4b5563; font-size: 14px; line-height: 1.25; }
-          .section { margin-top: 28px; }
-          .section-title { font-size: 12px; font-weight: 700; color: #064e3b; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 12px; }
-          .section-text { font-size: 13px; color: #334155; line-height: 1.6; white-space: pre-line; }
-          .entry-title { display: flex; justify-content: space-between; gap: 16px; font-weight: 700; color: #0f172a; font-size: 14px; }
-          .entry-subtitle { margin-top: 4px; color: #475569; font-size: 13px; }
-          .project-title { font-weight: 700; font-size: 14px; margin-top: 14px; }
-          .project-description { margin-top: 6px; color: #334155; font-size: 13px; line-height: 1.7; white-space: pre-line; }
-          .entry-list { margin-top: 12px; padding-left: 18px; }
-          .entry-list li { margin-bottom: 8px; font-size: 13px; color: #334155; }
-          .contact-item { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
-          .contact-item strong { min-width: 80px; font-size: 12px; color: #a7f3d0; text-transform: uppercase; letter-spacing: 0.14em; }
-          .photo { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 9999px; margin-top: 12px; background: rgba(255,255,255,.12); border: 4px solid rgba(255,255,255,0.08); }
-          .sidebar-header { display:flex; gap:12px; align-items:center }
-          .avatar-circle { width:72px; height:72px; border-radius:9999px; object-fit:cover; border:3px solid rgba(255,255,255,0.12); }
-          .button-print { display: inline-flex; align-items: center; justify-content: center; margin-top: 12px; padding: 10px 16px; background: #10b981; color: white; border-radius: 999px; border: none; cursor: pointer; font-size: 13px; font-weight: 700; }
-          @media print {
-            body { background: white; margin: 0; }
-            .page { box-shadow: none; margin: 0; }
-            .button-print { display: none; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="page">
-          <div class="sidebar">
-            <div class="sidebar-header">
-              ${resume.photo?.dataUrl ? `<img src="${resume.photo.dataUrl}" alt="Photo" class="avatar-circle" />` : `<div style="width:72px;height:72px;border-radius:9999px;background:rgba(255,255,255,0.06);border:3px solid rgba(255,255,255,0.08)"></div>`}
-              <div>
-                 <h2>${[resume.profile?.firstName, resume.profile?.middleName, resume.profile?.lastName].filter(Boolean).join(' ') || ''}</h2>
-                <p class="subtitle">${resume.profile?.profession || 'Professional Title'}</p>
-              </div>
-            </div>
+    const templateHtml = renderToStaticMarkup(<TemplateComponent resume={hydratedResume} color={accentColor} />);
 
-            <div>
-              <div class="section-title">Contact</div>
-                <div class="info-item">${/* phone */ ''}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><path d="M22 16.92a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18A2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.72c.12.97.33 1.92.63 2.82a2 2 0 0 1-.45 2L8.09 9.91a16 16 0 0 0 6 6l1.37-1.37a2 2 0 0 1 2-.45c.9.3 1.85.51 2.82.63A2 2 0 0 1 22 16.92z" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Phone</span>: ${resume.profile?.phone || 'N/A'}</div>
-                <div class="info-item">${/* email */ ''}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><path d="M4 4h16v16H4z" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="22,6 12,13 2,6" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Email</span>: ${resume.profile?.email || 'N/A'}</div>
-                <div class="info-item">${/* location */ ''}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 0 1 18 0z" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10" r="3" fill="#a7f3d0"/></svg><span>Location</span>: ${resume.profile?.streetAddress || ''}${resume.profile?.city ? `, ${resume.profile.city}` : ''}${resume.profile?.stateProvince ? `, ${resume.profile.stateProvince}` : ''}</div>
-                ${resume.profile?.nationality ? `<div class="info-item">${/* globe */ ''}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><circle cx="12" cy="12" r="10" stroke="#a7f3d0" stroke-width="1.2"/><path d="M2 12h20" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round"/><path d="M12 2a15 15 0 0 1 0 20" stroke="#a7f3d0" stroke-width="1.2" stroke-linecap="round"/></svg><span>Nationality</span>: ${resume.profile.nationality}</div>` : ''}
-            </div>
+    const content = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${fileName}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    ${resumeTemplateCss}
+    html, body { margin: 0; padding: 0; background: #fff; }
+    body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .resume-template-shell { display: flex; justify-content: center; }
+    @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      html, body { margin: 0; padding: 0; background: #fff; }
+      @page { size: A4; margin: 0; }
+      .resume-template {
+        width: 210mm;
+        min-height: 297mm;
+        height: auto;
+        margin: 0;
+        box-shadow: none;
+        border-radius: 0;
+        overflow: visible;
+      }
+      .resume-template-shell { justify-content: center; }
+      .resume-template__section,
+      .resume-template__entry,
+      .experience-entry,
+      .education-entry,
+      .project-entry { break-inside: avoid; page-break-inside: avoid; }
+      .resume-template__label,
+      .resume-template__eyebrow { break-after: avoid; page-break-after: avoid; }
+      .resume-template p,
+      .resume-template li { white-space: pre-line; }
+    }
+  </style>
+</head>
+<body>
+  ${templateHtml}
+</body>
+</html>`;
 
-            <div>
-              <div class="section-title">Technical Skills</div>
-              <div class="entry-list">
-                ${renderTechnicalSkillsForPDF(resume)}
-              </div>
-            </div>
-
-            <div>
-              <div class="section-title">Soft Skills</div>
-              <ul class="entry-list">
-                ${softSkills || '<li>No soft skills listed.</li>'}
-              </ul>
-            </div>
-
-            <div>
-              <div class="section-title">Languages</div>
-              <ul class="entry-list">
-                ${languages || '<li>No languages listed.</li>'}
-              </ul>
-            </div>
-
-            ${resume.photo?.dataUrl ? `<img src="${resume.photo.dataUrl}" alt="Photo" class="photo" />` : ''}
-          </div>
-
-          <div class="content">
-            <div class="topbar">
-              <div>
-                <h1 class="topbar-title">${[resume.profile?.firstName, resume.profile?.middleName, resume.profile?.lastName].filter(Boolean).join(' ') || ''}</h1>
-                <p class="topbar-subtitle">${resume.profile?.profession || 'Professional Summary Subtitle'}</p>
-              </div>
-              <button class="button-print" onclick="window.print()">Print / Save PDF</button>
-            </div>
-
-            <div class="section">
-              <div class="section-title">Career Objective</div>
-              <div class="section-text">${resume.summary?.text || 'Write a short career objective that highlights your goals, value to employers, and key strengths.'}</div>
-            </div>
-
-            <div class="section">
-              <div class="section-title">Work Experience</div>
-              <div class="entry-title">
-                <span>${resume.experience?.jobTitle || 'Job Title'}</span>
-                <span>${resume.experience?.startDate || ''} - ${resume.experience?.currentWork ? 'Present' : (resume.experience?.endDate || '')}</span>
-              </div>
-              <div class="entry-subtitle">${resume.experience?.employer || 'Employer'}${resume.experience?.city ? ` • ${resume.experience.city}` : ''}${resume.experience?.state ? `, ${resume.experience.state}` : ''}</div>
-              <div class="section-text">${resume.experience?.duties || 'Describe your main responsibilities and achievements in this position.'}</div>
-            </div>
-
-            <div class="section">
-              <div class="section-title">Projects</div>
-              ${projects || '<p class="section-text">Add a project to highlight your hands-on experience.</p>'}
-            </div>
-
-            <div class="section">
-              <div class="section-title">Education</div>
-              <div class="entry-title">
-                <span>${resume.education?.degree || 'Degree'} in ${resume.education?.fieldOfStudy || 'Field of Study'}</span>
-                <span>${resume.education?.startDate || ''} - ${resume.education?.currentStudy ? 'Present' : (resume.education?.endDate || '')}</span>
-              </div>
-              <div class="entry-subtitle">${resume.education?.schoolName || 'School Name'}${resume.education?.city ? ` • ${resume.education.city}` : ''}${resume.education?.state ? `, ${resume.education.state}` : ''}</div>
-            </div>
-
-            <div class="section">
-              <div class="section-title">Interests</div>
-              <div class="section-text">${resume.interests?.text || 'List a few interests that demonstrate your personality and work style.'}</div>
-            </div>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
     printWindow.document.write(content);
+    printWindow.document.title = fileName;
     printWindow.document.close();
+    printWindow.focus();
+
+    // Wait for the profile photo and web fonts to render before printing so the
+    // downloaded PDF exactly matches the on-screen preview (no missing photo/fonts).
+    const waitForRender = Promise.all([
+      ...Array.from(printWindow.document.images || []).map((img) => img.decode().catch(() => {})),
+      printWindow.document.fonts && printWindow.document.fonts.ready ? printWindow.document.fonts.ready : Promise.resolve(),
+    ]);
+    Promise.race([
+      waitForRender,
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]).then(() => printWindow.print()).catch(() => printWindow.print());
   };
-  const TABS = ['Profile', 'Experience', 'Education', 'Projects', 'Skills', 'Languages', 'Summary'];
+  const TABS = ['Profile', 'Summary', 'Experience', 'Education', 'Skills', 'Certifications', 'Languages', 'Additional Info', 'Template'];
   const [activeTab, setActiveTab] = useState('Profile');
   const [searchQuery, setSearchQuery] = useState('');
   const [exampleSearch, setExampleSearch] = useState('');
@@ -339,32 +401,65 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
   const [page, setPage] = useState(1);
   const templates = getTemplateDefinitions();
 
-  // Load resumes from storage scoped to the current authenticated user.
+  // Load resumes. When the user is authenticated the backend /resumes API is
+  // the primary persistence layer and localStorage is only a temporary cache.
   useEffect(() => {
-    try {
+    let cancelled = false;
+
+    const loadLocalResumes = () => {
       const stored = localStorage.getItem(resumeStorageKey);
       const legacyStored = localStorage.getItem('ethiojob_resumes');
 
       if (stored) {
         const parsed = JSON.parse(stored);
-        const scored = (Array.isArray(parsed) ? parsed : []).map((resume) => withResumeScore(resume));
-        setResumes(scored);
-        localStorage.setItem(resumeStorageKey, JSON.stringify(scored));
-      } else if (legacyStored) {
-        const parsed = JSON.parse(legacyStored);
-        const scored = (Array.isArray(parsed) ? parsed : []).map((resume) => withResumeScore(resume));
-        setResumes(scored);
-        localStorage.setItem(resumeStorageKey, JSON.stringify(scored));
-        localStorage.removeItem('ethiojob_resumes');
-      } else {
-        setResumes([]);
-        localStorage.setItem(resumeStorageKey, JSON.stringify([]));
+        const hydrated = hydrateResumeListFromProfile(Array.isArray(parsed) ? parsed : [], user);
+        return { hydrated, migrated: false };
       }
-    } catch (error) {
-      console.error('Failed to load resumes from storage:', error);
-      setResumes([]);
-      localStorage.setItem(resumeStorageKey, JSON.stringify([]));
-    }
+      if (legacyStored) {
+        const parsed = JSON.parse(legacyStored);
+        const hydrated = hydrateResumeListFromProfile(Array.isArray(parsed) ? parsed : [], user);
+        localStorage.setItem(resumeStorageKey, JSON.stringify(hydrated));
+        localStorage.removeItem('ethiojob_resumes');
+        return { hydrated, migrated: true };
+      }
+      return { hydrated: [], migrated: false };
+    };
+
+    const applyLocal = () => {
+      const { hydrated } = loadLocalResumes();
+      if (cancelled) return;
+      setResumes(hydrated);
+      localStorage.setItem(resumeStorageKey, JSON.stringify(hydrated));
+    };
+
+    const loadFromBackend = async () => {
+      if (!user?._id && !token) {
+        applyLocal();
+        return;
+      }
+      try {
+        const response = await getResumes();
+        if (cancelled) return;
+        const backend = Array.isArray(response?.data?.data) ? response.data.data : [];
+        if (backend.length > 0) {
+          const normalized = backend.map((resume) => ({
+            ...resume,
+            id: resume._id || resume.id,
+          }));
+          const hydrated = hydrateResumeListFromProfile(normalized, user);
+          setResumes(hydrated);
+          localStorage.setItem(resumeStorageKey, JSON.stringify(hydrated));
+          return;
+        }
+        applyLocal();
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Failed to load resumes from backend, using local cache:', error);
+        applyLocal();
+      }
+    };
+
+    loadFromBackend();
 
     setActiveResumeId(null);
     setView('list');
@@ -372,12 +467,82 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     setNewResumeTitle('');
     setIsTitleModalOpen(false);
     setIsTemplateModalOpen(false);
+    setIsImportModalOpen(false);
+    setIsAddSectionModalOpen(false);
+
+    return () => {
+      cancelled = true;
+      if (backendSyncTimer.current) clearTimeout(backendSyncTimer.current);
+    };
   }, [resumeStorageKey]);
+
+  // Re-hydrate saved CVs whenever the profile changes so the latest profile
+  // data (name, photo, skills, education, etc.) flows into existing CVs without
+  // overwriting fields the user explicitly edited inside the CV.
+  useEffect(() => {
+    setResumes((current) => {
+      const hydrated = hydrateResumeListFromProfile(current, user);
+      localStorage.setItem(resumeStorageKey, JSON.stringify(hydrated));
+      return hydrated;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const persistToBackend = async (resume) => {
+    if (!resume || !user?._id) return null;
+    const payload = buildBackendPayload(resume);
+
+    // Prevent duplicate POSTs while a create request for this resume is running.
+    if (!resume._id) {
+      if (creatingResumeIds.current.has(resume.id)) return null;
+      creatingResumeIds.current.add(resume.id);
+    }
+
+    try {
+      let saved;
+      if (resume._id) {
+        const response = await updateResume(resume._id, payload);
+        saved = response?.data?.data;
+      } else {
+        const response = await createResume(payload);
+        saved = response?.data?.data;
+        if (saved?._id) {
+          setResumes((current) => current.map((r) => (r.id === resume.id ? { ...r, _id: saved._id } : r)));
+        }
+      }
+      return saved;
+    } catch (error) {
+      console.error('Failed to save resume to backend:', error);
+      return null;
+    } finally {
+      creatingResumeIds.current.delete(resume.id);
+    }
+  };
+
+  const scheduleBackendSync = (resume) => {
+    if (!resume || !user?._id) return;
+    // New resumes (no backend id yet) are persisted explicitly on create/save.
+    if (!resume._id) return;
+    pendingSyncRef.current = resume;
+    if (backendSyncTimer.current) clearTimeout(backendSyncTimer.current);
+    backendSyncTimer.current = setTimeout(() => {
+      const target = pendingSyncRef.current;
+      if (target?._id) persistToBackend(target);
+    }, 800);
+  };
+
+  const forceBackendSync = (resume) => {
+    if (!resume || !user?._id) return Promise.resolve(null);
+    if (backendSyncTimer.current) clearTimeout(backendSyncTimer.current);
+    return persistToBackend(resume);
+  };
 
   const saveToStorage = (updatedResumes) => {
     const scored = (Array.isArray(updatedResumes) ? updatedResumes : []).map((resume) => withResumeScore(resume));
     setResumes(scored);
     localStorage.setItem(resumeStorageKey, JSON.stringify(scored));
+    const active = scored.find((resume) => resume.id === activeResumeId);
+    if (active) scheduleBackendSync(active);
   };
 
   const handleOpenTitleModal = () => {
@@ -403,13 +568,18 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     setActiveTab('Profile');
     setSaveMessage('');
     toast.success('CV created successfully');
+
+    persistToBackend(newResume);
   };
 
   const handleSelectTemplate = (templateId) => {
     const resolvedTemplateId = resolveTemplateId(templateId);
     if (activeResume) {
+      const templateDefinition = getTemplateDefinition(resolvedTemplateId);
       const updated = resumes.map((resume) =>
-        resume.id === activeResume.id ? { ...resume, template: resolvedTemplateId } : resume
+        resume.id === activeResume.id
+          ? { ...resume, template: resolvedTemplateId, theme: getTemplateTheme(templateDefinition?.accent || 'blue') }
+          : resume
       );
       saveToStorage(updated);
       setIsTemplateModalOpen(false);
@@ -424,6 +594,16 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     setActiveResumeId(newResume.id);
     setIsTemplateModalOpen(false);
     toast.success(`Template ${templateId} selected`);
+    persistToBackend(newResume);
+  };
+
+  const handleSelectTemplateColor = (colorName) => {
+    if (!activeResume) return;
+    const updated = resumes.map((resume) =>
+      resume.id === activeResume.id ? { ...resume, theme: getTemplateTheme(colorName) } : resume
+    );
+    saveToStorage(updated);
+    toast.success(`${TEMPLATE_COLORS[colorName]?.name || colorName} color applied`);
   };
 
   const handleEditResume = (resumeId) => {
@@ -434,75 +614,273 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
 
   const handleDeleteResume = (resumeId) => {
     if (window.confirm('Are you sure you want to delete this resume?')) {
+      const target = resumes.find((r) => r.id === resumeId);
       const filtered = resumes.filter(r => r.id !== resumeId);
       saveToStorage(filtered);
       toast.success('Resume deleted successfully');
+      if (target && user?._id) {
+        const backendId = target._id || target.id;
+        deleteResume(backendId).catch(() => {});
+      }
     }
   };
 
-  const handleSaveForm = async (e) => {
+  const handleSaveForm = (e) => {
     if (e) e.preventDefault();
     if (!activeResume) return;
 
-    // Persist current resumes state to localStorage
     saveToStorage(resumes);
     setSaveMessage('Saved successfully');
+    toast.success('CV saved successfully');
+    forceBackendSync(activeResume).then((saved) => {
+      if (saved) setSaveMessage('Saved successfully (synced to your account)');
+    });
+  };
 
-    // Sync the created CV data into the job seeker profile so it can be used
-    // for matching and personalized job recommendations.
-    try {
-      const profile = activeResume.profile || {};
-      const resumePayload = {};
-      if (profile.firstName) resumePayload.firstName = profile.firstName;
-      if (profile.lastName) resumePayload.lastName = profile.lastName;
-      if (profile.profession) {
-        resumePayload.headline = profile.profession;
-        resumePayload.currentRole = profile.profession;
+  // -------------------------------------------------------------------------
+  // Import Resume (JSON file + parsed CV analysis)
+  // -------------------------------------------------------------------------
+  const handleOpenImportModal = () => {
+    setIsImportModalOpen(true);
+  };
+
+  const handleCloseImportModal = () => {
+    setIsImportModalOpen(false);
+  };
+
+  const handleImportFileClick = () => {
+    importFileInputRef.current?.click();
+  };
+
+  const handleImportFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        const imported = normalizeImportedResume(parsed);
+        if (!imported) {
+          toast.error('This JSON file does not look like a valid resume. Export a resume from the Resume Builder first.');
+          setIsImporting(false);
+          return;
+        }
+        const updated = [...resumes, imported];
+        saveToStorage(updated);
+        setActiveResumeId(imported.id);
+        setIsImportModalOpen(false);
+        setView('editor');
+        setActiveTab('Profile');
+        setSaveMessage('');
+        toast.success('Resume imported successfully');
+        persistToBackend(imported);
+      } catch (error) {
+        console.error('Failed to import resume:', error);
+        toast.error('Failed to read the JSON file. Make sure it is a valid resume export.');
+      } finally {
+        setIsImporting(false);
+        if (importFileInputRef.current) importFileInputRef.current.value = '';
       }
-      if (activeResume.summary?.text) resumePayload.bio = activeResume.summary.text;
-      if (profile.phone) resumePayload.phone = profile.phone;
-      if (profile.city || profile.stateProvince || profile.streetAddress) {
-        resumePayload.location = {
-          city: profile.city || '',
-          address: profile.streetAddress || '',
-          region: profile.stateProvince || '',
-        };
-      }
-      const skills = (activeResume.skills || []).map((s) => s?.name || s).filter(Boolean);
-      if (skills.length) resumePayload.skillNames = skills;
-      const languages = (activeResume.languages || [])
-        .filter((l) => l && (l.name || typeof l === 'string'))
-        .map((l) => (typeof l === 'string' ? { name: l, level: 'Fluent' } : { name: l.name, level: l.level || 'Fluent' }))
-        .filter((l) => l.name);
-      if (languages.length) resumePayload.languages = languages;
-      if (activeResume.education?.degree) {
-        resumePayload.educationDetails = [{
-          degree: [activeResume.education.degree, activeResume.education.fieldOfStudy].filter(Boolean).join(' in '),
-          institution: activeResume.education.schoolName || '',
-          startDate: activeResume.education.startDate || '',
-          endDate: activeResume.education.currentStudy ? '' : (activeResume.education.endDate || ''),
-          location: [activeResume.education.city, activeResume.education.state].filter(Boolean).join(', '),
-        }];
-      }
-      if (activeResume.experience?.jobTitle) {
-        resumePayload.experienceDetails = [{
-          title: activeResume.experience.jobTitle,
-          company: activeResume.experience.employer || '',
-          startDate: activeResume.experience.startDate || '',
-          endDate: activeResume.experience.currentWork ? '' : (activeResume.experience.endDate || ''),
-          location: [activeResume.experience.city, activeResume.experience.state].filter(Boolean).join(', '),
-          description: activeResume.experience.duties || '',
-        }];
-      }
-      if (Object.keys(resumePayload).length > 0) {
-        await dispatch(updateProfile(resumePayload)).unwrap();
-        setSaveMessage('Saved and profile updated');
-        toast.success('CV saved and profile updated');
-      }
-    } catch (err) {
-      console.error('Failed to sync CV data to profile:', err);
-      toast.success('Saved successfully');
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read the file.');
+      setIsImporting(false);
+    };
+    reader.readAsText(file);
+  };
+
+  const hasParsedCVData = () => {
+    const analysis = user?.resumeAnalysis || {};
+    return Boolean(
+      (Array.isArray(analysis.skills) && analysis.skills.length > 0) ||
+      (Array.isArray(analysis.certifications) && analysis.certifications.length > 0) ||
+      (Array.isArray(analysis.education) && analysis.education.length > 0) ||
+      analysis.professionalTitle ||
+      (Array.isArray(user?.skillNames) && user.skillNames.length > 0) ||
+      (Array.isArray(user?.skills) && user.skills.length > 0)
+    );
+  };
+
+  const handleImportFromParsedCV = () => {
+    const parsed = buildResumeFromProfile(user);
+    const analysis = user?.resumeAnalysis || {};
+    const title = `${[user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'My'} CV`.trim();
+    const resume = createInitialResume(title, 'modern-ats');
+    resume.profile = {
+      ...resume.profile,
+      ...parsed.profile,
+      profession: parsed.profile?.profession || analysis.professionalTitle || resume.profile.profession || '',
+    };
+    if (analysis.location && !resume.profile.city) resume.profile.city = analysis.location;
+    if (Array.isArray(parsed.skills) && parsed.skills.length > 0) resume.skills = parsed.skills;
+    if (Array.isArray(parsed.languages) && parsed.languages.length > 0) resume.languages = parsed.languages;
+    if (Array.isArray(analysis.certifications) && analysis.certifications.length > 0) {
+      resume.certifications = analysis.certifications.map((c) => (typeof c === 'object' ? c : { name: c }));
     }
+    if (Array.isArray(analysis.education) && analysis.education.length > 0) {
+      resume.education = analysis.education.map((degree) => ({ ...resume.education, degree: String(degree), schoolName: '', fieldOfStudy: '' }));
+    }
+    const updated = [...resumes, resume];
+    saveToStorage(updated);
+    setActiveResumeId(resume.id);
+    setIsImportModalOpen(false);
+    setView('editor');
+    setActiveTab('Profile');
+    setSaveMessage('');
+    toast.success('Imported data parsed from your uploaded CV');
+    persistToBackend(resume);
+  };
+
+  // -------------------------------------------------------------------------
+  // JSON Export
+  // -------------------------------------------------------------------------
+  const handleExportJson = (resume) => {
+    if (!resume) return;
+    const clean = buildBackendPayload(resume);
+    clean.format = 'ethiojob-resume';
+    clean.exportedAt = new Date().toISOString();
+    const safeName = [resume.profile?.firstName, resume.profile?.middleName, resume.profile?.lastName]
+      .filter(Boolean).join('_').replace(/[^\w-]+/g, '_') || 'Resume';
+    const fileName = `${safeName}_Resume.json`;
+    const blob = new Blob([JSON.stringify(clean, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Resume exported as JSON');
+  };
+
+  // -------------------------------------------------------------------------
+  // Add / edit custom resume sections
+  // -------------------------------------------------------------------------
+  const handleOpenAddSection = () => {
+    setCustomSectionTitle('');
+    setIsAddSectionModalOpen(true);
+  };
+
+  const handleAddSectionType = (type) => {
+    if (!activeResume) return;
+    const definition = SECTION_TYPES.find((section) => section.key === type);
+    if (!definition) return;
+    if (definition.fixed) {
+      toast.info(`${definition.label} is already a fixed section — edit it in the Additional Info tab`);
+      setIsAddSectionModalOpen(false);
+      setActiveTab('Additional Info');
+      return;
+    }
+    const title = type === 'custom' ? (customSectionTitle || '').trim() : definition.label;
+    if (type === 'custom' && !title) {
+      toast.error('Please enter a title for your custom section');
+      return;
+    }
+    const key = type === 'custom' ? `custom_${Date.now()}` : type;
+    const existing = activeResume.additionalInfo?.[key];
+    const sectionKey = existing ? `${key}_${Date.now()}` : key;
+    const updated = resumes.map((r) => {
+      if (r.id !== activeResumeId) return r;
+      return withDirty({
+        ...r,
+        additionalInfo: {
+          ...(r.additionalInfo || {}),
+          [sectionKey]: { title, items: [{ title: '', description: '' }] },
+        },
+        sectionOrder: [...(r.sectionOrder || []), sectionKey],
+      }, 'additionalInfo');
+    });
+    saveToStorage(updated);
+    setIsAddSectionModalOpen(false);
+    setCustomSectionTitle('');
+    setActiveTab('Additional Info');
+    toast.success(`Section "${title}" added`);
+  };
+
+  const handleAdditionalSectionChange = (key, field, value) => {
+    const updated = resumes.map((r) => {
+      if (r.id !== activeResumeId) return r;
+      return withDirty({
+        ...r,
+        additionalInfo: {
+          ...(r.additionalInfo || {}),
+          [key]: { ...(r.additionalInfo?.[key] || {}), [field]: value },
+        },
+      }, 'additionalInfo');
+    });
+    saveToStorage(updated);
+  };
+
+  const handleAdditionalItemChange = (key, index, field, value) => {
+    const updated = resumes.map((r) => {
+      if (r.id !== activeResumeId) return r;
+      const section = r.additionalInfo?.[key] || {};
+      const items = [...(Array.isArray(section.items) ? section.items : [])];
+      items[index] = { ...(items[index] || {}), [field]: value };
+      return withDirty({
+        ...r,
+        additionalInfo: { ...(r.additionalInfo || {}), [key]: { ...section, items } },
+      }, 'additionalInfo');
+    });
+    saveToStorage(updated);
+  };
+
+  const handleAddAdditionalItem = (key) => {
+    const updated = resumes.map((r) => {
+      if (r.id !== activeResumeId) return r;
+      const section = r.additionalInfo?.[key] || {};
+      const items = [...(Array.isArray(section.items) ? section.items : []), { title: '', description: '' }];
+      return withDirty({
+        ...r,
+        additionalInfo: { ...(r.additionalInfo || {}), [key]: { ...section, items } },
+      }, 'additionalInfo');
+    });
+    saveToStorage(updated);
+  };
+
+  const handleRemoveAdditionalItem = (key, index) => {
+    const updated = resumes.map((r) => {
+      if (r.id !== activeResumeId) return r;
+      const section = r.additionalInfo?.[key] || {};
+      const items = (Array.isArray(section.items) ? section.items : []).filter((_, idx) => idx !== index);
+      return withDirty({
+        ...r,
+        additionalInfo: { ...(r.additionalInfo || {}), [key]: { ...section, items } },
+      }, 'additionalInfo');
+    });
+    saveToStorage(updated);
+  };
+
+  const handleRemoveAdditionalSection = (key) => {
+    const updated = resumes.map((r) => {
+      if (r.id !== activeResumeId) return r;
+      const additionalInfo = { ...(r.additionalInfo || {}) };
+      delete additionalInfo[key];
+      return withDirty({
+        ...r,
+        additionalInfo,
+        sectionOrder: (r.sectionOrder || []).filter((sectionKey) => sectionKey !== key),
+      }, 'additionalInfo');
+    });
+    saveToStorage(updated);
+    toast.success('Section removed');
+  };
+
+  const handleMoveSection = (key, direction) => {
+    const updated = resumes.map((r) => {
+      if (r.id !== activeResumeId) return r;
+      const order = getCustomSectionOrder(r);
+      const index = order.indexOf(key);
+      if (index < 0) return r;
+      const target = index + direction;
+      if (target < 0 || target >= order.length) return r;
+      const next = [...order];
+      [next[index], next[target]] = [next[target], next[index]];
+      return withDirty({ ...r, sectionOrder: next }, 'sectionOrder');
+    });
+    saveToStorage(updated);
   };
 
   const handleNextTab = () => {
@@ -534,26 +912,35 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
   const activeResume = resumes.find(r => r.id === activeResumeId);
 
   // General field update
+  const withDirty = (resume, keys) => {
+    const dirtyFields = Array.from(new Set([
+      ...(resume.dirtyFields || []),
+      ...(Array.isArray(keys) ? keys : [keys]),
+    ]));
+    return { ...resume, dirtyFields };
+  };
+
   const handleFieldChange = (section, field, value) => {
     setSaveMessage('');
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
+        const dirtyKey = `${section}.${field}`;
         if (section === 'skills' && field === 'value') {
-          return { ...r, skills: value };
+          return withDirty({ ...r, skills: value }, 'skills');
         }
         if (section === 'softSkills' && field === 'value') {
-          return { ...r, softSkills: value };
+          return withDirty({ ...r, softSkills: value }, 'softSkills');
         }
         if (section === 'languages' && field === 'value') {
-          return { ...r, languages: value };
+          return withDirty({ ...r, languages: value }, 'languages');
         }
-        return {
+        return withDirty({
           ...r,
           [section]: {
             ...r[section],
             [field]: value
           }
-        };
+        }, dirtyKey);
       }
       return r;
     });
@@ -587,6 +974,15 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     setPhotoEditorRotate(0);
   };
 
+  const dataUrlToFile = (dataUrl, fileName) => {
+    const [meta, base64] = dataUrl.split(',');
+    const mime = meta.match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new File([bytes], fileName, { type: mime });
+  };
+
   const handleConfirmPhotoEditor = () => {
     if (!photoEditorSrc) {
       handleCancelPhotoEditor();
@@ -615,13 +1011,10 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
       const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
       const updated = resumes.map(r => {
         if (r.id === activeResumeId) {
-          return {
+          return withDirty({
             ...r,
-            photo: {
-              fileName: photoEditorFileName,
-              dataUrl: croppedDataUrl
-            }
-          };
+            photo: { ...(r.photo || {}), dataUrl: croppedDataUrl, fileName: photoEditorFileName }
+          }, 'photo');
         }
         return r;
       });
@@ -633,13 +1026,24 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
       setPhotoEditorZoom(1);
       setPhotoEditorRotate(0);
       toast.success('Photo updated');
+
+      // Keep the profile avatar as the single source of truth: upload the same
+      // cropped image to the profile so the CV and profile share one photo.
+      try {
+        const formData = new FormData();
+        formData.append('avatar', dataUrlToFile(croppedDataUrl, photoEditorFileName || 'profile-photo.jpg'));
+        dispatch(uploadAvatar(formData)).unwrap().catch(() => {});
+      } catch (error) {
+        console.error('Failed to sync photo to profile:', error);
+      }
     };
     image.src = photoEditorSrc;
   };
 
   const openPhotoEditorFromCurrentPhoto = () => {
-    if (!activeResume?.photo?.dataUrl) return;
-    openPhotoEditor(activeResume.photo.dataUrl, activeResume.photo.fileName || 'profile-photo.png');
+    const currentPhoto = activeResume?.photo?.dataUrl || activeResume?.photo?.url;
+    if (!currentPhoto) return;
+    openPhotoEditor(currentPhoto, activeResume.photo.fileName || 'profile-photo.png');
   };
 
   // Skills dynamic list update
@@ -648,7 +1052,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
       if (r.id === activeResumeId) {
         const newSkills = [...(r.skills || [])];
         newSkills[index] = { ...newSkills[index], [field]: value };
-        return { ...r, skills: newSkills };
+        return withDirty({ ...r, skills: newSkills }, 'skills');
       }
       return r;
     });
@@ -659,7 +1063,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
         const newSkills = [...(r.skills || []), { name: '', level: 'Select', isDone: false }];
-        return { ...r, skills: newSkills };
+        return withDirty({ ...r, skills: newSkills }, 'skills');
       }
       return r;
     });
@@ -672,7 +1076,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
       if (r.id === activeResumeId) {
         const newSkills = [...(r.skills || [])];
         newSkills[index] = { ...newSkills[index], isDone: !newSkills[index]?.isDone };
-        return { ...r, skills: newSkills };
+        return withDirty({ ...r, skills: newSkills }, 'skills');
       }
       return r;
     });
@@ -685,7 +1089,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
         const normalized = skillName.trim();
         const existing = (r.skills || []).some((skill) => skill.name?.toLowerCase() === normalized.toLowerCase());
         if (existing) return r;
-        return { ...r, skills: [...(r.skills || []), { name: normalized, level: 'Select', isDone: false }] };
+        return withDirty({ ...r, skills: [...(r.skills || []), { name: normalized, level: 'Select', isDone: false }] }, 'skills');
       }
       return r;
     });
@@ -713,7 +1117,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
         const normalized = skillName.trim();
         const existing = (r.softSkills || []).some((skill) => skill?.toLowerCase() === normalized.toLowerCase());
         if (existing) return r;
-        return { ...r, softSkills: [...(r.softSkills || []), normalized] };
+        return withDirty({ ...r, softSkills: [...(r.softSkills || []), normalized] }, 'softSkills');
       }
       return r;
     });
@@ -726,7 +1130,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
         const newLanguages = [...(r.languages || [])];
         const current = newLanguages[index] || { name: '', level: 'Select', isDone: false };
         newLanguages[index] = { ...current, [field]: value };
-        return { ...r, languages: newLanguages };
+        return withDirty({ ...r, languages: newLanguages }, 'languages');
       }
       return r;
     });
@@ -736,7 +1140,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
   const handleAddLanguage = () => {
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
-        return { ...r, languages: [...(r.languages || []), { name: '', level: 'Select', isDone: false }] };
+        return withDirty({ ...r, languages: [...(r.languages || []), { name: '', level: 'Select', isDone: false }] }, 'languages');
       }
       return r;
     });
@@ -750,7 +1154,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
         const newLanguages = [...(r.languages || [])];
         const current = newLanguages[index] || { name: '', level: 'Select', isDone: false };
         newLanguages[index] = { ...current, isDone: !current.isDone };
-        return { ...r, languages: newLanguages };
+        return withDirty({ ...r, languages: newLanguages }, 'languages');
       }
       return r;
     });
@@ -763,7 +1167,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
         const normalized = languageName.trim();
         const existing = (r.languages || []).some((language) => (language?.name || language || '').toLowerCase() === normalized.toLowerCase());
         if (existing) return r;
-        return { ...r, languages: [...(r.languages || []), { name: normalized, level: 'Select', isDone: false }] };
+        return withDirty({ ...r, languages: [...(r.languages || []), { name: normalized, level: 'Select', isDone: false }] }, 'languages');
       }
       return r;
     });
@@ -783,7 +1187,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
       if (r.id === activeResumeId) {
         const newSoftSkills = [...(r.softSkills || [])];
         newSoftSkills[index] = value;
-        return { ...r, softSkills: newSoftSkills };
+        return withDirty({ ...r, softSkills: newSoftSkills }, 'softSkills');
       }
       return r;
     });
@@ -793,7 +1197,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
   const handleAddSoftSkill = () => {
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
-        return { ...r, softSkills: [...(r.softSkills || []), ''] };
+        return withDirty({ ...r, softSkills: [...(r.softSkills || []), ''] }, 'softSkills');
       }
       return r;
     });
@@ -804,7 +1208,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
         const newSoftSkills = (r.softSkills || []).filter((_, idx) => idx !== index);
-        return { ...r, softSkills: newSoftSkills };
+        return withDirty({ ...r, softSkills: newSoftSkills }, 'softSkills');
       }
       return r;
     });
@@ -815,7 +1219,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
         const newLanguages = (r.languages || []).filter((_, idx) => idx !== index);
-        return { ...r, languages: newLanguages };
+        return withDirty({ ...r, languages: newLanguages }, 'languages');
       }
       return r;
     });
@@ -827,7 +1231,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
       if (r.id === activeResumeId) {
         const newProjects = [...(r.projects || [])];
         newProjects[index] = { ...newProjects[index], [field]: value };
-        return { ...r, projects: newProjects };
+        return withDirty({ ...r, projects: newProjects }, 'projects');
       }
       return r;
     });
@@ -837,7 +1241,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
   const handleAddProject = () => {
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
-        return { ...r, projects: [...(r.projects || []), { title: '', description: '' }] };
+        return withDirty({ ...r, projects: [...(r.projects || []), { title: '', description: '' }] }, 'projects');
       }
       return r;
     });
@@ -848,7 +1252,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
         const newProjects = (r.projects || []).filter((_, idx) => idx !== index);
-        return { ...r, projects: newProjects };
+        return withDirty({ ...r, projects: newProjects }, 'projects');
       }
       return r;
     });
@@ -859,7 +1263,41 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     const updated = resumes.map(r => {
       if (r.id === activeResumeId) {
         const newSkills = (r.skills || []).filter((_, idx) => idx !== index);
-        return { ...r, skills: newSkills };
+        return withDirty({ ...r, skills: newSkills }, 'skills');
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleCertificationChange = (index, field, value) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const newCertifications = [...(r.certifications || [])];
+        const current = newCertifications[index] || { name: '', issuer: '', year: '' };
+        newCertifications[index] = { ...current, [field]: value };
+        return withDirty({ ...r, certifications: newCertifications }, 'certifications');
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleAddCertification = () => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        return withDirty({ ...r, certifications: [...(r.certifications || []), { name: '', issuer: '', year: '' }] }, 'certifications');
+      }
+      return r;
+    });
+    saveToStorage(updated);
+  };
+
+  const handleRemoveCertification = (index) => {
+    const updated = resumes.map(r => {
+      if (r.id === activeResumeId) {
+        const newCertifications = (r.certifications || []).filter((_, idx) => idx !== index);
+        return withDirty({ ...r, certifications: newCertifications }, 'certifications');
       }
       return r;
     });
@@ -870,77 +1308,9 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     if (!activeResume) return;
     const currentDuties = activeResume.experience?.duties || '';
     const newDuties = currentDuties 
-      ? `${currentDuties}\n• ${example}` 
-      : `• ${example}`;
+      ? `${currentDuties}\nâ€¢ ${example}` 
+      : `â€¢ ${example}`;
     handleFieldChange('experience', 'duties', newDuties);
-  };
-
-  // Render a visual layout of the CV structure based on template style
-  const renderCVStructure = (templateId) => {
-    switch (templateId) {
-      case 'general_ats':
-        return (
-          <div className="w-full h-full p-2 flex flex-col gap-1.5 bg-white dark:bg-gray-800">
-            <div className="w-12 h-2 bg-gray-400 dark:bg-gray-500 rounded mx-auto mb-1"></div>
-            <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            <div className="w-2/3 h-1 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            <div className="w-full h-8 border border-dashed border-gray-200 dark:border-gray-700 rounded p-1 flex flex-col gap-1">
-              <div className="w-1/3 h-1 bg-gray-300 dark:bg-gray-600 rounded"></div>
-              <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded"></div>
-              <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded"></div>
-            </div>
-            <div className="w-full h-8 border border-dashed border-gray-200 dark:border-gray-700 rounded p-1 flex flex-col gap-1">
-              <div className="w-1/4 h-1 bg-gray-300 dark:bg-gray-600 rounded"></div>
-              <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded"></div>
-            </div>
-          </div>
-        );
-      case 'fresh_man':
-        return (
-          <div className="w-full h-full p-2 flex gap-2 bg-white dark:bg-gray-800">
-            <div className="w-1/3 h-full border-r dark:border-gray-700 pr-1 flex flex-col gap-1.5">
-              <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 mx-auto"></div>
-              <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              <div className="w-4/5 h-1 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              <div className="w-full h-1.5 bg-gray-300 dark:bg-gray-600 rounded mt-2"></div>
-              <div className="w-5/6 h-1 bg-gray-100 dark:bg-gray-700 rounded"></div>
-            </div>
-            <div className="w-2/3 h-full flex flex-col gap-2">
-              <div className="w-16 h-2 bg-gray-400 dark:bg-gray-500 rounded"></div>
-              <div className="w-full h-8 border border-dashed border-gray-200 dark:border-gray-700 rounded p-1 flex flex-col gap-1">
-                <div className="w-1/2 h-1 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded"></div>
-              </div>
-              <div className="w-full h-8 border border-dashed border-gray-200 dark:border-gray-700 rounded p-1 flex flex-col gap-1">
-                <div className="w-1/3 h-1 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded"></div>
-              </div>
-            </div>
-          </div>
-        );
-      case 'graphic':
-      default:
-        return (
-          <div className="w-full h-full p-2 flex flex-col gap-2 bg-white dark:bg-gray-800">
-            <div className="w-full h-6 bg-teal-600 dark:bg-teal-700 rounded flex items-center justify-between px-2">
-              <div className="w-10 h-1.5 bg-white/70 rounded"></div>
-              <div className="w-4 h-4 rounded-full bg-white/50"></div>
-            </div>
-            <div className="flex gap-2 flex-1">
-              <div className="w-1/2 h-full flex flex-col gap-1.5">
-                <div className="w-3/4 h-2 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded"></div>
-                <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded"></div>
-              </div>
-              <div className="w-1/2 h-full flex flex-col gap-1.5">
-                <div className="w-3/4 h-2 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded"></div>
-                <div className="w-full h-1 bg-gray-100 dark:bg-gray-700 rounded"></div>
-              </div>
-            </div>
-          </div>
-        );
-    }
   };
 
   const filteredTemplates = templates.filter((template) => {
@@ -967,65 +1337,6 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
   });
 
   const visibleTemplates = filteredTemplates.slice(0, page * 6);
-  // Helper: categorize technical skills into named groups for display
-  const categorizeSkills = (skills = []) => {
-    const groups = {
-      'Web Development': [],
-      'Programming Languages': [],
-      'Database': [],
-      'Tools & Technologies': [],
-      Other: []
-    };
-
-    const web = ['html','css','javascript','react','vue','angular','next','nuxt'];
-    const langs = ['python','java','php','c#','c++','c','ruby','go','rust','typescript'];
-    const dbs = ['mysql','postgresql','postgres','mongodb','sqlite','mssql','oracle'];
-    const tools = ['git','github','vscode','docker','xamp','xampp','gitlab','jenkins','aws','azure','firebase'];
-
-    skills.forEach(s => {
-      const name = (s.name || '').toLowerCase();
-      if (web.some(w => name.includes(w))) groups['Web Development'].push(s.name);
-      else if (langs.some(l => name.includes(l))) groups['Programming Languages'].push(s.name);
-      else if (dbs.some(d => name.includes(d))) groups['Database'].push(s.name);
-      else if (tools.some(t => name.includes(t))) groups['Tools & Technologies'].push(s.name);
-      else groups.Other.push(s.name || s);
-    });
-
-    return groups;
-  };
-
-  const renderTechnicalSkills = (resume) => {
-    const groups = categorizeSkills(resume.skills || []);
-    return (
-      <div className="space-y-3">
-        {Object.entries(groups).map(([title, items]) => (
-          items.length > 0 && (
-            <div key={title}>
-              <div className="text-xs font-semibold uppercase text-teal-100">{title}</div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {items.map((it, idx) => (
-                  <span key={idx} className="rounded-full bg-white/10 px-3 py-1 text-xs flex items-center gap-2">
-                    <FiCheckCircle className="w-3 h-3 text-white/80" />
-                    <span>{it}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )
-        ))}
-      </div>
-    );
-  };
-
-  // PDF helper returning HTML string for categorized skills
-  const renderTechnicalSkillsForPDF = (resume) => {
-    const groups = categorizeSkills(resume.skills || []);
-    return Object.entries(groups).map(([title, items]) => {
-      if (!items.length) return '';
-      const list = items.map(i => `<li style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"5\" cy=\"5\" r=\"5\" fill=\"#10b981\"/></svg><span>${i}</span></li>`).join('');
-      return `<div style=\"margin-bottom:10px\"><strong style=\"display:block;font-size:12px;color:#e6fff2;margin-bottom:6px\">${title}</strong><ul style=\"margin:0;padding-left:0;color:#f0fff5;list-style:none\">${list}</ul></div>`;
-    }).join('') || '<div style="color:#f0fff5">No technical skills listed.</div>';
-  };
 
   const renderLivePreview = (resume) => {
     // If a template is selected on the resume, render its component directly for 1:1 preview
@@ -1033,7 +1344,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     const TemplateComponent = getTemplateComponent(templateId);
     if (TemplateComponent) {
       const templateDefinition = getTemplateDefinition(templateId);
-      const accentColor = templateDefinition?.accent || 'blue';
+      const accentColor = getResumeThemeColor(resume, templateDefinition);
       return (
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
           <div className="p-3">
@@ -1058,7 +1369,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
         : Boolean(String(language).trim());
     });
     const hasInterests = Boolean(resume.interests?.text?.trim());
-    const hasPhoto = Boolean(resume.photo?.dataUrl);
+    const hasPhoto = Boolean(resume.photo?.dataUrl || resume.photo?.url);
 
     return (
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -1070,7 +1381,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
             <div className="flex justify-center">
               {hasPhoto ? (
                 <div className="h-40 w-40 overflow-hidden rounded-full border-4 border-white bg-white">
-                  <img src={resume.photo.dataUrl} alt="Profile" className="h-full w-full object-cover" />
+                  <img src={resume.photo.dataUrl || resume.photo.url} alt="Profile" className="h-full w-full object-cover" />
                 </div>
               ) : (
                 <div className="h-40 w-40 rounded-full border-4 border-white/20 bg-white/20" />
@@ -1082,7 +1393,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
             {(fullName || profession) && (
               <div className="mb-6 border-b border-gray-200 pb-4">
                 {fullName && <h3 className="text-2xl font-bold text-gray-900">{fullName}</h3>}
-                {profession && <p className="text-sm text-primary-600 mt-1">{profession}</p>}
+{profession && <p className="text-sm text-[#1769E0] mt-1">{profession}</p>}
               </div>
             )}
 
@@ -1158,7 +1469,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                           })
                           .map((language, idx) => {
                             const label = typeof language === 'object'
-                              ? `${language.name || ''}${language.level && language.level !== 'Select' ? ` — ${language.level}` : ''}`.trim()
+                              ? `${language.name || ''}${language.level && language.level !== 'Select' ? ` â€” ${language.level}` : ''}`.trim()
                               : String(language);
                             return (
                               <span key={idx} className="rounded-full bg-gray-200 px-3 py-1 text-xs text-gray-700">{label}</span>
@@ -1183,387 +1494,141 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
     );
   };
 
-  const renderTemplatePreview = (resume) => {
-    const templateId = resume?.template || 'general_ats';
-    const fullName = [resume.profile?.firstName, resume.profile?.middleName, resume.profile?.lastName].filter(Boolean).join(' ');
-
-    if (templateId === 'fresh_man') {
-      return (
-        <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-slate-900 to-slate-700 p-6 text-white shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, system-ui, sans-serif', lineHeight: 1.05 }}>{fullName}</h3>
-              <p className="text-sm text-slate-300 mt-1" style={{ fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.3 }}>{resume.profile?.profession || 'Your Profession'}</p>
-            </div>
-            {resume.photo?.dataUrl && (
-              <img src={resume.photo.dataUrl} alt="Profile" className="h-20 w-20 rounded-full border-4 border-white/20 object-cover" />
-            )}
-          </div>
-            <div className="mt-6 grid gap-3 text-sm text-slate-200">
-            <p className="flex items-center gap-2"><MailIcon className="text-white" /><span className="font-semibold text-white">Email:</span> {resume.profile?.email || 'N/A'}</p>
-            <p className="flex items-center gap-2"><PhoneIcon className="text-white" /><span className="font-semibold text-white">Phone:</span> {resume.profile?.phone || 'N/A'}</p>
-          </div>
-          <div className="mt-6 space-y-4">
-            <section>
-              <h4 className="text-sm uppercase tracking-[0.2em] text-teal-300">Summary</h4>
-              <p className="mt-2 text-sm text-slate-200 whitespace-pre-line">{resume.summary?.text || 'Add a summary.'}</p>
-            </section>
-            <section>
-              <h4 className="text-sm uppercase tracking-[0.2em] text-teal-300">Experience</h4>
-              <p className="mt-2 font-semibold">{resume.experience?.jobTitle || 'Job Title'}</p>
-              <p className="text-sm text-slate-300">{resume.experience?.employer || 'Employer'}</p>
-            </section>
-            <section>
-              <h4 className="text-sm uppercase tracking-[0.2em] text-teal-300">Skills</h4>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(resume.skills || []).filter(Boolean).map((skill, idx) => (
-                  <span key={idx} className="rounded-full bg-white/10 px-3 py-1 text-xs">{skill.name || 'Skill'}</span>
-                ))}
-              </div>
-            </section>
-          </div>
-        </div>
-      );
-    }
-
-    if (templateId === 'graphic') {
-      return (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="rounded-lg bg-indigo-600 p-4 text-white">
-            <h3 className="text-2xl font-bold" style={{ fontFamily: 'Montserrat, system-ui, sans-serif', lineHeight: 1.05 }}>{fullName}</h3>
-            <p className="text-sm text-indigo-100" style={{ fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.25 }}>{resume.profile?.profession || 'Your Profession'}</p>
-          </div>
-          <div className="mt-6 grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
-            <div className="space-y-4">
-              <section>
-                <h4 className="text-sm font-semibold uppercase text-indigo-600">Professional Summary</h4>
-                <p className="mt-2 text-sm text-gray-600 whitespace-pre-line">{resume.summary?.text || 'Add your professional summary here.'}</p>
-              </section>
-              <section>
-                <h4 className="text-sm font-semibold uppercase text-indigo-600">Experience</h4>
-                <p className="mt-2 font-semibold">{resume.experience?.jobTitle || 'Job Title'}</p>
-                <p className="text-sm text-gray-600">{resume.experience?.employer || 'Employer'}</p>
-              </section>
-            </div>
-            <div className="space-y-4 rounded-lg bg-gray-50 p-4">
-              <div className="text-sm text-gray-600 space-y-2">
-                <p className="flex items-center gap-2"><MailIcon className="text-slate-700" /><strong className="font-semibold">Email:</strong> {resume.profile?.email || 'N/A'}</p>
-                <p className="flex items-center gap-2"><PhoneIcon className="text-slate-700" /><strong className="font-semibold">Phone:</strong> {resume.profile?.phone || 'N/A'}</p>
-              </div>
-              <section>
-                <h4 className="text-sm font-semibold uppercase text-indigo-600">Skills</h4>
-                <div className="mt-2 flex flex-wrap gap-2">
-                {(resume.skills || []).filter(Boolean).map((skill, idx) => (
-                  <span key={idx} className="rounded-full bg-indigo-100 px-3 py-1 text-xs text-indigo-700 flex items-center gap-2"><FiCheckCircle className="w-3 h-3" />{skill.name || 'Skill'}</span>
-                ))}
-              </div>
-              </section>
-              <section>
-                <h4 className="text-sm font-semibold uppercase text-indigo-600">Interests</h4>
-                <p className="mt-2 text-sm text-gray-600 whitespace-pre-line">{resume.interests?.text || 'No interests added yet.'}</p>
-              </section>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (templateId === 'professional') {
-      return (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="border-b pb-4">
-            <h3 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Montserrat, system-ui, sans-serif', fontWeight: 700 }}>{fullName}</h3>
-            <p className="text-sm text-primary-600 mt-1" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>{resume.profile?.profession || 'Your Profession'}</p>
-            <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-600" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-              <div className="flex items-center gap-2"><PhoneIcon className="text-slate-700" />{resume.profile?.phone || 'N/A'}</div>
-              <div className="flex items-center gap-2"><MailIcon className="text-slate-700" />{resume.profile?.email || 'N/A'}</div>
-              <div className="flex items-center gap-2"><LocationIcon className="text-slate-700" />{resume.profile?.city || ''}{resume.profile?.state ? `, ${resume.profile.state}` : ''}</div>
-            </div>
-          </div>
-          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-xl overflow-hidden shadow-sm border border-slate-700 text-white">
-              <div className="grid md:grid-cols_[0.9fr_0.65fr]">
-              <div className="p-6 space-y-6">
-                <div>
-                  <h3 className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'Montserrat, system-ui, sans-serif', lineHeight: 1.02 }}>{fullName}</h3>
-                    <p className="mt-2 text-sm text-slate-300" style={{ fontFamily: 'Inter, system-ui, sans-serif', lineHeight: 1.25 }}>{resume.profile?.profession || 'Professional Title'}</p>
-                </div>
-
-                <section>
-                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-300">Career Objective</h4>
-                  <p className="mt-3 text-sm leading-7 text-slate-700 whitespace-pre-line">{resume.summary?.text || 'Write a short career objective that highlights your goals and value to employers.'}</p>
-                </section>
-
-                <section>
-                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-300">Work Experience</h4>
-                  <div className="mt-3">
-                    <p className="font-semibold text-white">{resume.experience?.jobTitle || 'Job Title'}</p>
-                    <p className="text-sm text-slate-300">{resume.experience?.employer || 'Employer'} • {resume.experience?.city || 'City'}, {resume.experience?.state || 'State'}</p>
-                    <p className="mt-2 text-sm text-slate-200 whitespace-pre-line">{resume.experience?.duties || 'Describe your primary responsibilities and accomplishments in this role.'}</p>
-                  </div>
-                </section>
-
-                <section>
-                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-300">Projects</h4>
-                  <div className="mt-3 space-y-4">
-                    {(resume.projects || []).filter(p => p.title || p.description).map((project, idx) => (
-                      <div key={idx}>
-                        <p className="font-semibold text-white">{project.title || 'Project title'}</p>
-                        <p className="mt-1 text-sm text-slate-300 whitespace-pre-line">{project.description || 'Brief project description.'}</p>
-                      </div>
-                    ))}
-                    {!((resume.projects || []).filter(p => p.title || p.description).length) && (
-                      <p className="text-sm text-slate-300">Add your most important projects to showcase real-world experience.</p>
-                    )}
-                  </div>
-                </section>
-
-                <section>
-                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-300">Education</h4>
-                  <div className="mt-3">
-                    <p className="font-semibold text-white">{resume.education?.degree || 'Degree'} in {resume.education?.fieldOfStudy || 'Field of Study'}</p>
-                    <p className="text-sm text-slate-300">{resume.education?.schoolName || 'School Name'} • {resume.education?.startDate || 'Start'} - {resume.education?.currentStudy ? 'Present' : (resume.education?.endDate || 'End')}</p>
-                  </div>
-                </section>
-              </div>
-
-              <div className="" style={{background:'#0b5137',padding:'24px',color:'#f0fff5',borderLeft:'1px solid rgba(255,255,255,0.04)'}}>
-                <div className="flex items-start gap-3">
-                  {resume.photo?.dataUrl ? (
-                    <img src={resume.photo.dataUrl} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-white/10" />
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-white/10 border-2 border-white/10" />
-                  )}
-                  <div>
-                    <h4 className="text-lg font-bold">{fullName}</h4>
-                    <p className="text-sm mt-1">{resume.profile?.profession || ''}</p>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <h4 className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-100">Contact</h4>
-                  <div className="mt-3 space-y-2 text-sm">
-                    <p className="flex items-center gap-2"><FiMail className="w-4 h-4 text-teal-200" /><strong className="text-teal-100">Email:</strong> <span className="ml-1">{resume.profile?.email || 'N/A'}</span></p>
-                    <p className="flex items-center gap-2"><FiPhone className="w-4 h-4 text-teal-200" /><strong className="text-teal-100">Phone:</strong> <span className="ml-1">{resume.profile?.phone || 'N/A'}</span></p>
-                    <p className="flex items-center gap-2"><FiMapPin className="w-4 h-4 text-teal-200" /><strong className="text-teal-100">Location:</strong> <span className="ml-1">{resume.profile?.city || resume.profile?.streetAddress || 'N/A'}</span></p>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <h4 className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-100">Technical Skills</h4>
-                  <div className="mt-3">
-                    {renderTechnicalSkills(resume)}
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-200">Contact</h4>
-                  <div className="mt-4 space-y-3 text-sm text-slate-200">
-                    <p><span className="font-semibold text-teal-300">Email:</span> {resume.profile?.email || 'N/A'}</p>
-                    <p><span className="font-semibold text-teal-300">Phone:</span> {resume.profile?.phone || 'N/A'}</p>
-                    <p><span className="font-semibold text-teal-300">Location:</span> {resume.profile?.streetAddress || ''}{resume.profile?.city ? `, ${resume.profile.city}` : ''}</p>
-                  </div>
-                </div>
-
-                <section>
-                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-200">Skills</h4>
-                  <div className="mt-4 space-y-2 text-sm text-slate-200">
-                    {(resume.skills || []).filter(Boolean).map((skill, idx) => (
-                      <p key={idx} className="rounded-lg bg-white/10 px-3 py-2">{skill.name || 'Skill'}{skill.level ? ` — ${skill.level}` : ''}</p>
-                    ))}
-                  </div>
-                </section>
-
-                <section>
-                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-200">Soft Skills</h4>
-                  <div className="mt-4 space-y-2 text-sm text-slate-200">
-                    {(resume.softSkills || []).filter(Boolean).map((skill, idx) => (
-                      <p key={idx} className="rounded-lg bg-white/10 px-3 py-2">{skill}</p>
-                    ))}
-                  </div>
-                </section>
-
-                <section>
-                  <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-teal-200">Languages</h4>
-                  <div className="mt-4 space-y-2 text-sm text-slate-200">
-                    {(resume.languages || []).filter(Boolean).map((language, idx) => (
-                      <p key={idx} className="rounded-lg bg-white/10 px-3 py-2">{language}</p>
-                    ))}
-                  </div>
-                </section>
-
-                {resume.photo?.dataUrl && false}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    const hasSummary = Boolean(resume.summary?.text?.trim());
-    const hasExperience = Boolean(resume.experience?.jobTitle?.trim() || resume.experience?.employer?.trim());
-    const hasEducation = Boolean(resume.education?.degree?.trim() || resume.education?.fieldOfStudy?.trim());
-    const hasContact = Boolean(resume.profile?.email?.trim() || resume.profile?.phone?.trim());
-    const hasSkills = (resume.skills || []).some(skill => skill?.name?.trim());
-    const hasInterests = Boolean(resume.interests?.text?.trim());
-    const profession = resume.profile?.profession?.trim();
-
-    return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        {(fullName || profession) && (
-          <div className="border-b pb-4">
-            <h3 className="text-2xl font-bold text-gray-900">{fullName || ''}</h3>
-            {profession && <p className="text-sm text-primary-600 mt-1">{profession}</p>}
-          </div>
-        )}
-
-        <div className="mt-6 grid gap-4 md:grid-cols-[1fr_0.8fr]">
-          <div className="space-y-4">
-            {hasSummary && (
-              <section>
-                <h4 className="text-sm font-semibold uppercase text-gray-600">Summary</h4>
-                <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{resume.summary.text}</p>
-              </section>
-            )}
-
-            {hasExperience && (
-              <section>
-                <h4 className="text-sm font-semibold uppercase text-gray-600">Experience</h4>
-                {resume.experience?.jobTitle && <p className="mt-2 font-semibold">{resume.experience.jobTitle}</p>}
-                {resume.experience?.employer && <p className="text-sm text-gray-600">{resume.experience.employer}</p>}
-              </section>
-            )}
-
-            {hasEducation && (
-              <section>
-                <h4 className="text-sm font-semibold uppercase text-gray-600">Education</h4>
-                <p className="mt-2 text-sm text-gray-700">
-                  {resume.education?.degree ? resume.education.degree : ''}
-                  {resume.education?.degree && resume.education?.fieldOfStudy ? ' in ' : ''}
-                  {resume.education?.fieldOfStudy || ''}
-                </p>
-              </section>
-            )}
-          </div>
-
-          {(hasContact || hasSkills || hasInterests) && (
-            <div className="space-y-4 rounded-lg bg-gray-50 p-4">
-              {hasContact && (
-                <>
-                  {resume.profile?.email && <p className="text-sm text-gray-700"><span className="font-semibold">Email:</span> {resume.profile.email}</p>}
-                  {resume.profile?.phone && <p className="text-sm text-gray-700"><span className="font-semibold">Phone:</span> {resume.profile.phone}</p>}
-                </>
-              )}
-
-              {hasSkills && (
-                <section>
-                  <h4 className="text-sm font-semibold uppercase text-gray-600">Skills</h4>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {(resume.skills || []).filter(skill => skill?.name?.trim()).map((skill, idx) => (
-                      <span key={idx} className="rounded-full bg-gray-200 px-3 py-1 text-xs text-gray-700">{skill.name}</span>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {hasInterests && (
-                <section>
-                  <h4 className="text-sm font-semibold uppercase text-gray-600">Interests</h4>
-                  <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{resume.interests.text}</p>
-                </section>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
   return (
     <div className="space-y-6">
       {view === 'list' && (
         <div className="space-y-6 animate-fade-in">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <FiDatabase className="w-6 h-6 text-primary-500" />
-                  {t('resume.mySavedCVs') || 'My Saved CVs'}
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {resumes.length === 0 
-                    ? (t('resume.noCVsSubtitle') || "You haven't created any CVs yet. Start by creating a new one!")
-                    : `${resumes.length} CV${resumes.length !== 1 ? 's' : ''} saved`}
-                </p>
-              </div>
+          {/* Page header */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#1769E0] dark:text-[#3B82F6]">
+                Resume Builder
+              </p>
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-[1.6rem]">
+                {t('resume.mySavedCVs') || 'My Saved CVs'}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Create, manage and customize your professional CVs.
+              </p>
             </div>
 
-            {/* Resume Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {resumes.length === 0 ? (
-                <div className="col-span-full">
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-12 flex flex-col items-center justify-center text-center">
-                    <div className="w-16 h-16 rounded-lg bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mb-4">
-                      <FiFileText className="w-8 h-8 text-primary-500" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('resume.noCVsTitle') || 'No CVs Created Yet'}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 max-w-md">
-                      {t('resume.noCVsDesc') || 'Create your first CV to get started. You can create multiple CVs tailored to different job applications.'}
-                    </p>
-                    <button
-                      onClick={handleOpenTitleModal}
-                      className="btn btn-primary inline-flex items-center gap-2"
-                    >
-                      <FiPlus className="w-4 h-4" /> {t('resume.createFirstCV') || 'Create Your First CV'}
-                    </button>
+            <button
+              onClick={handleOpenTitleModal}
+              className="btn btn-primary inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold shadow-sm hover:shadow-lg"
+            >
+              <FiPlus className="h-4 w-4" />
+              Create Resume
+            </button>
+          </div>
+
+          {/* Summary stats â€” only values backed by existing state */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs dark:border-slate-700/80 dark:bg-slate-800/80">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FE] text-[#1769E0] dark:bg-[#1769E0]/20 dark:text-[#3B82F6]">
+                <FiFileText className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xl font-bold leading-none text-slate-900 dark:text-white">{resumes.length}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">CVs</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs dark:border-slate-700/80 dark:bg-slate-800/80">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-700/60 dark:text-slate-300">
+                <FiEdit2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xl font-bold leading-none text-slate-900 dark:text-white">{resumes.filter((r) => r.status === 'draft').length}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Drafts</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Resume Grid */}
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {resumes.length === 0 ? (
+              <div className="col-span-full">
+                <div className="flex min-h-[260px] w-full flex-col items-center justify-center rounded-2xl border border-slate-200/70 bg-white px-6 py-8 text-center shadow-xs dark:border-slate-700/80 dark:bg-slate-800/80">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF2FE] dark:bg-[#1769E0]/20">
+                    <FiFileText className="h-7 w-7 text-[#1769E0] dark:text-[#3B82F6]" />
                   </div>
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">{t('resume.noCVsTitle') || 'No CVs Created Yet'}</h3>
+                  <p className="mt-2 max-w-lg text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                    {t('resume.noCVsDesc') || 'Create your first CV to get started. You can create multiple CVs tailored to different job applications.'}
+                  </p>
+                  <button
+                    onClick={handleOpenTitleModal}
+                    className="btn btn-primary mt-6 inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold shadow-sm hover:shadow-lg"
+                  >
+                    <FiPlus className="h-4 w-4" /> {t('resume.createFirstCV') || 'Create Your First CV'}
+                  </button>
                 </div>
+              </div>
                 ) : (
                   resumes.map((resume) => (
-                    <div key={resume.id} className="card p-5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-4">
+                <div key={resume.id} className="group flex gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-slate-700/80 dark:bg-slate-800/80 dark:hover:border-slate-600">
                 {/* Resume Structure Thumbnail */}
-                <div className="w-24 h-32 rounded border bg-gray-50 dark:bg-gray-700 flex items-center justify-center shrink-0 relative overflow-hidden shadow-inner">
-                  {renderCVStructure(resume.template)}
+                <div className="h-32 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-inner dark:border-slate-600 dark:bg-slate-700">
+                  <div className="relative h-full w-full">
+                    <div className="absolute left-1/2 top-0 origin-top -translate-x-1/2" style={{ transform: 'translateX(-50%) scale(0.12)' }}>
+                      {(() => {
+                        const templateId = resolveTemplateId(resume.template);
+                        const templateDefinition = getTemplateDefinition(templateId);
+                        const ThumbComponent = templateDefinition?.component || getTemplateComponent(templateId);
+                        return <ThumbComponent resume={resume} color={getResumeThemeColor(resume, templateDefinition)} compact />;
+                      })()}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Details */}
-                <div className="flex-1 flex flex-col justify-between py-1">
+                <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
                   <div>
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">{resume.title}</h3>
-                    <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                    <h3 className="truncate text-base font-semibold text-slate-900 dark:text-white">{resume.title}</h3>
+                    <div className="mt-2 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
                       <span>Score</span>
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">{resume.score}%</span>
+                      <span className="font-semibold text-slate-600 dark:text-slate-300">{resume.score}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded-full mt-1 overflow-hidden">
-                      <div className="bg-primary-500 h-2 rounded-full transition-all duration-700 ease-out" style={{ width: `${resume.score}%` }} />
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                      <div className="h-1.5 rounded-full bg-[#1769E0] transition-all duration-700 ease-out" style={{ width: `${resume.score}%` }} />
                     </div>
                   </div>
 
                   {/* Actions buttons */}
-                  <div className="flex items-center gap-2 mt-4">
+                  <div className="mt-4 flex items-center gap-2">
                     <button 
                       onClick={() => handleEditResume(resume.id)}
-                      className="btn btn-outline py-1 px-3 text-xs flex items-center gap-1 border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10"
+                      className="btn btn-outline inline-flex items-center gap-1 rounded-lg border-[#1769E0] px-3 py-1.5 text-xs font-semibold text-[#1769E0] hover:bg-[#EAF2FE] dark:hover:bg-[#1769E0]/10"
                     >
-                      {t('common.edit') || 'Edit'} <FiEdit2 className="w-3 h-3" />
+                      {t('common.edit') || 'Edit'} <FiEdit2 className="h-3 w-3" />
                     </button>
 
                     <button 
                       title={t('common.download') || 'Download'} 
                       onClick={() => handleDownloadPDF(resume)}
-                      className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
                     >
-                      <FiDownload className="w-3.5 h-3.5" />
+                      <FiDownload className="h-3.5 w-3.5" />
                     </button>
                     <button 
                       title={t('common.print') || 'Print'} 
                       onClick={() => handleDownloadPDF(resume)}
-                      className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
                     >
-                      <FiPrinter className="w-3.5 h-3.5" />
+                      <FiPrinter className="h-3.5 w-3.5" />
+                    </button>
+                    <button 
+                      title="Export JSON" 
+                      onClick={() => handleExportJson(resume)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                    >
+                      <FiFileText className="h-3.5 w-3.5" />
                     </button>
                     <button 
                       title={t('common.delete') || 'Delete'} 
                       onClick={() => handleDeleteResume(resume.id)}
-                      className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-red-500 transition-colors hover:bg-red-50 dark:border-slate-600 dark:hover:bg-red-950/30"
                     >
-                      <FiTrash2 className="w-3.5 h-3.5" />
+                      <FiTrash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
@@ -1571,32 +1636,42 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                 ))
               )}
             </div>
-          </div>
 
-          {/* Action buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div 
+          {/* Quick actions */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <button
+              type="button"
               onClick={handleOpenTitleModal}
-              className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition group"
+              className="group flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 text-left shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[#1769E0] hover:shadow-md dark:border-slate-700/80 dark:bg-slate-800/80 dark:hover:border-[#3B82F6]"
             >
-              <div className="w-12 h-12 rounded-lg bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <FiPlus className="w-6 h-6 text-primary-500" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FE] text-[#1769E0] transition-colors group-hover:bg-[#DCEAFD] dark:bg-[#1769E0]/20 dark:text-[#3B82F6] dark:group-hover:bg-[#1769E0]/30">
+                <FiPlus className="h-5 w-5" />
               </div>
-              <span className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-1">
-                {t('resume.createNewCV') || 'Create New CV'} <FiEdit2 className="w-4 h-4 text-gray-400" />
-              </span>
-              <p className="text-sm text-gray-500 mt-1">{t('resume.startFresh') || 'Start Fresh'}</p>
-            </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {t('resume.createNewCV') || 'Create New CV'}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{t('resume.startFresh') || 'Start Fresh'}</p>
+              </div>
+              <FiChevronRight className="ml-auto h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-[#1769E0] dark:text-slate-500" />
+            </button>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-6 flex flex-col items-center justify-center cursor-pointer hover:border-secondary transition group">
-              <div className="w-12 h-12 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <FiUpload className="w-6 h-6 text-secondary-500" />
+            <button
+              type="button"
+              onClick={handleOpenImportModal}
+              className="group flex items-center gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 text-left shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-secondary-300 hover:shadow-md dark:border-slate-700/80 dark:bg-slate-800/80 dark:hover:border-secondary-600"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-yellow-50 text-yellow-600 transition-colors group-hover:bg-yellow-100 dark:bg-yellow-900/25 dark:text-yellow-400">
+                <FiUpload className="h-5 w-5" />
               </div>
-              <span className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-1">
-                {t('resume.import') || 'Import'} <FiUpload className="w-4 h-4 text-gray-400" />
-              </span>
-              <p className="text-sm text-gray-500 mt-1">{t('resume.useCurrentCV') || 'Use Current CV'}</p>
-            </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {t('resume.import') || 'Import'}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{t('resume.useCurrentCV') || 'Import a JSON file or use your parsed CV'}</p>
+              </div>
+              <FiChevronRight className="ml-auto h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-secondary-500 dark:text-slate-500" />
+            </button>
           </div>
         </div>
       )}
@@ -1610,7 +1685,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Resume Preview</h2>
                 <p className="text-sm text-gray-500">Your completed CV is ready to review.</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -1620,6 +1695,14 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                   className="btn btn-outline"
                 >
                   Back to Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExportJson(activeResume)}
+                  className="btn btn-outline inline-flex items-center gap-1.5"
+                  title="Export this resume as a JSON file that can be imported again"
+                >
+                  <FiDownload /> Export JSON
                 </button>
                 <button
                   type="button"
@@ -1660,20 +1743,29 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
               ))}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => toast.success('Section addition prompt coming soon')}
+                onClick={handleOpenAddSection}
                 className="flex items-center gap-1.5 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white transition-all shadow-sm hover:bg-red-600"
               >
                 <FiPlusCircle /> Add Section
               </button>
               <button
                 type="button"
-                onClick={() => toast.success('AI Resume optimization activated')}
-                className="flex items-center gap-1.5 rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-white transition-all shadow-sm hover:bg-gray-900"
+                onClick={() => handleExportJson(activeResume)}
+                title="Export this resume as a JSON file that can be imported again"
+                className="flex items-center gap-1.5 rounded-lg border border-[#1769E0] bg-white px-4 py-2 text-sm font-semibold text-[#1769E0] transition-all shadow-sm hover:bg-[#EAF2FE]"
               >
-                🧠 Ask AI
+                <FiDownload /> Export JSON
+              </button>
+              <button
+                type="button"
+                disabled
+                title="AI assistance is not available yet"
+                className="flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-gray-300 px-4 py-2 text-sm font-semibold text-gray-500 shadow-sm"
+              >
+                Ask AI (unavailable)
               </button>
             </div>
           </div>
@@ -1702,8 +1794,8 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                           <label className="group relative flex h-40 w-40 cursor-pointer items-center justify-center overflow-hidden rounded-[24px] border border-white bg-slate-100 transition hover:border-slate-300 hover:bg-slate-50">
                             <input type="file" accept="image/*" onChange={handlePhotoUpload} className="sr-only" />
 
-                            {activeResume.photo?.dataUrl ? (
-                              <img src={activeResume.photo.dataUrl} alt="Profile" className="h-full w-full object-cover" />
+                            {activeResume.photo?.dataUrl || activeResume.photo?.url ? (
+                              <img src={activeResume.photo.dataUrl || activeResume.photo.url} alt="Profile" className="h-full w-full object-cover" />
                             ) : (
                               <div className="flex flex-col items-center justify-center gap-3 text-center text-slate-500">
                                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm text-slate-400">
@@ -1714,7 +1806,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                             )}
 
                             <div className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-xs text-slate-400">
-                              {activeResume.photo?.dataUrl ? 'Change photo' : ''}
+                              {activeResume.photo?.dataUrl || activeResume.photo?.url ? 'Change photo' : ''}
                             </div>
                           </label>
 
@@ -1733,6 +1825,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                             type="text"
                             value={activeResume.profile?.firstName || ''}
                             onChange={(e) => handleFieldChange('profile', 'firstName', e.target.value)}
+                            maxLength={13}
                             className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                           />
                         </div>
@@ -1742,6 +1835,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                             type="text"
                             value={activeResume.profile?.middleName || ''}
                             onChange={(e) => handleFieldChange('profile', 'middleName', e.target.value)}
+                            maxLength={13}
                             className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                           />
                         </div>
@@ -1751,6 +1845,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                             type="text"
                             value={activeResume.profile?.lastName || ''}
                             onChange={(e) => handleFieldChange('profile', 'lastName', e.target.value)}
+                            maxLength={13}
                             className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                           />
                         </div>
@@ -1763,15 +1858,6 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                             type="text"
                             value={activeResume.profile?.profession || ''}
                             onChange={(e) => handleFieldChange('profile', 'profession', e.target.value)}
-                            className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="mb-2 block text-sm font-medium text-slate-700">Professional summary</label>
-                          <textarea
-                            rows="4"
-                            value={activeResume.summary?.text || ''}
-                            onChange={(e) => handleFieldChange('summary', 'text', e.target.value)}
                             className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                           />
                         </div>
@@ -1789,7 +1875,28 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                           <input
                             type="tel"
                             value={activeResume.profile?.phone || ''}
-                            onChange={(e) => handleFieldChange('profile', 'phone', e.target.value)}
+                            onChange={(e) => handleFieldChange('profile', 'phone', sanitizeEthiopianPhone(e.target.value, activeResume.profile?.phone || ''))}
+                            onKeyDown={(e) => {
+                              if (e.ctrlKey || e.metaKey || e.altKey) return;
+                              if (e.key.length > 1) return;
+                              if (!/^[0-9+]$/.test(e.key)) { e.preventDefault(); return; }
+                              const el = e.currentTarget;
+                              const current = activeResume.profile?.phone || '';
+                              const next = sanitizeEthiopianPhone(current.slice(0, el.selectionStart) + e.key + current.slice(el.selectionEnd), current);
+                              if (next === current) e.preventDefault();
+                            }}
+                            onPaste={(e) => {
+                              e.preventDefault();
+                              const pasted = e.clipboardData.getData('text/plain') || e.clipboardData.getData('text') || '';
+                              if (!pasted) return;
+                              const el = e.currentTarget;
+                              const current = activeResume.profile?.phone || '';
+                              const next = sanitizeEthiopianPhone(current.slice(0, el.selectionStart) + pasted + current.slice(el.selectionEnd), current);
+                              if (next === current) return;
+                              el.value = next;
+                              el.setSelectionRange(next.length, next.length);
+                              handleFieldChange('profile', 'phone', next);
+                            }}
                             className="w-full rounded-[12px] border border-slate-200 px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                           />
                         </div>
@@ -1954,7 +2061,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
               <div className="space-y-6">
                 <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
                   <p className="text-sm font-medium flex items-center gap-2">
-                    💡 Now, let's fill out your work history <span className="font-normal">| Here's what you need to know: Employers scan your resume for six seconds to decide if you're a match. We'll suggest bullet points that make a great impression.</span>
+                    ðŸ’¡ Now, let's fill out your work history <span className="font-normal">| Here's what you need to know: Employers scan your resume for six seconds to decide if you're a match. We'll suggest bullet points that make a great impression.</span>
                   </p>
                 </div>
 
@@ -2033,10 +2140,11 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                       <div className="flex items-center justify-between border-b bg-gray-50 p-2.5 dark:border-gray-700 dark:bg-gray-800">
                         <button
                           type="button"
-                          onClick={() => toast.success('AI generation helper activated')}
-                          className="flex items-center gap-1 rounded bg-red-500 px-3 py-1 text-xs font-bold text-white shadow-sm hover:bg-red-600"
+                          disabled
+                          title="AI assistance is not available yet"
+                          className="flex cursor-not-allowed items-center gap-1 rounded bg-gray-300 px-3 py-1 text-xs font-bold text-gray-500 shadow-sm"
                         >
-                          🧠 Ask AI for Assistance
+                          Ask AI for Assistance (unavailable)
                         </button>
                         <div className="text-[10px] text-gray-400">
                           PRO TIP: Ask AI any question about your job duties <span className="ml-1 rounded bg-blue-600 px-1.5 py-0.5 font-extrabold uppercase text-white">Jobs</span>
@@ -2085,7 +2193,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
               <div className="space-y-6">
                 <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
                   <p className="text-sm font-medium flex items-center gap-2">
-                    💡 Tell us about your education <span className="font-normal">| Include every school, even if you're still there or didn't graduate.</span>
+                    ðŸ’¡ Tell us about your education <span className="font-normal">| Include every school, even if you're still there or didn't graduate.</span>
                   </p>
                 </div>
 
@@ -2174,7 +2282,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
               </div>
             )}
 
-            {activeTab === 'Projects' && (
+{activeTab === 'Additional Info' && (
               <div className="space-y-6">
                 <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
                   <p className="text-sm font-medium flex items-center gap-2">
@@ -2226,6 +2334,125 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                   >
                     <FiPlusCircle /> Add Another Project
                   </button>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Personal Interests</label>
+                    <textarea
+                      rows="4"
+                      value={activeResume.interests?.text || ''}
+                      onChange={(e) => handleFieldChange('interests', 'text', e.target.value)}
+                      className="textarea w-full"
+                      placeholder="Examples: hiking, reading, public speaking, photography..."
+                    />
+                  </div>
+                </div>
+
+                {/* Custom sections added through "Add Section" */}
+                <div className="pt-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="text-base font-bold text-gray-900 dark:text-white">Custom Sections</h4>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddSection}
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+                    >
+                      <FiPlusCircle /> Add Section
+                    </button>
+                  </div>
+
+                  {getCustomSectionOrder(activeResume).length === 0 ? (
+                    <div className="mt-3 rounded-xl border border-dashed border-gray-300 p-4 text-center dark:border-gray-600">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Add custom sections like Awards, Achievements, Volunteer Experience, Publications or References. They appear in the live preview and are saved with your CV.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-4">
+                      {getCustomSectionOrder(activeResume).map((key, index) => {
+                        const section = activeResume.additionalInfo?.[key] || {};
+                        const items = Array.isArray(section.items) ? section.items : [];
+                        const orderedKeys = getCustomSectionOrder(activeResume);
+                        return (
+                          <div key={key} className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <input
+                                type="text"
+                                value={section.title || ''}
+                                onChange={(e) => handleAdditionalSectionChange(key, 'title', e.target.value)}
+                                className="input w-full flex-1 font-semibold"
+                                placeholder="Section title"
+                              />
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveSection(key, -1)}
+                                  disabled={index === 0}
+                                  title="Move section up"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-gray-600 dark:text-gray-300"
+                                >
+                                  <FiArrowUp className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveSection(key, 1)}
+                                  disabled={index === orderedKeys.length - 1}
+                                  title="Move section down"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30 dark:border-gray-600 dark:text-gray-300"
+                                >
+                                  <FiArrowDown className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveAdditionalSection(key)}
+                                  title="Remove section"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-red-600 transition hover:bg-red-50 dark:border-gray-600"
+                                >
+                                  <FiTrash className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 space-y-3">
+                              {items.map((item, itemIndex) => (
+                                <div key={itemIndex} className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+                                  <input
+                                    type="text"
+                                    value={item?.title || ''}
+                                    onChange={(e) => handleAdditionalItemChange(key, itemIndex, 'title', e.target.value)}
+                                    className="input w-full"
+                                    placeholder="Item title (e.g. project, award or event name)"
+                                  />
+                                  <textarea
+                                    rows="3"
+                                    value={item?.description || ''}
+                                    onChange={(e) => handleAdditionalItemChange(key, itemIndex, 'description', e.target.value)}
+                                    className="textarea mt-2 w-full"
+                                    placeholder="Description, details or bullet points"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveAdditionalItem(key, itemIndex)}
+                                    className="mt-2 inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700"
+                                  >
+                                    <FiTrash className="h-4 w-4" /> Remove item
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => handleAddAdditionalItem(key)}
+                                className="inline-flex items-center gap-1.5 py-1 text-sm font-bold text-indigo-600 hover:underline dark:text-indigo-400"
+                              >
+                                <FiPlusCircle /> Add item
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -2613,6 +2840,89 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                   </div>
                 )}
 
+            {activeTab === 'Certifications' && (
+              <div className="space-y-6">
+                <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                        <FiAward className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Certifications</p>
+                        <h3 className="text-lg font-semibold text-slate-900">Showcase your professional credentials</h3>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddCertification}
+                      className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                    >
+                      <FiPlusCircle className="mr-2 h-4 w-4" /> Add certification
+                    </button>
+                  </div>
+                </div>
+
+                {(activeResume.certifications || []).length === 0 ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-600">
+                    No certifications added yet. Add your certificates to boost your CV score.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {(activeResume.certifications || []).map((cert, index) => (
+                      <div key={index} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+                          <div className="grid gap-4 md:grid-cols-3">
+                            <div>
+                              <label className="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Certification name</label>
+                              <input
+                                type="text"
+                                value={cert?.name || ''}
+                                onChange={(e) => handleCertificationChange(index, 'name', e.target.value)}
+                                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
+                                placeholder="e.g. AWS Certified Solutions Architect"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Issuing organization</label>
+                              <input
+                                type="text"
+                                value={cert?.issuer || ''}
+                                onChange={(e) => handleCertificationChange(index, 'issuer', e.target.value)}
+                                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
+                                placeholder="e.g. Amazon Web Services"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Year</label>
+                              <input
+                                type="text"
+                                value={cert?.year || ''}
+                                onChange={(e) => handleCertificationChange(index, 'year', e.target.value)}
+                                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
+                                placeholder="e.g. 2024"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCertification(index)}
+                              className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                              aria-label="Delete certification"
+                            >
+                              <FiTrash className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === 'Summary' && (
               <div className="space-y-6">
                 <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
@@ -2632,60 +2942,74 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
               </div>
             )}
 
-            {activeTab === 'Interests' && (
+            {activeTab === 'Template' && (
               <div className="space-y-6">
-                <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
-                  <p className="text-sm font-medium">Mention personal interests that can add personality to your resume.</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Personal Interests</label>
-                  <textarea
-                    rows="8"
-                    value={activeResume.interests?.text || ''}
-                    onChange={(e) => handleFieldChange('interests', 'text', e.target.value)}
-                    className="textarea w-full"
-                    placeholder="Examples: hiking, reading, public speaking, photography..."
-                  />
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'Photo' && (
-              <div className="space-y-6">
-                <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
-                  <p className="text-sm font-medium">Upload a profile photo to include in your resume preview.</p>
-                </div>
-
-                <label className="group relative block rounded-xl border border-dashed border-gray-300 p-6 text-center transition hover:border-slate-400 hover:bg-slate-50">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="sr-only"
-                  />
-                  <div className="flex flex-col items-center justify-center gap-3">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm text-slate-400">
-                      <FiImage className="h-6 w-6" />
+                <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                      <FiGrid className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Template</p>
+                      <h3 className="text-lg font-semibold text-slate-900">Choose a layout and accent color</h3>
                     </div>
-                    <p className="text-sm font-semibold text-slate-900">Upload a photo</p>
-                    <p className="max-w-[20rem] text-xs leading-5 text-slate-500">Click here to select a profile image that will appear in your resume preview.</p>
                   </div>
-                </label>
+                </div>
 
-                {activeResume.photo?.dataUrl && (
-                  <div className="mt-4 flex justify-center">
-                    <img
-                      src={activeResume.photo.dataUrl}
-                      alt="Resume preview photo"
-                      className="h-32 w-32 rounded-full border-4 border-indigo-100 object-cover"
-                    />
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {templates.map((template) => {
+                    const isSelected = activeResume?.template === template.id;
+                    const TemplateComponent = template.component;
+                    return (
+                      <div
+                        key={template.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleSelectTemplate(template.id)}
+                        onKeyDown={(event) => event.key === 'Enter' && handleSelectTemplate(template.id)}
+                        className={`cursor-pointer rounded-[20px] border bg-white p-3 transition duration-200 ${isSelected ? 'border-indigo-500 bg-indigo-50 shadow-md' : 'border-slate-200 hover:border-slate-400 hover:shadow-sm'}`}
+                      >
+                        <div className="thumbnail-container">
+                          <TemplateComponent resume={activeResume || {}} color={getResumeThemeColor(activeResume, template)} compact />
+                          {isSelected && (
+                            <span className="absolute right-3 top-3 inline-flex items-center rounded-full bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white">Selected</span>
+                          )}
+                        </div>
+
+                        <div className="mt-3 text-center">
+                          <p className="text-sm font-semibold text-slate-900">{template.name}</p>
+                          <p className="mt-1 text-xs text-slate-500">{template.badge}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Accent color</p>
+                  <h4 className="text-sm font-semibold text-slate-900">Pick a color to personalize your resume</h4>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    {TEMPLATE_COLOR_NAMES.map((colorName) => {
+                      const theme = getTemplateTheme(colorName);
+                      const isSelected = activeResume?.theme?.color === colorName;
+                      return (
+                        <button
+                          key={colorName}
+                          type="button"
+                          onClick={() => handleSelectTemplateColor(colorName)}
+                          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${isSelected ? 'border-slate-900 ring-2 ring-slate-900/10' : 'border-slate-200 hover:border-slate-400'}`}
+                        >
+                          <span className="inline-flex h-4 w-4 rounded-full" style={{ backgroundColor: theme.primaryColor }} />
+                          <span className="capitalize">{colorName}</span>
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
               </div>
             )}
 
-            {!['Profile', 'Experience', 'Education', 'Skills', 'Summary', 'Interests', 'Photo'].includes(activeTab) && (
+            {!['Profile', 'Experience', 'Education', 'Skills', 'Summary', 'Languages', 'Certifications', 'Additional Info', 'Template'].includes(activeTab) && (
               <div className="py-10 text-center">
                 <FiFileText className="mx-auto mb-3 h-16 w-16 text-gray-300" />
                 <h3 className="text-lg font-semibold">{activeTab} Section Editor</h3>
@@ -2704,7 +3028,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
               </button>
 
               <div className="flex items-center gap-3">
-                {saveMessage && <span className="text-sm font-medium text-green-600">{saveMessage}</span>}
+                {saveMessage && <span className="text-sm font-medium text-blue-600">{saveMessage}</span>}
                 <button
                   type="button"
                   onClick={handleSaveForm}
@@ -2732,7 +3056,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Live preview</p>
                 <h3 className="text-base font-semibold text-slate-900 dark:text-white">Your CV updates instantly</h3>
               </div>
-              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
                 Live
               </span>
             </div>
@@ -2748,11 +3072,11 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">CV Score</p>
                   <p className="text-xs text-slate-400 mt-0.5">Based on completed sections of your CV</p>
                 </div>
-                <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">{activeResume.score}%</span>
+                <span className="text-2xl font-bold text-[#1769E0] dark:text-[#3B82F6]">{activeResume.score}%</span>
               </div>
               <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-gray-700">
                 <div
-                  className="h-2.5 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-700 ease-out"
+                  className="h-2.5 rounded-full bg-gradient-to-r from-[#1769E0] to-[#0D5BC4] transition-all duration-700 ease-out"
                   style={{ width: `${activeResume.score}%` }}
                 />
               </div>
@@ -2809,7 +3133,7 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                               className={`min-w-[220px] md:min-w-[260px] xl:min-w-[300px] max-w-[300px] flex-shrink-0 rounded-[20px] border bg-white p-3 transition duration-200 ${isSelected ? 'border-indigo-500 bg-indigo-50 shadow-[0_16px_48px_rgba(99,102,241,0.12)]' : 'border-slate-200 hover:border-slate-400 hover:shadow-sm'} cursor-pointer`}
                             >
                               <div className="thumbnail-container">
-                                <TemplateComponent resume={activeResume || {}} color={template.accent} compact />
+                                <TemplateComponent resume={activeResume || {}} color={getResumeThemeColor(activeResume, template)} compact />
                                 {isSelected && (
                                   <span className="absolute right-3 top-3 inline-flex items-center rounded-full bg-indigo-600 px-2.5 py-1 text-[11px] font-semibold text-white">Selected</span>
                                 )}
@@ -2825,6 +3149,27 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                       </div>
                     </div>
                   </div>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
+                    <span className="mr-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Color</span>
+                    {TEMPLATE_COLOR_NAMES.map((colorName) => {
+                      const theme = getTemplateTheme(colorName);
+                      const isSelected = activeResume?.theme?.color === colorName;
+                      return (
+                        <button
+                          key={colorName}
+                          type="button"
+                          onClick={() => handleSelectTemplateColor(colorName)}
+                          title={colorName}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full border-2 transition ${isSelected ? 'border-slate-900' : 'border-white hover:border-slate-400'}`}
+                          style={{ backgroundColor: theme.primaryColor }}
+                          aria-label={`Accent color ${colorName}`}
+                        >
+                          {isSelected && <FiCheck className="h-4 w-4 text-white" />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -2835,8 +3180,8 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
   )}
 
       {isPhotoEditorOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4">
-          <div className="w-full max-w-4xl overflow-hidden rounded-[28px] border border-slate-700 bg-slate-900 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/80 p-4">
+          <div className="my-8 w-full max-w-4xl overflow-hidden rounded-[28px] border border-slate-700 bg-slate-900 shadow-2xl">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700 px-6 py-4">
               <div>
                 <h2 className="text-xl font-semibold text-white">Edit profile photo</h2>
@@ -2852,9 +3197,9 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
             </div>
 
             <div className="grid gap-6 p-6 md:grid-cols-[1.5fr_0.9fr]">
-              <div className="flex min-h-[340px] items-center justify-center rounded-[24px] bg-slate-800 p-4">
+              <div className="flex min-h-[240px] items-center justify-center rounded-[24px] bg-slate-800 p-4">
                 {photoEditorSrc ? (
-                  <div className="relative h-[320px] w-full overflow-hidden rounded-[24px] bg-slate-900">
+                  <div className="relative h-[240px] w-full overflow-hidden rounded-[24px] bg-slate-900 sm:h-[320px]">
                     <img
                       src={photoEditorSrc}
                       alt="Profile editor preview"
@@ -2922,9 +3267,9 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                     />
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>-180°</span>
-                    <span>{photoEditorRotate}°</span>
-                    <span>180°</span>
+                    <span>-180Â°</span>
+                    <span>{photoEditorRotate}Â°</span>
+                    <span>180Â°</span>
                   </div>
                 </div>
 
@@ -3003,6 +3348,132 @@ const languages = (resume.languages || []).filter(Boolean).map(lang => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Section Modal */}
+      {isAddSectionModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-fade-in">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-800 animate-slide-down">
+            <div className="flex items-center justify-between border-b p-5 dark:border-gray-700">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Section</h2>
+                <p className="text-sm text-gray-500">Choose a section to add to your resume. It appears in the live preview and is saved with your CV.</p>
+              </div>
+              <button type="button" onClick={() => setIsAddSectionModalOpen(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+                <FiX className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="max-h-[55vh] overflow-y-auto p-5">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {SECTION_TYPES.map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <button
+                      key={section.key}
+                      type="button"
+                      onClick={() => handleAddSectionType(section.key)}
+                      disabled={section.fixed}
+                      className={`group flex items-center gap-3 rounded-xl border p-3 text-left transition ${
+                        section.fixed
+                          ? 'cursor-not-allowed border-gray-200 bg-gray-50 opacity-60 dark:border-gray-700 dark:bg-gray-800'
+                          : 'border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 dark:border-gray-700 dark:hover:bg-indigo-900/20'
+                      }`}
+                    >
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${section.fixed ? 'bg-gray-200 text-gray-500 dark:bg-gray-700' : 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'}`}>
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-gray-900 dark:text-white">{section.label}</span>
+                        {section.fixed && <span className="block text-xs text-gray-500">Already a fixed section</span>}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Custom section title</label>
+                <input
+                  type="text"
+                  value={customSectionTitle}
+                  onChange={(e) => setCustomSectionTitle(e.target.value)}
+                  placeholder="e.g. Volunteering, Hobbies, Community Work"
+                  className="input w-full"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAddSectionType('custom')}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+                >
+                  <FiPlusCircle /> Add Custom Section
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Resume Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-fade-in">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-800 animate-slide-down">
+            <div className="flex items-center justify-between border-b p-5 dark:border-gray-700">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Import Resume</h2>
+                <p className="text-sm text-gray-500">Restore a resume from a JSON export or from the data already parsed from your uploaded CV.</p>
+              </div>
+              <button type="button" onClick={handleCloseImportModal} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+                <FiX className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4 p-5">
+              <button
+                type="button"
+                onClick={handleImportFileClick}
+                disabled={isImporting}
+                className="flex w-full items-center gap-4 rounded-xl border border-gray-200 p-4 text-left transition hover:border-indigo-400 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:hover:bg-indigo-900/20"
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-yellow-50 text-yellow-600 dark:bg-yellow-900/25 dark:text-yellow-400">
+                  <FiUpload className="h-5 w-5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-gray-900 dark:text-white">
+                    {isImporting ? 'Importing...' : 'Import from JSON file'}
+                  </span>
+                  <span className="block text-xs text-gray-500">Select a resume JSON file exported from the Resume Builder.</span>
+                </span>
+              </button>
+              <input
+                ref={importFileInputRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={handleImportFileChange}
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                onClick={handleImportFromParsedCV}
+                disabled={!hasParsedCVData()}
+                className="flex w-full items-center gap-4 rounded-xl border border-gray-200 p-4 text-left transition hover:border-indigo-400 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:hover:bg-indigo-900/20"
+              >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-900/25 dark:text-sky-400">
+                  <FiDatabase className="h-5 w-5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-gray-900 dark:text-white">Use data parsed from your uploaded CV</span>
+                  <span className="block text-xs text-gray-500">
+                    {hasParsedCVData()
+                      ? 'Creates a new CV pre-filled with the skills, education and certifications detected from your uploaded CV file.'
+                      : 'Upload a CV on your profile first so it can be parsed.'}
+                  </span>
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       )}

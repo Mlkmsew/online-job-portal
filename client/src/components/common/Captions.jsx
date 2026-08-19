@@ -25,7 +25,7 @@ const Captions = () => {
   return (
     <div
       aria-live="polite"
-      className={`fixed bottom-24 right-6 z-60 max-w-md bg-black/85 text-white p-3 rounded-lg shadow-lg text-sm ${
+      className={`fixed bottom-24 right-3 sm:right-6 z-60 w-[min(28rem,calc(100vw-1.5rem))] bg-black/85 text-white p-3 rounded-lg shadow-lg text-sm ${
         settings.fontSize === 'xlarge' ? 'text-lg' : ''
       }`}
     >

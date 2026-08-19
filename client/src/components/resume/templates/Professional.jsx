@@ -1,5 +1,6 @@
 import './shared.css';
 import { getColorTokens, getInitials, getResumeViewModel } from './templateUtils';
+import AdditionalInfoSections from './AdditionalInfoSections';
 
 export const Professional = ({ resume, color = 'blue', compact = false }) => {
   const view = getResumeViewModel(resume);
@@ -14,10 +15,11 @@ export const Professional = ({ resume, color = 'blue', compact = false }) => {
   };
 
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
-  const educations = Array.isArray(view.education) ? view.education : (view.education ? [view.education] : []);
+  const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
   const languages = Array.isArray(view.languages) ? view.languages : [];
   const qualities = Array.isArray(view.qualities) ? view.qualities : [];
   const hobbies = Array.isArray(view.hobbies) ? view.hobbies : (Array.isArray(view.interests) ? view.interests : []);
+  const hasLinkedIn = Boolean(view.contact?.linkedin);
 
   return (
     <div className={`resume-template-shell ${compact ? 'resume-template--compact' : ''}`}>
@@ -155,23 +157,49 @@ export const Professional = ({ resume, color = 'blue', compact = false }) => {
                 </div>
               )}
 
+            {/* Certifications */}
+              {(view.certifications || []).length > 0 && (
+                <div>
+                  <h2 style={{ fontSize: '15px', fontWeight: 'bold', textTransform: 'uppercase', color: '#111827', borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', marginBottom: '14px', letterSpacing: '0.5px' }}>
+                    Certifications
+                  </h2>
+                  {view.certifications.map((cert, idx) => (
+                    <div key={`cert-${idx}`} style={{ marginBottom: '12px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111827' }}>
+                        {cert.name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>
+                        {cert.issuer}{cert.issuer && cert.year ? ' • ' : ''}{cert.year}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            <AdditionalInfoSections
+              sections={view.additionalInfo}
+              style={{ marginTop: '14px' }}
+            />
+
             </div>
 
             {/* Right Sidebar Area */}
             <div style={{ padding: '24px 20px', backgroundColor: '#fcfcfc', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
               {/* Personal Details */}
-              <div>
-                <h3 style={{ fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', color: '#111827', borderBottom: '1px solid #e5e7eb', paddingBottom: '5px', marginBottom: '10px', letterSpacing: '0.5px' }}>
-                  Personal details
-                </h3>
-                {view.contact?.linkedin && (
-                  <div style={{ fontSize: '11px' }}>
-                    <div style={{ color: '#6b7280', marginBottom: '2px' }}>LinkedIn</div>
-                    <div style={{ color: '#111827', wordBreak: 'break-all' }}>{view.contact.linkedin}</div>
-                  </div>
-                )}
-              </div>
+              {hasLinkedIn && (
+                <div>
+                  <h3 style={{ fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', color: '#111827', borderBottom: '1px solid #e5e7eb', paddingBottom: '5px', marginBottom: '10px', letterSpacing: '0.5px' }}>
+                    Personal details
+                  </h3>
+                  {view.contact?.linkedin && (
+                    <div style={{ fontSize: '11px' }}>
+                      <div style={{ color: '#6b7280', marginBottom: '2px' }}>LinkedIn</div>
+                      <div style={{ color: '#111827', wordBreak: 'break-all' }}>{view.contact.linkedin}</div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Languages */}
               {languages.length > 0 && (

@@ -91,6 +91,64 @@ export const isValidEthiopianPhone = (phone) => {
   return regex.test(phone);
 };
 
+const ETHIO_LOCAL_PREFIX = '09';
+const ETHIO_INTL_PREFIX = '+2519';
+const ETHIO_LOCAL_MAX_LENGTH = 10;
+const ETHIO_INTL_MAX_LENGTH = 13;
+
+/**
+ * Keep only digits and a leading "+" so letters/symbols never reach the value.
+ */
+const filterPhoneChars = (value) => {
+  let out = '';
+  for (let i = 0; i < value.length; i++) {
+    const ch = value[i];
+    if (ch >= '0' && ch <= '9') out += ch;
+    else if (ch === '+' && i === 0) out += ch;
+  }
+  return out;
+};
+
+/**
+ * Whether the value is a buildable/valid state: an empty/partial prefix that can
+ * still become valid, or a complete 09/+2519 number within its length cap.
+ */
+const isEthioPhonePrefixState = (value) => {
+  if (value === '' || value === '0' || value === '+' || value === '+2' || value === '+25' || value === '+251' || value === ETHIO_LOCAL_PREFIX || value === ETHIO_INTL_PREFIX) return true;
+  if (value.startsWith(ETHIO_LOCAL_PREFIX) && /^\d*$/.test(value.slice(2)) && value.length <= ETHIO_LOCAL_MAX_LENGTH) return true;
+  if (value.startsWith(ETHIO_INTL_PREFIX) && /^\d*$/.test(value.slice(5)) && value.length <= ETHIO_INTL_MAX_LENGTH) return true;
+  return false;
+};
+
+/**
+ * Longest prefix of the value that is still a buildable/valid phone state, used
+ * to drop the offending characters when an invalid prefix such as 08 or +2518
+ * is typed or pasted.
+ */
+const longestValidEthioPhonePrefix = (value) => {
+  for (let len = value.length; len >= 0; len--) {
+    const prefix = value.slice(0, len);
+    if (isEthioPhonePrefixState(prefix)) return prefix;
+  }
+  return '';
+};
+
+/**
+ * Real-time masking for the Ethiopian phone field. Supports exactly:
+ *  - local   09 + 8 digits (max 10 chars)
+ *  - intl   +2519 + 8 digits (max 13 chars, e.g. +251912345678)
+ * Letters/symbols and invalid prefixes (08, 07, +2518, ...) are removed, the
+ * "+" is only allowed first, and the length is capped by the active prefix.
+ * Deletions are left intact so backspace/delete always work normally.
+ */
+export const sanitizeEthiopianPhone = (value, previousValue = '') => {
+  const filtered = filterPhoneChars(value);
+  if (filtered === '') return '';
+  if (isEthioPhonePrefixState(filtered)) return filtered;
+  if (value.length < previousValue.length) return filtered;
+  return longestValidEthioPhonePrefix(filtered);
+};
+
 /**
  * Format file size
  */
@@ -273,6 +331,7 @@ export default {
   getRandomColor,
   isValidEmail,
   isValidEthiopianPhone,
+  sanitizeEthiopianPhone,
   formatFileSize,
   debounce,
   slugify,

@@ -32,7 +32,7 @@ import {
   FiDatabase,
   FiGlobe,
 } from 'react-icons/fi';
-import { Code2, LineChart, Cog, HeartPulse, GraduationCap, Megaphone, ClipboardList, HeartHandshake } from 'lucide-react';
+import { Code2, LineChart, Cog, HeartPulse, GraduationCap, Megaphone, ClipboardList, HeartHandshake, Briefcase, Activity, Award, BookOpen, Camera, Coffee, Cpu, DollarSign, Film, Globe, Heart, Home as HomeIcon, Layers, MapPin, Mic, Monitor, Music, Shield, ShoppingBag, Smartphone, Star, Wrench, TrendingUp, Truck, Users, Zap } from 'lucide-react';
 import { FaBuilding } from 'react-icons/fa';
 import api from '../services/api';
 
@@ -91,9 +91,61 @@ const CATEGORIES = [
   },
 ];
 
-const STATS = [
-  { value: '500+', label: 'Registered Companies', icon: FiBriefcase },
-  { value: '5,000+', label: 'Applications', icon: FiFileText },
+const CATEGORY_ICON_MAP = {
+  briefcase: Briefcase,
+  activity: Activity,
+  award: Award,
+  'book-open': BookOpen,
+  book: BookOpen,
+  camera: Camera,
+  clipboard: ClipboardList,
+  code: Code2,
+  coffee: Coffee,
+  cpu: Cpu,
+  'dollar-sign': DollarSign,
+  film: Film,
+  globe: Globe,
+  heart: Heart,
+  'home': HomeIcon,
+  layers: Layers,
+  'map-pin': MapPin,
+  mic: Mic,
+  monitor: Monitor,
+  music: Music,
+  shield: Shield,
+  'shopping-bag': ShoppingBag,
+  smartphone: Smartphone,
+  star: Star,
+  tool: Wrench,
+  'trending-up': TrendingUp,
+  truck: Truck,
+  users: Users,
+  zap: Zap,
+};
+
+const CATEGORY_ICON_BGS = [
+  'bg-blue-100 text-blue-700 group-hover:bg-blue-700',
+  'bg-indigo-100 text-indigo-700 group-hover:bg-indigo-700',
+  'bg-cyan-100 text-cyan-700 group-hover:bg-cyan-700',
+  'bg-rose-100 text-rose-700 group-hover:bg-rose-700',
+  'bg-amber-100 text-amber-700 group-hover:bg-amber-600',
+  'bg-purple-100 text-purple-700 group-hover:bg-purple-700',
+  'bg-teal-100 text-teal-700 group-hover:bg-teal-700',
+  'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-700',
+];
+
+const resolveCategoryIcon = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw) return Briefcase;
+  if (/[^\u0000-\u007F]/.test(raw)) return null;
+  return CATEGORY_ICON_MAP[raw.toLowerCase()] || Briefcase;
+};
+
+const STAT_ITEMS = [
+  { key: 'jobSeekers', label: 'Job Seekers', icon: FiUser },
+  { key: 'companies', label: 'Registered Companies', icon: FiBriefcase },
+  { key: 'applications', label: 'Applications', icon: FiFileText },
+  { key: 'categories', label: 'Industry Categories', icon: FiGlobe },
 ];
 
 const FEATURES = [
@@ -144,15 +196,6 @@ const SAMPLE_JOBS = [
   { id: 'sample-4', title: 'Registered Nurse', companyName: 'Tikur Anbessa Hospital', location: 'Addis Ababa', jobType: 'Full-time', salary: 'ETB 18,000 - 30,000', posted: '5 days ago', category: 'Healthcare', experienceLevel: 'Mid', isRemote: false },
   { id: 'sample-5', title: 'Project Officer (NGO)', companyName: 'Save the Children Ethiopia', location: 'Addis Ababa', jobType: 'Full-time', salary: 'Negotiable', posted: '1 week ago', category: 'NGO & Development', experienceLevel: 'Mid', isRemote: false },
   { id: 'sample-6', title: 'Frontend Developer', companyName: 'Gebeya Inc.', location: 'Remote', jobType: 'Remote', salary: 'Negotiable', posted: '2 weeks ago', category: 'IT & Software', experienceLevel: 'Junior', isRemote: true },
-];
-
-const SAMPLE_COMPANIES = [
-  { id: 'c1', name: 'Ethio Telecom', industry: 'Telecommunications', location: 'Addis Ababa', openPositions: 12, logo: '/images/logos/ethio-telecom.svg' },
-  { id: 'c2', name: 'Dashen Bank', industry: 'Banking & Finance', location: 'Addis Ababa', openPositions: 8, logo: '/images/logos/dashen-bank.svg' },
-  { id: 'c3', name: 'Safaricom Ethiopia', industry: 'Telecommunications', location: 'Addis Ababa', openPositions: 6, logo: '/images/logos/safaricom.svg' },
-  { id: 'c4', name: 'HÄGERE GROUP', industry: 'Conglomerate', location: 'Addis Ababa', openPositions: 5, logo: '/images/logos/hagere-group.svg' },
-  { id: 'c5', name: 'NIB International Bank', industry: 'Banking & Finance', location: 'Addis Ababa', openPositions: 4, logo: '/images/logos/nib-international-bank.svg' },
-  { id: 'c6', name: 'Awash Bank', industry: 'Banking & Finance', location: 'Addis Ababa', openPositions: 9, logo: '/images/logos/awash-bank.svg' },
 ];
 
 /* ──────────────────────────────────────────────
@@ -251,7 +294,9 @@ const Home = () => {
   // Latest jobs state
   const [jobs, setJobs] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [saved, setSaved] = useState({});
+  const [communityStats, setCommunityStats] = useState(null);
 
   // Filters
   const [filterCategory, setFilterCategory] = useState('');
@@ -263,10 +308,20 @@ const Home = () => {
   useEffect(() => {
     const loadHomeData = async () => {
       try {
-        const [jobsRes, companiesRes] = await Promise.all([
+        const [jobsRes, companiesRes, categoriesRes, statsRes] = await Promise.all([
           api.get('/jobs', { params: { limit: 12, isApproved: true } }),
           api.get('/companies', { params: { isApproved: true, limit: 12 } }),
+          api.get('/categories'),
+          api.get('/stats/community'),
         ]);
+
+        const statsData = statsRes.data?.data || {};
+        setCommunityStats({
+          jobSeekers: statsData.jobSeekers ?? 0,
+          companies: statsData.companies ?? 0,
+          applications: statsData.applications ?? 0,
+          categories: statsData.categories ?? 0,
+        });
 
         const realJobs = (Array.isArray(jobsRes.data) ? jobsRes.data : jobsRes.data?.data || []).map((j) => ({
           id: j._id || j.id,
@@ -291,15 +346,24 @@ const Home = () => {
           logo: c.logo || '',
         }));
 
+        const realCategories = (Array.isArray(categoriesRes.data) ? categoriesRes.data : categoriesRes.data?.data || []).map((c, i) => ({
+          name: c.name,
+          icon: resolveCategoryIcon(c.icon),
+          jobs: `${c.jobCount ?? 0} ${t('home.jobsLabel', { defaultValue: 'jobs' })}`,
+          iconBg: CATEGORY_ICON_BGS[i % CATEGORY_ICON_BGS.length],
+        }));
+
         // Fill with curated samples so the page always looks production-ready
         const allJobs = realJobs.length >= 3 ? realJobs : [...realJobs, ...SAMPLE_JOBS];
-        const allCompanies = realCompanies.length >= 4 ? realCompanies : [...realCompanies, ...SAMPLE_COMPANIES];
+        const allCompanies = realCompanies;
+        const allCategories = realCategories.length > 0 ? realCategories : CATEGORIES;
 
         setJobs(allJobs.slice(0, 6));
         setCompanies(allCompanies.slice(0, 3));
+        setCategories(allCategories.slice(0, 8));
       } catch (error) {
         setJobs(SAMPLE_JOBS);
-        setCompanies(SAMPLE_COMPANIES);
+        setCompanies([]);
       }
     };
 
@@ -399,7 +463,7 @@ const Home = () => {
               {/* Search form */}
               <motion.form
                 onSubmit={handleSearch}
-                className="mt-8 flex w-full max-w-2xl items-center gap-1 rounded-2xl bg-white p-2 shadow-2xl"
+                className="mt-8 flex w-full max-w-2xl flex-col items-stretch gap-2 rounded-2xl bg-white p-2 shadow-2xl md:flex-row md:items-center"
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.15 }}
@@ -414,7 +478,7 @@ const Home = () => {
                     className={inputClass}
                   />
                 </div>
-                <div className="mx-1 h-8 w-px shrink-0 bg-slate-200" aria-hidden="true" />
+                <div className="hidden h-8 w-px shrink-0 bg-slate-200 md:mx-1 md:block" aria-hidden="true" />
                 <div className="relative flex-1">
                   <FiMapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                   <input
@@ -426,7 +490,7 @@ const Home = () => {
                 </div>
                 <button
                   type="submit"
-                  className="ml-2 inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="ml-0 inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:ml-2"
                 >
                   <FiSearch className="h-4 w-4" aria-hidden="true" />
                   <span>{t('home.searchButton', { defaultValue: 'Search Jobs' })}</span>
@@ -510,14 +574,18 @@ const Home = () => {
             subtitle={t('home.categoriesSubtitle', { defaultValue: 'Explore 12 industry categories with thousands of opportunities.' })}
           />
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {CATEGORIES.map((cat) => (
+            {(categories.length ? categories : CATEGORIES).map((cat, index) => (
               <Link
                 key={cat.name}
                 to={`/jobs?category=${encodeURIComponent(slugify(cat.name))}`}
                 className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl"
               >
                 <span className={`inline-flex h-14 w-14 items-center justify-center rounded-2xl transition-colors duration-300 group-hover:scale-105 group-hover:text-white ${cat.iconBg}`}>
-                  <cat.icon className="h-7 w-7" strokeWidth={1.75} aria-hidden="true" />
+                  {cat.icon ? (
+                    <cat.icon className="h-7 w-7" strokeWidth={1.75} aria-hidden="true" />
+                  ) : (
+                    <span className="text-xl" aria-hidden="true">{String(cat.name).charAt(0).toUpperCase()}</span>
+                  )}
                 </span>
                 <h3 className="mt-5 text-lg font-bold leading-snug text-[#0F172A] transition-colors duration-300 group-hover:text-[#1769E0]">
                   {cat.name}
@@ -531,7 +599,7 @@ const Home = () => {
           </div>
           <div className="mt-12 text-center">
             <Link
-              to="/jobs"
+              to="/categories"
               className="group inline-flex items-center gap-2 rounded-full border-2 border-[#1769E0] px-8 py-3.5 text-sm font-bold text-[#1769E0] transition-all duration-300 hover:bg-[#1769E0] hover:text-white hover:shadow-lg hover:shadow-blue-200"
             >
               {t('home.viewAllCategories', { defaultValue: 'View All Categories' })}
@@ -658,7 +726,7 @@ const Home = () => {
             {companies.map((company) => (
               <Link
                 key={company.id}
-                to={String(company.id).startsWith('c') ? '/companies' : `/companies/${company.id}`}
+                to={`/companies/${company.id}`}
                 className="group rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl"
               >
                 <div className="flex justify-center">
@@ -776,16 +844,20 @@ const Home = () => {
             eyebrow={t('home.statsEyebrow', { defaultValue: 'Our growing community' })}
             title={t('home.statsTitle', { defaultValue: 'Thousands Already Trust OnlineJob Portal' })}
           />
-          <div className="mx-auto grid max-w-3xl grid-cols-2 gap-5 lg:grid-cols-2">
-            {STATS.map((stat) => (
-              <div key={stat.label} className="rounded-2xl border border-white/15 bg-white/10 p-6 text-center backdrop-blur-sm transition hover:bg-white/15">
-                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-sky-200">
-                  <stat.icon className="h-6 w-6" aria-hidden="true" />
-                </span>
-                <p className="mt-4 text-3xl font-extrabold text-white">{stat.value}</p>
-                <p className="mt-1 text-sm font-medium text-sky-100/80">{stat.label}</p>
-              </div>
-            ))}
+          <div className="mx-auto grid max-w-5xl grid-cols-2 gap-5 lg:grid-cols-4">
+            {STAT_ITEMS.map((stat) => {
+              const count = communityStats?.[stat.key];
+              const display = typeof count === 'number' ? `${count.toLocaleString('en-US')}+` : '—';
+              return (
+                <div key={stat.label} className="rounded-2xl border border-white/15 bg-white/10 p-6 text-center backdrop-blur-sm transition hover:bg-white/15">
+                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-sky-200">
+                    <stat.icon className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  <p className="mt-4 text-3xl font-extrabold text-white">{display}</p>
+                  <p className="mt-1 text-sm font-medium text-sky-100/80">{stat.label}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

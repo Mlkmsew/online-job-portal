@@ -33,23 +33,23 @@ const AlertCard = ({ notification, onView, onDelete, deleting }) => {
       className={`group relative rounded-3xl border p-5 transition-all hover:shadow-md ${
         isRead
           ? 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
-          : 'border-emerald-200 bg-emerald-50/40 dark:border-emerald-700 dark:bg-emerald-900/10'
+          : 'border-blue-200 bg-blue-50/40 dark:border-blue-700 dark:bg-blue-900/10'
       }`}
     >
       {/* Unread dot */}
       {!isRead && (
-        <span className="absolute right-5 top-5 h-2.5 w-2.5 rounded-full bg-emerald-500" />
+        <span className="absolute right-5 top-5 h-2.5 w-2.5 rounded-full bg-blue-500" />
       )}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         {/* Left – icon + content */}
         <div className="flex items-start gap-4">
-          <span className="mt-0.5 flex-shrink-0 rounded-2xl bg-emerald-100 p-3 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+          <span className="mt-0.5 flex-shrink-0 rounded-2xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
             <FiBell className="h-5 w-5" />
           </span>
 
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+            <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">
               {t('jobAlerts.newJobPosted') || 'New Job Posted'}
             </p>
 
@@ -64,13 +64,13 @@ const AlertCard = ({ notification, onView, onDelete, deleting }) => {
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
               {location && (
                 <span className="flex items-center gap-1.5">
-                  <FiMapPin className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
+                  <FiMapPin className="h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
                   {location}
                 </span>
               )}
               {jobType && (
                 <span className="flex items-center gap-1.5">
-                  <FiBriefcase className="h-3.5 w-3.5 flex-shrink-0 text-emerald-500" />
+                  <FiBriefcase className="h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
                   {jobType}
                 </span>
               )}
@@ -92,7 +92,7 @@ const AlertCard = ({ notification, onView, onDelete, deleting }) => {
           <button
             type="button"
             onClick={() => onView(notification)}
-            className="rounded-full bg-[#1769E0] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0D5BC4] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+            className="rounded-full bg-[#1769E0] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0D5BC4] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             {t('jobs.viewDetails')}
           </button>
@@ -132,7 +132,7 @@ const EmptyState = () => {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-slate-50 px-8 py-16 text-center dark:border-gray-700 dark:bg-gray-900">
-      <span className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400">
+      <span className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">
         <FiInbox className="h-8 w-8" />
       </span>
       <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{t('jobAlerts.emptyTitle') || 'No new job alerts'}</h3>
@@ -228,7 +228,7 @@ const JobAlerts = () => {
 
         <div className="flex items-center gap-3">
           {!loading && unreadCount > 0 && (
-            <span className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">
+            <span className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">
               {unreadCount} {t('jobAlerts.newCount') || 'new'}
             </span>
           )}
@@ -248,7 +248,7 @@ const JobAlerts = () => {
       <section className="rounded-3xl border border-gray-150 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <span className="rounded-2xl bg-emerald-50 p-3 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+            <span className="rounded-2xl bg-blue-50 p-3 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
               <FiBell className="h-5 w-5" />
             </span>
             <div>
@@ -263,7 +263,7 @@ const JobAlerts = () => {
 
           <div className="flex items-center gap-3">
             {!loading && notifications.length > 0 && (
-              <span className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+              <span className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
                 {notifications.length} {t('jobAlerts.notificationsCount') || 'notifications'}
               </span>
             )}
@@ -272,7 +272,7 @@ const JobAlerts = () => {
                 type="button"
                 onClick={handleMarkAllRead}
                 disabled={markingAll}
-                className="rounded-full border border-[#1769E0] bg-[#EAF2FE] px-4 py-2 text-sm font-semibold text-[#1769E0] transition hover:bg-[#DCEAFD] disabled:opacity-50 dark:border-[#1769E0] dark:bg-emerald-900/20 dark:text-emerald-400"
+                className="rounded-full border border-[#1769E0] bg-[#EAF2FE] px-4 py-2 text-sm font-semibold text-[#1769E0] transition hover:bg-[#DCEAFD] disabled:opacity-50 dark:border-[#1769E0] dark:bg-blue-900/20 dark:text-blue-400"
               >
                 {markingAll ? t('common.loading') : t('jobAlerts.markAllRead') || 'Mark all read'}
               </button>
@@ -303,7 +303,7 @@ const JobAlerts = () => {
 
         {!loading && notifications.length > 0 && unreadCount === 0 && (
           <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400 dark:text-gray-500">
-            <FiCheckCircle className="h-4 w-4 text-emerald-500" />
+            <FiCheckCircle className="h-4 w-4 text-blue-500" />
             {t('jobAlerts.allCaughtUp') || 'You’re all caught up!'}
           </div>
         )}

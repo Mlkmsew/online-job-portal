@@ -41,6 +41,14 @@ export default {
       fontFamily: {
         sans: ['Inter', 'Noto Sans Ethiopic', 'system-ui', 'sans-serif'],
       },
+      spacing: {
+        '4.5': '1.125rem',
+        '5.5': '1.375rem',
+      },
+      boxShadow: {
+        '2xs': '0 1px 2px 0 rgba(15, 23, 42, 0.05)',
+        'xs': '0 1px 3px 0 rgba(15, 23, 42, 0.08)',
+      },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.5s ease-out',

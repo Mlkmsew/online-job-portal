@@ -8,8 +8,8 @@ const TemplatePreviewModal = ({ template, resume, accentColor, onSelect, onClose
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
       <div className="flex max-h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl lg:flex-row">
-        <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
-          <div className="rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="flex-1 overflow-auto bg-slate-50 p-6">
+          <div className="min-w-fit rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm">
             <TemplateComponent resume={resume} color={accentColor} />
           </div>
         </div>
@@ -35,8 +35,8 @@ const TemplatePreviewModal = ({ template, resume, accentColor, onSelect, onClose
           <div className="mt-6">
             <h4 className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Color options</h4>
             <div className="mt-3 flex gap-2">
-              {['blue', 'green', 'purple', 'slate'].map((option) => (
-                <button key={option} type="button" className="h-9 w-9 rounded-full border border-slate-200 bg-white shadow-sm transition hover:scale-105" style={{ backgroundColor: option === 'blue' ? '#2563eb' : option === 'green' ? '#10b981' : option === 'purple' ? '#7c3aed' : '#334155' }} aria-label={`Use ${option} accent`} />
+              {['blue', 'purple', 'slate'].map((option) => (
+                <button key={option} type="button" className="h-9 w-9 rounded-full border border-slate-200 bg-white shadow-sm transition hover:scale-105" style={{ backgroundColor: option === 'blue' ? '#2563eb' : option === 'purple' ? '#7c3aed' : '#334155' }} aria-label={`Use ${option} accent`} />
               ))}
             </div>
           </div>

@@ -138,6 +138,8 @@ app.use('/api/interviews', require('./routes/interviewRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.post('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));
+app.use('/api/resumes', require('./routes/resumeRoutes'));
+app.use('/api/stats', require('./routes/statsRoutes'));
 
 // Development-only debug routes
 if (process.env.NODE_ENV === 'development') {

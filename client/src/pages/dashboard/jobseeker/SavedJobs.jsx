@@ -90,7 +90,7 @@ const SavedJobs = () => {
           <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-sm mx-auto mb-6">
             {t('savedJobs.emptySubtitle') || 'Bookmark jobs while browsing to keep them handy and apply later.'}
           </p>
-          <Link to="/jobs" className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-700">
+          <Link to="/jobs" className="inline-flex items-center justify-center rounded-xl bg-[#1769E0] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#0D5BC4]">
             {t('savedJobs.browseOpportunities') || 'Browse Opportunities'}
           </Link>
         </div>
@@ -101,12 +101,12 @@ const SavedJobs = () => {
             if (!job) return null;
 
             const daysLeft = job.applicationDeadline ? Math.ceil((new Date(job.applicationDeadline) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
-            const deadlineBadgeColor = daysLeft <= 3 ? 'bg-red-50 text-red-700 border-red-150' : 'bg-amber-50 text-amber-700 border-amber-150';
+            const deadlineBadgeColor = daysLeft <= 3 ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200';
 
             const mockAIScore = 85 + (job.title.length % 15); 
 
             return (
-              <div key={bookmark._id} className="card p-6 shadow-sm border border-gray-150 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col justify-between hover:shadow-md transition-shadow duration-200">
+              <div key={bookmark._id} className="card p-6 shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col justify-between hover:shadow-md transition-shadow duration-200">
                 <div>
                   <div className="flex justify-between items-start mb-3 gap-4">
                     <div>

@@ -131,7 +131,7 @@ const MyApplications = () => {
   const getStatusPill = (status) => {
     const normalized = `${status || ''}`.toLowerCase();
     if (normalized.includes('interview')) return 'bg-sky-50 text-sky-700';
-    if (normalized.includes('selected') || normalized.includes('hired') || normalized.includes('offer')) return 'bg-emerald-50 text-emerald-700';
+    if (normalized.includes('selected') || normalized.includes('hired') || normalized.includes('offer')) return 'bg-blue-50 text-blue-700';
     if (normalized.includes('rejected') || normalized.includes('not selected')) return 'bg-rose-50 text-rose-700';
     return 'bg-slate-100 text-slate-600';
   };
@@ -228,8 +228,8 @@ const MyApplications = () => {
   const applicationGuide = [
     { label: 'Interview Scheduled', description: 'You have been scheduled for an interview.', tone: 'blue' },
     { label: 'Completed', description: 'Your interview has been completed.', tone: 'slate' },
-    { label: 'Offer Sent', description: 'The employer has sent you a job offer.', tone: 'emerald' },
-    { label: 'Hired', description: 'Congratulations! You have been hired.', tone: 'green' },
+    { label: 'Offer Sent', description: 'The employer has sent you a job offer.', tone: 'blue' },
+    { label: 'Hired', description: 'Congratulations! You have been hired.', tone: 'blue' },
     { label: 'Rejected', description: 'You were not selected for this position.', tone: 'rose' },
     { label: 'Not Selected', description: 'The recruitment process has ended without selection.', tone: 'slate' },
   ];
@@ -253,7 +253,7 @@ const MyApplications = () => {
   const activeTimelineIndex = Math.min(getStepIndex(selectedApp?.status), timelineStages.length - 1);
 
   return (
-    <div className="min-h-[calc(100vh-64px)]">
+    <div className="mx-auto w-full max-w-6xl min-h-[calc(100vh-64px)] pb-10 px-1 sm:px-0">
       <div className="mb-8 rounded-[18px] bg-white p-6 shadow-sm border border-slate-200">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>

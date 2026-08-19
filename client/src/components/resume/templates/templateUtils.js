@@ -17,6 +17,8 @@ export const RESUME_TEMPLATE_CSS = `
   overflow: hidden;
   position: relative;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
   --accent: #2563eb;
   --accent-soft: #dbeafe;
   --accent-contrast: #eff6ff;
@@ -151,6 +153,11 @@ export const RESUME_TEMPLATE_CSS = `
 }
 
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   body {
     background: #fff;
     margin: 0;
@@ -173,13 +180,48 @@ export const RESUME_TEMPLATE_CSS = `
 
 export const TEMPLATE_COLORS = {
   blue: { name: 'Blue', accent: '#2563eb', accentSoft: '#dbeafe', accentContrast: '#eff6ff' },
-  green: { name: 'Green', accent: '#059669', accentSoft: '#dcfce7', accentContrast: '#f0fdf4' },
   purple: { name: 'Purple', accent: '#7c3aed', accentSoft: '#ede9fe', accentContrast: '#f5f3ff' },
   black: { name: 'Black', accent: '#111827', accentSoft: '#f3f4f6', accentContrast: '#f9fafb' },
-  teal: { name: 'Teal', accent: '#0f766e', accentSoft: '#ccfbf1', accentContrast: '#f0fdfa' }
+  indigo: { name: 'Indigo', accent: '#4f46e5', accentSoft: '#e0e7ff', accentContrast: '#eef2ff' }
 };
 
+export const TEMPLATE_COLOR_NAMES = Object.keys(TEMPLATE_COLORS);
+
 export const getColorTokens = (color = 'blue') => TEMPLATE_COLORS[color] || TEMPLATE_COLORS.blue;
+
+/**
+ * Build a persisted theme object for a template so the exact colors survive
+ * Save / Reopen / Download without being derived only from a hard-coded default.
+ * @param {string} color - One of TEMPLATE_COLOR_NAMES (blue, purple, black, indigo)
+ * @returns {object} theme persisted on the resume
+ */
+export const getTemplateTheme = (color = 'blue') => {
+  const tokens = getColorTokens(color);
+  return {
+    color,
+    primaryColor: tokens.accent,
+    secondaryColor: tokens.accentSoft,
+    accentColor: tokens.accent,
+    sidebarColor: tokens.accent,
+    headingColor: tokens.accent,
+    accentSoft: tokens.accentSoft,
+    accentContrast: tokens.accentContrast,
+    textColor: '#111827',
+  };
+};
+
+/**
+ * Resolve the single source of truth for the accent color of a resume.
+ * Prefers the persisted theme (so Save/Reopen keeps colors), then falls
+ * back to the template definition default for legacy resumes.
+ * @param {object} resume - Saved CV data
+ * @param {object} templateDefinition - Template definition with `accent`
+ * @returns {string} color name
+ */
+export const getResumeThemeColor = (resume = {}, templateDefinition) => {
+  if (resume?.theme?.color && TEMPLATE_COLORS[resume.theme.color]) return resume.theme.color;
+  return templateDefinition?.accent || 'blue';
+};
 
 export const getInitials = (fullName = '') =>
   fullName
@@ -191,17 +233,57 @@ export const getInitials = (fullName = '') =>
 
 export const getResumeViewModel = (resume = {}) => {
   const profile = resume.profile || {};
-  const fullName = [profile.firstName, profile.middleName, profile.lastName].filter(Boolean).join(' ').trim() || 'Your Name';
-  const profession = profile.profession || 'Professional Title';
-  const location = [profile.city, profile.stateProvince, profile.country || profile.nationality].filter(Boolean).join(', ');
+
+  const fullName = [profile.firstName, profile.middleName, profile.lastName].filter(Boolean).join(' ').trim();
+  const profession = profile.profession || profile.headline || '';
+  const location = [profile.streetAddress, profile.city, profile.stateProvince, profile.country || profile.nationality].filter(Boolean).join(', ');
   const contact = {
-    email: profile.email || 'your@email.com',
-    phone: profile.phone || '+1 555 0100',
-    location: location || 'City, State',
-    nationality: profile.nationality || 'Open to work'
+    email: profile.email || '',
+    phone: profile.phone || '',
+    location,
+    nationality: profile.nationality || '',
+    linkedin: profile.linkedin || profile.linkedIn || ''
   };
-  const experience = resume.experience || {};
-  const education = resume.education || {};
+
+  const rawExperiences = Array.isArray(resume.experiences)
+    ? resume.experiences
+    : Array.isArray(resume.experience)
+      ? resume.experience
+      : resume.experience
+        ? [resume.experience]
+        : [];
+  const experiences = rawExperiences
+    .filter(Boolean)
+    .map((exp) => ({
+      jobTitle: exp.jobTitle || exp.title || '',
+      employer: exp.employer || exp.company || '',
+      city: exp.city || '',
+      state: exp.state || '',
+      startDate: exp.startDate || '',
+      endDate: exp.currentWork ? 'Present' : (exp.endDate || ''),
+      current: Boolean(exp.currentWork),
+      duties: exp.duties || exp.description || ''
+    }))
+    .filter((exp) => exp.jobTitle || exp.employer || exp.duties);
+
+  const rawEducations = Array.isArray(resume.education)
+    ? resume.education
+    : resume.education
+      ? [resume.education]
+      : [];
+  const educations = rawEducations
+    .filter(Boolean)
+    .map((edu) => ({
+      schoolName: edu.schoolName || edu.institution || '',
+      degree: edu.degree || edu.studyType || '',
+      fieldOfStudy: edu.fieldOfStudy || '',
+      city: edu.city || '',
+      state: edu.state || '',
+      startDate: edu.startDate || '',
+      endDate: edu.currentStudy ? 'Present' : (edu.endDate || '')
+    }))
+    .filter((edu) => edu.schoolName || edu.degree || edu.fieldOfStudy);
+
   const projects = Array.isArray(resume.projects) ? resume.projects.filter(Boolean) : [];
   const skills = Array.isArray(resume.skills) ? resume.skills.filter(Boolean) : [];
   const softSkills = Array.isArray(resume.softSkills) ? resume.softSkills.filter(Boolean) : [];
@@ -219,38 +301,104 @@ export const getResumeViewModel = (resume = {}) => {
         .filter(Boolean)
     : [];
   const links = Array.isArray(resume.links) ? resume.links.filter(Boolean) : [];
-  const certifications = Array.isArray(resume.certifications) ? resume.certifications.filter(Boolean) : [];
+  const certifications = (Array.isArray(resume.certifications) ? resume.certifications.filter(Boolean) : [])
+    .map((cert) => {
+      if (typeof cert === 'string') return { name: cert.trim(), issuer: '', year: '' };
+      const name = cert?.name || cert?.title || cert?.certification || '';
+      let year = cert?.year || '';
+      if (!year && cert?.issueDate) year = new Date(cert.issueDate).getFullYear() || '';
+      return {
+        name: typeof name === 'string' ? name.trim() : '',
+        issuer: typeof cert?.issuer === 'string' ? cert.issuer.trim() : '',
+        year: String(year || '').trim(),
+      };
+    })
+    .filter((cert) => cert.name);
+
+  const rawSummary = resume.summary;
+  const summary = typeof rawSummary === 'string' ? rawSummary.trim() : (typeof rawSummary?.text === 'string' ? rawSummary.text.trim() : '');
+  const rawInterests = resume.interests;
+  const interests = typeof rawInterests === 'string' ? rawInterests.trim() : (typeof rawInterests?.text === 'string' ? rawInterests.text.trim() : '');
+
+  // Additional/custom sections (Awards, Volunteer, Publications, References, ...)
+  const ADDITIONAL_INFO_LABELS = {
+    awards: 'Awards',
+    achievements: 'Achievements',
+    volunteer: 'Volunteer Experience',
+    publications: 'Publications',
+    references: 'References',
+    memberships: 'Professional Memberships',
+    hobbies: 'Hobbies',
+    interests: 'Interests',
+    projects: 'Projects',
+    custom: 'Additional Information',
+  };
+  const rawAdditionalInfo = resume.additionalInfo || {};
+
+  // Resolve the display title for a section key. Custom sections created from
+  // the builder store their own `title`, otherwise a known label is used.
+  const resolveSectionTitle = (key, value) => {
+    if (value && typeof value.title === 'string' && value.title.trim()) return value.title.trim();
+    if (ADDITIONAL_INFO_LABELS[key]) return ADDITIONAL_INFO_LABELS[key];
+    return key;
+  };
+
+  const buildSection = (key) => {
+    const value = rawAdditionalInfo[key];
+    if (value === null || value === undefined) return null;
+    const entries = Array.isArray(value)
+      ? value
+      : value && Array.isArray(value.items)
+        ? value.items
+        : value && typeof value.text === 'string'
+          ? [value.text]
+          : value && typeof value === 'object'
+            ? []
+            : [];
+    const items = entries
+      .filter(Boolean)
+      .map((item) =>
+        typeof item === 'string'
+          ? item
+          : {
+              title: item?.title || item?.name || '',
+              description: item?.description || item?.detail || '',
+            }
+      )
+      .filter((item) => (typeof item === 'string' ? item.trim() : item.title || item.description));
+    if (items.length === 0) return null;
+    return { key, title: resolveSectionTitle(key, value), items };
+  };
+
+  // Order custom sections using the persisted sectionOrder so reordering made
+  // in the Resume Builder is reflected in the live preview and downloaded PDF.
+  const sectionOrder = Array.isArray(resume.sectionOrder) ? resume.sectionOrder : [];
+  const sectionKeys = Object.keys(rawAdditionalInfo);
+  const orderedKeys = [
+    ...sectionOrder.filter((key) => sectionKeys.includes(key)),
+    ...sectionKeys.filter((key) => !sectionOrder.includes(key)),
+  ];
+  const additionalInfo = orderedKeys
+    .map(buildSection)
+    .filter(Boolean);
 
   return {
     fullName,
     profession,
-    summary: resume.summary?.text || 'A results-focused professional with a strong track record of delivering measurable impact through thoughtful planning, clear communication, and continuous improvement.',
-    interests: resume.interests?.text || 'Leadership, mentoring, continuous learning, and collaboration.',
+    summary,
+    interests,
     contact,
     links,
     certifications,
-    experience: {
-      jobTitle: experience.jobTitle || 'Senior Professional',
-      employer: experience.employer || 'Organization',
-      city: experience.city || 'City',
-      state: experience.state || 'State',
-      startDate: experience.startDate || '2020',
-      endDate: experience.currentWork ? 'Present' : (experience.endDate || '2024'),
-      duties: experience.duties || 'Describe your role, impact, and key accomplishments in this position.'
-    },
-    education: {
-      schoolName: education.schoolName || 'University',
-      degree: education.degree || 'Bachelor\'s Degree',
-      fieldOfStudy: education.fieldOfStudy || 'Field of Study',
-      city: education.city || 'City',
-      state: education.state || 'State',
-      startDate: education.startDate || '2016',
-      endDate: education.currentStudy ? 'Present' : (education.endDate || '2020')
-    },
-    projects: projects.length ? projects : [{ title: 'Featured Project', description: 'Highlight measurable results, team collaboration, and the value you delivered.' }],
-    skills: skills.length ? skills : [{ name: 'Leadership' }, { name: 'Communication' }, { name: 'Problem Solving' }],
+    experiences,
+    educations,
+    experience: experiences[0] || {},
+    education: educations[0] || {},
+    projects,
+    skills,
     softSkills,
-    languages: languages.length ? languages : ['English', 'Spanish'],
-    photo: resume.photo?.dataUrl || null
+    languages,
+    additionalInfo,
+    photo: resume.photo?.dataUrl || resume.photo?.url || null
   };
 };

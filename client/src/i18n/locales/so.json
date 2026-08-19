@@ -30,6 +30,16 @@
     "dashboard": "Kumbuyuutarka",
     "profile": "Profile-kayga"
   },
+  "categoriesPage": {
+    "title": "Qeybaha Shaqada Daawasho",
+    "subtitle": "Sahan qeybaha warshadaha oo dhan oo ka hel shaqooyin u dhigma xirfadahaaga.",
+    "searchPlaceholder": "Qeybaha raadi...",
+    "showingCount": "Tusaya",
+    "categoriesLabel": "qeybaha",
+    "ofJobs": "leeyihiin",
+    "noSearchResults": "Ma jiraan qeybo u dhigma raadintaada.",
+    "browseJobs": "Shaqooyinka Daawasho"
+  },
   "auth": {
     "login": "Soo gal",
     "register": "Diiwangeli",

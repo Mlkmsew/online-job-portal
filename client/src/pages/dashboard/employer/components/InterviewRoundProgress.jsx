@@ -26,7 +26,7 @@ const InterviewRoundProgress = ({ interview, onScheduleLastInterview, onBack }) 
                 <p className="font-medium text-slate-900">{round.label}</p>
                 <p className="mt-1 text-sm text-slate-600">{interview?.job?.title || 'Applied position'}</p>
               </div>
-              <div className={`rounded-full px-3 py-1 text-sm font-medium ${round.status === 'Passed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+              <div className={`rounded-full px-3 py-1 text-sm font-medium ${round.status === 'Passed' ? 'bg-[#EAF2FE] text-[#0A4FA8]' : 'bg-amber-50 text-amber-700'}`}>
                 {round.status}
               </div>
             </div>

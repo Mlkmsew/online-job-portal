@@ -139,10 +139,13 @@ const CompanyDetails = () => {
   ];
 
   return (
-    <div style={{ background: 'linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 50%,#f8fafc 100%)', minHeight: '100vh', fontFamily: "'Inter','Outfit',sans-serif" }}>
+    <div style={{ background: 'linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 50%,#f8fafc 100%)', minHeight: '100vh', fontFamily: "'Inter','Outfit',sans-serif", overflowX: 'hidden' }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        .cd-overview-grid { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:28px; align-items:start; }
+        @media (max-width: 900px) { .cd-overview-grid { grid-template-columns:1fr; } }
+        .cd-profile-strip { max-width:960px; margin:0 auto; padding:0 24px; display:flex; align-items:flex-end; gap:24; flex-wrap:wrap; }
         .cd-tab { background:transparent; border:none; cursor:pointer; padding:10px 20px; font-size:14px; font-weight:600; color:#6b7280; border-bottom:2px solid transparent; transition:all 0.2s; }
         .cd-tab.active { color:#10b981; border-bottom-color:#10b981; }
         .cd-tab:hover { color:#10b981; }
@@ -263,7 +266,7 @@ const CompanyDetails = () => {
 
         {/* ─── OVERVIEW TAB ─── */}
         {activeTab === 'overview' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 28, alignItems: 'start' }}>
+          <div className="cd-overview-grid">
 
             {/* Left: About + tagline */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

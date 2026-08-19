@@ -1,5 +1,6 @@
 import './shared.css';
 import { getColorTokens, getInitials, getResumeViewModel } from './templateUtils';
+import AdditionalInfoSections from './AdditionalInfoSections';
 
 export const Elegant = ({ resume, color = 'purple', compact = false }) => {
   const view = getResumeViewModel(resume);
@@ -8,7 +9,7 @@ export const Elegant = ({ resume, color = 'purple', compact = false }) => {
   const style = { '--accent': tokens.accent, '--accent-soft': tokens.accentSoft, '--surface': '#ffffff' };
 
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
-  const educations = Array.isArray(view.education) ? view.education : (view.education ? [view.education] : []);
+  const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
   const languages = Array.isArray(view.languages) ? view.languages : [];
   const qualities = Array.isArray(view.qualities) ? view.qualities : [];
   const hobbies = Array.isArray(view.hobbies) ? view.hobbies : (Array.isArray(view.interests) ? view.interests : []);
@@ -194,6 +195,30 @@ export const Elegant = ({ resume, color = 'purple', compact = false }) => {
                   ))}
                 </div>
               )}
+
+            {/* Certifications */}
+              {(view.certifications || []).length > 0 && (
+                <div>
+                  <div style={{ backgroundColor: tokens.accent, color: '#ffffff', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', marginBottom: '12px' }}>
+                    Certifications
+                  </div>
+                  {view.certifications.map((cert, idx) => (
+                    <div key={`cert-${idx}`} style={{ marginBottom: '12px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#111827' }}>
+                        {cert.name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>
+                        {cert.issuer}{cert.issuer && cert.year ? ' • ' : ''}{cert.year}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            <AdditionalInfoSections
+              sections={view.additionalInfo}
+              style={{ marginTop: '14px' }}
+            />
 
             </div>
 

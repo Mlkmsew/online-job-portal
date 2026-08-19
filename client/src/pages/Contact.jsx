@@ -18,7 +18,7 @@ import {
 import api from '../services/api';
 
 const inputClasses =
-  'w-full rounded-xl border border-[#D8E2DF] bg-white py-3 pl-12 pr-4 text-sm text-[#0F1F33] placeholder:text-[#8FA0AF] shadow-sm transition focus:border-[#008F5A] focus:outline-none focus:ring-2 focus:ring-[#008F5A]/20';
+  'w-full rounded-xl border border-[#D8E2DF] bg-white py-3 pl-12 pr-4 text-sm text-[#0F1F33] placeholder:text-[#8FA0AF] shadow-sm transition focus:border-[#1769E0] focus:outline-none focus:ring-2 focus:ring-[#1769E0]/20';
 
 const fieldIcons = {
   name: FiUser,
@@ -53,7 +53,7 @@ const Contact = () => {
   const field = (name, type, placeholder, Icon, rules, multiline) => (
     <div>
       <div className="relative">
-        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#008F5A]">
+        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#1769E0]">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
         {multiline ? (
@@ -105,14 +105,14 @@ const Contact = () => {
       {/* ===== DECORATIVE BACKGROUND SHAPES ===== */}
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
         <svg
-          className="absolute bottom-0 left-0 w-[480px] max-w-full text-[#008F5A]/15"
+          className="absolute bottom-0 left-0 w-[480px] max-w-full text-[#1769E0]/15"
           viewBox="0 0 500 220"
           fill="currentColor"
         >
           <path d="M0 220 C 60 150, 140 130, 220 150 C 300 170, 380 110, 500 160 L 500 220 Z" />
         </svg>
         <svg
-          className="absolute bottom-24 right-0 w-[420px] max-w-full text-[#BEE7D5]"
+          className="absolute bottom-24 right-0 w-[420px] max-w-full text-[#BFDBFE]"
           viewBox="0 0 400 200"
           fill="currentColor"
         >
@@ -150,25 +150,23 @@ const Contact = () => {
         <div
           className="absolute left-10 top-16 hidden h-24 w-24 rounded-full lg:block"
           style={{
-            backgroundImage: 'radial-gradient(circle, #008F5A 1.5px, transparent 1.5px)',
+            backgroundImage: 'radial-gradient(circle, #1769E0 1.5px, transparent 1.5px)',
             backgroundSize: '16px 16px',
             opacity: 0.35,
           }}
           aria-hidden="true"
         />
-        <div className="absolute right-12 top-24 hidden h-32 w-32 rounded-full border-8 border-[#BEE7D5]/60 lg:block" aria-hidden="true" />
-        <div className="absolute bottom-10 right-1/4 hidden h-20 w-20 rounded-full bg-[#008F5A]/10 lg:block" aria-hidden="true" />
         <div className="absolute bottom-16 left-1/3 hidden h-14 w-14 rounded-full bg-white/40 blur-sm lg:block" aria-hidden="true" />
 
         {/* hero content */}
         <div className="relative container-custom px-4 py-16 text-center sm:py-20 lg:py-24">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#008F5A]">
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#1769E0]">
             {t('contact.title', { defaultValue: 'Contact Us' })}
           </p>
           <h1 className="mx-auto mt-4 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight text-[#0F1F33] sm:text-5xl lg:text-6xl">
-            {t('contact.headlineA', { defaultValue: "We'd Love to" })}{' '}
-            <span className="text-[#008F5A]">
-              {t('contact.headlineB', { defaultValue: 'Hear From You' })}
+            {t('contact.headlineA', { defaultValue: 'Have a Question?' })}{' '}
+            <span className="text-[#1769E0]">
+              {t('contact.headlineB', { defaultValue: "We're Here to Help." })}
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-[#536273] sm:text-lg">
@@ -187,7 +185,7 @@ const Contact = () => {
           <div className="rounded-[22px] bg-white p-6 shadow-xl sm:p-8 lg:col-span-3 lg:p-10">
             {submitted ? (
               <div className="flex flex-col items-center justify-center py-14 text-center">
-                <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[#E8F7F0] text-[#008F5A]">
+                <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[#EAF2FE] text-[#1769E0]">
                   <FiCheckCircle className="h-10 w-10" aria-hidden="true" />
                 </span>
                 <h2 className="mt-6 text-2xl font-extrabold text-[#0F1F33]">
@@ -209,13 +207,12 @@ const Contact = () => {
             ) : (
               <>
                 <div className="flex items-center gap-4">
-                  <span className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-[#E8F7F0] text-[#008F5A]">
+                  <span className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-[#EAF2FE] text-[#1769E0]">
                     <FiSend className="h-6 w-6" aria-hidden="true" />
                   </span>
                   <h2 className="text-lg font-bold leading-snug text-[#0F1F33] sm:text-xl">
                     {t('contact.subtitle2', {
-                      defaultValue:
-                        'Have questions? Send us a message and we will get back to you shortly.',
+                      defaultValue: 'Send us a message',
                     })}
                   </h2>
                 </div>
@@ -273,12 +270,12 @@ const Contact = () => {
             <h2 className="text-2xl font-extrabold text-[#0F1F33]">
               {t('contact.getInTouch', { defaultValue: 'Get in Touch' })}
             </h2>
-            <span className="mt-3 block h-1 w-12 rounded-full bg-[#008F5A]" aria-hidden="true" />
+            <span className="mt-3 block h-1 w-12 rounded-full bg-[#1769E0]" aria-hidden="true" />
 
             <div className="mt-8 divide-y divide-[#D8E2DF]">
               {contactBlocks.map((block) => (
                 <div key={block.title} className="flex gap-4 py-6 first:pt-0 last:pb-0">
-                  <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-[#E8F7F0] text-[#008F5A]">
+                  <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-[#EAF2FE] text-[#1769E0]">
                     <block.icon className="h-5 w-5" aria-hidden="true" />
                   </span>
                   <div>
@@ -289,7 +286,7 @@ const Contact = () => {
                           <a
                             key={i}
                             href={item.href}
-                            className="block text-sm break-all text-[#536273] transition hover:text-[#008F5A]"
+                            className="block text-sm break-all text-[#536273] transition hover:text-[#1769E0]"
                           >
                             {item.label}
                           </a>

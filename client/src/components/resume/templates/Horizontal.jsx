@@ -1,5 +1,6 @@
 import './shared.css';
 import { getColorTokens, getInitials, getResumeViewModel } from './templateUtils';
+import AdditionalInfoSections from './AdditionalInfoSections';
 
 export const Horizontal = ({ resume, color = 'blue', compact = false }) => {
   const view = getResumeViewModel(resume);
@@ -8,7 +9,8 @@ export const Horizontal = ({ resume, color = 'blue', compact = false }) => {
   const style = { '--accent': tokens.accent, '--accent-soft': tokens.accentSoft, '--surface': '#ffffff' };
 
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
-  const educations = Array.isArray(view.education) ? view.education : (view.education ? [view.education] : []);
+  const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
+  const hasContact = view.contact?.email || view.contact?.phone || view.contact?.location || view.contact?.linkedin;
 
   return (
     <div className={`resume-template-shell ${compact ? 'resume-template--compact' : ''}`}>
@@ -40,48 +42,50 @@ export const Horizontal = ({ resume, color = 'blue', compact = false }) => {
               </div>
 
               {/* Personal Details Section */}
-              <div>
-                <p style={{ fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', color: tokens.accent, borderBottom: '1px solid #d1d5db', paddingBottom: '5px', marginBottom: '12px', letterSpacing: '0.5px' }}>
-                  Personal details
-                </p>
+              {hasContact && (
+                <div>
+                  <p style={{ fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', color: tokens.accent, borderBottom: '1px solid #d1d5db', paddingBottom: '5px', marginBottom: '12px', letterSpacing: '0.5px' }}>
+                    Personal details
+                  </p>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '11px' }}>
-                  {view.fullName && (
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>Name</div>
-                      <div style={{ color: '#111827' }}>{view.fullName}</div>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '11px' }}>
+                    {view.fullName && (
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>Name</div>
+                        <div style={{ color: '#111827' }}>{view.fullName}</div>
+                      </div>
+                    )}
 
-                  {view.contact?.email && (
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>Email address</div>
-                      <div style={{ color: '#111827', wordBreak: 'break-all' }}>{view.contact.email}</div>
-                    </div>
-                  )}
+                    {view.contact?.email && (
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>Email address</div>
+                        <div style={{ color: '#111827', wordBreak: 'break-all' }}>{view.contact.email}</div>
+                      </div>
+                    )}
 
-                  {view.contact?.phone && (
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>Phone number</div>
-                      <div style={{ color: '#111827' }}>{view.contact.phone}</div>
-                    </div>
-                  )}
+                    {view.contact?.phone && (
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>Phone number</div>
+                        <div style={{ color: '#111827' }}>{view.contact.phone}</div>
+                      </div>
+                    )}
 
-                  {view.contact?.location && (
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>Address</div>
-                      <div style={{ color: '#111827', lineHeight: '1.4' }}>{view.contact.location}</div>
-                    </div>
-                  )}
+                    {view.contact?.location && (
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>Address</div>
+                        <div style={{ color: '#111827', lineHeight: '1.4' }}>{view.contact.location}</div>
+                      </div>
+                    )}
 
-                  {view.contact?.linkedin && (
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>LinkedIn</div>
-                      <div style={{ color: '#111827', wordBreak: 'break-all' }}>{view.contact.linkedin}</div>
-                    </div>
-                  )}
+                    {view.contact?.linkedin && (
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>LinkedIn</div>
+                        <div style={{ color: '#111827', wordBreak: 'break-all' }}>{view.contact.linkedin}</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
             </div>
 
@@ -162,6 +166,29 @@ export const Horizontal = ({ resume, color = 'blue', compact = false }) => {
                   ))}
                 </div>
               )}
+
+            {/* Certifications */}
+              {(view.certifications || []).length > 0 && (
+                <div>
+                  <h2 style={{ fontSize: '15px', fontWeight: 'bold', textTransform: 'uppercase', color: tokens.accent, borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', marginBottom: '14px', letterSpacing: '0.5px' }}>
+                    Certifications
+                  </h2>
+                  {view.certifications.map((cert, idx) => (
+                    <div key={`cert-${idx}`} style={{ marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111827' }}>{cert.name}</div>
+                        {cert.year && <div style={{ fontSize: '11px', fontWeight: '600', color: tokens.accent }}>{cert.year}</div>}
+                      </div>
+                      {cert.issuer && <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>{cert.issuer}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            <AdditionalInfoSections
+              sections={view.additionalInfo}
+              style={{ marginTop: '18px' }}
+            />
 
             </div>
 

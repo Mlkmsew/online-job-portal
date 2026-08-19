@@ -370,7 +370,7 @@ const ManageUsers = () => {
   const hasActiveFilters = roleFilter !== 'all' || statusFilter !== 'all' || verificationFilter !== 'all';
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       {/* Header */}
       <div className="card flex flex-wrap items-center justify-between gap-4">
         <div>

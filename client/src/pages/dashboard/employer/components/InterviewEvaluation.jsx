@@ -81,7 +81,7 @@ const InterviewEvaluation = ({ interview, form, onChange, onSaveDraft, onSubmit,
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">Strengths</label>
             <div className="flex flex-wrap gap-2">
-              {strengths.map((item) => <span key={item} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm text-emerald-700">{item}</span>)}
+              {strengths.map((item) => <span key={item} className="rounded-full border border-[#A8C8F5] bg-[#EAF2FE] px-3 py-1 text-sm text-[#0A4FA8]">{item}</span>)}
             </div>
             <div className="mt-2 flex gap-2">
               <input value={strengthInput} onChange={(event) => setStrengthInput(event.target.value)} className="flex-1 rounded-2xl border border-slate-200 px-3 py-2 text-sm outline-none" placeholder="Add strength" />

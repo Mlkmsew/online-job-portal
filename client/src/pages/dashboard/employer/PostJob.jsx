@@ -72,6 +72,7 @@ const PostJob = () => {
   const [existingJob, setExistingJob] = useState(null);
   const [technicalInput, setTechnicalInput] = useState('');
   const [softInput, setSoftInput] = useState('');
+  const [applicationFields, setApplicationFields] = useState([]);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     defaultValues: {
@@ -168,6 +169,20 @@ const PostJob = () => {
     );
   };
 
+  const nextFieldKey = () => `application_field_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+  const addApplicationField = () => {
+    setApplicationFields((prev) => [...prev, { key: nextFieldKey(), label: '', type: 'text', required: false }]);
+  };
+
+  const updateApplicationField = (key, patch) => {
+    setApplicationFields((prev) => prev.map((field) => (field.key === key ? { ...field, ...patch } : field)));
+  };
+
+  const removeApplicationField = (key) => {
+    setApplicationFields((prev) => prev.filter((field) => field.key !== key));
+  };
+
   // Load company details and categories
   useEffect(() => {
     dispatch(fetchEmployerCompany());
@@ -249,6 +264,17 @@ const PostJob = () => {
           setValue('hasOtherBenefit', true);
           setValue('otherBenefit', otherBenefits.join(', '));
         }
+
+        setApplicationFields(
+          Array.isArray(jobData.applicationFields) && jobData.applicationFields.length > 0
+            ? jobData.applicationFields.map((field) => ({
+                key: field._id || nextFieldKey(),
+                label: field.label || '',
+                type: field.type || 'text',
+                required: !!field.required,
+              }))
+            : []
+        );
       } catch (err) {
         toast.error(t('employer.postJob.error.loadDetailsFailed'));
         console.error(err);
@@ -277,6 +303,13 @@ const PostJob = () => {
         ...data,
         company: company._id,
         benefits: [...new Set(benefitsPayload)],
+        applicationFields: applicationFields
+          .map((field) => ({
+            label: field.label,
+            type: field.type,
+            required: field.required,
+          }))
+          .filter((field) => field.label && String(field.label).trim()),
       };
 
       if (isEditMode) {
@@ -470,7 +503,7 @@ const PostJob = () => {
                 <input
                   type="checkbox"
                   {...register('salary.isNegotiable')}
-                  className="rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                  className="rounded border-gray-300 text-[#1769E0] focus:ring-[#1769E0]"
                 />
                 <span className="text-sm">{t('employer.postJob.salaryNegotiable')}</span>
               </label>
@@ -491,13 +524,13 @@ const PostJob = () => {
             {BENEFIT_OPTIONS.map((benefit) => (
               <label
                 key={benefit.value}
-                className="rounded-3xl border border-gray-200 bg-white p-4 text-sm font-medium text-gray-700 transition hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer flex items-start gap-3"
+                className="rounded-3xl border border-gray-200 bg-white p-4 text-sm font-medium text-gray-700 transition hover:border-[#7FB0F0] hover:bg-[#EAF2FE] cursor-pointer flex items-start gap-3"
               >
                 <input
                   type="checkbox"
                   value={benefit.value}
                   {...register('benefits')}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-[#1769E0] focus:ring-[#1769E0]"
                 />
                 <span className="flex-1">
                   <span className="mr-2">{benefit.icon}</span>
@@ -512,7 +545,7 @@ const PostJob = () => {
               <input
                 type="checkbox"
                 {...register('hasOtherBenefit')}
-                className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                className="h-4 w-4 rounded border-gray-300 text-[#1769E0] focus:ring-[#1769E0]"
               />
               <span className="text-sm font-medium">{t('employer.postJob.addAnotherBenefit')}</span>
             </label>
@@ -550,7 +583,7 @@ const PostJob = () => {
                       key={`${skill}-${index}`}
                       type="button"
                       onClick={() => removeSkillTag('technical', index)}
-                      className="inline-flex items-center gap-2 rounded-full bg-[#EAF2FE] px-3 py-1 text-sm font-semibold text-[#1769E0] transition hover:bg-emerald-200"
+                      className="inline-flex items-center gap-2 rounded-full bg-[#EAF2FE] px-3 py-1 text-sm font-semibold text-[#1769E0] transition hover:bg-[#A8C8F5]"
                     >
                       {skill}
                       <span className="text-xs">×</span>
@@ -601,6 +634,84 @@ const PostJob = () => {
               {errors.skills?.soft && <p className="text-red-500 text-sm mt-2">{errors.skills.soft.message}</p>}
             </div>
           </div>
+        </div>
+        <div className="card">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6 border-b pb-4">
+            <div>
+              <h2 className="text-xl font-semibold">{t('employer.postJob.applicationFields') || 'Application Fields'}</h2>
+              <p className="text-sm text-gray-500">
+                {t('employer.postJob.applicationFieldsDescription') || 'Add questions for job seekers and mark each as required or optional.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={addApplicationField}
+              className="btn btn-outline inline-flex items-center gap-2"
+            >
+              <span className="text-lg leading-none">+</span>
+              {t('employer.postJob.addField') || 'Add Field'}
+            </button>
+          </div>
+
+          {applicationFields.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              {t('employer.postJob.noApplicationFields') || 'No application fields configured. Job seekers can apply without answering custom questions.'}
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {applicationFields.map((field, index) => (
+                <div
+                  key={field.key}
+                  className="grid gap-4 rounded-3xl border border-gray-200 bg-white p-4 md:grid-cols-[1fr_160px_auto_auto] md:items-end"
+                >
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      {t('employer.postJob.fieldLabel', { number: index + 1 }) || `Question ${index + 1}`}
+                    </label>
+                    <input
+                      type="text"
+                      value={field.label}
+                      onChange={(e) => updateApplicationField(field.key, { label: e.target.value })}
+                      className="input"
+                      placeholder={t('employer.postJob.fieldLabelPlaceholder') || 'e.g. Phone Number'}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">{t('employer.postJob.fieldType') || 'Type'}</label>
+                    <select
+                      value={field.type}
+                      onChange={(e) => updateApplicationField(field.key, { type: e.target.value })}
+                      className="select"
+                    >
+                      <option value="text">{t('employer.postJob.fieldTypes.shortText') || 'Short text'}</option>
+                      <option value="textarea">{t('employer.postJob.fieldTypes.paragraph') || 'Paragraph'}</option>
+                      <option value="url">{t('employer.postJob.fieldTypes.url') || 'URL'}</option>
+                      <option value="number">{t('employer.postJob.fieldTypes.number') || 'Number'}</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 pb-2.5">
+                    <input
+                      type="checkbox"
+                      checked={field.required}
+                      onChange={(e) => updateApplicationField(field.key, { required: e.target.checked })}
+                      className="h-4 w-4 rounded border-gray-300 text-[#1769E0] focus:ring-[#1769E0]"
+                    />
+                    <span className="text-sm font-medium text-gray-700">{t('employer.postJob.required') || 'Required'}</span>
+                  </label>
+                  <div className="flex items-center gap-2 pb-2">
+                    <button
+                      type="button"
+                      onClick={() => removeApplicationField(field.key)}
+                      className="inline-flex items-center gap-1 text-sm font-semibold text-rose-600 transition hover:text-rose-700"
+                    >
+                      <span className="text-lg leading-none">×</span>
+                      {t('common.remove') || 'Remove'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className="card">
           <h2 className="text-xl font-semibold mb-6 border-b pb-4">{t('employer.postJob.descriptionRequirements')}</h2>

@@ -21,6 +21,26 @@ const normalizeStringArray = (value) => {
   return value.flatMap(normalizeStringArray);
 };
 
+const APPLICATION_FIELD_TYPES = ['text', 'textarea', 'url', 'number'];
+
+// Normalize employer-configured application fields. Preserves the `required`
+// flag exactly as configured by the employer and drops empty/invalid entries.
+const normalizeApplicationFields = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((field) => {
+      if (!field || typeof field !== 'object') return null;
+      const label = String(field.label || '').trim();
+      if (!label) return null;
+      return {
+        label,
+        type: APPLICATION_FIELD_TYPES.includes(field.type) ? field.type : 'text',
+        required: field.required === true || field.required === 'true',
+      };
+    })
+    .filter(Boolean);
+};
+
 // @desc    Get all jobs with filters
 // @route   GET /api/jobs
 // @access  Public
@@ -241,6 +261,10 @@ exports.createJob = asyncHandler(async (req, res, next) => {
       remoteFriendly: !!req.body.accessibility.remoteFriendly,
     };
   }
+  // Normalize employer-configured application fields (preserves required flag)
+  if (req.body.applicationFields !== undefined) {
+    req.body.applicationFields = normalizeApplicationFields(req.body.applicationFields);
+  }
   const job = await Job.create(req.body);
 
   // Update company job count
@@ -308,6 +332,10 @@ exports.updateJob = asyncHandler(async (req, res, next) => {
       accessibilityInfo: req.body.accessibility.accessibilityInfo || '',
       remoteFriendly: !!req.body.accessibility.remoteFriendly,
     };
+  }
+  // Normalize employer-configured application fields (preserves required flag)
+  if (req.body.applicationFields !== undefined) {
+    req.body.applicationFields = normalizeApplicationFields(req.body.applicationFields);
   }
 
   job = await Job.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });

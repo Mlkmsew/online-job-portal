@@ -53,6 +53,7 @@ const JobApply = () => {
   const [resumePreviewUrl, setResumePreviewUrl] = useState('');
   const [agreeAccurate, setAgreeAccurate] = useState(false);
   const [agreeShare, setAgreeShare] = useState(false);
+  const [applicationFieldAnswers, setApplicationFieldAnswers] = useState({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [applying, setApplying] = useState(false);
   const [resumeError, setResumeError] = useState('');
@@ -156,6 +157,20 @@ const JobApply = () => {
   const userLocation = formatLocation(user?.location) || formatLocation(user?.city) || formatLocation(user?.region) || formatLocation(user?.address) || 'Addis Ababa, Ethiopia';
   const postedDate = formatDate(job?.createdAt || job?.postedAt || job?.postedDate);
   const deadlineDate = formatDate(job?.deadline || job?.applicationDeadline);
+
+  // Employer-configured application fields/questions, normalized with a stable
+  // id per field. `required` comes straight from the employer's job config.
+  const jobApplicationFields = useMemo(() => {
+    const raw = Array.isArray(job?.applicationFields) ? job.applicationFields : [];
+    return raw
+      .map((field, index) => ({
+        _id: field._id || `_field_${index}`,
+        label: String(field.label || '').trim(),
+        type: field.type || 'text',
+        required: !!field.required,
+      }))
+      .filter((field) => field.label);
+  }, [job]);
 
   const steps = [
     { id: 1, label: 'Applicant Information' },
@@ -339,6 +354,16 @@ const JobApply = () => {
       errors.linkedinUrl = 'Enter a valid LinkedIn URL.';
     }
 
+    jobApplicationFields.forEach((field) => {
+      const value = String(applicationFieldAnswers[field._id] || '').trim();
+      const errorKey = `field_${field._id}`;
+      if (field.required && !value) {
+        errors[errorKey] = 'This field is required.';
+      } else if (value && field.type === 'url' && !validateUrl(value)) {
+        errors[errorKey] = 'Enter a valid URL.';
+      }
+    });
+
     setFormErrors(errors);
 
     if (Object.keys(errors).length > 0) {
@@ -399,6 +424,14 @@ const JobApply = () => {
       formData.append('portfolioUrl', portfolioUrl);
       formData.append('githubUrl', githubUrl);
       formData.append('linkedinUrl', linkedinUrl);
+      if (jobApplicationFields.length > 0) {
+        const screeningAnswersPayload = jobApplicationFields.map((field) => ({
+          fieldId: field._id,
+          question: field.label,
+          answer: String(applicationFieldAnswers[field._id] || '').trim(),
+        }));
+        formData.append('screeningAnswers', JSON.stringify(screeningAnswersPayload));
+      }
       if (!useProfileCV && file) {
         formData.append('resume', file);
       }
@@ -442,7 +475,7 @@ const JobApply = () => {
     return (
       <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4 text-center">
         <div className="rounded-[24px] border border-slate-200 bg-white p-8 shadow-sm">
-          <FiCheckCircle className="mx-auto mb-4 h-14 w-14 text-emerald-600" />
+          <FiCheckCircle className="mx-auto mb-4 h-14 w-14 text-blue-600" />
           <h2 className="mb-2 text-2xl font-bold text-slate-900">Job Not Found</h2>
           <p className="mb-6 text-sm text-slate-500">The job you are trying to apply for cannot be found.</p>
           <button onClick={() => navigate('/jobs')} className="rounded-full bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white">
@@ -461,18 +494,18 @@ const JobApply = () => {
         </Link>
 
         <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_25px_80px_-35px_rgba(15,23,42,0.45)]">
-          <div className="border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 p-6 sm:p-8 lg:p-10">
+          <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50 via-white to-slate-50 p-6 sm:p-8 lg:p-10">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[24px] border border-white bg-white shadow-sm">
                   {job.company?.logo ? (
                     <img src={job.company.logo} alt={`${job.company.name || 'Company'} logo`} className="h-full w-full object-contain" />
                   ) : (
-                    <span className="text-sm font-semibold text-emerald-700">{job.company?.name?.charAt(0) || 'C'}</span>
+                    <span className="text-sm font-semibold text-blue-700">{job.company?.name?.charAt(0) || 'C'}</span>
                   )}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-700">Apply Now</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-700">Apply Now</p>
                   <h1 className="mt-3 text-3xl font-bold text-slate-900">{job.title}</h1>
                   <p className="mt-2 text-sm text-slate-600">{job.company?.name || 'Company Name'} · {jobLocation}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-500">
@@ -484,7 +517,7 @@ const JobApply = () => {
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                <span className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">{job.status === 'active' ? 'Active' : job.status}</span>
+                <span className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">{job.status === 'active' ? 'Active' : job.status}</span>
                 <span className="rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600">{job.jobType || 'Full-time'}</span>
                 <span className="rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600">{job.workMode || 'On-site'}</span>
               </div>
@@ -494,21 +527,21 @@ const JobApply = () => {
           <div className="grid gap-6 p-6 xl:grid-cols-[1.75fr_0.95fr] xl:items-start">
             <main className="space-y-6">
               {hasApplied ? (
-                <section className="rounded-[28px] border border-emerald-200 bg-emerald-50 p-8 shadow-sm">
+                <section className="rounded-[28px] border border-blue-200 bg-blue-50 p-8 shadow-sm">
                   <div className="flex flex-col items-center gap-4 text-center">
-                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-700">
                       <FiCheckCircle className="h-8 w-8" />
                     </span>
                     <div>
-                      <h2 className="text-xl font-bold text-emerald-800">You have already applied for this job.</h2>
-                      <p className="mt-2 text-sm text-emerald-700">
+                      <h2 className="text-xl font-bold text-blue-800">You have already applied for this job.</h2>
+                      <p className="mt-2 text-sm text-blue-700">
                         {applicationStatus ? `Status: ${applicationStatus}` : 'Your application has been submitted successfully.'}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => navigate(`/jobs/${id}`)}
-                      className="rounded-full border border-emerald-300 bg-white px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                      className="rounded-full border border-blue-300 bg-white px-5 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
                     >
                       Back to Job Details
                     </button>
@@ -535,7 +568,7 @@ const JobApply = () => {
                         const completed = step.id < activeStep;
                         const current = step.id === activeStep;
                         return (
-                          <div key={step.id} className={`rounded-[18px] border p-3 text-center text-xs font-semibold transition ${completed ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : current ? 'border-emerald-600 bg-white text-slate-900 shadow-sm' : 'border-slate-200 bg-white text-slate-500'}`}>
+                          <div key={step.id} className={`rounded-[18px] border p-3 text-center text-xs font-semibold transition ${completed ? 'border-blue-200 bg-blue-50 text-blue-700' : current ? 'border-blue-600 bg-white text-slate-900 shadow-sm' : 'border-slate-200 bg-white text-slate-500'}`}>
                             <div className="mb-1 text-[10px] uppercase tracking-[0.25em]">Step {step.id}</div>
                             <div>{step.label}</div>
                           </div>
@@ -557,7 +590,7 @@ const JobApply = () => {
                     </div>
                     <div className="grid gap-4 rounded-[20px] border border-slate-200 bg-slate-50 p-4">
                       <div className="flex items-center gap-4">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-700">
                           <FiUser className="h-6 w-6" />
                         </div>
                         <div>
@@ -613,9 +646,9 @@ const JobApply = () => {
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
-                      className={`rounded-[22px] border-2 border-dashed p-8 text-center transition ${isDragOver ? 'border-emerald-500 bg-emerald-50/40' : 'border-slate-200 bg-slate-50'}`}
+                      className={`rounded-[22px] border-2 border-dashed p-8 text-center transition ${isDragOver ? 'border-blue-500 bg-blue-50/40' : 'border-slate-200 bg-slate-50'}`}
                     >
-                      <FiUploadCloud className="mx-auto h-10 w-10 text-emerald-500" />
+                      <FiUploadCloud className="mx-auto h-10 w-10 text-blue-500" />
                       <p className="mt-4 text-sm font-semibold text-slate-900">Drag & drop your resume here</p>
                       <p className="mt-2 text-sm text-slate-500">PDF, DOC, DOCX · Max 5MB</p>
                       <button
@@ -629,8 +662,8 @@ const JobApply = () => {
                     </div>
 
                     {user?.cv && useProfileCV ? (
-                      <div className="mt-5 rounded-[24px] border border-emerald-200 bg-emerald-50 p-4 text-sm text-slate-900 shadow-sm">
-                        <div className="flex items-center gap-3 font-semibold text-emerald-700">
+                      <div className="mt-5 rounded-[24px] border border-blue-200 bg-blue-50 p-4 text-sm text-slate-900 shadow-sm">
+                        <div className="flex items-center gap-3 font-semibold text-blue-700">
                           <FiCheckCircle className="h-5 w-5" />
                           <span>Profile CV Selected</span>
                         </div>
@@ -663,8 +696,8 @@ const JobApply = () => {
                         </div>
                       </div>
                     ) : file ? (
-                      <div className="mt-5 rounded-[24px] border border-emerald-200 bg-emerald-50 p-4 text-sm text-slate-900 shadow-sm">
-                        <div className="flex items-center gap-3 font-semibold text-emerald-700">
+                      <div className="mt-5 rounded-[24px] border border-blue-200 bg-blue-50 p-4 text-sm text-slate-900 shadow-sm">
+                        <div className="flex items-center gap-3 font-semibold text-blue-700">
                           <FiCheckCircle className="h-5 w-5" />
                           <span>Resume Selected</span>
                         </div>
@@ -725,7 +758,7 @@ const JobApply = () => {
                     )}
                     {uploadProgress > 0 && (
                       <div className="mt-4 rounded-full bg-slate-100 p-1">
-                        <div className="h-2 rounded-full bg-emerald-600 transition-all" style={{ width: `${uploadProgress}%` }} />
+                        <div className="h-2 rounded-full bg-blue-600 transition-all" style={{ width: `${uploadProgress}%` }} />
                       </div>
                     )}
                     {formErrors.resume && <p className="mt-3 text-sm text-rose-600">{formErrors.resume}</p>}
@@ -737,7 +770,7 @@ const JobApply = () => {
                         <h3 className="text-lg font-semibold text-slate-900">Cover Letter</h3>
                         <p className="mt-1 text-sm text-slate-500">Introduce yourself and explain why you're a good fit.</p>
                       </div>
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">{coverLetter.length} / 1000</span>
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">{coverLetter.length} / 1000</span>
                     </div>
                     <textarea
                       value={coverLetter}
@@ -747,7 +780,7 @@ const JobApply = () => {
                         }
                       }}
                       placeholder="Briefly describe your experience, motivation, and why you're interested in this role."
-                      className="min-h-[220px] w-full rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                      className="min-h-[220px] w-full rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                       aria-describedby="cover-letter-help"
                       required
                     />
@@ -760,6 +793,42 @@ const JobApply = () => {
                   <div ref={screeningSectionRef} data-step="4" className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                     <h3 className="mb-5 text-lg font-semibold text-slate-900">Screening Questions</h3>
                     <div className="grid gap-5 lg:grid-cols-2">
+                      {jobApplicationFields.map((field, index) => {
+                        const value = String(applicationFieldAnswers[field._id] || '');
+                        const error = formErrors[`field_${field._id}`];
+                        const sharedInputClass = `w-full rounded-[18px] border bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 ${error ? 'border-rose-400 bg-rose-50' : 'border-slate-200'}`;
+                        return (
+                          <label key={field._id} className="space-y-3" data-error={error ? 'true' : undefined}>
+                            <span className="text-sm font-semibold text-slate-700">
+                              {field.label}
+                              {field.required ? (
+                                <span className="ml-1 text-rose-500" aria-hidden="true">*</span>
+                              ) : (
+                                <span className="ml-1 text-xs font-medium text-slate-400">(Optional)</span>
+                              )}
+                            </span>
+                            {field.type === 'textarea' ? (
+                              <textarea
+                                value={value}
+                                onChange={(e) => setApplicationFieldAnswers((prev) => ({ ...prev, [field._id]: e.target.value }))}
+                                rows="4"
+                                className={sharedInputClass}
+                              />
+                            ) : (
+                              <input
+                                type={field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'}
+                                value={value}
+                                onChange={(e) => setApplicationFieldAnswers((prev) => ({ ...prev, [field._id]: e.target.value }))}
+                                className={sharedInputClass}
+                                placeholder={field.type === 'url' ? 'https://' : ''}
+                              />
+                            )}
+                            {error && (
+                              <p className="text-sm text-rose-600" id={`field-error-${index}`}>{error}</p>
+                            )}
+                          </label>
+                        );
+                      })}
                       <label className="space-y-3">
                         <span className="text-sm font-semibold text-slate-700">Expected Salary</span>
                         <div className="flex rounded-[18px] border border-slate-200 bg-slate-50 px-3 py-2">
@@ -780,7 +849,7 @@ const JobApply = () => {
                           type="checkbox"
                           checked={isSalaryNegotiable}
                           onChange={(e) => setIsSalaryNegotiable(e.target.checked)}
-                          className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span className="text-sm text-slate-700">Negotiable</span>
                       </label>
@@ -789,7 +858,7 @@ const JobApply = () => {
                         <select
                           value={availability}
                           onChange={(e) => setAvailability(e.target.value)}
-                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500"
+                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                         >
                           <option>Immediately</option>
                           <option>Within 2 Weeks</option>
@@ -803,7 +872,7 @@ const JobApply = () => {
                           type="url"
                           value={portfolioUrl}
                           onChange={(e) => setPortfolioUrl(e.target.value)}
-                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500"
+                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                           placeholder="https://"
                         />
                       </label>
@@ -813,7 +882,7 @@ const JobApply = () => {
                           type="url"
                           value={githubUrl}
                           onChange={(e) => setGithubUrl(e.target.value)}
-                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500"
+                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                           placeholder="https://github.com/your-username"
                         />
                       </label>
@@ -823,7 +892,7 @@ const JobApply = () => {
                           type="url"
                           value={linkedinUrl}
                           onChange={(e) => setLinkedinUrl(e.target.value)}
-                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500"
+                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                           placeholder="https://www.linkedin.com/in/your-name"
                         />
                       </label>
@@ -832,7 +901,7 @@ const JobApply = () => {
 
                   <section ref={reviewSectionRef} data-step="5" className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="mb-4 flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-700">
                         <FiCheckCircle className="h-5 w-5" />
                       </div>
                       <div>
@@ -846,6 +915,10 @@ const JobApply = () => {
                         ['Company', job.company?.name || 'Company'],
                         ['Applicant', `${applicantName} (${applicantEmail})`],
                         ['Resume', useProfileCV && user?.cv ? user.cvName || 'Profile CV' : file ? file.name : 'Not Provided'],
+                        ...jobApplicationFields.map((field) => [
+                          field.label,
+                          String(applicationFieldAnswers[field._id] || '').trim() || 'Not Provided',
+                        ]),
                         ['Expected Salary', expectedSalary || 'Not Provided'],
                         ['Availability', availability],
                         ['Portfolio', portfolioUrl || 'Not Provided'],
@@ -866,7 +939,7 @@ const JobApply = () => {
                         type="checkbox"
                         checked={agreeAccurate}
                         onChange={(e) => setAgreeAccurate(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span>I certify that all information is accurate.</span>
                     </label>
@@ -875,7 +948,7 @@ const JobApply = () => {
                         type="checkbox"
                         checked={agreeShare}
                         onChange={(e) => setAgreeShare(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span>I agree to share my resume with this employer.</span>
                     </label>
@@ -927,7 +1000,7 @@ const JobApply = () => {
                   <p className="mt-2 text-center text-sm text-slate-500">Estimated completion time: Less than one minute.</p>
 
                   {submitSuccess && (
-                    <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+                    <div className="rounded-[24px] border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
                       Application submitted successfully! You may stay on this page or visit your applications page later.
                     </div>
                   )}
@@ -941,7 +1014,7 @@ const JobApply = () => {
                 <h3 className="text-lg font-semibold text-slate-900">Application Preview</h3>
                 <div className="mt-5 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-700">
                       <FiUser className="h-6 w-6" />
                     </div>
                     <div>
@@ -990,10 +1063,15 @@ const JobApply = () => {
                       value: coverLetter ? 'Provided' : 'Not provided',
                       icon: <FiCheckCircle className="h-5 w-5" />,
                     },
+                    ...jobApplicationFields.map((field) => ({
+                      title: field.label,
+                      value: String(applicationFieldAnswers[field._id] || '').trim() || 'Not provided',
+                      icon: <FiCheckCircle className="h-5 w-5" />,
+                    })),
                   ].map((item) => (
                     <div key={item.title} className="rounded-[20px] border border-slate-200 bg-slate-50 p-4 shadow-sm">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-emerald-700 shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
                           {item.icon}
                         </div>
                         <div>
@@ -1004,23 +1082,23 @@ const JobApply = () => {
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 rounded-[28px] border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
+                <div className="mt-5 rounded-[28px] border border-blue-100 bg-blue-50 p-5 shadow-sm">
                   <h4 className="text-base font-semibold text-slate-900">What happens next?</h4>
                   <div className="mt-4 space-y-4 text-sm text-slate-600">
                     <div className="flex items-start gap-3 rounded-[20px] bg-white p-4 shadow-sm">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">1</div>
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700">1</div>
                       <div>
                         <p className="font-semibold text-slate-900">Your application will be sent to the employer.</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 rounded-[20px] bg-white p-4 shadow-sm">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">2</div>
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700">2</div>
                       <div>
                         <p className="font-semibold text-slate-900">Employer will review your application.</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 rounded-[20px] bg-white p-4 shadow-sm">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">3</div>
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700">3</div>
                       <div>
                         <p className="font-semibold text-slate-900">You will be notified about the next steps.</p>
                       </div>

@@ -81,16 +81,26 @@ export const calculateResumeCompletion = (resume = {}) => {
   if (hasText(resume.summary?.text)) completed += 1;
 
   // 4. Education
-  const education = resume.education || {};
-  if (hasText(education.schoolName) || hasText(education.degree) || hasText(education.fieldOfStudy)) {
-    completed += 1;
-  }
+  const educationList = Array.isArray(resume.education)
+    ? resume.education
+    : resume.education
+      ? [resume.education]
+      : [];
+  const hasEducationEntry = educationList.some(
+    (edu) => edu && (hasText(edu.schoolName) || hasText(edu.degree) || hasText(edu.fieldOfStudy))
+  );
+  if (hasEducationEntry) completed += 1;
 
   // 5. Work Experience
-  const experience = resume.experience || {};
-  if (hasText(experience.jobTitle) || hasText(experience.employer) || hasText(experience.duties)) {
-    completed += 1;
-  }
+  const experienceList = Array.isArray(resume.experience)
+    ? resume.experience
+    : resume.experience
+      ? [resume.experience]
+      : [];
+  const hasExperienceEntry = experienceList.some(
+    (exp) => exp && (hasText(exp.jobTitle) || hasText(exp.employer) || hasText(exp.duties))
+  );
+  if (hasExperienceEntry) completed += 1;
 
   // 6. Skills (technical + soft)
   const hasSkills =
@@ -162,11 +172,37 @@ export const buildResumeFromProfile = (user = {}) => {
           ? user.resumeAnalysis.certifications.map((c) => (typeof c === 'object' ? c : { name: c }))
           : []);
 
+  const certifications = certificationList.map((cert) => {
+    const c = typeof cert === 'object' ? cert : { name: cert };
+    const issueDate = c.issueDate ? (c.issueDate instanceof Date ? c.issueDate.toISOString().slice(0, 10) : String(c.issueDate).slice(0, 10)) : '';
+    const year = c.year || (issueDate ? issueDate.slice(0, 4) : '');
+    return {
+      name: c.name || c.title || '',
+      issuer: c.issuer || '',
+      issueDate,
+      year: String(year || ''),
+      expirationDate: c.expirationDate ? (c.expirationDate instanceof Date ? c.expirationDate.toISOString().slice(0, 10) : String(c.expirationDate).slice(0, 10)) : '',
+      credentialId: c.credentialId || '',
+      credentialUrl: c.credentialUrl || c.url || '',
+    };
+  });
+
+  const currentEducation = edu?.current || edu?.currentStudy || false;
+  const currentExperience = exp?.current || exp?.currentWork || !exp?.endDate;
+
   return {
     profile: {
       firstName: user.firstName || '',
+      middleName: user.middleName || '',
       lastName: user.lastName || '',
       gender: user.gender || '',
+      dateOfBirth: user.dateOfBirth || '',
+      maritalStatus: user.maritalStatus || '',
+      civilStatus: user.civilStatus || user.maritalStatus || '',
+      nationality: user.nationality || '',
+      placeOfBirth: user.placeOfBirth || '',
+      passportNumber: user.passportNumber || '',
+      driverLicense: user.driverLicense || '',
       profession: user.headline || user.currentRole || '',
       email: user.email || '',
       phone: user.phone || '',
@@ -175,22 +211,39 @@ export const buildResumeFromProfile = (user = {}) => {
       streetAddress: location.address || '',
       city: location.city || '',
       stateProvince: location.region || '',
+      country: location.country || '',
+      customField: user.customField || '',
     },
     summary: { text: user.bio || '' },
     education: {
       schoolName: edu?.institution || eduInstitution || '',
+      city: edu?.location || '',
       degree: edu?.degree || '',
       fieldOfStudy: edu?.fieldOfStudy || '',
+      startDate: edu?.startDate || '',
+      endDate: edu?.endDate || '',
+      currentStudy: currentEducation,
     },
     experience: {
       jobTitle: exp?.title || '',
       employer: exp?.company || '',
+      city: exp?.location || '',
+      startDate: exp?.startDate || '',
+      endDate: exp?.endDate || '',
+      currentWork: currentExperience,
       duties: exp?.description || user.experience || '',
     },
+    projects: Array.isArray(user.portfolio)
+      ? user.portfolio.map((item) => ({
+          title: typeof item === 'object' ? item?.label || item?.title || '' : item || '',
+          description: typeof item === 'object' ? item?.url || '' : '',
+        })).filter((item) => item.title)
+      : [],
     skills: skillNames.map((name) => ({ name })),
     softSkills: Array.isArray(user.softSkills) ? user.softSkills : [],
     languages: Array.isArray(user.languages) ? user.languages : [],
-    certifications: certificationList,
+    certifications,
+    interests: { text: user.interests || '' },
     photo: user.avatar ? { url: user.avatar } : null,
   };
 };

@@ -3,14 +3,14 @@ import TemplateBadge from './TemplateBadge';
 
 const TemplateCard = ({ template, selected, resume, accentColor, onSelect, onPreview, component: TemplateComponent }) => {
   return (
-    <article className={`w-[240px] md:w-[260px] flex-none overflow-hidden group rounded-[20px] border bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-sky-300 hover:shadow-xl ${selected ? 'border-emerald-400 ring-2 ring-emerald-100' : 'border-slate-200'}`}>
+    <article className={`w-[240px] md:w-[260px] flex-none overflow-hidden group rounded-[20px] border bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-sky-300 hover:shadow-xl ${selected ? 'border-[#1769E0] ring-2 ring-blue-100' : 'border-slate-200'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <TemplateBadge tone={template.badge === 'Premium' ? 'premium' : 'free'}>{template.badge}</TemplateBadge>
           {template.atsReady && <TemplateBadge tone="neutral">ATS Ready</TemplateBadge>}
         </div>
         {selected && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-700">
             <FiCheck className="h-3.5 w-3.5" /> Selected
           </span>
         )}
