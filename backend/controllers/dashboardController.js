@@ -8,7 +8,8 @@ const Company = require('../models/Company');
 const Bookmark = require('../models/Bookmark');
 const Application = require('../models/Application');
 const { calculateJobMatch, calculateMatchScore } = require('../utils/matching');
-const { canRecommendJobs } = require('../utils/dashboardHelpers');
+const { canRecommendJobs, enrichUserFromResume } = require('../utils/dashboardHelpers');
+const Resume = require('../models/Resume');
 const mongoose = require('mongoose');
 
 // @desc Get job seeker dashboard
@@ -33,8 +34,12 @@ exports.getDashboard = asyncHandler(async (req, res) => {
   ]);
 
   // Recommended jobs: build recommendations based on match scoring engine.
-  // Only generated once the job seeker has uploaded a CV.
-  const canRecommend = canRecommendJobs(user);
+  // Generated once the job seeker has an uploaded CV, a Resume Builder CV, or
+  // parsed CV data on their profile.
+  const resumeDoc = await Resume.findOne({ user: userId }).sort({ updatedAt: -1 }).lean();
+  const canRecommend = canRecommendJobs(user, resumeDoc);
+  // Match against the profile plus any Resume Builder CV content.
+  const profileForMatching = enrichUserFromResume(user, resumeDoc);
   let recommended = [];
   if (canRecommend) {
     try {
@@ -50,7 +55,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
       const unappliedJobs = jobs.filter((j) => !appliedJobIds.has(j._id.toString()));
 
       const scoredJobs = unappliedJobs.map((job) => {
-        const match = calculateJobMatch(job, user);
+        const match = calculateJobMatch(job, profileForMatching);
         const score = match.matchScore ?? match.score ?? 0;
         return {
           ...job.toObject(),
@@ -101,7 +106,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
 
   const dashboardJobs = recentJobs
     .map((job) => {
-      const match = calculateJobMatch(job, user);
+      const match = calculateJobMatch(job, profileForMatching);
       return { job, score: match.matchScore ?? 0 };
     })
     .sort((a, b) => b.score - a.score || new Date(b.job.createdAt) - new Date(a.job.createdAt))
@@ -110,7 +115,12 @@ exports.getDashboard = asyncHandler(async (req, res) => {
   console.log('Dashboard jobs fetched:', dashboardJobs.length, 'jobs');
 
   // Resume & certificates info
-  const resume = { hasCV: !!user.cv, cvUrl: user.cv, cvOriginalName: user.cvOriginalName };
+  const resume = {
+    hasCV: canRecommend,
+    cvUrl: user.cv,
+    cvOriginalName: user.cvOriginalName,
+    resumeBuilderCV: Boolean(resumeDoc),
+  };
   const certificates = user.certificates || [];
 
   // Skill stats

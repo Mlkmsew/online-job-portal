@@ -441,16 +441,23 @@ exports.getJobStats = asyncHandler(async (req, res) => {
 exports.getRecommendations = asyncHandler(async (req, res, next) => {
   const User = require('../models/user');
   const Application = require('../models/Application');
+  const Resume = require('../models/Resume');
   const { calculateJobMatch } = require('../utils/matching');
+  const { canRecommendJobs, enrichUserFromResume } = require('../utils/dashboardHelpers');
 
   const userId = req.user.id || req.user._id;
   const user = await User.findById(userId).select('-password');
   if (!user) return next(new AppError('User not found.', 404));
 
-  // Recommendations require an uploaded CV.
-  if (!user.cv) {
+  // Recommendations require an uploaded CV, a Resume Builder CV, or parsed CV
+  // data on the profile.
+  const resumeDoc = await Resume.findOne({ user: userId }).sort({ updatedAt: -1 }).lean();
+  const hasCV = canRecommendJobs(user, resumeDoc);
+
+  if (!hasCV) {
     return res.status(200).json({
       success: true,
+      hasCV: false,
       count: 0,
       recommendations: [],
       data: [],
@@ -458,12 +465,14 @@ exports.getRecommendations = asyncHandler(async (req, res, next) => {
     });
   }
 
+  const profileForMatching = enrichUserFromResume(user, resumeDoc);
+
   // Get job IDs user has already applied to
   const appliedJobIds = new Set(
     (await Application.find({ applicant: userId }).select('job')).map((app) => app.job?.toString()).filter(Boolean)
   );
 
-  const activeJobs = await Job.find({ status: 'active', isApproved: true })
+  const activeJobs = await Job.find({ status: { $in: ['published', 'active'] }, isApproved: true })
     .populate('company', 'name logo location')
     .populate('skillsRequired', 'name')
     .sort({ createdAt: -1 });
@@ -471,7 +480,7 @@ exports.getRecommendations = asyncHandler(async (req, res, next) => {
   const unappliedJobs = activeJobs.filter((j) => !appliedJobIds.has(j._id.toString()));
 
   const scoredJobs = unappliedJobs.map((job) => {
-    const match = calculateJobMatch(job, user);
+    const match = calculateJobMatch(job, profileForMatching);
     const score = match.matchScore ?? match.score ?? 0;
 
     return {
@@ -504,6 +513,7 @@ exports.getRecommendations = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
+    hasCV: true,
     count: recommendations.length,
     recommendations,
     data: recommendations,

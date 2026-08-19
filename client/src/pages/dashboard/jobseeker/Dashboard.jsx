@@ -174,8 +174,9 @@ const JobSeekerDashboard = () => {
   }, []);
 
   // Re-fetch the dashboard (and recommendations) whenever the CV/resume status
-  // changes, so an uploaded CV immediately unlocks Recommended Jobs. The initial
-  // fetch is handled by the mount effect above, so this only fires on changes.
+  // changes, so an uploaded CV immediately unlocks Recommended Jobs and a
+  // deleted/replaced CV clears the previous recommendations. The initial fetch
+  // is handled by the mount effect above, so this only fires on changes.
   const didInitialCvFetch = useRef(false);
   useEffect(() => {
     if (!didInitialCvFetch.current) {
@@ -183,9 +184,7 @@ const JobSeekerDashboard = () => {
       return;
     }
     if (!isMounted.current) return;
-    if (user?.cv) {
-      fetchDashboardData();
-    }
+    fetchDashboardData();
   }, [user?.cv]);
 
   const fetchBadgeCounts = async () => {

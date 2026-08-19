@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchEmployerCompany } from '../../../store/slices/employerSlice';
 import { useForm } from 'react-hook-form';
 import api from '../../../services/api';
+import { sanitizeEthiopianPhone } from '../../../utils/helpers';
 import toast from 'react-hot-toast';
 import { REGIONS, REGION_CITIES } from '../../../constants/locations';
 import {
@@ -152,6 +153,12 @@ const CompanyProfile = () => {
   });
 
   const selectedRegion = watch('location.region');
+
+  const handlePhoneChange = (name) => (e) => {
+    const next = sanitizeEthiopianPhone(e.target.value, watch(name) || '');
+    e.target.value = next;
+    setValue(name, next, { shouldDirty: true, shouldValidate: true });
+  };
   const watchedFields = watch([
     'name',
     'description',
@@ -663,6 +670,7 @@ const CompanyProfile = () => {
                   <input
                     type="tel"
                     {...register('phone')}
+                    onChange={handlePhoneChange('phone')}
                     disabled={!isEditing}
                     className="input"
                     placeholder="+251911123456"
@@ -813,6 +821,7 @@ const CompanyProfile = () => {
                   <input
                     type="tel"
                     {...register('recruiter.phone')}
+                    onChange={handlePhoneChange('recruiter.phone')}
                     disabled={!isEditing}
                     className="input"
                     placeholder={t('employer.companyProfile.placeholders.recruiterPhone')}

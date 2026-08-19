@@ -386,6 +386,37 @@ const buildMatchReason = (user, job, skillResult, experienceScore) => {
 };
 
 /**
+ * 7. JOB TITLE MATCHING (Weight = 15%)
+ * Compares the job title against the user's stated/parsed role (headline,
+ * current role, or the professional title parsed from an uploaded CV).
+ */
+const calculateTitleMatch = (job, user) => {
+  const userTitle = normalizeText(
+    `${user?.headline || ''} ${user?.currentRole || ''} ${user?.resumeAnalysis?.professionalTitle || ''}`
+  );
+  if (!userTitle) return 60;
+
+  const jobTitle = normalizeText(job?.title || '');
+  if (!jobTitle) return 100;
+
+  const titleTokens = new Set(jobTitle.split(' ').filter((w) => w.length > 2));
+  if (titleTokens.size === 0) return 60;
+
+  const userTokens = new Set(userTitle.split(' ').filter((w) => w.length > 2));
+  let matched = 0;
+  titleTokens.forEach((t) => {
+    const hit = Array.from(userTokens).some((ut) => ut === t || ut.includes(t) || t.includes(ut));
+    if (hit) matched += 1;
+  });
+
+  const ratio = matched / titleTokens.size;
+  if (ratio >= 0.6) return 100;
+  if (ratio >= 0.33) return 70;
+  if (ratio > 0) return 40;
+  return 20;
+};
+
+/**
  * Main Job Match Calculation Function
  */
 const calculateJobMatch = (job, user) => {
@@ -395,21 +426,21 @@ const calculateJobMatch = (job, user) => {
 
   const skillResult = calculateSkillMatch(job, user);
   const experienceScore = calculateExperienceMatch(job, user);
+  const titleScore = calculateTitleMatch(job, user);
   const educationScore = calculateEducationMatch(job, user);
   const certificationScore = calculateCertificationMatch(job, user);
   const locationScore = calculateLocationMatch(job, user);
-  const preferenceScore = calculatePreferenceMatch(job, user);
 
   // Skills (incl. certifications) folded into the 40% skills weight.
   const combinedSkillScore = Math.round(skillResult.score * 0.85 + certificationScore * 0.15);
 
-  // Overall Score: 40% Skills + 25% Exp + 15% Edu + 10% Location + 10% Preferences
+  // Overall Score: 40% Skills + 25% Exp + 15% Job Title + 10% Edu + 10% Location
   const totalScore = Math.round(
     combinedSkillScore * 0.40 +
     experienceScore * 0.25 +
-    educationScore * 0.15 +
-    locationScore * 0.10 +
-    preferenceScore * 0.10
+    titleScore * 0.15 +
+    educationScore * 0.10 +
+    locationScore * 0.10
   );
 
   const matchScore = Math.max(0, Math.min(100, totalScore));
@@ -417,10 +448,10 @@ const calculateJobMatch = (job, user) => {
   const details = {
     skillScore: skillResult.score,
     experienceScore,
+    titleScore,
     educationScore,
     certificationScore,
     locationScore,
-    preferenceScore,
     matchedSkills: skillResult.matchedSkills,
     missingSkills: skillResult.missingSkills,
   };
@@ -428,6 +459,11 @@ const calculateJobMatch = (job, user) => {
   const why = [];
   if (skillResult.matchedSkills.length > 0) {
     why.push(`${skillResult.matchedSkills.length} required skill${skillResult.matchedSkills.length === 1 ? '' : 's'} matched`);
+  }
+  if (titleScore === 100) {
+    why.push('Job title matches your profile');
+  } else if (titleScore > 0) {
+    why.push('Job title partially aligned with your background');
   }
   if (experienceScore === 100) {
     why.push('Experience requirement satisfied');
@@ -439,9 +475,6 @@ const calculateJobMatch = (job, user) => {
   }
   if (locationScore === 100) {
     why.push('Location preference matched');
-  }
-  if (preferenceScore === 100) {
-    why.push('Job type & career preferences matched');
   }
 
   return {
