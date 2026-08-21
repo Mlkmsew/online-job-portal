@@ -4,8 +4,10 @@
 import { useState, useEffect } from 'react';
 import { FaSun, FaMoon } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 const DarkModeToggle = () => {
+  const { t } = useTranslation();
   const [darkMode, setDarkMode] = useState(() => {
     // Check localStorage or system preference
     const saved = localStorage.getItem('darkMode');
@@ -36,7 +38,7 @@ const DarkModeToggle = () => {
       onClick={toggleDarkMode}
       className="relative w-14 h-7 bg-gray-300 dark:bg-gray-600 rounded-full p-1 transition-colors"
       whileTap={{ scale: 0.95 }}
-      aria-label="Toggle Dark Mode"
+      aria-label={t('common.toggleDarkMode', { defaultValue: 'Toggle Dark Mode' })}
     >
       <motion.div
         className="w-5 h-5 bg-white rounded-full shadow-md flex items-center justify-center"

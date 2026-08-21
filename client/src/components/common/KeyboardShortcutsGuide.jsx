@@ -5,29 +5,31 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { FiX } from 'react-icons/fi';
-
-const shortcuts = [
-  { keys: ['Tab'], description: 'Move to next interactive element' },
-  { keys: ['Shift', 'Tab'], description: 'Move to previous interactive element' },
-  { keys: ['Enter'], description: 'Activate button or link' },
-  { keys: ['Space'], description: 'Toggle checkbox / select option' },
-  { keys: ['Esc'], description: 'Close dialog or dropdown' },
-  { keys: ['↑', '↓'], description: 'Navigate within menus or lists' },
-  { keys: ['Home'], description: 'Go to first item' },
-  { keys: ['End'], description: 'Go to last item' },
-  { keys: ['Ctrl', 'K'], description: 'Open command palette (future)' },
-  { keys: ['Alt', 'A'], description: 'Open accessibility panel' },
-];
+import { useTranslation } from 'react-i18next';
 
 const KeyboardShortcutsGuide = () => {
+  const { t } = useTranslation();
   const { settings, updateSetting } = useAccessibility();
+
+  const shortcuts = [
+    { keys: ['Tab'], description: t('accessibility.shortcutMoveNext', { defaultValue: 'Move to next interactive element' }) },
+    { keys: ['Shift', 'Tab'], description: t('accessibility.shortcutMovePrevious', { defaultValue: 'Move to previous interactive element' }) },
+    { keys: ['Enter'], description: t('accessibility.shortcutActivate', { defaultValue: 'Activate button or link' }) },
+    { keys: ['Space'], description: t('accessibility.shortcutToggle', { defaultValue: 'Toggle checkbox / select option' }) },
+    { keys: ['Esc'], description: t('accessibility.shortcutClose', { defaultValue: 'Close dialog or dropdown' }) },
+    { keys: ['↑', '↓'], description: t('accessibility.shortcutNavigate', { defaultValue: 'Navigate within menus or lists' }) },
+    { keys: ['Home'], description: t('accessibility.shortcutFirstItem', { defaultValue: 'Go to first item' }) },
+    { keys: ['End'], description: t('accessibility.shortcutLastItem', { defaultValue: 'Go to last item' }) },
+    { keys: ['Ctrl', 'K'], description: t('accessibility.shortcutCommandPalette', { defaultValue: 'Open command palette (future)' }) },
+    { keys: ['Alt', 'A'], description: t('accessibility.shortcutAccessibilityPanel', { defaultValue: 'Open accessibility panel' }) },
+  ];
 
   return (
     <AnimatePresence>
       {settings.keyboardNavGuide && (
         <motion.div
           role="dialog"
-          aria-label="Keyboard Shortcuts Guide"
+          aria-label={t('accessibility.keyboardShortcutsGuideTitle', { defaultValue: 'Keyboard Shortcuts Guide' })}
           aria-modal="true"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -37,12 +39,12 @@ const KeyboardShortcutsGuide = () => {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
-              ⌨️ Keyboard Shortcuts
+              {t('accessibility.keyboardShortcutsTitle', { defaultValue: '⌨️ Keyboard Shortcuts' })}
             </h3>
             <button
               onClick={() => updateSetting('keyboardNavGuide', false)}
               className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              aria-label="Close keyboard shortcuts guide"
+              aria-label={t('accessibility.closeKeyboardShortcutsGuide', { defaultValue: 'Close keyboard shortcuts guide' })}
             >
               <FiX />
             </button>

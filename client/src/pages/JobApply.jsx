@@ -41,22 +41,12 @@ const formatPhoneInput = (raw) => {
   return `09${digits.replace(/^0?9?/, '').slice(0, 8)}`;
 };
 
-const getScreeningRestriction = (label) => {
-  const text = String(label || '').toLowerCase();
-  if (text.includes('phone') || text.includes('mobile') || text.includes('telephone') || text.includes('contact')) {
-    return {
-      maxLength: 13,
-      pattern: /^(\+251\d{9}|09\d{8})$/,
-      hint: 'Invalid phone number.',
-    };
+const isValidUrl = (value) => {
+  try {
+    return ['http:', 'https:'].includes(new URL(value).protocol);
+  } catch {
+    return false;
   }
-  if (text.includes('portfolio') || text.includes('github') || text.includes('linkedin') || text.includes('link') || text.includes('website')) {
-    return { maxLength: 20, optional: true };
-  }
-  if (text.includes('name')) {
-    return { maxLength: 13 };
-  }
-  return null;
 };
 
 const escapePdfText = (value) =>
@@ -125,11 +115,15 @@ const resumeToTextLines = (resume) => {
 };
 
 const createTextPdf = (textLines, title = 'Resume') => {
+  const safeLines = (textLines || []).filter(Boolean);
+  if (!safeLines.length) {
+    throw new Error('Cannot generate a resume PDF with empty content.');
+  }
   const streamContent = `BT
 /F1 11 Tf
 50 780 Td
 15 TL
-${textLines.map((line) => `(${line}) Tj\nT*`).join('\n')}
+${safeLines.map((line) => `(${line}) Tj\nT*`).join('\n')}
 ET`;
   const objects = [];
   let offset = 0;
@@ -292,6 +286,15 @@ const JobApply = () => {
   const postedDate = formatDate(job?.createdAt || job?.postedAt || job?.postedDate);
   const deadlineDate = formatDate(job?.deadline || job?.applicationDeadline);
 
+  // Employer-set gender requirement ('any' or missing means open to everyone).
+  // This is an eligibility rule enforced by the backend as well — it does not
+  // affect the matching score.
+  const genderRequirement = job?.genderPreference && job.genderPreference !== 'any'
+    ? String(job.genderPreference).toLowerCase()
+    : null;
+  const applicantGender = String(user?.gender || '').trim().toLowerCase();
+  const genderMismatch = !!genderRequirement && applicantGender !== genderRequirement;
+
   // Employer-configured application fields/questions, normalized with a stable
   // id per field. `required` comes straight from the employer's job config.
   const jobApplicationFields = useMemo(() => {
@@ -301,10 +304,45 @@ const JobApply = () => {
         _id: field._id || `_field_${index}`,
         label: String(field.label || '').trim(),
         type: field.type || 'text',
+        options: Array.isArray(field.options) ? field.options.filter(Boolean) : [],
         required: !!field.required,
       }))
       .filter((field) => field.label);
   }, [job]);
+
+  // Type-aware validation for one application field answer. Returns an error
+  // message string or null when the answer is acceptable.
+  const validateApplicationField = (field, rawValue) => {
+    const value = String(rawValue ?? '').trim();
+    if (field.required && !value) {
+      return t('jobseeker.apply.fieldRequired', { field: field.label });
+    }
+    if (!value) return null;
+    switch (field.type) {
+      case 'email':
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+          ? null
+          : t('jobseeker.apply.fieldInvalidEmail', { field: field.label });
+      case 'url':
+        return isValidUrl(value) ? null : t('jobseeker.apply.fieldInvalidUrl', { field: field.label });
+      case 'number':
+        return Number.isFinite(Number(value)) ? null : t('jobseeker.apply.fieldInvalidNumber', { field: field.label });
+      case 'phone': {
+        const digits = value.replace(/\D/g, '');
+        return digits.length >= 7 && digits.length <= 15
+          ? null
+          : t('jobseeker.apply.fieldInvalidPhone', { field: field.label });
+      }
+      case 'date':
+        return Number.isNaN(new Date(value).getTime()) ? null : t('jobseeker.apply.fieldInvalidDate', { field: field.label });
+      case 'select':
+        return !field.options.length || field.options.includes(value)
+          ? null
+          : t('jobseeker.apply.fieldInvalidOption', { field: field.label });
+      default:
+        return null;
+    }
+  };
 
   const steps = [
     { id: 1, label: 'Applicant Information' },
@@ -323,10 +361,7 @@ const JobApply = () => {
       coverLetter.length >= 150,
       Boolean((expectedSalary || isSalaryNegotiable) && availability) &&
         jobApplicationFields.every(
-          (field) =>
-            !field.required ||
-            getScreeningRestriction(field.label)?.optional ||
-            String(applicationFieldAnswers[field._id] || '').trim()
+          (field) => !field.required || String(applicationFieldAnswers[field._id] || '').trim()
         ),
       Boolean(agreeAccurate && agreeShare),
     ],
@@ -508,8 +543,13 @@ const JobApply = () => {
   const handleSelectBuilderCV = (resume) => {
     setIsResumeMenuOpen(false);
     if (!resume) return;
+    const textLines = resumeToTextLines(resume);
+    if (!textLines.length) {
+      toast.error('This builder CV has no content. Please add details before using it as a resume.');
+      return;
+    }
     try {
-      const pdfFile = createTextPdf(resumeToTextLines(resume), resume?.title || 'Resume');
+      const pdfFile = createTextPdf(textLines, resume?.title || 'Resume');
       if (resumePreviewUrl) {
         URL.revokeObjectURL(resumePreviewUrl);
       }
@@ -577,16 +617,10 @@ const JobApply = () => {
     }
 
     jobApplicationFields.forEach((field) => {
-      const value = String(applicationFieldAnswers[field._id] || '').trim();
       const errorKey = `field_${field._id}`;
-      const restriction = getScreeningRestriction(field.label);
-      const isRequired = field.required && !restriction?.optional;
-      if (isRequired && !value) {
-        errors[errorKey] = 'This field is required.';
-      } else if (value && field.type === 'url' && !validateUrl(value)) {
-        errors[errorKey] = 'Enter a valid URL.';
-      } else if (value && restriction?.pattern && !restriction.pattern.test(value)) {
-        errors[errorKey] = restriction.hint;
+      const error = validateApplicationField(field, applicationFieldAnswers[field._id]);
+      if (error) {
+        errors[errorKey] = error;
       }
     });
 
@@ -627,6 +661,11 @@ const JobApply = () => {
 
     if (hasApplied) {
       toast.error('You have already applied for this job.');
+      return;
+    }
+
+    if (genderMismatch) {
+      toast.error(t('jobseeker.apply.genderRestricted'));
       return;
     }
 
@@ -688,10 +727,10 @@ const JobApply = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0D1624] px-4 py-8">
         <div className="mx-auto max-w-5xl space-y-6">
           <div className="h-8 w-1/4 animate-pulse rounded-full bg-slate-200" />
-          <div className="h-96 animate-pulse rounded-[32px] border border-slate-200 bg-white" />
+          <div className="h-96 animate-pulse rounded-[32px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900" />
         </div>
       </div>
     );
@@ -700,10 +739,10 @@ const JobApply = () => {
   if (!job) {
     return (
       <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4 text-center">
-        <div className="rounded-[24px] border border-slate-200 bg-white p-8 shadow-sm">
-          <FiCheckCircle className="mx-auto mb-4 h-14 w-14 text-blue-600" />
-          <h2 className="mb-2 text-2xl font-bold text-slate-900">Job Not Found</h2>
-          <p className="mb-6 text-sm text-slate-500">The job you are trying to apply for cannot be found.</p>
+        <div className="rounded-[24px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 shadow-sm">
+          <FiCheckCircle className="mx-auto mb-4 h-14 w-14 text-blue-600 dark:text-blue-400" />
+          <h2 className="mb-2 text-2xl font-bold text-slate-900 dark:text-gray-100">Job Not Found</h2>
+          <p className="mb-6 text-sm text-slate-500 dark:text-gray-400">The job you are trying to apply for cannot be found.</p>
           <button onClick={() => navigate('/jobs')} className="rounded-full bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white">
             Back to Jobs
           </button>
@@ -713,28 +752,28 @@ const JobApply = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0D1624] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1300px] space-y-6">
-        <Link to={`/jobs/${id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-[#1769E0] transition hover:text-[#1769E0]">
+        <Link to={`/jobs/${id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-[#1769E0] dark:text-blue-400 transition hover:text-[#1769E0]">
           <FiArrowLeft className="h-4 w-4" /> Back to Job Details
         </Link>
 
-        <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_25px_80px_-35px_rgba(15,23,42,0.45)]">
-          <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50 via-white to-slate-50 p-6 sm:p-8 lg:p-10">
+        <div className="overflow-hidden rounded-[32px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_25px_80px_-35px_rgba(15,23,42,0.45)]">
+          <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50 via-white to-slate-50 dark:from-blue-900/25 dark:via-gray-900 dark:to-[#0D1624] p-6 sm:p-8 lg:p-10">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[24px] border border-white bg-white shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[24px] border border-white dark:border-gray-900 bg-white dark:bg-gray-900 shadow-sm">
                   {job.company?.logo ? (
                     <img src={job.company.logo} alt={`${job.company.name || 'Company'} logo`} className="h-full w-full object-contain" />
                   ) : (
-                    <span className="text-sm font-semibold text-blue-700">{job.company?.name?.charAt(0) || 'C'}</span>
+                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">{job.company?.name?.charAt(0) || 'C'}</span>
                   )}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-700">Apply Now</p>
-                  <h1 className="mt-3 text-3xl font-bold text-slate-900">{job.title}</h1>
-                  <p className="mt-2 text-sm text-slate-600">{job.company?.name || 'Company Name'} · {jobLocation}</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                  <p className="text-sm font-semibold uppercase tracking-[0.25em] text-blue-700 dark:text-blue-400">Apply Now</p>
+                  <h1 className="mt-3 text-3xl font-bold text-slate-900 dark:text-gray-100">{job.title}</h1>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-gray-400">{job.company?.name || 'Company Name'} · {jobLocation}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-gray-400">
                     {postedDate && <span>Posted on {postedDate}</span>}
                     {deadlineDate && (
                       <span className="rounded-full bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-700">Deadline: {deadlineDate}</span>
@@ -743,9 +782,9 @@ const JobApply = () => {
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                <span className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">{job.status === 'active' ? 'Active' : job.status}</span>
-                <span className="rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600">{job.jobType || 'Full-time'}</span>
-                <span className="rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-600">{job.workMode || 'On-site'}</span>
+                <span className="rounded-full bg-blue-50 dark:bg-blue-900/25 px-4 py-2 text-sm font-semibold text-blue-700 dark:text-blue-400">{job.status === 'active' ? 'Active' : job.status}</span>
+                <span className="rounded-full bg-slate-100 dark:bg-gray-800 px-4 py-2 text-sm text-slate-600 dark:text-gray-400">{job.jobType || 'Full-time'}</span>
+                <span className="rounded-full bg-slate-100 dark:bg-gray-800 px-4 py-2 text-sm text-slate-600 dark:text-gray-400">{job.workMode || 'On-site'}</span>
               </div>
             </div>
           </div>
@@ -753,48 +792,48 @@ const JobApply = () => {
           <div className="grid gap-6 p-6 xl:grid-cols-[1.75fr_0.95fr] xl:items-start">
             <main className="space-y-6">
               {hasApplied ? (
-                <section className="rounded-[28px] border border-blue-200 bg-blue-50 p-8 shadow-sm">
+                <section className="rounded-[28px] border border-blue-200 bg-blue-50 dark:bg-blue-900/25 p-8 shadow-sm">
                   <div className="flex flex-col items-center gap-4 text-center">
-                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:text-blue-400">
                       <FiCheckCircle className="h-8 w-8" />
                     </span>
                     <div>
                       <h2 className="text-xl font-bold text-blue-800">You have already applied for this job.</h2>
-                      <p className="mt-2 text-sm text-blue-700">
+                      <p className="mt-2 text-sm text-blue-700 dark:text-blue-400">
                         {applicationStatus ? `Status: ${applicationStatus}` : 'Your application has been submitted successfully.'}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => navigate(`/jobs/${id}`)}
-                      className="rounded-full border border-blue-300 bg-white px-5 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                      className="rounded-full border border-blue-300 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-blue-700 dark:text-blue-400 transition hover:bg-blue-100"
                     >
                       Back to Job Details
                     </button>
                   </div>
                 </section>
               ) : (
-              <section className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <section className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 p-6 shadow-sm">
                 <div className="mb-5">
-                  <h2 className="text-xl font-semibold text-slate-900">Application Form</h2>
-                  <p className="mt-2 text-sm text-slate-500">Complete your application and submit it directly to the employer.</p>
+                  <h2 className="text-xl font-semibold text-slate-900 dark:text-gray-100">Application Form</h2>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">Complete your application and submit it directly to the employer.</p>
                 </div>
 
                 <form onSubmit={handleApply} className="space-y-6">
-                  <div className="rounded-[32px] border border-slate-200 bg-slate-50 p-5 shadow-sm">
+                  <div className="rounded-[32px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 p-5 shadow-sm">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                       <div>
-                        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-slate-500">Application Progress</p>
-                        <p className="mt-2 text-sm text-slate-600">Track your application journey from start to finish.</p>
+                        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-slate-500 dark:text-gray-400">Application Progress</p>
+                        <p className="mt-2 text-sm text-slate-600 dark:text-gray-400">Track your application journey from start to finish.</p>
                       </div>
-                      <div className="text-sm font-semibold text-slate-700">{`Step ${activeStep} of ${steps.length}: ${steps[activeStep - 1]?.label}`}</div>
+                      <div className="text-sm font-semibold text-slate-700 dark:text-gray-300">{`Step ${activeStep} of ${steps.length}: ${steps[activeStep - 1]?.label}`}</div>
                     </div>
                     <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                       {steps.map((step) => {
                         const completed = step.id < activeStep;
                         const current = step.id === activeStep;
                         return (
-                          <div key={step.id} className={`rounded-[18px] border p-3 text-center text-xs font-semibold transition ${completed ? 'border-blue-200 bg-blue-50 text-blue-700' : current ? 'border-blue-600 bg-white text-slate-900 shadow-sm' : 'border-slate-200 bg-white text-slate-500'}`}>
+                          <div key={step.id} className={`rounded-[18px] border p-3 text-center text-xs font-semibold transition ${completed ? 'border-blue-200 bg-blue-50 dark:bg-blue-900/25 text-blue-700 dark:text-blue-400' : current ? 'border-blue-600 bg-white dark:bg-gray-900 text-slate-900 dark:text-gray-100 shadow-sm' : 'border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-slate-500 dark:text-gray-400'}`}>
                             <div className="mb-1 text-[10px] uppercase tracking-[0.25em]">Step {step.id}</div>
                             <div>{step.label}</div>
                           </div>
@@ -803,45 +842,45 @@ const JobApply = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-slate-900">Applicant Information</h3>
-                        <p className="mt-1 text-sm text-slate-500">This information is taken from your profile.</p>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">Applicant Information</h3>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">This information is taken from your profile.</p>
                       </div>
-                      <Link to="/dashboard/profile" className="inline-flex items-center gap-2 rounded-full border border-[#1769E0] bg-[#EAF2FE] px-4 py-2 text-sm font-semibold text-[#1769E0] transition hover:bg-[#DCEAFD]">
+                      <Link to="/dashboard/profile" className="inline-flex items-center gap-2 rounded-full border border-[#1769E0] bg-[#EAF2FE] dark:bg-blue-900/25 px-4 py-2 text-sm font-semibold text-[#1769E0] dark:text-blue-400 transition hover:bg-[#DCEAFD] dark:hover:bg-blue-900/40">
                         <FiEdit2 className="h-4 w-4" />
                         Edit Profile
                       </Link>
                     </div>
-                    <div className="grid gap-4 rounded-[20px] border border-slate-200 bg-slate-50 p-4">
+                    <div className="grid gap-4 rounded-[20px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 p-4">
                       <div className="flex items-center gap-4">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/25 text-blue-700 dark:text-blue-400">
                           <FiUser className="h-6 w-6" />
                         </div>
                         <div>
-                          <p className="text-lg font-semibold text-slate-900">{applicantName}</p>
-                          <p className="text-sm text-slate-600">{applicantEmail}</p>
-                          <p className="text-sm text-slate-600">{applicantPhone}</p>
+                          <p className="text-lg font-semibold text-slate-900 dark:text-gray-100">{applicantName}</p>
+                          <p className="text-sm text-slate-600 dark:text-gray-400">{applicantEmail}</p>
+                          <p className="text-sm text-slate-600 dark:text-gray-400">{applicantPhone}</p>
                         </div>
                       </div>
-                      <div className="rounded-[18px] bg-white p-4 text-sm text-slate-700 shadow-sm">
-                        <p className="font-semibold text-slate-900">{userLocation}</p>
+                      <div className="rounded-[18px] bg-white dark:bg-gray-900 p-4 text-sm text-slate-700 dark:text-gray-300 shadow-sm">
+                        <p className="font-semibold text-slate-900 dark:text-gray-100">{userLocation}</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className={`rounded-[28px] border ${formErrors.resume ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white'} p-6 shadow-sm`}>
+                  <div className={`rounded-[28px] border ${formErrors.resume ? 'border-rose-300 bg-rose-50' : 'border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900'} p-6 shadow-sm`}>
                     <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-slate-900">Resume</h3>
-                        <p className="mt-1 text-sm text-slate-500">Drag, drop, or upload your resume. Use your profile CV if available.</p>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">Resume</h3>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">Drag, drop, or upload your resume. Use your profile CV if available.</p>
                       </div>
                       <div className="flex flex-wrap gap-3">
                         <button
                           type="button"
                           onClick={handleUseProfileCV}
-                          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${useProfileCV ? 'bg-[#1769E0] text-white hover:bg-[#0D5BC4]' : 'border border-[#1769E0] bg-white text-[#1769E0] hover:bg-[#EAF2FE]'}`}
+                          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${useProfileCV ? 'bg-[#1769E0] text-white hover:bg-[#0D5BC4]' : 'border border-[#1769E0] bg-white dark:bg-gray-900 text-[#1769E0] dark:text-blue-400 hover:bg-[#EAF2FE] dark:hover:bg-blue-900/25'}`}
                         >
                           Use Profile CV
                         </button>
@@ -849,7 +888,7 @@ const JobApply = () => {
                           <button
                             type="button"
                             onClick={() => setIsResumeMenuOpen((o) => !o)}
-                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-300 transition hover:bg-slate-50 dark:hover:bg-gray-800"
                             aria-haspopup="menu"
                             aria-expanded={isResumeMenuOpen}
                           >
@@ -857,7 +896,7 @@ const JobApply = () => {
                             <FiChevronDown className={`h-4 w-4 transition ${isResumeMenuOpen ? 'rotate-180' : ''}`} />
                           </button>
                           {isResumeMenuOpen && (
-                            <div role="menu" className="absolute right-0 z-30 mt-2 w-64 rounded-2xl border border-slate-200 bg-white py-1 shadow-xl">
+                            <div role="menu" className="absolute right-0 z-30 mt-2 w-64 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 py-1 shadow-xl">
                               <button
                                 type="button"
                                 role="menuitem"
@@ -865,14 +904,14 @@ const JobApply = () => {
                                   setIsResumeMenuOpen(false);
                                   resumeInputRef.current?.click();
                                 }}
-                                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-blue-50"
+                                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm font-semibold text-slate-700 dark:text-gray-300 transition hover:bg-blue-50 dark:hover:bg-blue-900/25"
                               >
-                                <FiUploadCloud className="h-4 w-4 text-[#1769E0]" />
+                                <FiUploadCloud className="h-4 w-4 text-[#1769E0] dark:text-blue-400" />
                                 Upload New Resume
                               </button>
                               {builderCVs.length > 0 && (
                                 <>
-                                  <div className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                  <div className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-gray-500">
                                     Resume Builder
                                   </div>
                                   {builderCVs.map((resume) => (
@@ -881,12 +920,12 @@ const JobApply = () => {
                                       type="button"
                                       role="menuitem"
                                       onClick={() => handleSelectBuilderCV(resume)}
-                                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-blue-50"
+                                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 dark:text-gray-300 transition hover:bg-blue-50 dark:hover:bg-blue-900/25"
                                     >
-                                      <FiFile className="h-4 w-4 shrink-0 text-[#1769E0]" />
+                                      <FiFile className="h-4 w-4 shrink-0 text-[#1769E0] dark:text-blue-400" />
                                       <span className="min-w-0 flex-1 truncate">{resume?.title || 'Untitled CV'}</span>
                                       {resume?.updatedAt || resume?.createdAt ? (
-                                        <span className="shrink-0 text-xs text-slate-400">
+                                        <span className="shrink-0 text-xs text-slate-400 dark:text-gray-500">
                                           {formatResumeDate(resume.updatedAt || resume.createdAt)}
                                         </span>
                                       ) : null}
@@ -899,9 +938,9 @@ const JobApply = () => {
                                 type="button"
                                 role="menuitem"
                                 onClick={handleUseProfileCV}
-                                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-blue-50"
+                                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 dark:text-gray-300 transition hover:bg-blue-50 dark:hover:bg-blue-900/25"
                               >
-                                <FiUser className="h-4 w-4 text-[#1769E0]" />
+                                <FiUser className="h-4 w-4 text-[#1769E0] dark:text-blue-400" />
                                 Use Profile CV
                               </button>
                               {file && (
@@ -934,15 +973,15 @@ const JobApply = () => {
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
-                      className={`rounded-[22px] border-2 border-dashed p-8 text-center transition ${isDragOver ? 'border-blue-500 bg-blue-50/40' : 'border-slate-200 bg-slate-50'}`}
+                      className={`rounded-[22px] border-2 border-dashed p-8 text-center transition ${isDragOver ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-900/25' : 'border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800'}`}
                     >
                       <FiUploadCloud className="mx-auto h-10 w-10 text-blue-500" />
-                      <p className="mt-4 text-sm font-semibold text-slate-900">Drag & drop your resume here</p>
-                      <p className="mt-2 text-sm text-slate-500">PDF, DOC, DOCX · Max 5MB</p>
+                      <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-gray-100">Drag & drop your resume here</p>
+                      <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">PDF, DOC, DOCX · Max 5MB</p>
                       <button
                         type="button"
                         onClick={() => resumeInputRef.current?.click()}
-                        className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#1769E0] bg-white px-5 py-2 text-sm font-semibold text-[#1769E0] shadow-sm transition hover:bg-[#EAF2FE]"
+                        className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#1769E0] bg-white dark:bg-gray-900 px-5 py-2 text-sm font-semibold text-[#1769E0] dark:text-blue-400 shadow-sm transition hover:bg-[#EAF2FE] dark:hover:bg-blue-900/25"
                       >
                         <FiChevronRight className="h-4 w-4" />
                         Browse files
@@ -950,12 +989,12 @@ const JobApply = () => {
                     </div>
 
                     {user?.cv && useProfileCV ? (
-                      <div className="mt-5 rounded-[24px] border border-blue-200 bg-blue-50 p-4 text-sm text-slate-900 shadow-sm">
-                        <div className="flex items-center gap-3 font-semibold text-blue-700">
+                      <div className="mt-5 rounded-[24px] border border-blue-200 bg-blue-50 dark:bg-blue-900/25 p-4 text-sm text-slate-900 dark:text-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3 font-semibold text-blue-700 dark:text-blue-400">
                           <FiCheckCircle className="h-5 w-5" />
                           <span>Profile CV Selected</span>
                         </div>
-                        <div className="mt-4 grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
+                        <div className="mt-4 grid gap-3 text-sm text-slate-700 dark:text-gray-300 sm:grid-cols-2">
                           <div>
                             <p className="font-semibold">File Name</p>
                             <p>{user.cvName || 'Profile_CV.pdf'}</p>
@@ -977,19 +1016,19 @@ const JobApply = () => {
                           <button
                             type="button"
                             onClick={() => resumeInputRef.current?.click()}
-                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1769E0] shadow-sm border border-[#1769E0] transition hover:bg-[#EAF2FE]"
+                            className="rounded-full bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-[#1769E0] dark:text-blue-400 shadow-sm border border-[#1769E0] transition hover:bg-[#EAF2FE] dark:hover:bg-blue-900/25"
                           >
                             Replace Resume
                           </button>
                         </div>
                       </div>
                     ) : file ? (
-                      <div className="mt-5 rounded-[24px] border border-blue-200 bg-blue-50 p-4 text-sm text-slate-900 shadow-sm">
-                        <div className="flex items-center gap-3 font-semibold text-blue-700">
+                      <div className="mt-5 rounded-[24px] border border-blue-200 bg-blue-50 dark:bg-blue-900/25 p-4 text-sm text-slate-900 dark:text-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3 font-semibold text-blue-700 dark:text-blue-400">
                           <FiCheckCircle className="h-5 w-5" />
                           <span>Resume Selected</span>
                         </div>
-                        <div className="mt-4 grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
+                        <div className="mt-4 grid gap-3 text-sm text-slate-700 dark:text-gray-300 sm:grid-cols-2">
                           <div>
                             <p className="font-semibold">File Name</p>
                             <p>{file.name}</p>
@@ -1011,21 +1050,21 @@ const JobApply = () => {
                           <button
                             type="button"
                             onClick={() => resumeInputRef.current?.click()}
-                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1769E0] shadow-sm border border-[#1769E0] transition hover:bg-[#EAF2FE]"
+                            className="rounded-full bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-[#1769E0] dark:text-blue-400 shadow-sm border border-[#1769E0] transition hover:bg-[#EAF2FE] dark:hover:bg-blue-900/25"
                           >
                             Replace Resume
                           </button>
                           <button
                             type="button"
                             onClick={handlePreviewResume}
-                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm border border-slate-200 transition hover:bg-slate-50"
+                            className="rounded-full bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-300 shadow-sm border border-slate-200 dark:border-gray-800 transition hover:bg-slate-50 dark:hover:bg-gray-800"
                           >
                             Preview
                           </button>
                           <button
                             type="button"
                             onClick={handleDownloadResume}
-                            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm border border-slate-200 transition hover:bg-slate-50"
+                            className="rounded-full bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-300 shadow-sm border border-slate-200 dark:border-gray-800 transition hover:bg-slate-50 dark:hover:bg-gray-800"
                           >
                             Download
                           </button>
@@ -1039,26 +1078,26 @@ const JobApply = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="mt-5 rounded-[24px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                      <div className="mt-5 rounded-[24px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 p-4 text-sm text-slate-600 dark:text-gray-400">
                         <p>Accepted formats: PDF, DOC, DOCX.</p>
                         <p>Maximum size: 5 MB.</p>
                       </div>
                     )}
                     {uploadProgress > 0 && (
-                      <div className="mt-4 rounded-full bg-slate-100 p-1">
+                      <div className="mt-4 rounded-full bg-slate-100 dark:bg-gray-800 p-1">
                         <div className="h-2 rounded-full bg-blue-600 transition-all" style={{ width: `${uploadProgress}%` }} />
                       </div>
                     )}
                     {formErrors.resume && <p className="mt-3 text-sm text-rose-600">{formErrors.resume}</p>}
                   </div>
 
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
                     <div className="mb-5 flex items-center justify-between gap-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-slate-900">Cover Letter</h3>
-                        <p className="mt-1 text-sm text-slate-500">Introduce yourself and explain why you're a good fit.</p>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">Cover Letter</h3>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">Introduce yourself and explain why you're a good fit.</p>
                       </div>
-                      <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">{coverLetter.length} / 1000</span>
+                      <span className="rounded-full bg-blue-50 dark:bg-blue-900/25 px-3 py-1 text-sm font-semibold text-blue-700 dark:text-blue-400">{coverLetter.length} / 1000</span>
                     </div>
                     <textarea
                       value={coverLetter}
@@ -1068,33 +1107,43 @@ const JobApply = () => {
                         }
                       }}
                       placeholder="Briefly describe your experience, motivation, and why you're interested in this role."
-                      className="min-h-[220px] w-full rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      className="min-h-[220px] w-full rounded-[22px] border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800 px-4 py-4 text-sm leading-7 text-slate-900 dark:text-gray-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                       aria-describedby="cover-letter-help"
                       required
                     />
-                    <div className="mt-3 flex flex-col gap-2 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="mt-3 flex flex-col gap-2 text-sm text-slate-500 dark:text-gray-400 sm:flex-row sm:items-center sm:justify-between">
                       <p id="cover-letter-help">Recommended: 150+ characters.</p>
-                      <p className="text-slate-400">{coverLetter.length < 150 ? 'Aim for more detail for higher impact.' : 'Good length for a strong application.'}</p>
+                      <p className="text-slate-400 dark:text-gray-500">{coverLetter.length < 150 ? 'Aim for more detail for higher impact.' : 'Good length for a strong application.'}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                    <h3 className="mb-5 text-lg font-semibold text-slate-900">Screening Questions</h3>
+                  <div className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+                    <h3 className="mb-5 text-lg font-semibold text-slate-900 dark:text-gray-100">{t('jobseeker.apply.applicationQuestions') || 'Application Questions'}</h3>
                     <div className="grid gap-5 lg:grid-cols-2">
                       {jobApplicationFields.map((field, index) => {
                         const value = String(applicationFieldAnswers[field._id] || '');
                         const error = formErrors[`field_${field._id}`];
-                        const restriction = getScreeningRestriction(field.label);
-                        const isRequired = field.required && !restriction?.optional;
-                        const sharedInputClass = `w-full rounded-[18px] border bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 ${error ? 'border-rose-400 bg-rose-50' : 'border-slate-200'}`;
+                        const sharedInputClass = `w-full rounded-[18px] border bg-slate-50 dark:bg-gray-800 px-4 py-3 text-sm text-slate-900 dark:text-gray-100 outline-none transition focus:border-blue-500 ${error ? 'border-rose-400 bg-rose-50' : 'border-slate-200 dark:border-gray-700'}`;
+                        const inputType =
+                          field.type === 'number'
+                            ? 'number'
+                            : field.type === 'email'
+                              ? 'email'
+                              : field.type === 'phone'
+                                ? 'tel'
+                                : field.type === 'date'
+                                  ? 'date'
+                                  : field.type === 'url'
+                                    ? 'url'
+                                    : 'text';
                         return (
                           <label key={field._id} className="space-y-3" data-error={error ? 'true' : undefined}>
-                            <span className="text-sm font-semibold text-slate-700">
+                            <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">
                               {field.label}
-                              {isRequired ? (
+                              {field.required ? (
                                 <span className="ml-1 text-rose-500" aria-hidden="true">*</span>
                               ) : (
-                                <span className="ml-1 text-xs font-medium text-slate-400">(Optional)</span>
+                                <span className="ml-1 text-xs font-medium text-slate-400 dark:text-gray-500">(Optional)</span>
                               )}
                             </span>
                             {field.type === 'textarea' ? (
@@ -1105,20 +1154,49 @@ const JobApply = () => {
                                 maxLength={500}
                                 className={sharedInputClass}
                               />
+                            ) : field.type === 'select' ? (
+                              <select
+                                value={value}
+                                onChange={(e) => setApplicationFieldAnswers((prev) => ({ ...prev, [field._id]: e.target.value }))}
+                                className={sharedInputClass}
+                              >
+                                <option value="">{t('jobseeker.apply.selectOption') || 'Select an option'}</option>
+                                {field.options.map((option) => (
+                                  <option key={option} value={option}>{option}</option>
+                                ))}
+                              </select>
+                            ) : field.type === 'checkbox' ? (
+                              <span className={`flex items-center gap-3 rounded-[18px] border bg-slate-50 dark:bg-gray-800 px-4 py-3 ${error ? 'border-rose-400 bg-rose-50' : 'border-slate-200 dark:border-gray-700'}`}>
+                                <input
+                                  type="checkbox"
+                                  checked={value === 'Yes'}
+                                  onChange={(e) =>
+                                    setApplicationFieldAnswers((prev) => ({ ...prev, [field._id]: e.target.checked ? 'Yes' : 'No' }))
+                                  }
+                                  className="h-4 w-4 rounded border-slate-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500"
+                                />
+                                <span className="text-sm text-slate-700 dark:text-gray-300">Yes</span>
+                              </span>
                             ) : (
                               <input
-                                type={field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'}
+                                type={inputType}
                                 value={value}
                                 onChange={(e) => {
                                   let newValue = e.target.value;
-                                  if (restriction?.pattern) {
+                                  if (field.type === 'phone') {
                                     newValue = formatPhoneInput(newValue);
                                   }
                                   setApplicationFieldAnswers((prev) => ({ ...prev, [field._id]: newValue }));
                                 }}
-                                maxLength={restriction?.maxLength || 200}
+                                maxLength={field.type === 'textarea' ? 500 : 200}
                                 className={sharedInputClass}
-                                placeholder={restriction?.pattern ? '09XXXXXXXX or +2519XXXXXXXX' : field.type === 'url' ? 'https://' : ''}
+                                placeholder={
+                                  field.type === 'url'
+                                    ? 'https://'
+                                    : field.type === 'email'
+                                      ? 'name@example.com'
+                                      : ''
+                                }
                               />
                             )}
                             {error && (
@@ -1128,35 +1206,35 @@ const JobApply = () => {
                         );
                       })}
                       <label className="space-y-3">
-                        <span className="text-sm font-semibold text-slate-700">Expected Salary</span>
-                        <div className="flex rounded-[18px] border border-slate-200 bg-slate-50 px-3 py-2">
-                          <span className="mr-2 self-center text-sm font-semibold text-slate-600">ETB</span>
+                        <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">Expected Salary</span>
+                        <div className="flex rounded-[18px] border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800 px-3 py-2">
+                          <span className="mr-2 self-center text-sm font-semibold text-slate-600 dark:text-gray-400">ETB</span>
                           <input
                             type="number"
                             min="0"
                             value={expectedSalary}
                             onChange={(e) => setExpectedSalary(e.target.value)}
-                            className="w-full bg-transparent text-sm text-slate-900 outline-none"
+                            className="w-full bg-transparent text-sm text-slate-900 dark:text-gray-100 outline-none"
                             placeholder="Amount"
                             aria-label="Expected salary"
                           />
                         </div>
                       </label>
-                      <label className="flex items-center gap-3 rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
+                      <label className="flex items-center gap-3 rounded-[18px] border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800 px-4 py-3">
                         <input
                           type="checkbox"
                           checked={isSalaryNegotiable}
                           onChange={(e) => setIsSalaryNegotiable(e.target.checked)}
-                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          className="h-4 w-4 rounded border-slate-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-slate-700">Negotiable</span>
+                        <span className="text-sm text-slate-700 dark:text-gray-300">Negotiable</span>
                       </label>
                       <label className="space-y-3">
-                        <span className="text-sm font-semibold text-slate-700">Availability</span>
+                        <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">Availability</span>
                         <select
                           value={availability}
                           onChange={(e) => setAvailability(e.target.value)}
-                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                          className="w-full rounded-[18px] border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800 px-4 py-3 text-sm text-slate-900 dark:text-gray-100 outline-none transition focus:border-blue-500"
                         >
                           <option>Immediately</option>
                           <option>Within 2 Weeks</option>
@@ -1165,52 +1243,52 @@ const JobApply = () => {
                         </select>
                       </label>
                       <label className="space-y-3">
-                        <span className="text-sm font-semibold text-slate-700">Portfolio / Website</span>
+                        <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">Portfolio / Website</span>
                         <input
                           type="url"
                           value={portfolioUrl}
                           onChange={(e) => setPortfolioUrl(e.target.value)}
                           maxLength={20}
-                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                          className="w-full rounded-[18px] border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800 px-4 py-3 text-sm text-slate-900 dark:text-gray-100 outline-none transition focus:border-blue-500"
                           placeholder="https://"
                         />
                       </label>
                       <label className="space-y-3">
-                        <span className="text-sm font-semibold text-slate-700">GitHub Profile</span>
+                        <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">GitHub Profile</span>
                         <input
                           type="url"
                           value={githubUrl}
                           onChange={(e) => setGithubUrl(e.target.value)}
                           maxLength={20}
-                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                          className="w-full rounded-[18px] border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800 px-4 py-3 text-sm text-slate-900 dark:text-gray-100 outline-none transition focus:border-blue-500"
                           placeholder="https://github.com/your-username"
                         />
                       </label>
                       <label className="space-y-3 lg:col-span-2">
-                        <span className="text-sm font-semibold text-slate-700">LinkedIn Profile</span>
+                        <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">LinkedIn Profile</span>
                         <input
                           type="url"
                           value={linkedinUrl}
                           onChange={(e) => setLinkedinUrl(e.target.value)}
                           maxLength={20}
-                          className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                          className="w-full rounded-[18px] border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800 px-4 py-3 text-sm text-slate-900 dark:text-gray-100 outline-none transition focus:border-blue-500"
                           placeholder="https://www.linkedin.com/in/your-name"
                         />
                       </label>
                     </div>
                   </div>
 
-                  <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                  <section className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
                     <div className="mb-4 flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/25 text-blue-700 dark:text-blue-400">
                         <FiCheckCircle className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">Application Summary</p>
-                        <p className="text-sm text-slate-500">Please review your application details before submitting.</p>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-gray-100">Application Summary</p>
+                        <p className="text-sm text-slate-500 dark:text-gray-400">Please review your application details before submitting.</p>
                       </div>
                     </div>
-                    <div className="grid gap-3 rounded-[20px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                    <div className="grid gap-3 rounded-[20px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 p-4 text-sm text-slate-700 dark:text-gray-300">
                       {[
                         ['Job', job.title],
                         ['Company', job.company?.name || 'Company'],
@@ -1226,30 +1304,47 @@ const JobApply = () => {
                         ['Applied Via', 'Ethio Job Portal'],
                         ['Date', applicationDate],
                       ].map(([label, value]) => (
-                        <div key={label} className="grid grid-cols-[110px_1fr] gap-4 rounded-[14px] bg-white px-4 py-3 text-sm shadow-sm">
-                          <span className="font-semibold text-slate-600">{label}</span>
-                          <span className="text-slate-700 break-words">{value}</span>
+                        <div key={label} className="grid grid-cols-[110px_1fr] gap-4 rounded-[14px] bg-white dark:bg-gray-900 px-4 py-3 text-sm shadow-sm">
+                          <span className="font-semibold text-slate-600 dark:text-gray-400">{label}</span>
+                          <span className="text-slate-700 dark:text-gray-300 break-words">{value}</span>
                         </div>
                       ))}
                     </div>
                   </section>
 
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                    <label className="flex items-start gap-3 rounded-[18px] border border-slate-200 bg-slate-50 p-4">
+                  {genderRequirement && (
+                    <div
+                      className={`rounded-[24px] border p-5 text-sm shadow-sm ${
+                        genderMismatch
+                          ? 'border-rose-200 bg-rose-50 text-rose-700'
+                          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                      }`}
+                    >
+                      <p className="font-semibold">
+                        {t('jobseeker.apply.genderRequirement')}: {t(`employer.postJob.genderOptions.${genderRequirement}`)}
+                      </p>
+                      {genderMismatch && (
+                        <p className="mt-1">{t('jobseeker.apply.genderRestricted')}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+                    <label className="flex items-start gap-3 rounded-[18px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 p-4">
                       <input
                         type="checkbox"
                         checked={agreeAccurate}
                         onChange={(e) => setAgreeAccurate(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="mt-1 h-4 w-4 rounded border-slate-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500"
                       />
                       <span>I certify that all information is accurate.</span>
                     </label>
-                    <label className="mt-4 flex items-start gap-3 rounded-[18px] border border-slate-200 bg-slate-50 p-4">
+                    <label className="mt-4 flex items-start gap-3 rounded-[18px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 p-4">
                       <input
                         type="checkbox"
                         checked={agreeShare}
                         onChange={(e) => setAgreeShare(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="mt-1 h-4 w-4 rounded border-slate-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500"
                       />
                       <span>I agree to share my resume with this employer.</span>
                     </label>
@@ -1258,7 +1353,7 @@ const JobApply = () => {
                   <button
                     type="submit"
                     className="w-full rounded-full bg-[#1769E0] px-5 py-4 text-base font-semibold text-white transition hover:bg-[#0D5BC4] disabled:cursor-not-allowed disabled:bg-slate-300"
-                    disabled={applying || !agreeAccurate || !agreeShare}
+                    disabled={applying || !agreeAccurate || !agreeShare || genderMismatch}
                   >
                     {applying ? (
                       <span className="inline-flex items-center justify-center gap-2">
@@ -1272,14 +1367,14 @@ const JobApply = () => {
                   {showConfirm && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
                       <div className="absolute inset-0 bg-black/40" onClick={() => setShowConfirm(false)} />
-                      <div className="relative z-10 w-full max-w-4xl rounded-2xl bg-white p-10 shadow-lg max-h-[90vh] min-h-[45vh] overflow-auto">
-                        <h3 className="text-2xl font-semibold text-slate-900">Confirm submission</h3>
-                        <p className="mt-4 text-base leading-relaxed text-slate-700">By submitting, your resume and profile will be shared with <span className="font-semibold">{job.company?.name || 'the company'}</span>. Applications cannot be edited after submission.</p>
+                      <div className="relative z-10 w-full max-w-4xl rounded-2xl bg-white dark:bg-gray-900 p-10 shadow-lg max-h-[90vh] min-h-[45vh] overflow-auto">
+                        <h3 className="text-2xl font-semibold text-slate-900 dark:text-gray-100">Confirm submission</h3>
+                        <p className="mt-4 text-base leading-relaxed text-slate-700 dark:text-gray-300">By submitting, your resume and profile will be shared with <span className="font-semibold">{job.company?.name || 'the company'}</span>. Applications cannot be edited after submission.</p>
                         <div className="mt-8 flex justify-end gap-3">
                           <button
                             type="button"
                             onClick={() => setShowConfirm(false)}
-                            className="rounded-full px-5 py-3 text-base font-semibold border border-slate-200 bg-white text-slate-700"
+                            className="rounded-full px-5 py-3 text-base font-semibold border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-slate-700 dark:text-gray-300"
                           >
                             No, cancel
                           </button>
@@ -1298,10 +1393,10 @@ const JobApply = () => {
                       </div>
                     </div>
                   )}
-                  <p className="mt-2 text-center text-sm text-slate-500">Estimated completion time: Less than one minute.</p>
+                  <p className="mt-2 text-center text-sm text-slate-500 dark:text-gray-400">Estimated completion time: Less than one minute.</p>
 
                   {submitSuccess && (
-                    <div className="rounded-[24px] border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
+                    <div className="rounded-[24px] border border-blue-200 bg-blue-50 dark:bg-blue-900/25 p-4 text-sm text-blue-700 dark:text-blue-400">
                       Application submitted successfully! You may stay on this page or visit your applications page later.
                     </div>
                   )}
@@ -1311,19 +1406,19 @@ const JobApply = () => {
             </main>
 
             <aside className="space-y-6 xl:sticky xl:top-6">
-              <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-900">Application Preview</h3>
-                <div className="mt-5 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+              <div className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">Application Preview</h3>
+                <div className="mt-5 rounded-[24px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 p-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/25 text-blue-700 dark:text-blue-400">
                       <FiUser className="h-6 w-6" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Applicant</p>
-                      <p className="mt-2 text-lg font-semibold text-slate-900">{applicantName}</p>
-                      <p className="mt-1 text-sm text-slate-600">{applicantEmail}</p>
-                      <p className="text-sm text-slate-600">{applicantPhone}</p>
-                      <p className="mt-2 text-sm text-slate-600">{userLocation}</p>
+                      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">Applicant</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-gray-100">{applicantName}</p>
+                      <p className="mt-1 text-sm text-slate-600 dark:text-gray-400">{applicantEmail}</p>
+                      <p className="text-sm text-slate-600 dark:text-gray-400">{applicantPhone}</p>
+                      <p className="mt-2 text-sm text-slate-600 dark:text-gray-400">{userLocation}</p>
                     </div>
                   </div>
                 </div>
@@ -1370,48 +1465,48 @@ const JobApply = () => {
                       icon: <FiCheckCircle className="h-5 w-5" />,
                     })),
                   ].map((item) => (
-                    <div key={item.title} className="rounded-[20px] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                    <div key={item.title} className="rounded-[20px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 p-4 shadow-sm">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 shadow-sm">
                           {item.icon}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                          <p className="mt-1 text-sm text-slate-600 break-words">{item.value}</p>
+                          <p className="text-sm font-semibold text-slate-900 dark:text-gray-100">{item.title}</p>
+                          <p className="mt-1 text-sm text-slate-600 dark:text-gray-400 break-words">{item.value}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 rounded-[28px] border border-blue-100 bg-blue-50 p-5 shadow-sm">
-                  <h4 className="text-base font-semibold text-slate-900">What happens next?</h4>
-                  <div className="mt-4 space-y-4 text-sm text-slate-600">
-                    <div className="flex items-start gap-3 rounded-[20px] bg-white p-4 shadow-sm">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700">1</div>
+                <div className="mt-5 rounded-[28px] border border-blue-100 bg-blue-50 dark:bg-blue-900/25 p-5 shadow-sm">
+                  <h4 className="text-base font-semibold text-slate-900 dark:text-gray-100">What happens next?</h4>
+                  <div className="mt-4 space-y-4 text-sm text-slate-600 dark:text-gray-400">
+                    <div className="flex items-start gap-3 rounded-[20px] bg-white dark:bg-gray-900 p-4 shadow-sm">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:text-blue-400">1</div>
                       <div>
-                        <p className="font-semibold text-slate-900">Your application will be sent to the employer.</p>
+                        <p className="font-semibold text-slate-900 dark:text-gray-100">Your application will be sent to the employer.</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3 rounded-[20px] bg-white p-4 shadow-sm">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700">2</div>
+                    <div className="flex items-start gap-3 rounded-[20px] bg-white dark:bg-gray-900 p-4 shadow-sm">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:text-blue-400">2</div>
                       <div>
-                        <p className="font-semibold text-slate-900">Employer will review your application.</p>
+                        <p className="font-semibold text-slate-900 dark:text-gray-100">Employer will review your application.</p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-3 rounded-[20px] bg-white p-4 shadow-sm">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700">3</div>
+                    <div className="flex items-start gap-3 rounded-[20px] bg-white dark:bg-gray-900 p-4 shadow-sm">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700 dark:text-blue-400">3</div>
                       <div>
-                        <p className="font-semibold text-slate-900">You will be notified about the next steps.</p>
+                        <p className="font-semibold text-slate-900 dark:text-gray-100">You will be notified about the next steps.</p>
                       </div>
                     </div>
-                    <p className="mt-2 text-sm text-slate-600">We respect your privacy and your information is secure with us.</p>
+                    <p className="mt-2 text-sm text-slate-600 dark:text-gray-400">We respect your privacy and your information is secure with us.</p>
                   </div>
                 </div>
-                <div className="mt-5 rounded-[28px] border border-sky-100 bg-white p-5 shadow-sm">
+                <div className="mt-5 rounded-[28px] border border-sky-100 bg-white dark:bg-gray-900 p-5 shadow-sm">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-base font-semibold text-sky-700">Need Help?</p>
-                      <p className="mt-1 text-sm text-slate-600">If you face any issues while applying, contact our support team.</p>
+                      <p className="mt-1 text-sm text-slate-600 dark:text-gray-400">If you face any issues while applying, contact our support team.</p>
                     </div>
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 shadow-sm">
                       <FiShield className="h-5 w-5" />
@@ -1419,7 +1514,7 @@ const JobApply = () => {
                   </div>
                   <button
                     type="button"
-                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-full border border-sky-600 bg-white px-4 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-full border border-sky-600 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-semibold text-sky-700 transition hover:bg-sky-50"
                   >
                     <FiShield className="h-4 w-4" />
                     Contact Support

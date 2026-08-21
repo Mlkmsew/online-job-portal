@@ -72,7 +72,7 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-md card">
         <h2 className="text-2xl font-bold text-center mb-6">{t('auth.resetPassword')}</h2>
 
@@ -83,7 +83,7 @@ const ResetPassword = () => {
               type="email"
               {...register('email', { required: t('auth.emailRequired') })}
               className="input"
-              placeholder="you@example.com"
+              placeholder={t('auth.emailPlaceholder')}
             />
             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
           </div>
@@ -93,7 +93,7 @@ const ResetPassword = () => {
             <input
               type="text"
               inputMode="numeric"
-              {...register('code', { required: t('common.error'), pattern: { value: /^\d{6}$/, message: 'Enter the 6-digit code' } })}
+              {...register('code', { required: t('common.error'), pattern: { value: /^\d{6}$/, message: t('auth.enterSixDigitCode') } })}
               className="input"
               placeholder="123456"
             />
@@ -112,7 +112,7 @@ const ResetPassword = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               >
                 {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
               </button>
@@ -135,7 +135,7 @@ const ResetPassword = () => {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               >
                 {showConfirmPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
               </button>
@@ -148,9 +148,9 @@ const ResetPassword = () => {
               type="button"
               onClick={handleResendCode}
               disabled={resending || resendCountdown > 0}
-              className="text-primary-500 hover:underline disabled:text-gray-400"
+              className="text-primary-500 hover:underline disabled:text-gray-400 dark:disabled:text-gray-500"
             >
-              {resendCountdown > 0 ? `${resendCountdown}s` : t('common.resend')}
+              {resendCountdown > 0 ? t('auth.resendCountdown', { seconds: resendCountdown }) : t('common.resend')}
             </button>
           </div>
 

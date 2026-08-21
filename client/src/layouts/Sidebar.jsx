@@ -107,7 +107,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             <button
               onClick={() => setIsOpen(false)}
               className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 transition"
-              aria-label="Close sidebar"
+              aria-label={t('common.closeSidebar', { defaultValue: 'Close sidebar' })}
             >
               <FiX className="w-5 h-5" />
             </button>

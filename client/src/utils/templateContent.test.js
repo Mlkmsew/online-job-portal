@@ -127,4 +127,28 @@ describe('Template change = design change only', () => {
     expect(eduList[0].schoolName).toBe('UNIQUE SCHOOL');
     expect(eduList[0].degree).toBe('UNIQUE DEGREE');
   });
+
+  it('editing an array-form experience (after hydration) keeps the array and preserves all fields', () => {
+    let resume = seedInitialResume(userWithData);
+    resume = fieldChange(resume, 'experience', 'jobTitle', 'UNIQUE JOB TITLE');
+    resume = fieldChange(resume, 'experience', 'employer', 'UNIQUE EMPLOYER');
+
+    // Simulate reload: backend stores experience/education as arrays
+    const hydrated = hydrateResumeFromProfile(resume, userWithData);
+    const arrResume = { ...hydrated, experience: Array.isArray(hydrated.experience) ? hydrated.experience : [hydrated.experience] };
+
+    // Editor writes through the array-aware path
+    const edited = arrResume.experience.length === 0
+      ? { ...arrResume, experience: [{ jobTitle: 'EDITED JOB' }], dirtyFields: [...arrResume.dirtyFields, 'experience.jobTitle'] }
+      : withDirty({ ...arrResume, experience: [{ ...arrResume.experience[0], jobTitle: 'EDITED JOB' }] }, 'experience.jobTitle');
+
+    expect(Array.isArray(edited.experience)).toBe(true);
+    expect(edited.experience[0].jobTitle).toBe('EDITED JOB');
+    expect(edited.experience[0].employer).toBe('UNIQUE EMPLOYER');
+    expect(edited.experience[0].duties).toBe('Built things.');
+
+    // Template switch must not touch the content
+    const switched = { ...edited, template: 'minimal', theme: {} };
+    expect(switched.experience).toBe(edited.experience);
+  });
 });

@@ -154,34 +154,34 @@ const Messages = () => {
 
   const handleDeleteMessage = async (message) => {
     closeActionMenu();
-    const confirmed = window.confirm('Are you sure you want to delete this message?');
+    const confirmed = window.confirm(t('messages.deleteConfirm', { defaultValue: 'Are you sure you want to delete this message?' }));
     if (!confirmed) return;
 
     try {
       await deleteMessage(message._id);
       setMessages((prev) => prev.filter((msg) => msg._id !== message._id));
-      setSuccessMessage('Message deleted successfully.');
+      setSuccessMessage(t('messages.deletedSuccess', { defaultValue: 'Message deleted successfully.' }));
     } catch (err) {
       console.error('Delete message failed:', err);
-      setError(err.response?.data?.message || 'Unable to delete message.');
+      setError(err.response?.data?.message || t('messages.deleteFailed', { defaultValue: 'Unable to delete message.' }));
     }
   };
 
   const handleSaveEditedMessage = async () => {
     if (!editMessageText.trim()) {
-      setError('Message cannot be empty.');
+      setError(t('admin.messages.editEmpty', { defaultValue: 'Message cannot be empty.' }));
       return;
     }
 
     try {
       const res = await updateMessage(editMessageId, editMessageText.trim());
       setMessages((prev) => prev.map((msg) => (msg._id === editMessageId ? res.data.data : msg)));
-      setSuccessMessage('Message updated successfully.');
+      setSuccessMessage(t('messages.updatedSuccess', { defaultValue: 'Message updated successfully.' }));
       setEditMessageId(null);
       setEditMessageText('');
     } catch (err) {
       console.error('Update message failed:', err);
-      setError(err.response?.data?.message || 'Unable to update message.');
+      setError(err.response?.data?.message || t('messages.updateFailed', { defaultValue: 'Unable to update message.' }));
     }
   };
 
@@ -557,7 +557,7 @@ const Messages = () => {
                   value={newConversationEmail}
                   onChange={(e) => setNewConversationEmail(e.target.value)}
                   className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500"
-                  placeholder="recipient@example.com"
+                  placeholder={t('messages.recipientEmailPlaceholder', { defaultValue: 'recipient@example.com' })}
                   type="email"
                   required
                 />

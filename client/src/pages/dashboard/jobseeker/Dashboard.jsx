@@ -120,8 +120,8 @@ const JobSeekerDashboard = () => {
         setDashboardData(dashboardPayload);
       } else if (dashboardRes.status === 'rejected') {
         console.error('Dashboard stats failed:', dashboardRes.reason);
-        setErrorMessage('Unable to load dashboard overview.');
-        setRecError('Unable to load recommended jobs right now.');
+        setErrorMessage(t('dashboard.loadOverviewError', { defaultValue: 'Unable to load dashboard overview.' }));
+        setRecError(t('dashboard.recLoadError', { defaultValue: 'Unable to load recommended jobs right now.' }));
       }
 
       const normalizedApps = normalizeArrayResponse(appsRes);
@@ -149,8 +149,8 @@ const JobSeekerDashboard = () => {
     } catch (err) {
       console.error('Unexpected error fetching dashboard stats:', err);
       if (isMounted.current) {
-        setErrorMessage('We could not load your dashboard data right now.');
-        setRecError('Unable to load recommended jobs right now.');
+        setErrorMessage(t('dashboard.loadDataError', { defaultValue: 'We could not load your dashboard data right now.' }));
+        setRecError(t('dashboard.recLoadError', { defaultValue: 'Unable to load recommended jobs right now.' }));
       }
     } finally {
       if (fetchId === lastFetchId.current && isMounted.current) {
@@ -400,20 +400,20 @@ const JobSeekerDashboard = () => {
   const handleBookmark = async (jobId) => {
     try {
       await api.post('/bookmarks', { job: jobId });
-      toast.success('Saved to your jobs list.');
+      toast.success(t('dashboard.jobSaved', { defaultValue: 'Saved to your jobs list.' }));
       fetchDashboardData();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Unable to save this job right now.');
+      toast.error(error.response?.data?.message || t('dashboard.jobSaveError', { defaultValue: 'Unable to save this job right now.' }));
     }
   };
 
   const handleLogout = async () => {
     try {
       await dispatch(logout()).unwrap();
-      toast.success('Logged out successfully');
+      toast.success(t('auth.logoutSuccess'));
       navigate('/');
     } catch (error) {
-      toast.error('Logout failed');
+      toast.error(t('auth.logoutFailed'));
     }
   };
 
@@ -568,12 +568,12 @@ const JobSeekerDashboard = () => {
             >
               <div className="h-7 w-7 overflow-hidden rounded-full bg-[#1769E0] dark:bg-[#60A5FA] text-white text-xs font-bold flex items-center justify-center">
                 {user?.avatar ? (
-                  <img src={user.avatar} alt={user?.firstName || 'User'} className="h-full w-full object-cover" />
+                  <img src={user.avatar} alt={user?.firstName || t('common.user')} className="h-full w-full object-cover" />
                 ) : (
                   <span>{(user?.firstName || 'U').charAt(0)}{(user?.lastName || 'S').charAt(0)}</span>
                 )}
               </div>
-              <span className="text-xs font-semibold hidden sm:block" style={{ color: 'var(--text-primary)' }}>{user?.firstName || 'User'}</span>
+              <span className="text-xs font-semibold hidden sm:block" style={{ color: 'var(--text-primary)' }}>{user?.firstName || t('common.user')}</span>
               <FiChevronDown className="h-3.5 w-3.5" style={{ color: 'var(--text-secondary)' }} />
             </button>
 

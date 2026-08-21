@@ -176,7 +176,7 @@ const JobSeekerProfile = () => {
 
   const experienceItems = useMemo(() => {
     if (Array.isArray(user?.experienceDetails) && user.experienceDetails.length > 0) return user.experienceDetails;
-    if (user?.experience) return [{ title: 'Work History', company: '', location: '', startDate: '', endDate: '', description: user.experience }];
+    if (user?.experience) return [{ title: t('profile.workExperience'), company: '', location: '', startDate: '', endDate: '', description: user.experience }];
     return [];
   }, [user]);
 
@@ -194,7 +194,7 @@ const JobSeekerProfile = () => {
   const initials = `${user?.firstName?.[0] || 'U'}${user?.lastName?.[0] || ''}`;
 
   /* Save updated profile payload directly to Database */
-  const persistProfile = async (updatedFields, successMessage = 'Profile updated successfully') => {
+  const persistProfile = async (updatedFields, successMessage = t('profile.updatedSuccess', { defaultValue: 'Profile updated successfully' })) => {
     setSaving(true);
     try {
       const technicalSkills = updatedFields.technicalSkills !== undefined
@@ -245,7 +245,7 @@ const JobSeekerProfile = () => {
       setEditingItemIndex(null);
       setModalItemData({});
     } catch (err) {
-      toast.error(err || 'Failed to update profile.');
+      toast.error(err || t('profile.saveFailed', { defaultValue: 'Failed to update profile.' }));
     } finally {
       setSaving(false);
     }
@@ -260,22 +260,22 @@ const JobSeekerProfile = () => {
     fd.append('avatar', file);
     try {
       await dispatch(uploadAvatar(fd)).unwrap();
-      toast.success('Profile photo updated!');
+      toast.success(t('profile.photoUpdated', { defaultValue: 'Profile photo updated!' }));
       setAvatarFile(null);
     } catch (err) {
-      toast.error('Failed to upload profile photo.');
+      toast.error(t('profile.photoUploadFailed', { defaultValue: 'Failed to upload profile photo.' }));
     }
   };
 
   /* Direct Avatar delete handler */
   const handleDeleteAvatar = async () => {
-    if (!window.confirm('Are you sure you want to remove your profile photo?')) return;
+    if (!window.confirm(t('profile.confirmRemovePhoto', { defaultValue: 'Are you sure you want to remove your profile photo?' }))) return;
     try {
       await dispatch(deleteAvatar()).unwrap();
-      toast.success('Profile photo removed.');
+      toast.success(t('profile.photoRemoved', { defaultValue: 'Profile photo removed.' }));
       setAvatarFile(null);
     } catch (err) {
-      toast.error('Failed to remove photo.');
+      toast.error(t('profile.photoRemoveFailed', { defaultValue: 'Failed to remove photo.' }));
     }
   };
 
@@ -286,11 +286,11 @@ const JobSeekerProfile = () => {
     const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     const ext = file.name?.split('.').pop()?.toLowerCase();
     if (!allowed.includes(file.type) && !['pdf', 'doc', 'docx'].includes(ext)) {
-      toast.error('Only PDF, DOC, or DOCX files are allowed.');
+      toast.error(t('profile.cvTypeError', { defaultValue: 'Only PDF, DOC, or DOCX files are allowed.' }));
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('File limit is 10MB.');
+      toast.error(t('profile.cvSizeError', { defaultValue: 'File limit is 10MB.' }));
       return;
     }
     setCvFile(file);
@@ -300,10 +300,10 @@ const JobSeekerProfile = () => {
       await dispatch(uploadCV(fd)).unwrap();
       localStorage.removeItem(activeCVStorageKey);
       setActiveBuilderCV(null);
-      toast.success('Resume / CV uploaded successfully!');
+      toast.success(t('profile.cvUploaded', { defaultValue: 'Resume / CV uploaded successfully!' }));
       setCvFile(null);
     } catch (err) {
-      toast.error(err || 'Failed to upload resume.');
+      toast.error(err || t('profile.cvUploadFailed', { defaultValue: 'Failed to upload resume.' }));
     }
   };
 
@@ -328,7 +328,7 @@ const JobSeekerProfile = () => {
   const handleSelectBuilderCV = (resume) => {
     const selection = {
       id: resume.id,
-      title: resume.title || 'Untitled Resume',
+      title: resume.title || t('resume.untitledResume', { defaultValue: 'Untitled Resume' }),
       createdAt: getResumeCreatedAt(resume)?.toISOString() || null,
     };
     try {
@@ -383,10 +383,10 @@ const JobSeekerProfile = () => {
   };
 
   const handleDeleteItem = async (sectionKey, index) => {
-    if (!window.confirm('Are you sure you want to remove this item?')) return;
+    if (!window.confirm(t('profile.confirmRemoveItem', { defaultValue: 'Are you sure you want to remove this item?' }))) return;
     const currentList = [...(formData[sectionKey] || [])];
     currentList.splice(index, 1);
-    await persistProfile({ [sectionKey]: currentList }, 'Item removed.');
+    await persistProfile({ [sectionKey]: currentList }, t('profile.itemRemoved', { defaultValue: 'Item removed.' }));
   };
 
   const handleSaveModalItem = async (e) => {
@@ -400,7 +400,7 @@ const JobSeekerProfile = () => {
         headline: modalItemData.headline,
         phone: modalItemData.phone,
         location,
-      }, 'Header summary updated.');
+      }, t('profile.headerUpdated', { defaultValue: 'Header summary updated.' }));
     } else if (activeModal === 'bio') {
       await persistProfile({
         bio: modalItemData.bio,
@@ -408,12 +408,12 @@ const JobSeekerProfile = () => {
         experienceYears: modalItemData.experienceYears,
         salaryExpectation: modalItemData.salaryExpectation,
         availability: modalItemData.availability,
-      }, 'Bio & overview updated.');
+      }, t('profile.bioUpdated', { defaultValue: 'Bio & overview updated.' }));
     } else if (activeModal === 'skills') {
       await persistProfile({
         technicalSkills: Array.isArray(modalItemData.technicalSkills) ? modalItemData.technicalSkills : [],
         softSkills: Array.isArray(modalItemData.softSkills) ? modalItemData.softSkills : [],
-      }, 'Skills updated.');
+      }, t('profile.skillsUpdated', { defaultValue: 'Skills updated.' }));
     } else if (['education', 'experience', 'languages', 'portfolio'].includes(activeModal)) {
       const sectionKey = activeModal === 'education' ? 'educationDetails' : activeModal === 'experience' ? 'experienceDetails' : activeModal;
       const currentList = [...(formData[sectionKey] || [])];
@@ -422,7 +422,7 @@ const JobSeekerProfile = () => {
       } else {
         currentList.push(modalItemData);
       }
-      await persistProfile({ [sectionKey]: currentList }, `${activeModal.charAt(0).toUpperCase() + activeModal.slice(1)} updated.`);
+      await persistProfile({ [sectionKey]: currentList }, t('profile.sectionUpdated', { defaultValue: '{{section}} updated.', section: activeModal.charAt(0).toUpperCase() + activeModal.slice(1) }));
     }
   };
 
@@ -485,7 +485,7 @@ const JobSeekerProfile = () => {
               <div className="relative flex-shrink-0 group">
                 <div className="h-28 w-28 overflow-hidden rounded-full border-2 border-white/70 bg-slate-200 shadow-md flex items-center justify-center">
                   {user?.avatar ? (
-                    <img src={user.avatar} alt="Profile" className="h-full w-full object-cover" />
+                    <img src={user.avatar} alt={t('profile.profilePhotoAlt', { defaultValue: 'Profile' })} className="h-full w-full object-cover" />
                   ) : (
                     <svg className="h-20 w-20 text-slate-400 fill-current" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
@@ -518,7 +518,7 @@ const JobSeekerProfile = () => {
               {/* Name row with inline edit icon */}
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold text-white leading-tight truncate">
-                  {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Job Seeker'}
+                  {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : t('profile.jobSeeker', { defaultValue: 'Job Seeker' })}
                 </h1>
                 <button
                   type="button"
@@ -650,7 +650,7 @@ const JobSeekerProfile = () => {
                 <div className="flex justify-between border-b border-slate-200/60 pb-1">
                   <span className="text-slate-500">{t('jobs.experience')}</span>
                   <span className="font-semibold text-slate-800">
-                    {formData.experienceYears ? `${formData.experienceYears} Years` : t('jobs.any')}
+                    {formData.experienceYears ? t('profile.years', { defaultValue: '{{count}} Years', count: formData.experienceYears }) : t('jobs.any')}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-slate-200/60 pb-1">
@@ -795,7 +795,7 @@ const JobSeekerProfile = () => {
                       {(exp.startDate || exp.endDate) && (
                         <span className="flex items-center gap-1">
                           <FiClock className="h-3 w-3 text-slate-400" />
-                          {exp.startDate || ''} {exp.endDate ? `– ${exp.endDate}` : '– Present'}
+                          {exp.startDate || ''} {exp.endDate ? `– ${exp.endDate}` : t('profile.present', { defaultValue: '– Present' })}
                         </span>
                       )}
                       {exp.location && (
@@ -949,15 +949,15 @@ const JobSeekerProfile = () => {
             {languageItems.map((lang, idx) => (
               <div key={idx} className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/60 px-4 py-2.5">
                 <div>
-                  <p className="text-xs font-bold text-slate-800">{lang.name || 'Language'}</p>
-                  <p className="text-[11px] font-medium text-[#1769E0]">{lang.level || 'Proficiency'}</p>
+                  <p className="text-xs font-bold text-slate-800">{lang.name || t('profile.language', { defaultValue: 'Language' })}</p>
+                  <p className="text-[11px] font-medium text-[#1769E0]">{lang.level || t('profile.proficiency', { defaultValue: 'Proficiency' })}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => openEditModal('languages', idx, lang)}
                     className="p-1 text-slate-400 hover:text-[#1769E0] transition"
-                    title="Edit"
+                    title={t('common.edit')}
                   >
                     <FiEdit2 className="h-3 w-3" />
                   </button>
@@ -965,7 +965,7 @@ const JobSeekerProfile = () => {
                     type="button"
                     onClick={() => handleDeleteItem('languages', idx)}
                     className="p-1 text-slate-400 hover:text-red-600 transition"
-                    title="Delete"
+                    title={t('common.delete')}
                   >
                     <FiTrash2 className="h-3 w-3" />
                   </button>
@@ -1018,7 +1018,7 @@ const JobSeekerProfile = () => {
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 text-xs font-bold text-[#1769E0] hover:underline truncate"
                   >
-                    {item.label || item.url || 'Project Link'}
+                    {item.label || item.url || t('profile.projectLink', { defaultValue: 'Project Link' })}
                     <FiExternalLink className="h-3 w-3 flex-shrink-0" />
                   </a>
                   <p className="text-[11px] text-slate-400 truncate mt-0.5">{item.url}</p>
@@ -1029,7 +1029,7 @@ const JobSeekerProfile = () => {
                     type="button"
                     onClick={() => openEditModal('portfolio', idx, item)}
                     className="p-1 text-slate-400 hover:text-[#1769E0] transition"
-                    title="Edit"
+                    title={t('common.edit')}
                   >
                     <FiEdit2 className="h-3.5 w-3.5" />
                   </button>
@@ -1037,7 +1037,7 @@ const JobSeekerProfile = () => {
                     type="button"
                     onClick={() => handleDeleteItem('portfolio', idx)}
                     className="p-1 text-slate-400 hover:text-red-600 transition"
-                    title="Delete"
+                    title={t('common.delete')}
                   >
                     <FiTrash2 className="h-3.5 w-3.5" />
                   </button>
@@ -1069,7 +1069,7 @@ const JobSeekerProfile = () => {
               <p className="text-xs font-bold text-slate-800">{t('profile.cvResume') || 'Attached Resume Document'}</p>
               <p className="text-[11px] text-slate-500">
                 {activeBuilderCV
-                  ? `${activeBuilderCV.title || 'Resume Builder CV'}${activeBuilderCV.createdAt ? ` • ${new Date(activeBuilderCV.createdAt).toLocaleDateString()}` : ''}`
+                  ? `${activeBuilderCV.title || t('resume.resumeBuilderCV', { defaultValue: 'Resume Builder CV' })}${activeBuilderCV.createdAt ? ` • ${new Date(activeBuilderCV.createdAt).toLocaleDateString()}` : ''}`
                   : resumeUploaded
                   ? resumeFileName
                   : (t('profile.noCVUploaded') || 'No CV document uploaded yet')}
@@ -1119,7 +1119,7 @@ const JobSeekerProfile = () => {
                         >
                           <span className="flex items-center gap-2 min-w-0">
                             <FiFile className="h-3.5 w-3.5 flex-shrink-0 text-[#1769E0]" />
-                            <span className="truncate font-semibold">{resume.title || 'Untitled Resume'}</span>
+                            <span className="truncate font-semibold">{resume.title || t('resume.untitledResume', { defaultValue: 'Untitled Resume' })}</span>
                           </span>
                           {date && <span className="flex-shrink-0 text-[10px] text-slate-400">{date}</span>}
                         </button>
@@ -1186,14 +1186,14 @@ const JobSeekerProfile = () => {
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-300 bg-slate-200 flex items-center justify-center flex-shrink-0">
                         {user?.avatar ? (
-                          <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                          <img src={user.avatar} alt={t('profile.avatarAlt', { defaultValue: 'Avatar' })} className="w-full h-full object-cover" />
                         ) : (
                           <FiUser className="w-6 h-6 text-slate-400" />
                         )}
                       </div>
                       <div>
-                        <p className="font-bold text-slate-800 text-sm">Profile Photo</p>
-                        <p className="text-slate-500 text-xs">Upload, replace or remove your photo</p>
+                        <p className="font-bold text-slate-800 text-sm">{t('profile.profilePhoto', { defaultValue: 'Profile Photo' })}</p>
+                        <p className="text-slate-500 text-xs">{t('profile.photoHint', { defaultValue: 'Upload, replace or remove your photo' })}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1202,7 +1202,7 @@ const JobSeekerProfile = () => {
                         onClick={() => avatarInputRef.current?.click()}
                         className="px-3 py-1.5 rounded-lg bg-[#1769E0] text-white text-xs font-semibold hover:bg-[#0D5BC4] transition flex items-center gap-1 shadow-sm"
                       >
-                        <FiCamera className="w-3.5 h-3.5" /> {user?.avatar ? 'Replace Photo' : 'Upload Photo'}
+                        <FiCamera className="w-3.5 h-3.5" /> {user?.avatar ? t('settings.replacePhoto', { defaultValue: 'Replace Photo' }) : t('settings.uploadPhoto', { defaultValue: 'Upload Photo' })}
                       </button>
                       {user?.avatar && (
                         <button
@@ -1210,14 +1210,14 @@ const JobSeekerProfile = () => {
                           onClick={handleDeleteAvatar}
                           className="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 text-xs font-semibold hover:bg-rose-100 transition flex items-center gap-1 shadow-sm"
                         >
-                          <FiTrash2 className="w-3.5 h-3.5" /> Delete Photo
+                          <FiTrash2 className="w-3.5 h-3.5" /> {t('profile.deletePhoto', { defaultValue: 'Delete Photo' })}
                         </button>
                       )}
                     </div>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">First Name</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('auth.firstName')}</label>
                       <input
                         type="text"
                         value={modalItemData.firstName || ''}
@@ -1227,7 +1227,7 @@ const JobSeekerProfile = () => {
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Last Name</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('auth.lastName')}</label>
                       <input
                         type="text"
                         value={modalItemData.lastName || ''}
@@ -1239,25 +1239,25 @@ const JobSeekerProfile = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Gender</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.gender', { defaultValue: 'Gender' })}</label>
                     <select
                       value={modalItemData.gender || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, gender: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
                     >
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                      <option value="Prefer not to say">Prefer not to say</option>
+                      <option value="">{t('profile.selectGender', { defaultValue: 'Select Gender' })}</option>
+                      <option value="Male">{t('profile.male', { defaultValue: 'Male' })}</option>
+                      <option value="Female">{t('profile.female', { defaultValue: 'Female' })}</option>
+                      <option value="Other">{t('profile.other', { defaultValue: 'Other' })}</option>
+                      <option value="Prefer not to say">{t('profile.preferNotToSay', { defaultValue: 'Prefer not to say' })}</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Profession / Headline Title</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.professionHeadline', { defaultValue: 'Profession / Headline Title' })}</label>
                     <input
                       type="text"
-                      placeholder="e.g. Senior Full Stack Developer"
+                      placeholder={t('employer.postJob.placeholders.jobTitle')}
                       value={modalItemData.headline || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, headline: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
@@ -1266,20 +1266,20 @@ const JobSeekerProfile = () => {
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Phone Number</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('employer.companyProfile.fields.phone')}</label>
                       <input
                         type="text"
-                        placeholder="+251..."
+                        placeholder={t('profile.phonePlaceholder', { defaultValue: '+251...' })}
                         value={modalItemData.phone || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, phone: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">City</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('employer.postJob.city')}</label>
                       <input
                         type="text"
-                        placeholder="e.g. Addis Ababa"
+                        placeholder={t('profile.cityPlaceholder', { defaultValue: 'e.g. Addis Ababa' })}
                         value={modalItemData.city || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, city: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
@@ -1288,10 +1288,10 @@ const JobSeekerProfile = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Address / Region</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.addressRegion', { defaultValue: 'Address / Region' })}</label>
                     <input
                       type="text"
-                      placeholder="Address details"
+                      placeholder={t('profile.addressPlaceholder', { defaultValue: 'Address details' })}
                       value={modalItemData.address || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, address: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
@@ -1303,10 +1303,10 @@ const JobSeekerProfile = () => {
               {activeModal === 'bio' && (
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Professional Summary (Bio)</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.professionalSummaryBio', { defaultValue: 'Professional Summary (Bio)' })}</label>
                     <textarea
                       rows={5}
-                      placeholder="Summarize your professional experience, goals, and key strengths..."
+                      placeholder={t('profile.bioPlaceholder', { defaultValue: 'Summarize your professional experience, goals, and key strengths...' })}
                       value={modalItemData.bio || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, bio: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-900 outline-none focus:border-[#1769E0]"
@@ -1315,20 +1315,20 @@ const JobSeekerProfile = () => {
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Current Role</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('admin.userProfile.currentRole')}</label>
                       <input
                         type="text"
-                        placeholder="e.g. Team Lead"
+                        placeholder={t('profile.currentRolePlaceholder', { defaultValue: 'e.g. Team Lead' })}
                         value={modalItemData.currentRole || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, currentRole: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Years of Experience</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('admin.userProfile.experienceYears')}</label>
                       <input
                         type="number"
-                        placeholder="e.g. 5"
+                        placeholder={t('profile.experienceYearsPlaceholder', { defaultValue: 'e.g. 5' })}
                         value={modalItemData.experienceYears || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, experienceYears: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
@@ -1338,20 +1338,20 @@ const JobSeekerProfile = () => {
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Expected Salary</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('admin.userProfile.salaryExpectation')}</label>
                       <input
                         type="text"
-                        placeholder="e.g. $60,000 / yr"
+                        placeholder={t('profile.salaryPlaceholder', { defaultValue: 'e.g. $60,000 / yr' })}
                         value={modalItemData.salaryExpectation || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, salaryExpectation: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Availability</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('admin.userProfile.availability')}</label>
                       <input
                         type="text"
-                        placeholder="e.g. Immediately"
+                        placeholder={t('profile.availabilityPlaceholder', { defaultValue: 'e.g. Immediately' })}
                         value={modalItemData.availability || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, availability: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
@@ -1364,10 +1364,10 @@ const JobSeekerProfile = () => {
               {activeModal === 'education' && (
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Degree / Field of Study</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.degreeField', { defaultValue: 'Degree / Field of Study' })}</label>
                     <input
                       type="text"
-                      placeholder="e.g. B.Sc. in Computer Science"
+                      placeholder={t('profile.degreePlaceholder', { defaultValue: 'e.g. B.Sc. in Computer Science' })}
                       value={modalItemData.degree || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, degree: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
@@ -1375,10 +1375,10 @@ const JobSeekerProfile = () => {
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Institution / University</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.institutionUniversity', { defaultValue: 'Institution / University' })}</label>
                     <input
                       type="text"
-                      placeholder="e.g. Addis Ababa University"
+                      placeholder={t('profile.institutionPlaceholder', { defaultValue: 'e.g. Addis Ababa University' })}
                       value={modalItemData.institution || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, institution: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
@@ -1387,20 +1387,20 @@ const JobSeekerProfile = () => {
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Start Date / Year</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('profile.startDateYear', { defaultValue: 'Start Date / Year' })}</label>
                       <input
                         type="text"
-                        placeholder="e.g. 2018"
+                        placeholder={t('profile.yearPlaceholder', { defaultValue: 'e.g. 2018' })}
                         value={modalItemData.startDate || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, startDate: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">End Date / Year</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('profile.endDateYear', { defaultValue: 'End Date / Year' })}</label>
                       <input
                         type="text"
-                        placeholder="e.g. 2022"
+                        placeholder={t('profile.yearPlaceholder', { defaultValue: 'e.g. 2022' })}
                         value={modalItemData.endDate || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, endDate: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
@@ -1408,20 +1408,20 @@ const JobSeekerProfile = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Location (optional)</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.locationOptional', { defaultValue: 'Location (optional)' })}</label>
                     <input
                       type="text"
-                      placeholder="e.g. Addis Ababa, Ethiopia"
+                      placeholder={t('profile.locationPlaceholder', { defaultValue: 'e.g. Addis Ababa, Ethiopia' })}
                       value={modalItemData.location || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, location: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Description (optional)</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.descriptionOptional', { defaultValue: 'Description (optional)' })}</label>
                     <textarea
                       rows={3}
-                      placeholder="Relevant coursework, honors, or activities..."
+                      placeholder={t('profile.educationDescriptionPlaceholder', { defaultValue: 'Relevant coursework, honors, or activities...' })}
                       value={modalItemData.description || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, description: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-[#1769E0]"
@@ -1433,10 +1433,10 @@ const JobSeekerProfile = () => {
               {activeModal === 'experience' && (
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Job Title</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('employer.postJob.jobTitle')}</label>
                     <input
                       type="text"
-                      placeholder="e.g. Software Engineer"
+                      placeholder={t('profile.jobTitlePlaceholder', { defaultValue: 'e.g. Software Engineer' })}
                       value={modalItemData.title || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, title: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
@@ -1444,10 +1444,10 @@ const JobSeekerProfile = () => {
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Company Name</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('admin.createCompany.fields.name')}</label>
                     <input
                       type="text"
-                      placeholder="e.g. Tech Solutions Inc."
+                      placeholder={t('profile.companyPlaceholder', { defaultValue: 'e.g. Tech Solutions Inc.' })}
                       value={modalItemData.company || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, company: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
@@ -1456,20 +1456,20 @@ const JobSeekerProfile = () => {
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Start Date</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('profile.startDate', { defaultValue: 'Start Date' })}</label>
                       <input
                         type="text"
-                        placeholder="e.g. Jan 2022"
+                        placeholder={t('profile.startDatePlaceholder', { defaultValue: 'e.g. Jan 2022' })}
                         value={modalItemData.startDate || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, startDate: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">End Date (or Present)</label>
+                      <label className="block font-bold text-slate-700 mb-1">{t('profile.endDateOrPresent', { defaultValue: 'End Date (or Present)' })}</label>
                       <input
                         type="text"
-                        placeholder="e.g. Present"
+                        placeholder={t('profile.presentPlaceholder', { defaultValue: 'e.g. Present' })}
                         value={modalItemData.endDate || ''}
                         onChange={(e) => setModalItemData({ ...modalItemData, endDate: e.target.value })}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
@@ -1477,20 +1477,20 @@ const JobSeekerProfile = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Location</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('dashboard.location')}</label>
                     <input
                       type="text"
-                      placeholder="e.g. Remote / Addis Ababa"
+                      placeholder={t('profile.workLocationPlaceholder', { defaultValue: 'e.g. Remote / Addis Ababa' })}
                       value={modalItemData.location || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, location: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Description / Key Responsibilities</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.descriptionResponsibilities', { defaultValue: 'Description / Key Responsibilities' })}</label>
                     <textarea
                       rows={4}
-                      placeholder="Describe your role, accomplishments, and tech stack used..."
+                      placeholder={t('profile.responsibilitiesPlaceholder', { defaultValue: 'Describe your role, accomplishments, and tech stack used...' })}
                       value={modalItemData.description || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, description: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-[#1769E0]"
@@ -1510,7 +1510,7 @@ const JobSeekerProfile = () => {
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="e.g. Java, Python, React"
+                        placeholder={t('profile.skillsPlaceholder', { defaultValue: 'e.g. Java, Python, React' })}
                         value={skillInput}
                         onChange={(e) => setSkillInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkillTagToModal('technicalSkills'); } }}
@@ -1521,7 +1521,7 @@ const JobSeekerProfile = () => {
                         onClick={() => addSkillTagToModal('technicalSkills')}
                         className="rounded-xl bg-[#1769E0] px-4 py-2 text-xs font-bold text-white hover:bg-[#0D5BC4] transition"
                       >
-                        Add
+                        {t('common.add', { defaultValue: 'Add' })}
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-2 min-h-[44px] p-3 mt-2 rounded-xl bg-slate-50 border border-slate-200">
@@ -1533,7 +1533,7 @@ const JobSeekerProfile = () => {
                               type="button"
                               onClick={() => editSkillTagFromModal('technicalSkills', i)}
                               className="text-[#1769E0] hover:text-blue-800 transition"
-                              title="Edit"
+                              title={t('common.edit')}
                             >
                               <FiEdit2 className="h-3 w-3" />
                             </button>
@@ -1541,7 +1541,7 @@ const JobSeekerProfile = () => {
                               type="button"
                               onClick={() => removeSkillTagFromModal('technicalSkills', i)}
                               className="text-[#1769E0] hover:text-red-600 transition"
-                              title="Delete"
+                              title={t('common.delete')}
                             >
                               <FiX className="h-3 w-3" />
                             </button>
@@ -1562,7 +1562,7 @@ const JobSeekerProfile = () => {
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="e.g. Communication, Teamwork"
+                        placeholder={t('profile.softSkillsPlaceholder', { defaultValue: 'e.g. Communication, Teamwork' })}
                         value={softSkillInput}
                         onChange={(e) => setSoftSkillInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkillTagToModal('softSkills'); } }}
@@ -1573,7 +1573,7 @@ const JobSeekerProfile = () => {
                         onClick={() => addSkillTagToModal('softSkills')}
                         className="rounded-xl bg-[#1769E0] px-4 py-2 text-xs font-bold text-white hover:bg-[#0D5BC4] transition"
                       >
-                        Add
+                        {t('common.add', { defaultValue: 'Add' })}
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-2 min-h-[44px] p-3 mt-2 rounded-xl bg-slate-50 border border-slate-200">
@@ -1585,7 +1585,7 @@ const JobSeekerProfile = () => {
                               type="button"
                               onClick={() => editSkillTagFromModal('softSkills', i)}
                               className="text-[#1769E0] hover:text-blue-800 transition"
-                              title="Edit"
+                              title={t('common.edit')}
                             >
                               <FiEdit2 className="h-3 w-3" />
                             </button>
@@ -1593,7 +1593,7 @@ const JobSeekerProfile = () => {
                               type="button"
                               onClick={() => removeSkillTagFromModal('softSkills', i)}
                               className="text-[#1769E0] hover:text-red-600 transition"
-                              title="Delete"
+                              title={t('common.delete')}
                             >
                               <FiX className="h-3 w-3" />
                             </button>
@@ -1610,10 +1610,10 @@ const JobSeekerProfile = () => {
               {activeModal === 'languages' && (
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Language Name</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.languageName', { defaultValue: 'Language Name' })}</label>
                     <input
                       type="text"
-                      placeholder="e.g. Amharic, English"
+                      placeholder={t('profile.languagePlaceholder', { defaultValue: 'e.g. Amharic, English' })}
                       value={modalItemData.name || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, name: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
@@ -1621,17 +1621,17 @@ const JobSeekerProfile = () => {
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Proficiency Level</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.proficiencyLevel', { defaultValue: 'Proficiency Level' })}</label>
                     <select
                       value={modalItemData.level || 'Fluent'}
                       onChange={(e) => setModalItemData({ ...modalItemData, level: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
                     >
-                      <option value="Native / Bilingual">Native / Bilingual</option>
-                      <option value="Fluent">Fluent</option>
-                      <option value="Advanced">Advanced</option>
-                      <option value="Intermediate">Intermediate</option>
-                      <option value="Basic">Basic</option>
+                      <option value="Native / Bilingual">{t('profile.proficiencyNative', { defaultValue: 'Native / Bilingual' })}</option>
+                      <option value="Fluent">{t('profile.proficiencyFluent', { defaultValue: 'Fluent' })}</option>
+                      <option value="Advanced">{t('profile.proficiencyAdvanced', { defaultValue: 'Advanced' })}</option>
+                      <option value="Intermediate">{t('profile.proficiencyIntermediate', { defaultValue: 'Intermediate' })}</option>
+                      <option value="Basic">{t('profile.proficiencyBasic', { defaultValue: 'Basic' })}</option>
                     </select>
                   </div>
                 </div>
@@ -1640,10 +1640,10 @@ const JobSeekerProfile = () => {
               {activeModal === 'portfolio' && (
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Project / Link Title</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.projectLinkTitle', { defaultValue: 'Project / Link Title' })}</label>
                     <input
                       type="text"
-                      placeholder="e.g. Personal Portfolio Website"
+                      placeholder={t('profile.projectTitlePlaceholder', { defaultValue: 'e.g. Personal Portfolio Website' })}
                       value={modalItemData.label || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, label: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"
@@ -1651,10 +1651,10 @@ const JobSeekerProfile = () => {
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">URL Link</label>
+                    <label className="block font-bold text-slate-700 mb-1">{t('profile.urlLink', { defaultValue: 'URL Link' })}</label>
                     <input
                       type="url"
-                      placeholder="https://github.com/..."
+                      placeholder={t('profile.urlPlaceholder', { defaultValue: 'https://github.com/...' })}
                       value={modalItemData.url || ''}
                       onChange={(e) => setModalItemData({ ...modalItemData, url: e.target.value })}
                       className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#1769E0]"

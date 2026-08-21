@@ -229,7 +229,7 @@ const AdminHeaderActions = () => {
     navigate('/login');
   };
 
-  const profileName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Admin User';
+  const profileName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || t('admin.header.adminUser', { defaultValue: 'Admin User' });
   const profileEmail = user?.email || '';
   const initials = getInitials(user);
 
@@ -341,7 +341,7 @@ const AdminHeaderActions = () => {
                               {notification.title}
                             </span>
                             {!notification.isRead && (
-                              <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-label="unread" />
+                              <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-label={t('admin.notifications.unreadBadge', { defaultValue: 'Unread' })} />
                             )}
                           </span>
                           <span className="mt-0.5 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">

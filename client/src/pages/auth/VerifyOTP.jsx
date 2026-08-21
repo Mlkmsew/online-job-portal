@@ -42,7 +42,7 @@ const VerifyOTP = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-md card">
         <div className="text-center mb-6">
           <FiCheckCircle className="mx-auto h-12 w-12 text-primary-500" />
@@ -53,13 +53,13 @@ const VerifyOTP = () => {
           <div>
             <label className="block text-sm font-medium mb-2">{t('auth.email')}</label>
             <div className="relative">
-              <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="email"
                 {...register('email', { required: t('auth.emailRequired') })}
                 defaultValue={savedEmail}
                 className="input pl-10"
-                placeholder="you@example.com"
+                placeholder={t('auth.emailPlaceholder')}
               />
             </div>
             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
@@ -68,7 +68,7 @@ const VerifyOTP = () => {
           <div>
             <label className="block text-sm font-medium mb-2">{t('auth.verifyEmail')}</label>
             <div className="relative">
-              <FiKey className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <FiKey className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 {...register('code', { required: t('common.error') })}

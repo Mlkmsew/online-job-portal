@@ -61,11 +61,15 @@
     "passwordRequired": "Qasaah kalimah faxximta"
   },
   "home": {
-    "heroTitle": "Online Job Portal Gexsitak Taama Qimbiso",
+    "heroTitle": "Tikseh Tan Taama Gura.\nWokkoh Sago Qol.",
     "heroSubtitle": "Itiyoppiyak Datah Taamah Farkootih Edde Kah Asgalleenih Gila",
-    "searchPlaceholder": "Taamah sumaq, kalimoota...",
+    "heroTagline": "Farkoota luk tongooni, dudde ni gabba, kaah wokkoh sago itta kata.",
+    "searchPlaceholder": "Taamah sumaq, gooniyuwa, hinnay kalimoota",
     "locationPlaceholder": "Daqqa",
     "searchButton": "Taama Gura",
+    "statsActiveJobs": "Arra Qimbiite Taamoota",
+    "statsCompanies": "Shirikoota",
+    "statsDaily": "Kulla Abbooti Cusub Farkoota",
     "popularCategories": "Mece Taamah Carkoota",
     "latestJobs": "Cusub Taamah Farkoota",
     "featuredCompanies": "Mece Shirikoota",

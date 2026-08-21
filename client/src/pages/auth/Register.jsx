@@ -95,7 +95,7 @@ const Register = () => {
                     setValue('firstName', filtered, { shouldValidate: true });
                   }}
                   className="input"
-                  placeholder="Abebe"
+                  placeholder={t('auth.firstNamePlaceholder')}
                 />
                 {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>}
               </div>
@@ -118,7 +118,7 @@ const Register = () => {
                     setValue('lastName', filtered, { shouldValidate: true });
                   }}
                   className="input"
-                  placeholder="Bekele"
+                  placeholder={t('auth.lastNamePlaceholder')}
                 />
                 {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>}
               </div>
@@ -128,12 +128,12 @@ const Register = () => {
             <div>
               <label className="block text-sm font-medium mb-2">{t('auth.email')}</label>
               <div className="relative">
-                <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type="email"
                   {...register('email', { required: t('auth.emailRequired') })}
                   className="input pl-10"
-                  placeholder="you@example.com"
+                  placeholder={t('auth.emailPlaceholder')}
                 />
               </div>
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
@@ -146,14 +146,14 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setCountryOpen((prev) => !prev)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-3 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
                   <span>{selectedCountry.flag}</span>
                   <span>{selectedCountry.code}</span>
-                  <FiChevronDown className="h-4 w-4 text-gray-500" />
+                  <FiChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                 </button>
                 <div className="relative flex-1">
-                  <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                   <input
                     type="tel"
                     value={phoneLocal}
@@ -169,20 +169,20 @@ const Register = () => {
                     }}
                     className="input pl-10"
                     placeholder="912345678"
-                    aria-label="Local phone number"
+                    aria-label={t('auth.localPhoneNumber')}
                   />
                 </div>
               </div>
               {countryOpen && (
-                <div className="absolute z-20 mt-2 w-full max-w-md rounded-xl border border-gray-200 bg-white p-3 shadow-xl">
-                  <div className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                    <FiSearch className="text-gray-400" />
+                <div className="absolute z-20 mt-2 w-full max-w-md rounded-xl border border-gray-200 bg-white p-3 shadow-xl dark:border-gray-700 dark:bg-gray-900">
+                  <div className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800">
+                    <FiSearch className="text-gray-400 dark:text-gray-500" />
                     <input
                       type="search"
                       value={countrySearch}
                       onChange={(e) => setCountrySearch(e.target.value)}
-                      placeholder="Search country"
-                      className="w-full bg-transparent text-sm text-gray-700 outline-none"
+                      placeholder={t('auth.searchCountry')}
+                      className="w-full bg-transparent text-sm text-gray-700 outline-none dark:text-gray-300"
                     />
                   </div>
                   <div className="max-h-48 overflow-auto">
@@ -199,13 +199,13 @@ const Register = () => {
                             setSelectedCountry(country);
                             setCountryOpen(false);
                           }}
-                          className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-primary-50"
+                          className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-primary-50 dark:text-gray-300 dark:hover:bg-gray-800"
                         >
                           <span className="flex items-center gap-2">
                             <span className="inline-flex w-6 justify-center">{country.flag}</span>
                             <span>{country.label}</span>
                           </span>
-                          <span className="text-xs text-gray-500">{country.code}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{country.code}</span>
                         </button>
                       ))}
                   </div>
@@ -235,7 +235,7 @@ const Register = () => {
             <div>
               <label className="block text-sm font-medium mb-2">{t('auth.password')}</label>
               <div className="relative">
-                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   {...register('password', {
@@ -248,8 +248,8 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
                 </button>
@@ -261,7 +261,7 @@ const Register = () => {
             <div>
               <label className="block text-sm font-medium mb-2">{t('auth.confirmPassword')}</label>
               <div className="relative">
-                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   {...register('confirmPassword', {
@@ -274,8 +274,8 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showConfirmPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
                 </button>

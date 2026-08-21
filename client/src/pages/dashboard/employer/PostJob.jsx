@@ -9,36 +9,43 @@ import toast from 'react-hot-toast';
 import { REGIONS, REGION_CITIES } from '../../../constants/locations';
 
 const BENEFIT_OPTIONS = [
-  { value: 'Health Insurance', labelKey: 'employer.postJob.benefits.healthInsurance', icon: '🩺' },
-  { value: 'Medical Insurance', labelKey: 'employer.postJob.benefits.medicalInsurance', icon: '💊' },
-  { value: 'Transport Allowance', labelKey: 'employer.postJob.benefits.transportAllowance', icon: '🚍' },
-  { value: 'Lunch / Meal Allowance', labelKey: 'employer.postJob.benefits.lunchMealAllowance', icon: '🍽' },
-  { value: 'Mobile Allowance', labelKey: 'employer.postJob.benefits.mobileAllowance', icon: '📱' },
-  { value: 'Housing Allowance', labelKey: 'employer.postJob.benefits.housingAllowance', icon: '🏠' },
-  { value: 'Remote Work', labelKey: 'employer.postJob.benefits.remoteWork', icon: '🏠' },
-  { value: 'Flexible Working Hours', labelKey: 'employer.postJob.benefits.flexibleWorkingHours', icon: '⏱' },
-  { value: 'Annual Bonus', labelKey: 'employer.postJob.benefits.annualBonus', icon: '💰' },
-  { value: 'Performance Bonus', labelKey: 'employer.postJob.benefits.performanceBonus', icon: '🏆' },
-  { value: 'Paid Leave', labelKey: 'employer.postJob.benefits.paidLeave', icon: '🌴' },
-  { value: 'Pension', labelKey: 'employer.postJob.benefits.pension', icon: '💼' },
-  { value: 'Training & Development', labelKey: 'employer.postJob.benefits.trainingDevelopment', icon: '📚' },
-  { value: 'Career Growth', labelKey: 'employer.postJob.benefits.careerGrowth', icon: '🚀' },
-  { value: 'Gym Membership', labelKey: 'employer.postJob.benefits.gymMembership', icon: '🏋️' },
+  { value: 'Health Insurance', labelKey: 'employer.postJob.benefitsOptions.healthInsurance', icon: '🩺' },
+  { value: 'Medical Insurance', labelKey: 'employer.postJob.benefitsOptions.medicalInsurance', icon: '💊' },
+  { value: 'Transport Allowance', labelKey: 'employer.postJob.benefitsOptions.transportAllowance', icon: '🚍' },
+  { value: 'Lunch / Meal Allowance', labelKey: 'employer.postJob.benefitsOptions.lunchMealAllowance', icon: '🍽' },
+  { value: 'Mobile Allowance', labelKey: 'employer.postJob.benefitsOptions.mobileAllowance', icon: '📱' },
+  { value: 'Housing Allowance', labelKey: 'employer.postJob.benefitsOptions.housingAllowance', icon: '🏠' },
+  { value: 'Remote Work', labelKey: 'employer.postJob.benefitsOptions.remoteWork', icon: '🏠' },
+  { value: 'Flexible Working Hours', labelKey: 'employer.postJob.benefitsOptions.flexibleWorkingHours', icon: '⏱' },
+  { value: 'Annual Bonus', labelKey: 'employer.postJob.benefitsOptions.annualBonus', icon: '💰' },
+  { value: 'Performance Bonus', labelKey: 'employer.postJob.benefitsOptions.performanceBonus', icon: '🏆' },
+  { value: 'Paid Leave', labelKey: 'employer.postJob.benefitsOptions.paidLeave', icon: '🌴' },
+  { value: 'Pension', labelKey: 'employer.postJob.benefitsOptions.pension', icon: '💼' },
+  { value: 'Training & Development', labelKey: 'employer.postJob.benefitsOptions.trainingDevelopment', icon: '📚' },
+  { value: 'Career Growth', labelKey: 'employer.postJob.benefitsOptions.careerGrowth', icon: '🚀' },
+  { value: 'Gym Membership', labelKey: 'employer.postJob.benefitsOptions.gymMembership', icon: '🏋️' },
 ];
 
 const JOB_TYPE_OPTIONS = [
-  { value: 'Full-time', labelKey: 'employer.postJob.jobType.fullTime' },
-  { value: 'Part-time', labelKey: 'employer.postJob.jobType.partTime' },
-  { value: 'Contract', labelKey: 'employer.postJob.jobType.contract' },
-  { value: 'Internship', labelKey: 'employer.postJob.jobType.internship' },
-  { value: 'Freelance', labelKey: 'employer.postJob.jobType.freelance' },
-  { value: 'Temporary', labelKey: 'employer.postJob.jobType.temporary' },
+  { value: 'Full-time', labelKey: 'employer.postJob.jobTypeOptions.fullTime' },
+  { value: 'Part-time', labelKey: 'employer.postJob.jobTypeOptions.partTime' },
+  { value: 'Contract', labelKey: 'employer.postJob.jobTypeOptions.contract' },
+  { value: 'Internship', labelKey: 'employer.postJob.jobTypeOptions.internship' },
+  { value: 'Freelance', labelKey: 'employer.postJob.jobTypeOptions.freelance' },
+  { value: 'Temporary', labelKey: 'employer.postJob.jobTypeOptions.temporary' },
 ];
 
 const WORK_MODE_OPTIONS = [
-  { value: 'On-site', labelKey: 'employer.postJob.workMode.onSite' },
-  { value: 'Remote', labelKey: 'employer.postJob.workMode.remote' },
-  { value: 'Hybrid', labelKey: 'employer.postJob.workMode.hybrid' },
+  { value: 'On-site', labelKey: 'employer.postJob.workModeOptions.onSite' },
+  { value: 'Remote', labelKey: 'employer.postJob.workModeOptions.remote' },
+  { value: 'Hybrid', labelKey: 'employer.postJob.workModeOptions.hybrid' },
+];
+
+const GENDER_PREFERENCE_OPTIONS = [
+  { value: 'any', labelKey: 'employer.postJob.genderOptions.any' },
+  { value: 'male', labelKey: 'employer.postJob.genderOptions.male' },
+  { value: 'female', labelKey: 'employer.postJob.genderOptions.female' },
+  { value: 'other', labelKey: 'employer.postJob.genderOptions.other' },
 ];
 
 const EXPERIENCE_LEVEL_OPTIONS = [
@@ -60,6 +67,18 @@ const EDUCATION_REQUIRED_OPTIONS = [
   { value: 'PhD', labelKey: 'employer.postJob.education.phd' },
 ];
 
+const APPLICATION_FIELD_TYPE_OPTIONS = [
+  { value: 'text', labelKey: 'employer.postJob.fieldTypes.shortText' },
+  { value: 'textarea', labelKey: 'employer.postJob.fieldTypes.paragraph' },
+  { value: 'number', labelKey: 'employer.postJob.fieldTypes.number' },
+  { value: 'email', labelKey: 'employer.postJob.fieldTypes.email' },
+  { value: 'phone', labelKey: 'employer.postJob.fieldTypes.phone' },
+  { value: 'date', labelKey: 'employer.postJob.fieldTypes.date' },
+  { value: 'select', labelKey: 'employer.postJob.fieldTypes.dropdown' },
+  { value: 'checkbox', labelKey: 'employer.postJob.fieldTypes.checkbox' },
+  { value: 'url', labelKey: 'employer.postJob.fieldTypes.url' },
+];
+
 const PostJob = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
@@ -77,6 +96,7 @@ const PostJob = () => {
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     defaultValues: {
       workMode: 'On-site',
+      genderPreference: 'any',
       jobType: 'Full-time',
       experienceLevel: 'Entry Level',
       educationRequired: 'Bachelor',
@@ -172,7 +192,7 @@ const PostJob = () => {
   const nextFieldKey = () => `application_field_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
   const addApplicationField = () => {
-    setApplicationFields((prev) => [...prev, { key: nextFieldKey(), label: '', type: 'text', required: false }]);
+    setApplicationFields((prev) => [...prev, { key: nextFieldKey(), label: '', type: 'text', optionsText: '', required: false }]);
   };
 
   const updateApplicationField = (key, patch) => {
@@ -182,6 +202,12 @@ const PostJob = () => {
   const removeApplicationField = (key) => {
     setApplicationFields((prev) => prev.filter((field) => field.key !== key));
   };
+
+  const parseFieldOptions = (optionsText) =>
+    String(optionsText || '')
+      .split(',')
+      .map((option) => option.trim())
+      .filter(Boolean);
 
   // Load company details and categories
   useEffect(() => {
@@ -230,6 +256,7 @@ const PostJob = () => {
         setValue('numberOfPositions', jobData.numberOfPositions || 1);
         setValue('jobType', jobData.jobType || 'Full-time');
         setValue('workMode', jobData.workMode || 'On-site');
+        setValue('genderPreference', jobData.genderPreference || 'any');
         setValue('experienceLevel', jobData.experienceLevel || 'Entry Level');
         setValue('educationRequired', jobData.educationRequired || 'Bachelor');
         setValue('salary.min', jobData.salary?.min || '');
@@ -271,6 +298,7 @@ const PostJob = () => {
                 key: field._id || nextFieldKey(),
                 label: field.label || '',
                 type: field.type || 'text',
+                optionsText: Array.isArray(field.options) ? field.options.join(', ') : '',
                 required: !!field.required,
               }))
             : []
@@ -299,17 +327,31 @@ const PostJob = () => {
         benefitsPayload.push(data.otherBenefit.trim());
       }
 
+      const normalizedApplicationFields = applicationFields
+        .map((field) => {
+          const options = parseFieldOptions(field.optionsText);
+          return {
+            label: field.label,
+            type: field.type,
+            ...(field.type === 'select' ? { options } : {}),
+            required: field.required,
+          };
+        })
+        .filter((field) => field.label && String(field.label).trim());
+
+      const invalidDropdown = normalizedApplicationFields.find(
+        (field) => field.type === 'select' && (!Array.isArray(field.options) || field.options.length === 0)
+      );
+      if (invalidDropdown) {
+        toast.error(t('employer.postJob.validation.dropdownOptionsRequired', { field: invalidDropdown.label }));
+        return;
+      }
+
       const payload = {
         ...data,
         company: company._id,
         benefits: [...new Set(benefitsPayload)],
-        applicationFields: applicationFields
-          .map((field) => ({
-            label: field.label,
-            type: field.type,
-            required: field.required,
-          }))
-          .filter((field) => field.label && String(field.label).trim()),
+        applicationFields: normalizedApplicationFields,
       };
 
       if (isEditMode) {
@@ -413,6 +455,15 @@ const PostJob = () => {
               <label className="block text-sm font-medium mb-1">{t('employer.postJob.workMode')}</label>
               <select {...register('workMode')} className="select">
                 {WORK_MODE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">{t('employer.postJob.gender')}</label>
+              <select {...register('genderPreference')} className="select">
+                {GENDER_PREFERENCE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
                 ))}
               </select>
@@ -683,10 +734,9 @@ const PostJob = () => {
                       onChange={(e) => updateApplicationField(field.key, { type: e.target.value })}
                       className="select"
                     >
-                      <option value="text">{t('employer.postJob.fieldTypes.shortText') || 'Short text'}</option>
-                      <option value="textarea">{t('employer.postJob.fieldTypes.paragraph') || 'Paragraph'}</option>
-                      <option value="url">{t('employer.postJob.fieldTypes.url') || 'URL'}</option>
-                      <option value="number">{t('employer.postJob.fieldTypes.number') || 'Number'}</option>
+                      {APPLICATION_FIELD_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
+                      ))}
                     </select>
                   </div>
                   <label className="flex items-center gap-2 pb-2.5">
@@ -708,6 +758,19 @@ const PostJob = () => {
                       {t('common.remove') || 'Remove'}
                     </button>
                   </div>
+                  {field.type === 'select' && (
+                    <div className="md:col-span-4">
+                      <label className="mb-1 block text-sm font-medium text-gray-700">{t('employer.postJob.fieldOptions') || 'Options'}</label>
+                      <input
+                        type="text"
+                        value={field.optionsText}
+                        onChange={(e) => updateApplicationField(field.key, { optionsText: e.target.value })}
+                        className="input"
+                        placeholder={t('employer.postJob.fieldOptionsPlaceholder') || 'Yes, No, Maybe'}
+                      />
+                      <p className="mt-1 text-xs text-gray-500">{t('employer.postJob.fieldOptionsHint') || 'Separate options with commas.'}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

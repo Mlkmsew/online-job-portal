@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FiLock, FiArrowLeft } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const ChangePassword = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -12,22 +14,22 @@ const ChangePassword = () => {
 
   const handleSubmit = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error('Please fill in all fields.');
+      toast.error(t('settings.fillAllFields', { defaultValue: 'Please fill in all fields.' }));
       return;
     }
     if (newPassword.length < 8) {
-      toast.error('New password must be at least 8 characters.');
+      toast.error(t('settings.weakPassword8', { defaultValue: 'New password must be at least 8 characters.' }));
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match.');
+      toast.error(t('auth.passwordMismatch', { defaultValue: 'Passwords do not match.' }));
       return;
     }
 
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      toast.success('Password changed successfully.');
+      toast.success(t('settings.passwordChangedSuccess', { defaultValue: 'Password changed successfully.' }));
       navigate('/dashboard/settings');
     }, 900);
   };
@@ -40,7 +42,7 @@ const ChangePassword = () => {
           onClick={() => navigate('/dashboard/settings')}
           className="mb-4 inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
         >
-          <FiArrowLeft className="w-4 h-4" /> Back to Settings
+          <FiArrowLeft className="w-4 h-4" /> {t('settings.backToSettings', { defaultValue: 'Back to Settings' })}
         </button>
 
         <div className="flex items-center gap-3 mb-6">
@@ -48,14 +50,14 @@ const ChangePassword = () => {
             <FiLock className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Change Password</h2>
-            <p className="text-sm text-gray-500">Enter your current password and choose a new secure password.</p>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">{t('settings.changePasswordTitle', { defaultValue: 'Change Password' })}</h2>
+            <p className="text-sm text-gray-500">{t('settings.changePasswordSubtitle', { defaultValue: 'Enter your current password and choose a new secure password.' })}</p>
           </div>
         </div>
 
         <div className="space-y-5">
           <div>
-            <label htmlFor="currentPassword" className="block text-sm text-gray-600">Current Password</label>
+            <label htmlFor="currentPassword" className="block text-sm text-gray-600">{t('admin.settings.security.currentPassword', { defaultValue: 'Current Password' })}</label>
             <input
               id="currentPassword"
               type="password"
@@ -66,7 +68,7 @@ const ChangePassword = () => {
           </div>
 
           <div>
-            <label htmlFor="newPassword" className="block text-sm text-gray-600">New Password</label>
+            <label htmlFor="newPassword" className="block text-sm text-gray-600">{t('admin.settings.security.newPassword', { defaultValue: 'New Password' })}</label>
             <input
               id="newPassword"
               type="password"
@@ -77,7 +79,7 @@ const ChangePassword = () => {
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm text-gray-600">Confirm Password</label>
+            <label htmlFor="confirmPassword" className="block text-sm text-gray-600">{t('auth.confirmPassword', { defaultValue: 'Confirm Password' })}</label>
             <input
               id="confirmPassword"
               type="password"
@@ -95,7 +97,7 @@ const ChangePassword = () => {
             disabled={loading}
             className="inline-flex items-center justify-center rounded-md bg-[#1769E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0D5BC4] disabled:opacity-60"
           >
-            {loading ? 'Updating...' : 'Update Password'}
+            {loading ? t('settings.updatingPassword', { defaultValue: 'Updating...' }) : t('admin.settings.security.updatePasswordBtn', { defaultValue: 'Update Password' })}
           </button>
         </div>
       </div>

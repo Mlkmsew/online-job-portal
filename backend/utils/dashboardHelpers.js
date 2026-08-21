@@ -1,3 +1,6 @@
+const User = require('../models/user');
+const Resume = require('../models/Resume');
+
 const hasProfileSkills = (user) => {
   const directSkills = Array.isArray(user?.skills) ? user.skills : [];
   const skillNames = Array.isArray(user?.skillNames) ? user.skillNames : [];
@@ -96,4 +99,15 @@ const enrichUserFromResume = (user, resume) => {
   return merged;
 };
 
-module.exports = { canRecommendJobs, hasProfileSkills, hasProfileCVData, enrichUserFromResume };
+// Load the exact user profile object the matching engine scores against,
+// identical to the one used for job seeker recommendations (raw profile plus
+// the latest Resume Builder CV). Sharing this single source guarantees the
+// employer-side applicant match score is the same percentage the candidate
+// sees for the same job and CV.
+const buildJobSeekerMatchingContext = async (userId) => {
+  const user = await User.findById(userId).select('-password');
+  const resumeDoc = await Resume.findOne({ user: userId }).sort({ updatedAt: -1 }).lean();
+  return { user, resumeDoc, profileForMatching: enrichUserFromResume(user, resumeDoc) };
+};
+
+module.exports = { canRecommendJobs, hasProfileSkills, hasProfileCVData, enrichUserFromResume, buildJobSeekerMatchingContext };

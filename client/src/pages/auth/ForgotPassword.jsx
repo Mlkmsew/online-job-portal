@@ -31,7 +31,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <FiBriefcase className="w-10 h-10 text-primary-500 mx-auto mb-2" />
@@ -43,7 +43,7 @@ const ForgotPassword = () => {
           
           {!sent ? (
             <>
-              <p className="text-center text-gray-600 mb-6">
+              <p className="text-center text-gray-600 mb-6 dark:text-gray-400">
                 {t('auth.verifyEmail')}
               </p>
 
@@ -51,12 +51,12 @@ const ForgotPassword = () => {
                 <div>
                   <label className="block text-sm font-medium mb-2">{t('auth.email')}</label>
                   <div className="relative">
-                    <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                     <input
                       type="email"
                       {...register('email', { required: t('auth.emailRequired') })}
                       className="input pl-10"
-                      placeholder="you@example.com"
+                      placeholder={t('auth.emailPlaceholder')}
                     />
                   </div>
                   {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
@@ -69,7 +69,7 @@ const ForgotPassword = () => {
             </>
           ) : (
             <div className="text-center">
-              <p className="text-green-600 mb-4">✅ {t('auth.verifyEmail')}</p>
+              <p className="text-green-600 mb-4 dark:text-emerald-400">✅ {t('auth.verifyEmail')}</p>
             </div>
           )}
 

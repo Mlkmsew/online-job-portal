@@ -61,11 +61,15 @@
     "passwordRequired": "ቃል መሕለፊ የድሊ"
   },
   "home": {
-    "heroTitle": "ናይ ኦንላይን ስራሕ ፖርታል ስርዓት ኣመሓዳሪ",
+    "heroTitle": "ትክክለኛ ስራሕ ርኸቡ።\nመጻኢ ህይወትኩም ህነጹ።",
     "heroSubtitle": "ንመንእሰያት ኢትዮጵያ ምስ ዕድላት ስራሕ ምትእስሳር",
-    "searchPlaceholder": "ስም ስራሕ፣ ቁልፊ ቃላት...",
+    "heroTagline": "ምስ ዕድላት ተራኸቡ፣ ክእለትኩም ግለጹ፣ ኣብ ሞያኹም ቀጻሊ ስጉምቲ ውሰዱ።",
+    "searchPlaceholder": "ስም ስራሕ፣ ክእለታት፣ ወይም ቁልፊ ቃላት",
     "locationPlaceholder": "ቦታ",
     "searchButton": "ስራሕቲ ድለ",
+    "statsActiveJobs": "ንጡፋት ስራሕቲ",
+    "statsCompanies": "ትካላት",
+    "statsDaily": "መዓልታዊ ሓድሽ ዕድላት",
     "popularCategories": "ህቡባት ምድባት ስራሕቲ",
     "latestJobs": "ናይ ቀረባ እዋን ስራሕቲ",
     "featuredCompanies": "ዝተመረጹ ትካላት",

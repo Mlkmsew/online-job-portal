@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 
 const AnimatedSearch = () => {
+  const { t } = useTranslation();
   const [q, setQ] = useState('');
   const [results, setResults] = useState([]);
 
@@ -18,8 +20,8 @@ const AnimatedSearch = () => {
   return (
     <div className="search-hero card p-4">
       <form onSubmit={handleSearch} className="flex gap-2">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search jobs, skills or companies" className="input flex-1" />
-        <button className="btn btn-primary">Search</button>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('home.animatedSearchPlaceholder', { defaultValue: 'Search jobs, skills or companies' })} className="input flex-1" />
+        <button className="btn btn-primary">{t('common.search', { defaultValue: 'Search' })}</button>
       </form>
       <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
         {results.map(r => (

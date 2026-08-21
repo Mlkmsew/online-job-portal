@@ -71,7 +71,7 @@ const CareerGuide = () => {
         {guides.map((guide, idx) => {
           const Icon = guide.icon;
           return (
-            <div key={idx} className="card p-8 border border-gray-100 hover:border-teal-200 transition-all duration-300 flex flex-col justify-between hover:shadow-md animate-slide-up">
+            <div key={idx} className="card p-8 border border-gray-100 dark:border-gray-800 hover:border-teal-200 transition-all duration-300 flex flex-col justify-between hover:shadow-md animate-slide-up">
               <div>
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${guide.color}`}>
                   <Icon className="w-6 h-6" />
@@ -79,7 +79,7 @@ const CareerGuide = () => {
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">{guide.title}</h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-6">{guide.description}</p>
                 
-                <h4 className="font-bold text-xs uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-1.5">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3 flex items-center gap-1.5">
                   <FiTarget className="text-teal-500" /> {t('careerGuide.insights')}
                 </h4>
                 <ul className="space-y-2">

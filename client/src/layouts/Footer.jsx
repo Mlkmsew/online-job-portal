@@ -142,7 +142,7 @@ const Footer = () => {
         {/* ===== COPYRIGHT ===== */}
         <div className="mt-14 border-t border-[#274060] pt-8 text-center dark:border-gray-800">
           <p className="text-sm text-[#94A3B8] dark:text-gray-400">
-            © 2026 OnlineJob Portal. All Rights Reserved.
+            {t('footer.copyrightLine', { defaultValue: '© 2026 OnlineJob Portal. All Rights Reserved.' })}
           </p>
         </div>
       </div>

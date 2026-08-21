@@ -21,7 +21,7 @@ const normalizeStringArray = (value) => {
   return value.flatMap(normalizeStringArray);
 };
 
-const APPLICATION_FIELD_TYPES = ['text', 'textarea', 'url', 'number'];
+const APPLICATION_FIELD_TYPES = ['text', 'textarea', 'url', 'number', 'email', 'phone', 'date', 'select', 'checkbox'];
 
 // Normalize employer-configured application fields. Preserves the `required`
 // flag exactly as configured by the employer and drops empty/invalid entries.
@@ -32,9 +32,23 @@ const normalizeApplicationFields = (value) => {
       if (!field || typeof field !== 'object') return null;
       const label = String(field.label || '').trim();
       if (!label) return null;
+      const type = APPLICATION_FIELD_TYPES.includes(field.type) ? field.type : 'text';
+      // Dropdown fields carry their selectable options; every other type ignores them.
+      const options =
+        type === 'select' && Array.isArray(field.options)
+          ? Array.from(
+              new Set(
+                field.options
+                  .map((option) => String(option || '').trim())
+                  .filter(Boolean)
+              )
+            ).slice(0, 50)
+          : [];
+      if (type === 'select' && options.length === 0) return null;
       return {
         label,
-        type: APPLICATION_FIELD_TYPES.includes(field.type) ? field.type : 'text',
+        type,
+        ...(type === 'select' ? { options } : {}),
         required: field.required === true || field.required === 'true',
       };
     })
@@ -230,6 +244,10 @@ exports.createJob = asyncHandler(async (req, res, next) => {
   if (req.body.benefits !== undefined) {
     req.body.benefits = normalizeStringArray(req.body.benefits);
   }
+  // Normalize gender preference: empty value falls back to the schema default
+  if (req.body.genderPreference !== undefined) {
+    req.body.genderPreference = String(req.body.genderPreference || '').trim().toLowerCase() || undefined;
+  }
   // Normalize skills payload if provided
   if (req.body.skills) {
     const skills = {
@@ -303,6 +321,10 @@ exports.updateJob = asyncHandler(async (req, res, next) => {
 
   if (req.body.benefits !== undefined) {
     req.body.benefits = normalizeStringArray(req.body.benefits);
+  }
+  // Normalize gender preference: empty value resets to the schema default
+  if (req.body.genderPreference !== undefined) {
+    req.body.genderPreference = String(req.body.genderPreference || '').trim().toLowerCase() || undefined;
   }
   // Normalize skills payload if provided
   if (req.body.skills) {
@@ -441,9 +463,8 @@ exports.getJobStats = asyncHandler(async (req, res) => {
 exports.getRecommendations = asyncHandler(async (req, res, next) => {
   const User = require('../models/user');
   const Application = require('../models/Application');
-  const Resume = require('../models/Resume');
   const { calculateJobMatch } = require('../utils/matching');
-  const { canRecommendJobs, enrichUserFromResume } = require('../utils/dashboardHelpers');
+  const { canRecommendJobs, buildJobSeekerMatchingContext } = require('../utils/dashboardHelpers');
 
   const userId = req.user.id || req.user._id;
   const user = await User.findById(userId).select('-password');
@@ -451,7 +472,7 @@ exports.getRecommendations = asyncHandler(async (req, res, next) => {
 
   // Recommendations require an uploaded CV, a Resume Builder CV, or parsed CV
   // data on the profile.
-  const resumeDoc = await Resume.findOne({ user: userId }).sort({ updatedAt: -1 }).lean();
+  const { resumeDoc, profileForMatching } = await buildJobSeekerMatchingContext(userId);
   const hasCV = canRecommendJobs(user, resumeDoc);
 
   if (!hasCV) {
@@ -464,8 +485,6 @@ exports.getRecommendations = asyncHandler(async (req, res, next) => {
       message: 'Upload your CV to get job recommendations.',
     });
   }
-
-  const profileForMatching = enrichUserFromResume(user, resumeDoc);
 
   // Get job IDs user has already applied to
   const appliedJobIds = new Set(

@@ -9,13 +9,13 @@ import { getJobAlertNotifications, markJobAlertRead, deleteJobAlertNotification 
 import api from '../../../services/api';
 
 // ── Relative time helper ─────────────────────────────────────────────────────
-const relativeTime = (dateStr) => {
+const relativeTime = (dateStr, t) => {
   if (!dateStr) return '';
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-  if (diff < 60)         return 'Just now';
-  if (diff < 3600)       return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400)      return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 86400 * 7)  return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 60)         return t('home.justNow', { defaultValue: 'Just now' });
+  if (diff < 3600)       return t('home.minutesAgo', { count: Math.floor(diff / 60), defaultValue: `${Math.floor(diff / 60)}m ago` });
+  if (diff < 86400)      return t('home.hoursAgo', { count: Math.floor(diff / 3600), defaultValue: `${Math.floor(diff / 3600)}h ago` });
+  if (diff < 86400 * 7)  return t('home.daysAgo', { count: Math.floor(diff / 86400), defaultValue: `${Math.floor(diff / 86400)}d ago` });
   return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
@@ -82,7 +82,7 @@ const AlertCard = ({ notification, onView, onDelete, deleting }) => {
 
             <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
               <FiClock className="h-3.5 w-3.5" />
-              {relativeTime(createdAt)}
+              {relativeTime(createdAt, t)}
             </div>
           </div>
         </div>

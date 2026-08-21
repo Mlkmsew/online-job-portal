@@ -40,16 +40,16 @@ const SavedJobs = () => {
 
   // Helper to format days remaining
   const getDeadlineText = (deadlineDate) => {
-    if (!deadlineDate) return t('jobs.any');
+    if (!deadlineDate) return t('jobs.any', { defaultValue: '' });
     const now = new Date();
     const deadline = new Date(deadlineDate);
     const diffTime = deadline - now;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return t('jobs.expired');
-    if (diffDays === 0) return t('jobs.closesToday') || 'Closes today';
-    if (diffDays === 1) return t('jobs.closesTomorrow') || 'Closes tomorrow';
-    return t('jobs.closesInDays', { count: diffDays }) || `Closes in ${diffDays} days`;
+    if (diffDays < 0) return t('jobs.expired', { defaultValue: 'Expired' });
+    if (diffDays === 0) return t('jobs.closesToday', { defaultValue: 'Closes today' });
+    if (diffDays === 1) return t('jobs.closesTomorrow', { defaultValue: 'Closes tomorrow' });
+    return t('jobs.closesInDays', { count: diffDays, defaultValue: `Closes in ${diffDays} days` });
   };
 
   const handleQuickApply = async (jobId) => {
@@ -65,7 +65,7 @@ const SavedJobs = () => {
       await api.post('/applications', {
         job: jobId,
         useProfileCV: true,
-        coverLetter: 'Quick Applied via Saved Jobs.',
+        coverLetter: t('savedJobs.quickApplyCover', { defaultValue: 'Quick Applied via Saved Jobs.' }),
       });
       toast.success(t('savedJobs.appliedSuccess') || 'Quick Applied successfully!', { id: loadToast });
     } catch (error) {
@@ -144,7 +144,7 @@ const SavedJobs = () => {
                     </span>
                     <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-teal-50 dark:bg-teal-950/20 text-teal-600 dark:text-teal-400 border border-teal-200/30 flex items-center gap-1">
                       <FiZap className="w-3 h-3" />
-                      {t('savedJobs.aiMatch', { score: mockAIScore }) || `AI Match: ${mockAIScore}%`}
+                      {t('savedJobs.aiMatch', { score: mockAIScore, defaultValue: `AI Match: ${mockAIScore}%` })}
                     </span>
                   </div>
                 </div>

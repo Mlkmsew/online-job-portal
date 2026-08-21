@@ -9,11 +9,9 @@
     <script>
       (function() {
         try {
-          const stored = localStorage.getItem('darkMode');
-          // Only apply a stored dark-mode preference for authenticated users.
-          const token = localStorage.getItem('token');
-          const isDark = token && stored !== null ? JSON.parse(stored) : false;
-          if (isDark) document.documentElement.classList.add('dark');
+const stored = localStorage.getItem('darkMode');
+        const isDark = stored !== null ? JSON.parse(stored) : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDark) document.documentElement.classList.add('dark');
         } catch (e) {
           // ignore
         }

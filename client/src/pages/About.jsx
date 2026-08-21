@@ -39,25 +39,25 @@ const About = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F8F7] pb-16 lg:pb-24">
+    <div className="min-h-screen bg-[#F4F8F7] dark:bg-[#0B1220] pb-16 lg:pb-24">
       <div className="container-custom pt-10 lg:pt-14">
         {/* ===== PAGE TITLE ===== */}
-        <h1 className="text-2xl font-bold tracking-tight text-[#14213D] sm:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-[#14213D] dark:text-gray-100 sm:text-3xl">
           {t('about.title', { defaultValue: 'About OnlineJob Portal' })}
         </h1>
 
         {/* ===== HERO CARD ===== */}
-        <div className="mt-8 overflow-hidden rounded-3xl bg-white shadow-xl">
+        <div className="mt-8 overflow-hidden rounded-3xl bg-white dark:bg-gray-900 shadow-xl">
           <div className="grid lg:grid-cols-2">
             {/* LEFT — About content */}
             <div className="flex flex-col justify-center p-8 lg:p-12">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#1769E0]">
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#1769E0] dark:text-blue-400">
                 {t('about.eyebrow', { defaultValue: 'About' })}
               </p>
-              <h2 className="mt-3 text-3xl font-extrabold leading-tight text-[#14213D] sm:text-4xl">
+              <h2 className="mt-3 text-3xl font-extrabold leading-tight text-[#14213D] dark:text-gray-100 sm:text-4xl">
                 OnlineJob <span className="text-[#1769E0]">Portal</span>
               </h2>
-              <p className="mt-6 max-w-xl text-base leading-relaxed text-[#334155]">
+              <p className="mt-6 max-w-xl text-base leading-relaxed text-[#334155] dark:text-gray-300">
                 {t('about.heroDescription', {
                   defaultValue:
                     'OnlineJob Portal is a modern employment marketplace built to empower job seekers and employers with smarter, faster hiring tools. Our platform brings together local talent, curated job opportunities, and career resources in one easy-to-use experience.',
@@ -66,7 +66,7 @@ const About = () => {
             </div>
 
             {/* RIGHT — Professional image */}
-            <div className="relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#EAF2FE] via-[#E7F6EF] to-[#DFF0EB]">
+            <div className="relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#EAF2FE] via-[#E7F6EF] to-[#DFF0EB] dark:from-[#0B1220] dark:via-[#0D1624] dark:to-[#0D1624]">
               <img
                 src="/images/hero-people.png"
                 onError={(e) => {
@@ -81,16 +81,16 @@ const About = () => {
           </div>
 
           {/* ===== STATISTICS ===== */}
-          <div className="border-t border-slate-100">
-            <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
+          <div className="border-t border-slate-100 dark:border-gray-800">
+            <div className="grid grid-cols-1 divide-y divide-slate-100 dark:divide-gray-800 sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
               {STAT_ITEMS.map((stat) => (
                 <div key={stat.label} className="flex items-center justify-center gap-4 px-6 py-7">
-                  <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-[#EAF2FE] text-[#1769E0]">
+                  <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-[#EAF2FE] dark:bg-blue-900/25 text-[#1769E0] dark:text-blue-400">
                     <stat.icon className="h-5 w-5" aria-hidden="true" />
                   </span>
                   <div>
-                    <p className="text-2xl font-extrabold text-[#14213D] sm:text-3xl">{statValue(stat.key)}</p>
-                    <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                    <p className="text-2xl font-extrabold text-[#14213D] dark:text-gray-100 sm:text-3xl">{statValue(stat.key)}</p>
+                    <p className="text-sm font-medium text-slate-500 dark:text-gray-400">{stat.label}</p>
                   </div>
                 </div>
               ))}
@@ -101,13 +101,13 @@ const About = () => {
         {/* ===== MISSION & VISION ===== */}
         <div className="mt-10 grid gap-8 lg:grid-cols-2">
           {/* OUR MISSION */}
-          <div className="relative overflow-hidden rounded-3xl bg-white p-8 text-center shadow-xl lg:p-10">
+          <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-gray-900 p-8 text-center shadow-xl lg:p-10">
             <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#1769E0] text-white shadow-lg">
               <FiTarget className="h-7 w-7" aria-hidden="true" />
             </span>
-            <h2 className="mt-5 text-2xl font-extrabold text-[#14213D]">{t('about.missionTitle', { defaultValue: 'Our Mission' })}</h2>
+            <h2 className="mt-5 text-2xl font-extrabold text-[#14213D] dark:text-gray-100">{t('about.missionTitle', { defaultValue: 'Our Mission' })}</h2>
             <span className="mx-auto mt-3 block h-1 w-12 rounded-full bg-[#1769E0]" aria-hidden="true" />
-            <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-[#334155]">
+            <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-[#334155] dark:text-gray-300">
               {t('about.missionText', {
                 defaultValue:
                   'To empower every professional with access to relevant jobs, clear career guidance, and a seamless application journey. We strive to create a trusted hiring ecosystem that helps talent grow and employers hire with confidence.',
@@ -124,13 +124,13 @@ const About = () => {
           </div>
 
           {/* OUR VISION */}
-          <div className="relative overflow-hidden rounded-3xl bg-white p-8 text-center shadow-xl lg:p-10">
-            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#EAF2FE] text-[#1769E0] shadow-lg">
+          <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-gray-900 p-8 text-center shadow-xl lg:p-10">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#EAF2FE] dark:bg-blue-900/25 text-[#1769E0] dark:text-blue-400 shadow-lg">
               <FiEye className="h-7 w-7" aria-hidden="true" />
             </span>
-            <h2 className="mt-5 text-2xl font-extrabold text-[#14213D]">{t('about.visionTitle', { defaultValue: 'Our Vision' })}</h2>
+            <h2 className="mt-5 text-2xl font-extrabold text-[#14213D] dark:text-gray-100">{t('about.visionTitle', { defaultValue: 'Our Vision' })}</h2>
             <span className="mx-auto mt-3 block h-1 w-12 rounded-full bg-[#1769E0]" aria-hidden="true" />
-            <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-[#334155]">
+            <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-[#334155] dark:text-gray-300">
               {t('about.visionText', {
                 defaultValue:
                   'A future where opportunity is easy to find and every candidate can connect with work they love. We want OnlineJob Portal to set the standard for transparent, inclusive, and efficient hiring nationwide.',

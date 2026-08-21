@@ -114,7 +114,7 @@ const Settings = () => {
     // Validate image format
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!validTypes.includes(file.type.toLowerCase())) {
-      toast.error('Only JPG, JPEG, and PNG images are allowed.');
+      toast.error(t('settings.invalidImageType', { defaultValue: 'Only JPG, JPEG, and PNG images are allowed.' }));
       return;
     }
 
@@ -139,7 +139,7 @@ const Settings = () => {
 
   /* ── 3. Photo Delete Handler ── */
   const handleDeletePhoto = async () => {
-    if (!window.confirm('Are you sure you want to remove your profile photo?')) return;
+    if (!window.confirm(t('settings.confirmRemovePhoto', { defaultValue: 'Are you sure you want to remove your profile photo?' }))) return;
     setAvatarUploading(true);
     try {
       await dispatch(deleteAvatar()).unwrap();
@@ -237,7 +237,7 @@ const Settings = () => {
               <div className="flex-shrink-0 flex flex-col items-center gap-2">
                 <div className="relative w-28 h-28 rounded-full bg-slate-100 dark:bg-gray-900 overflow-hidden flex items-center justify-center border-2 border-blue-500/30 shadow-inner">
                   {user?.avatar ? (
-                    <img src={user.avatar} alt="Profile Avatar" className="w-full h-full object-cover" />
+                    <img src={user.avatar} alt={t('settings.profileAvatarAlt', { defaultValue: 'Profile Avatar' })} className="w-full h-full object-cover" />
                   ) : (
                     <FiUser className="w-12 h-12 text-slate-400" />
                   )}
@@ -284,20 +284,20 @@ const Settings = () => {
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">{t('auth.email') || 'Email Address'}</label>
                   <div className="w-full rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-700 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300 select-none">
-                    {user?.email || 'Not available'}
+                    {user?.email || t('settings.notAvailable', { defaultValue: 'Not available' })}
                   </div>
                 </div>
 
                 <div>
                   <label htmlFor="fullname" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1">
-                    {t('auth.name') || 'Full Name'}
+                    {t('auth.name', { defaultValue: 'Full Name' })}
                   </label>
                   <input
                     id="fullname"
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Enter full name"
+                    placeholder={t('settings.fullNamePlaceholder', { defaultValue: 'Enter full name' })}
                     className="block w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition dark:bg-gray-900 dark:border-gray-700 dark:text-white"
                   />
                 </div>
@@ -311,7 +311,7 @@ const Settings = () => {
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+251912345678"
+                    placeholder={t('settings.phonePlaceholder', { defaultValue: '+251912345678' })}
                     className="block w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition dark:bg-gray-900 dark:border-gray-700 dark:text-white"
                     aria-invalid={!phoneIsValid(phone)}
                   />
@@ -440,7 +440,7 @@ const Settings = () => {
                 <label className="block font-bold text-slate-700 dark:text-gray-300 mb-1">{t('auth.password') || 'Current Password'}</label>
                 <input
                   type="password"
-                  placeholder="Enter current password"
+                  placeholder={t('settings.currentPasswordPlaceholder', { defaultValue: 'Enter current password' })}
                   value={passwordForm.currentPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 dark:border-gray-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -452,7 +452,7 @@ const Settings = () => {
                 <label className="block font-bold text-slate-700 dark:text-gray-300 mb-1">{t('auth.newPassword') || 'New Password (min 6 characters)'}</label>
                 <input
                   type="password"
-                  placeholder="Enter new password"
+                  placeholder={t('settings.newPasswordPlaceholder', { defaultValue: 'Enter new password' })}
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 dark:border-gray-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -464,7 +464,7 @@ const Settings = () => {
                 <label className="block font-bold text-slate-700 dark:text-gray-300 mb-1">{t('auth.confirmPassword') || 'Confirm New Password'}</label>
                 <input
                   type="password"
-                  placeholder="Confirm new password"
+                  placeholder={t('settings.confirmPasswordPlaceholder', { defaultValue: 'Confirm new password' })}
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 dark:border-gray-700 dark:bg-gray-900 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -487,7 +487,7 @@ const Settings = () => {
                   className="inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded-xl bg-[#1769E0] text-xs font-bold text-white hover:bg-[#0D5BC4] disabled:opacity-60 transition shadow-sm"
                 >
                   {passwordSaving && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                  {passwordSaving ? 'Updating...' : 'Update Password'}
+                  {passwordSaving ? t('settings.updatingPassword', { defaultValue: 'Updating...' }) : t('settings.updatePasswordBtn', { defaultValue: 'Update Password' })}
                 </button>
               </div>
             </form>

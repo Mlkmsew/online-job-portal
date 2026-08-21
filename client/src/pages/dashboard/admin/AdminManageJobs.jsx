@@ -416,6 +416,36 @@ const STAT_CARDS = [
   { key: 'Rejected', sub: 'admin.manageJobs.rejectedSub', icon: FiXCircle, value: 'text-rose-600', tint: 'bg-rose-50 text-rose-600', accent: 'bg-rose-500' },
 ];
 
+// Per-filter empty-state copy (title/subtitle/supporting text) shown below the cards.
+const EMPTY_STATES = {
+  All: {
+    titleKey: 'admin.manageJobs.noPostedTitle',
+    title: 'No posted jobs here',
+    subtitleKey: 'admin.manageJobs.noPostedSubtitle',
+    subtitle: 'No jobs have been posted yet.',
+  },
+  Pending: {
+    titleKey: 'admin.manageJobs.noPendingTitle',
+    title: 'No pending jobs to review',
+    subtitleKey: 'admin.manageJobs.noPendingSubtitle',
+    subtitle: 'All caught up — no jobs awaiting approval right now.',
+    supportKey: 'admin.manageJobs.newJobsAppear',
+    support: 'New job postings will appear here for review.',
+  },
+  Published: {
+    titleKey: 'admin.manageJobs.noPublishedTitle',
+    title: 'No published jobs to review',
+    subtitleKey: 'admin.manageJobs.noPublishedSubtitle',
+    subtitle: 'There are no published job postings right now.',
+  },
+  Rejected: {
+    titleKey: 'admin.manageJobs.noRejectedTitle',
+    title: 'No rejected jobs to review',
+    subtitleKey: 'admin.manageJobs.noRejectedSubtitle',
+    subtitle: 'There are no rejected job postings right now.',
+  },
+};
+
 const AdminManageJobs = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
@@ -509,6 +539,8 @@ const AdminManageJobs = () => {
       setActionLoading(null);
     }
   };
+
+  const emptyState = EMPTY_STATES[tab] || EMPTY_STATES.All;
 
   return (
     <div className="relative mx-auto max-w-7xl space-y-8 pb-12">
@@ -626,22 +658,26 @@ const AdminManageJobs = () => {
                   {t('admin.manageJobs.allClear') || 'All clear'}
                 </span>
                 <h2 className="mt-5 text-2xl font-black tracking-tight text-gray-900 dark:text-white md:text-3xl">
-                  {t('admin.manageJobs.noPendingTitle') || 'No pending jobs to review'}
+                  {t(emptyState.titleKey) || emptyState.title}
                 </h2>
                 <p className="mt-3 max-w-md text-base text-gray-500 dark:text-gray-400">
-                  {t('admin.manageJobs.noPendingSubtitle') || 'All caught up — no jobs awaiting approval right now.'}
+                  {t(emptyState.subtitleKey) || emptyState.subtitle}
                 </p>
-                <p className="mt-1.5 max-w-md text-sm text-gray-400 dark:text-gray-500">
-                  {t('admin.manageJobs.newJobsAppear') || 'New job postings will appear here for review.'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setTab('All')}
-                  className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#1769E0]/25 transition hover:-translate-y-0.5 hover:bg-[#0D5BC4] dark:bg-[#1769E0] dark:hover:bg-[#0D5BC4]"
-                >
-                  {t('admin.manageJobs.viewAllJobs') || 'View All Jobs'}
-                  <FiEye className="h-4 w-4" />
-                </button>
+                {emptyState.supportKey && (
+                  <p className="mt-1.5 max-w-md text-sm text-gray-400 dark:text-gray-500">
+                    {t(emptyState.supportKey) || emptyState.support}
+                  </p>
+                )}
+                {tab !== 'All' && (
+                  <button
+                    type="button"
+                    onClick={() => setTab('All')}
+                    className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#1769E0]/25 transition hover:-translate-y-0.5 hover:bg-[#0D5BC4] dark:bg-[#1769E0] dark:hover:bg-[#0D5BC4]"
+                  >
+                    {t('admin.manageJobs.viewAllJobs') || 'View All Jobs'}
+                    <FiEye className="h-4 w-4" />
+                  </button>
+                )}
               </div>
 
               {/* Right: illustration */}

@@ -52,8 +52,13 @@ const applicationSchema = new mongoose.Schema(
     interviewLocation: { type: String },
 
     // Screening
+    // Answers to the employer-configured application fields of the applied job.
+    // `fieldId` references Job.applicationFields._id, `question` keeps the
+    // field label at submission time so answers stay readable even if the
+    // employer later edits the job.
     screeningAnswers: [
       {
+        fieldId: String,
         question: String,
         answer: String,
       },

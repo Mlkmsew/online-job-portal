@@ -123,17 +123,17 @@ const Categories = () => {
   }, [cats, query]);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-16 lg:pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0D1624] pb-16 lg:pb-24">
       <div className="container-custom">
         {/* ===== PAGE HEADER ===== */}
         <div className="pt-10 text-center lg:pt-14">
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blue-600">
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blue-600 dark:text-blue-400">
             {t('nav.categories', { defaultValue: 'Categories' })}
           </p>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-[#0F172A] dark:text-gray-100 sm:text-4xl">
             {t('categoriesPage.title', { defaultValue: 'Browse Job Categories' })}
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
+          <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600 dark:text-gray-400 sm:text-lg">
             {t('categoriesPage.subtitle', {
               defaultValue: 'Explore all industry categories and find the roles that match your skills.',
             })}
@@ -143,10 +143,10 @@ const Categories = () => {
         {/* ===== SEARCH ===== */}
         <form
           onSubmit={(e) => e.preventDefault()}
-          className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#E6EEF1] bg-white p-5 shadow-lg sm:p-6"
+          className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#E6EEF1] dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-lg sm:p-6"
         >
           <div className="relative">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-blue-600">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 dark:text-blue-400">
               <FiSearch className="h-5 w-5" aria-hidden="true" />
             </span>
             <input
@@ -155,14 +155,14 @@ const Categories = () => {
               type="text"
               placeholder={t('categoriesPage.searchPlaceholder', { defaultValue: 'Search categories...' })}
               aria-label={t('categoriesPage.searchPlaceholder', { defaultValue: 'Search categories...' })}
-              className="w-full rounded-xl border border-[#D8E2DF] bg-white py-3 pl-12 pr-4 text-sm text-[#0F172A] placeholder:text-[#8FA0AF] transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+              className="w-full rounded-xl border border-[#D8E2DF] dark:border-gray-700 bg-white dark:bg-gray-900 py-3 pl-12 pr-4 text-sm text-[#0F172A] dark:text-gray-100 placeholder:text-[#8FA0AF] dark:placeholder:text-gray-500 transition focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
             />
           </div>
         </form>
 
         {/* ===== COUNT ===== */}
         {!isLoading && !error && (
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-sm text-slate-500 dark:text-gray-400">
             {t('categoriesPage.showingCount', { defaultValue: 'Showing' })} {filtered.length}{' '}
             {t('categoriesPage.categoriesLabel', { defaultValue: 'categories' })}{' '}
             {t('categoriesPage.ofJobs', { defaultValue: 'with' })} {totalJobs}{' '}
@@ -172,7 +172,7 @@ const Categories = () => {
 
         {/* ===== CATEGORIES GRID ===== */}
         {isLoading && (
-          <div className="mt-10 flex items-center justify-center gap-2 py-20 text-slate-500">
+          <div className="mt-10 flex items-center justify-center gap-2 py-20 text-slate-500 dark:text-gray-400">
             <FiLoader className="h-5 w-5 animate-spin text-blue-600" aria-hidden="true" />
             {t('home.loadingCategories', { defaultValue: 'Loading categories...' })}
           </div>
@@ -185,7 +185,7 @@ const Categories = () => {
         )}
 
         {!isLoading && !error && filtered.length === 0 && (
-          <div className="mt-10 rounded-2xl border border-[#E6EEF1] bg-white py-16 text-center text-slate-500">
+          <div className="mt-10 rounded-2xl border border-[#E6EEF1] dark:border-gray-800 bg-white dark:bg-gray-900 py-16 text-center text-slate-500 dark:text-gray-400">
             {query
               ? t('categoriesPage.noSearchResults', { defaultValue: 'No categories match your search.' })
               : t('home.noCategoriesAvailable', { defaultValue: 'No job categories are available right now.' })}
@@ -203,22 +203,22 @@ const Categories = () => {
                 <Link
                   key={category._id || slug}
                   to={`/jobs?category=${encodeURIComponent(slug)}`}
-                  className="group flex flex-col rounded-2xl border border-[#E6EEF1] bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl"
+                  className="group flex flex-col rounded-2xl border border-[#E6EEF1] dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl"
                 >
-                  <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl transition-colors group-hover:bg-blue-600 group-hover:text-white">
+                  <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-900/25 text-2xl transition-colors group-hover:bg-blue-600 group-hover:text-white">
                     {IconComponent ? <IconComponent className="h-6 w-6" aria-hidden="true" /> : <span aria-hidden="true">{emoji}</span>}
                   </div>
-                  <h3 className="text-lg font-semibold text-[#0F172A] transition-colors group-hover:text-blue-600">
+                  <h3 className="text-lg font-semibold text-[#0F172A] dark:text-gray-100 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
                     {name}
                   </h3>
                   {category.description && (
-                    <p className="mt-2 line-clamp-2 text-sm text-slate-500">{category.description}</p>
+                    <p className="mt-2 line-clamp-2 text-sm text-slate-500 dark:text-gray-400">{category.description}</p>
                   )}
-                  <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500">
-                    <FiBriefcase className="h-4 w-4 text-blue-600" aria-hidden="true" />
+                  <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 dark:text-gray-400">
+                    <FiBriefcase className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
                     {jobs} {t('home.jobsLabel', { defaultValue: 'jobs' })}
                   </span>
-                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-blue-600 opacity-0 transition-all duration-300 group-hover:opacity-100">
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 opacity-0 transition-all duration-300 group-hover:opacity-100">
                     {t('categoriesPage.browseJobs', { defaultValue: 'Browse Jobs' })}
                     <FiArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
                   </span>

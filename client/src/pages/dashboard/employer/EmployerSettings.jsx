@@ -833,10 +833,10 @@ const EmployerSettings = () => {
                         onChange={(event) => setCompanyPreferences((prev) => ({ ...prev, employmentType: event.target.value }))}
                         className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800"
                       >
-                        <option value="Full-time">{t('employer.postJob.jobType.fullTime') || 'Full-time'}</option>
-                        <option value="Part-time">{t('employer.postJob.jobType.partTime') || 'Part-time'}</option>
-                        <option value="Contract">{t('employer.postJob.jobType.contract') || 'Contract'}</option>
-                        <option value="Internship">{t('employer.postJob.jobType.internship') || 'Internship'}</option>
+                        <option value="Full-time">{t('employer.postJob.jobTypeOptions.fullTime') || 'Full-time'}</option>
+                        <option value="Part-time">{t('employer.postJob.jobTypeOptions.partTime') || 'Part-time'}</option>
+                        <option value="Contract">{t('employer.postJob.jobTypeOptions.contract') || 'Contract'}</option>
+                        <option value="Internship">{t('employer.postJob.jobTypeOptions.internship') || 'Internship'}</option>
                       </select>
                     </div>
                     <div>
@@ -846,9 +846,9 @@ const EmployerSettings = () => {
                         onChange={(event) => setCompanyPreferences((prev) => ({ ...prev, workMode: event.target.value }))}
                         className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800"
                       >
-                        <option value="Hybrid">{t('employer.postJob.workMode.hybrid') || 'Hybrid'}</option>
-                        <option value="Remote">{t('employer.postJob.workMode.remote') || 'Remote'}</option>
-                        <option value="Onsite">{t('employer.postJob.workMode.onSite') || 'Onsite'}</option>
+                        <option value="Hybrid">{t('employer.postJob.workModeOptions.hybrid') || 'Hybrid'}</option>
+                        <option value="Remote">{t('employer.postJob.workModeOptions.remote') || 'Remote'}</option>
+                        <option value="Onsite">{t('employer.postJob.workModeOptions.onSite') || 'Onsite'}</option>
                       </select>
                     </div>
                     <div>

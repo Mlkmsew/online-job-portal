@@ -66,17 +66,19 @@ const FIELD_LABELS = {
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
 const StatusBadge = ({ status }) => {
+  const { t } = useTranslation();
   const meta = STATUS_META[status] || STATUS_META.PENDING_REVIEW;
   const Icon = meta.icon;
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ring-1 ${meta.badge}`}>
       <Icon className="h-3.5 w-3.5" />
-      {meta.label}
+      {t(`certificateVerification.status.${(status || 'PENDING_REVIEW').toLowerCase()}`, { defaultValue: meta.label })}
     </span>
   );
 };
 
 const ResultPanel = ({ result }) => {
+  const { t } = useTranslation();
   const meta = STATUS_META[result.verificationStatus] || STATUS_META.PENDING_REVIEW;
   const Icon = meta.icon;
 
@@ -104,24 +106,24 @@ const ResultPanel = ({ result }) => {
             {result.verificationStatus === 'VERIFIED' && '✓ '}
             {result.verificationStatus === 'SUSPICIOUS' && '⚠ '}
             {result.verificationStatus === 'INVALID' && '✕ '}
-            {meta.label} Certificate
+            {t(`certificateVerification.status.${(result.verificationStatus || 'PENDING_REVIEW').toLowerCase()}`, { defaultValue: meta.label })} {t('certificateVerification.certificate', { defaultValue: 'Certificate' })}
           </p>
           {result.verificationNumber && (
             <p className="mt-1 text-xs font-semibold text-slate-500">
-              Verification Number: <span className="font-mono text-slate-700">{result.verificationNumber}</span>
+              {t('certificateVerification.verificationNumber', { defaultValue: 'Verification Number:' })} <span className="font-mono text-slate-700">{result.verificationNumber}</span>
             </p>
           )}
         </div>
         {result.isDuplicate && (
           <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-rose-200">
-            ⚠ Duplicate Certificate
+            {t('certificateVerification.duplicateCertificate', { defaultValue: '⚠ Duplicate Certificate' })}
           </span>
         )}
       </div>
 
       {result.reason && (
         <p className="mt-4 rounded-xl bg-white/70 px-4 py-3 text-sm text-slate-700 border border-slate-200/60">
-          <span className="font-bold">Reason: </span>
+          <span className="font-bold">{t('certificateVerification.reason', { defaultValue: 'Reason:' })} </span>
           {result.reason}
         </p>
       )}
@@ -131,9 +133,9 @@ const ResultPanel = ({ result }) => {
           <table className="w-full min-w-[480px] text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs uppercase tracking-wider text-slate-500">
-                <th className="px-4 py-2.5 font-bold">Field</th>
-                <th className="px-4 py-2.5 font-bold">Uploaded</th>
-                <th className="px-4 py-2.5 font-bold">Result</th>
+                <th className="px-4 py-2.5 font-bold">{t('certificateVerification.fieldColumn', { defaultValue: 'Field' })}</th>
+                <th className="px-4 py-2.5 font-bold">{t('certificateVerification.uploadedColumn', { defaultValue: 'Uploaded' })}</th>
+                <th className="px-4 py-2.5 font-bold">{t('certificateVerification.resultColumn', { defaultValue: 'Result' })}</th>
               </tr>
             </thead>
             <tbody>
@@ -143,16 +145,16 @@ const ResultPanel = ({ result }) => {
                 if (!value && !isMismatch) return null;
                 return (
                   <tr key={key} className="border-b border-slate-100 last:border-0">
-                    <td className="px-4 py-2.5 font-semibold text-slate-700">{FIELD_LABELS[key] || label}</td>
+                    <td className="px-4 py-2.5 font-semibold text-slate-700">{t(`certificateVerification.fields.${key}`, { defaultValue: FIELD_LABELS[key] || label })}</td>
                     <td className="px-4 py-2.5 text-slate-600">{value || '—'}</td>
                     <td className="px-4 py-2.5">
                       {isMismatch ? (
                         <span className="inline-flex items-center gap-1 font-bold text-rose-600">
-                          <FiXCircle className="h-4 w-4" /> MISMATCH
+                          <FiXCircle className="h-4 w-4" /> {t('certificateVerification.mismatch', { defaultValue: 'MISMATCH' })}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 font-bold text-blue-600">
-                          <FiCheckCircle className="h-4 w-4" /> MATCH
+                          <FiCheckCircle className="h-4 w-4" /> {t('certificateVerification.match', { defaultValue: 'MATCH' })}
                         </span>
                       )}
                     </td>
@@ -168,7 +170,7 @@ const ResultPanel = ({ result }) => {
       {typeof result.verificationScore === 'number' && (
         <div className="mt-4 rounded-xl border border-slate-200 bg-white/80 px-4 py-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Verification Score</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('certificateVerification.verificationScore', { defaultValue: 'Verification Score' })}</p>
             <p className={`text-lg font-extrabold ${result.verificationScore >= 80 ? 'text-blue-600' : result.verificationScore >= 50 ? 'text-amber-600' : 'text-rose-600'}`}>
               {result.verificationScore}%
             </p>
@@ -182,7 +184,7 @@ const ResultPanel = ({ result }) => {
             />
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-            The score is advisory only — the final status is decided by the verification rules.
+            {t('certificateVerification.scoreAdvisory', { defaultValue: 'The score is advisory only — the final status is decided by the verification rules.' })}
           </p>
         </div>
       )}
@@ -206,7 +208,7 @@ const ResultPanel = ({ result }) => {
         return (
           <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white/80">
             <div className="border-b border-slate-100 bg-slate-50/80 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-              Profile Consistency
+              {t('certificateVerification.profileConsistency', { defaultValue: 'Profile Consistency' })}
             </div>
             <table className="w-full min-w-[480px] text-sm">
               <tbody>
@@ -218,17 +220,17 @@ const ResultPanel = ({ result }) => {
                   if (!isMismatch && !uploaded && !registered) return null;
                   return (
                     <tr key={key} className="border-b border-slate-100 last:border-0">
-                      <td className="px-4 py-2.5 font-semibold text-slate-700">{label}</td>
+                      <td className="px-4 py-2.5 font-semibold text-slate-700">{t(`certificateVerification.fields.${key}`, { defaultValue: label })}</td>
                       <td className="px-4 py-2.5 text-slate-600">{uploaded || '—'}</td>
                       <td className="px-4 py-2.5 text-slate-500">{registered || '—'}</td>
                       <td className="px-4 py-2.5">
                         {isMismatch ? (
                           <span className="inline-flex items-center gap-1 font-bold text-rose-600">
-                            <FiXCircle className="h-4 w-4" /> MISMATCH
+                            <FiXCircle className="h-4 w-4" /> {t('certificateVerification.mismatch', { defaultValue: 'MISMATCH' })}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 font-bold text-blue-600">
-                            <FiCheckCircle className="h-4 w-4" /> MATCH
+                            <FiCheckCircle className="h-4 w-4" /> {t('certificateVerification.match', { defaultValue: 'MATCH' })}
                           </span>
                         )}
                       </td>
@@ -245,6 +247,7 @@ const ResultPanel = ({ result }) => {
 };
 
 const HistoryItem = ({ item, expanded, onToggle }) => {
+  const { t } = useTranslation();
   const meta = STATUS_META[item.verificationStatus] || STATUS_META.PENDING_REVIEW;
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -259,10 +262,10 @@ const HistoryItem = ({ item, expanded, onToggle }) => {
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-slate-800">
-              {item.uploadedDocument?.originalName || 'Certificate document'}
+              {item.uploadedDocument?.originalName || t('certificateVerification.certificateDocument', { defaultValue: 'Certificate document' })}
             </p>
             <p className="text-xs text-slate-500">
-              {item.verificationNumber ? <span className="font-mono">{item.verificationNumber}</span> : 'No verification number'}
+              {item.verificationNumber ? <span className="font-mono">{item.verificationNumber}</span> : t('certificateVerification.noVerificationNumber', { defaultValue: 'No verification number' })}
               {' · '}
               {new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </p>
@@ -277,13 +280,13 @@ const HistoryItem = ({ item, expanded, onToggle }) => {
         <div className="border-t border-slate-100 px-4 py-3">
           {item.reason && <p className="mb-3 text-sm text-slate-600">{item.reason}</p>}
           {item.isDuplicate && (
-            <p className="mb-3 text-xs font-bold text-rose-600">⚠ Duplicate certificate flagged for admin review.</p>
+            <p className="mb-3 text-xs font-bold text-rose-600">{t('certificateVerification.duplicateFlagged', { defaultValue: '⚠ Duplicate certificate flagged for admin review.' })}</p>
           )}
           {(item.mismatchedFields || []).length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">
               {item.mismatchedFields.map((m, i) => (
                 <span key={i} className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 ring-1 ring-rose-200">
-                  {m.label} ✗ MISMATCH
+                  {m.label} ✗ {t('certificateVerification.mismatch', { defaultValue: 'MISMATCH' })}
                 </span>
               ))}
             </div>
@@ -292,14 +295,14 @@ const HistoryItem = ({ item, expanded, onToggle }) => {
             <div className="mb-2 flex flex-wrap gap-2">
               {item.profileMismatchedFields.map((m, i) => (
                 <span key={i} className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700 ring-1 ring-orange-200">
-                  Profile {m.label} ✗ MISMATCH
+                  {t('certificateVerification.profile', { defaultValue: 'Profile' })} {m.label} ✗ {t('certificateVerification.mismatch', { defaultValue: 'MISMATCH' })}
                 </span>
               ))}
             </div>
           )}
           {typeof item.verificationScore === 'number' && item.verificationScore > 0 && (
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500">Verification Score:</span>
+              <span className="text-xs font-bold text-slate-500">{t('certificateVerification.verificationScoreLabel', { defaultValue: 'Verification Score:' })}</span>
               <div className="h-2 w-40 overflow-hidden rounded-full bg-slate-100">
                 <div
                   className={`h-full rounded-full ${
@@ -318,7 +321,7 @@ const HistoryItem = ({ item, expanded, onToggle }) => {
               rel="noreferrer"
               className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 hover:underline"
             >
-              <FiExternalLink className="h-3.5 w-3.5" /> View uploaded document
+              <FiExternalLink className="h-3.5 w-3.5" /> {t('certificateVerification.viewUploadedDocument', { defaultValue: 'View uploaded document' })}
             </a>
           )}
         </div>
@@ -362,11 +365,11 @@ const CertificateVerification = () => {
     if (!selected) return false;
     const ext = selected.name?.split('.').pop()?.toLowerCase();
     if (!ALLOWED_TYPES.includes(selected.type) && !['pdf', 'jpg', 'jpeg', 'png'].includes(ext)) {
-      toast.error('Only PDF, JPG, or PNG files are allowed.');
+      toast.error(t('certificateVerification.invalidFileType', { defaultValue: 'Only PDF, JPG, or PNG files are allowed.' }));
       return false;
     }
     if (selected.size > 10 * 1024 * 1024) {
-      toast.error('File limit is 10MB.');
+      toast.error(t('certificateVerification.fileTooLarge', { defaultValue: 'File limit is 10MB.' }));
       return false;
     }
     return true;
@@ -385,7 +388,7 @@ const CertificateVerification = () => {
 
   const handleUpload = async () => {
     if (!file) {
-      toast.error('Please choose a certificate file first.');
+      toast.error(t('certificateVerification.chooseFileFirst', { defaultValue: 'Please choose a certificate file first.' }));
       return;
     }
     setUploading(true);
@@ -401,11 +404,11 @@ const CertificateVerification = () => {
       const res = await certificateService.uploadAndVerify(fd, setProgress);
       setResult(res.data);
       setPhase('done');
-      toast.success('Certificate processed.');
+      toast.success(t('certificateVerification.processed', { defaultValue: 'Certificate processed.' }));
       fetchHistory();
     } catch (err) {
       setPhase('idle');
-      toast.error(err?.response?.data?.message || err?.message || 'Failed to process certificate.');
+      toast.error(err?.response?.data?.message || err?.message || t('certificateVerification.processFailed', { defaultValue: 'Failed to process certificate.' }));
     } finally {
       setUploading(false);
     }
@@ -414,7 +417,7 @@ const CertificateVerification = () => {
   const handleManualCheck = async () => {
     const number = manualNumber.trim();
     if (!number) {
-      toast.error('Enter a verification number.');
+      toast.error(t('certificateVerification.enterNumber', { defaultValue: 'Enter a verification number.' }));
       return;
     }
     setCheckingNumber(true);
@@ -422,7 +425,7 @@ const CertificateVerification = () => {
       const res = await certificateService.checkByNumber(number);
       setManualResult(res.data);
     } catch (err) {
-      toast.error(err?.response?.data?.message || err?.message || 'Verification check failed.');
+      toast.error(err?.response?.data?.message || err?.message || t('certificateVerification.checkFailed', { defaultValue: 'Verification check failed.' }));
     } finally {
       setCheckingNumber(false);
     }
@@ -443,10 +446,10 @@ const CertificateVerification = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-            Certificate Verification
+            {t('certificateVerification.title', { defaultValue: 'Certificate Verification' })}
           </h1>
           <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
-            Upload your education or experience certificate to verify it against the trusted institution database.
+            {t('certificateVerification.subtitle', { defaultValue: 'Upload your education or experience certificate to verify it against the trusted institution database.' })}
           </p>
         </div>
         <div className="hidden rounded-2xl border border-sky-200 bg-sky-50 p-3 text-sky-600 sm:block dark:border-sky-900 dark:bg-sky-950/40">
@@ -458,8 +461,8 @@ const CertificateVerification = () => {
         {/* Upload column */}
         <div className="space-y-6 lg:col-span-3">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-black uppercase tracking-wider text-[#1769E0]">Upload Certificate</h2>
-            <p className="mt-1 text-xs text-slate-500">PDF, JPG or PNG — up to 10MB. QR codes and the text layer are scanned automatically.</p>
+            <h2 className="text-sm font-black uppercase tracking-wider text-[#1769E0]">{t('certificateVerification.uploadCertificate', { defaultValue: 'Upload Certificate' })}</h2>
+            <p className="mt-1 text-xs text-slate-500">{t('certificateVerification.uploadHint', { defaultValue: 'PDF, JPG or PNG — up to 10MB. QR codes and the text layer are scanned automatically.' })}</p>
 
             <button
               type="button"
@@ -467,8 +470,8 @@ const CertificateVerification = () => {
               className="mt-4 flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#1769E0]/40 bg-[#EAF2FE]/60 px-6 py-8 text-center transition hover:border-[#1769E0] hover:bg-[#EAF2FE]"
             >
               <FiUploadCloud className="h-8 w-8 text-[#1769E0]" />
-              <span className="text-sm font-bold text-[#0D5BC4]">{file ? 'Replace certificate' : 'Choose certificate file'}</span>
-              <span className="text-xs text-slate-500">{file ? file.name : 'or drag & drop your certificate here'}</span>
+              <span className="text-sm font-bold text-[#0D5BC4]">{file ? t('certificateVerification.replaceCertificate', { defaultValue: 'Replace certificate' }) : t('certificateVerification.chooseCertificate', { defaultValue: 'Choose certificate file' })}</span>
+              <span className="text-xs text-slate-500">{file ? file.name : t('certificateVerification.dragDrop', { defaultValue: 'or drag & drop your certificate here' })}</span>
             </button>
             <input
               ref={fileInputRef}
@@ -488,7 +491,7 @@ const CertificateVerification = () => {
                   </div>
                 </div>
                 <button type="button" onClick={() => setFile(null)} className="text-xs font-bold text-rose-500 hover:underline">
-                  Remove
+                  {t('certificateVerification.remove', { defaultValue: 'Remove' })}
                 </button>
               </div>
             )}
@@ -499,7 +502,7 @@ const CertificateVerification = () => {
                 onClick={handleUpload}
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1769E0] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#0D5BC4]"
               >
-                <FiGrid className="h-4 w-4" /> Scan & Verify Certificate
+                <FiGrid className="h-4 w-4" /> {t('certificateVerification.scanVerify', { defaultValue: 'Scan & Verify Certificate' })}
               </button>
             )}
 
@@ -508,7 +511,7 @@ const CertificateVerification = () => {
                 <div className="flex items-center justify-between text-xs font-bold text-slate-600">
                   <span className="flex items-center gap-1.5">
                     <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#1769E0] border-t-transparent" />
-                    {phase === 'scanning' ? 'Scanning QR code & extracting data...' : 'Uploading...'}
+                    {phase === 'scanning' ? t('certificateVerification.scanning', { defaultValue: 'Scanning QR code & extracting data...' }) : t('certificateVerification.uploading', { defaultValue: 'Uploading...' })}
                   </span>
                   <span>{progress}%</span>
                 </div>
@@ -525,7 +528,7 @@ const CertificateVerification = () => {
               className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-700"
             >
               {showDeclared ? <FiChevronUp className="h-3.5 w-3.5" /> : <FiChevronDown className="h-3.5 w-3.5" />}
-              Optional: declare certificate details (used when the document text cannot be read)
+              {t('certificateVerification.declaredToggle', { defaultValue: 'Optional: declare certificate details (used when the document text cannot be read)' })}
             </button>
             {showDeclared && (
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -540,7 +543,7 @@ const CertificateVerification = () => {
                   ['phone', 'Phone (for profile check)'],
                 ].map(([key, label]) => (
                   <label key={key} className="block">
-                    <span className="mb-1 block text-xs font-bold text-slate-600">{label}</span>
+                    <span className="mb-1 block text-xs font-bold text-slate-600">{t(`certificateVerification.fields.${key}`, { defaultValue: label })}</span>
                     <input
                       type="text"
                       value={declared[key]}
@@ -555,14 +558,14 @@ const CertificateVerification = () => {
 
           {/* Manual verification number lookup */}
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-sm font-black uppercase tracking-wider text-slate-700">Verify a Number Manually</h2>
-            <p className="mt-1 text-xs text-slate-500">Enter the certificate verification number printed on the document or QR code.</p>
+            <h2 className="text-sm font-black uppercase tracking-wider text-slate-700">{t('certificateVerification.manualCheckTitle', { defaultValue: 'Verify a Number Manually' })}</h2>
+            <p className="mt-1 text-xs text-slate-500">{t('certificateVerification.manualCheckSubtitle', { defaultValue: 'Enter the certificate verification number printed on the document or QR code.' })}</p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
                 value={manualNumber}
                 onChange={(e) => setManualNumber(e.target.value)}
-                placeholder="e.g. DBU-CERT-2026-00125"
+                placeholder={t('certificateVerification.numberPlaceholder', { defaultValue: 'e.g. DBU-CERT-2026-00125' })}
                 className="flex-1 rounded-xl border border-slate-200 px-3 py-2 font-mono text-sm text-slate-900 outline-none focus:border-[#1769E0]"
               />
               <button
@@ -576,7 +579,7 @@ const CertificateVerification = () => {
                 ) : (
                   <FiSearch className="h-4 w-4" />
                 )}
-                Check
+                {t('certificateVerification.check', { defaultValue: 'Check' })}
               </button>
             </div>
             {manualResult && (
@@ -586,7 +589,7 @@ const CertificateVerification = () => {
                   : 'border-rose-200 bg-rose-50 text-rose-700'
               }`}>
                 <p className="font-bold">
-                  {manualResult.verificationStatus === 'VERIFIED' ? '✓ Certificate Verified' : '✕ Certificate Invalid'}
+                  {manualResult.verificationStatus === 'VERIFIED' ? t('certificateVerification.certificateVerified', { defaultValue: '✓ Certificate Verified' }) : t('certificateVerification.certificateInvalid', { defaultValue: '✕ Certificate Invalid' })}
                 </p>
                 <p className="mt-1 font-mono text-xs">{manualResult.verificationNumber}</p>
                 {manualResult.fullName && <p className="mt-1 text-xs">{manualResult.fullName}</p>}
@@ -603,26 +606,26 @@ const CertificateVerification = () => {
               <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                 <p className="text-xs font-semibold text-slate-600">
                   {result.verificationStatus === 'VERIFIED'
-                    ? 'Your certificate was verified automatically.'
+                    ? t('certificateVerification.autoVerified', { defaultValue: 'Your certificate was verified automatically.' })
                     : result.verificationStatus === 'PENDING_REVIEW'
-                    ? 'An administrator will review your certificate.'
-                    : 'This result has been flagged for administrator review.'}
+                    ? t('certificateVerification.underReview', { defaultValue: 'An administrator will review your certificate.' })
+                    : t('certificateVerification.flaggedReview', { defaultValue: 'This result has been flagged for administrator review.' })}
                 </p>
                 <button
                   type="button"
                   onClick={reset}
                   className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-[#1769E0] hover:underline"
                 >
-                  <FiRefreshCw className="h-3.5 w-3.5" /> Verify another
+                  <FiRefreshCw className="h-3.5 w-3.5" /> {t('certificateVerification.verifyAnother', { defaultValue: 'Verify another' })}
                 </button>
               </div>
             </>
           ) : (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-12 text-center">
               <FiShield className="h-10 w-10 text-slate-300" />
-              <p className="mt-3 text-sm font-bold text-slate-500">No verification result yet</p>
+              <p className="mt-3 text-sm font-bold text-slate-500">{t('certificateVerification.noResult', { defaultValue: 'No verification result yet' })}</p>
               <p className="mt-1 max-w-[240px] text-xs text-slate-400">
-                Upload a certificate to see the field-by-field verification result.
+                {t('certificateVerification.noResultHint', { defaultValue: 'Upload a certificate to see the field-by-field verification result.' })}
               </p>
             </div>
           )}
@@ -631,10 +634,10 @@ const CertificateVerification = () => {
 
       {/* History */}
       <section>
-        <h2 className="mb-3 text-sm font-black uppercase tracking-wider text-slate-700">Verification History</h2>
+        <h2 className="mb-3 text-sm font-black uppercase tracking-wider text-slate-700">{t('certificateVerification.historyTitle', { defaultValue: 'Verification History' })}</h2>
         {history.length === 0 ? (
           <p className="rounded-xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-400">
-            No certificate verifications yet.
+            {t('certificateVerification.noHistory', { defaultValue: 'No certificate verifications yet.' })}
           </p>
         ) : (
           <div className="space-y-3">

@@ -75,13 +75,13 @@ const Navbar = () => {
   const desktopLinkClass = (active) =>
     `rounded-lg px-3 xl:px-4 py-2 text-sm xl:text-base whitespace-nowrap transition ${
       active
-        ? 'border border-[#1769E0] bg-[#1769E0] font-semibold text-white shadow-md'
-        : 'font-medium text-sky-100 hover:bg-white/5 hover:text-white'
+        ? 'bg-[#1769E0]/25 font-semibold text-white ring-1 ring-white/15'
+        : 'font-medium text-sky-100 hover:bg-white/10 hover:text-white'
     }`;
 
   const mobileLinkClass = (active) =>
     `block rounded-lg px-4 py-2.5 text-base transition ${
-      active ? 'border border-[#1769E0] bg-[#1769E0] font-semibold text-white' : 'font-medium text-sky-100 hover:bg-white/5 hover:text-white'
+      active ? 'bg-[#1769E0]/25 font-semibold text-white ring-1 ring-white/15' : 'font-medium text-sky-100 hover:bg-white/10 hover:text-white'
     }`;
 
   const ghostLinkClass =
@@ -104,20 +104,22 @@ const Navbar = () => {
           aria-hidden="true"
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#06152B]/95 via-[#0A2A5E]/90 to-[#0E3A7A]/85" aria-hidden="true" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#06152B]/95 via-[#0A2A5E]/90 to-[#0E3A7A]/85 dark:from-[#02040A]/95 dark:via-[#081020]/95 dark:to-[#0D1626]/90" aria-hidden="true" />
 
       <div className="relative container-custom">
-        <div className="flex justify-between items-center h-[72px]">
+        <div className="flex justify-between items-center gap-4 lg:gap-8 h-[72px]">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2" aria-label={t('aria.homepage') || 'OnlineJob Portal - Go to homepage'}>
-            <FiBriefcase className={`w-8 h-8 ${logoIconClass}`} aria-hidden="true" />
-            <span className={`text-[23px] font-extrabold leading-tight ${logoTitleClass}`}>
+          <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label={t('aria.homepage') || 'OnlineJob Portal - Go to homepage'}>
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
+              <FiBriefcase className={`h-5 w-5 ${logoIconClass}`} aria-hidden="true" />
+            </span>
+            <span className={`text-[20px] font-extrabold leading-none tracking-tight ${logoTitleClass}`}>
               OnlineJob <span className={logoAccentClass}>Portal</span>
             </span>
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden lg:flex items-center gap-1 xl:gap-3" role="menubar">
+          <div className="hidden lg:flex items-center gap-2 xl:gap-4" role="menubar">
             {navItems.map((item) => (
               <Link
                 key={item.label}

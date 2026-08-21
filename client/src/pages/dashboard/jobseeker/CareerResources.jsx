@@ -1,33 +1,35 @@
 import { FiBookOpen, FiCheckCircle, FiZap, FiTrendingUp, FiArrowRight } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const CareerResources = () => {
+  const { t } = useTranslation();
   const resources = [
     {
-      title: 'Resume writing guide',
-      description: 'Learn how to build a powerful CV that highlights your strengths and gets noticed by recruiters.',
-      tag: 'Resume',
+      title: t('careerResources.resumeGuideTitle', { defaultValue: 'Resume writing guide' }),
+      description: t('careerResources.resumeGuideDesc', { defaultValue: 'Learn how to build a powerful CV that highlights your strengths and gets noticed by recruiters.' }),
+      tag: t('careerResources.resumeTag', { defaultValue: 'Resume' }),
       path: '/dashboard/profile',
       icon: FiBookOpen,
     },
     {
-      title: 'Interview preparation checklist',
-      description: 'Practice answers, follow-up messages, and confidence strategies for every stage.',
-      tag: 'Interview',
+      title: t('careerResources.interviewChecklistTitle', { defaultValue: 'Interview preparation checklist' }),
+      description: t('careerResources.interviewChecklistDesc', { defaultValue: 'Practice answers, follow-up messages, and confidence strategies for every stage.' }),
+      tag: t('careerResources.interviewTag', { defaultValue: 'Interview' }),
       path: '/dashboard/applications',
       icon: FiCheckCircle,
     },
     {
-      title: 'Skill development plan',
-      description: 'Focus on the most in-demand skills and track improvement over time.',
-      tag: 'Skills',
+      title: t('careerResources.skillPlanTitle', { defaultValue: 'Skill development plan' }),
+      description: t('careerResources.skillPlanDesc', { defaultValue: 'Focus on the most in-demand skills and track improvement over time.' }),
+      tag: t('careerResources.skillsTag', { defaultValue: 'Skills' }),
       path: '/dashboard/skill-assessment',
       icon: FiZap,
     },
     {
-      title: 'Career growth roadmap',
-      description: 'Identify the next role, refine your targets, and stay motivated through the job search.',
-      tag: 'Growth',
+      title: t('careerResources.growthRoadmapTitle', { defaultValue: 'Career growth roadmap' }),
+      description: t('careerResources.growthRoadmapDesc', { defaultValue: 'Identify the next role, refine your targets, and stay motivated through the job search.' }),
+      tag: t('careerResources.growthTag', { defaultValue: 'Growth' }),
       path: '/dashboard/settings',
       icon: FiTrendingUp,
     },
@@ -38,25 +40,25 @@ const CareerResources = () => {
       <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-blue-600">Career resources</p>
-            <h1 className="mt-4 text-4xl font-black text-slate-900 dark:text-white">Train smarter and move confidently toward your next role.</h1>
-            <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">Browse curated tools, articles, and guides designed to support each stage of your job search.</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-blue-600">{t('careerResources.badge', { defaultValue: 'Career resources' })}</p>
+            <h1 className="mt-4 text-4xl font-black text-slate-900 dark:text-white">{t('careerResources.title', { defaultValue: 'Train smarter and move confidently toward your next role.' })}</h1>
+            <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">{t('careerResources.subtitle', { defaultValue: 'Browse curated tools, articles, and guides designed to support each stage of your job search.' })}</p>
           </div>
-          <div className="rounded-full border border-blue-100 bg-blue-50 px-5 py-3 text-sm font-semibold text-blue-700">Updated weekly</div>
+          <div className="rounded-full border border-blue-100 bg-blue-50 px-5 py-3 text-sm font-semibold text-blue-700">{t('careerResources.updatedWeekly', { defaultValue: 'Updated weekly' })}</div>
         </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.8fr]">
         <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Your learning toolkit</h2>
-          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Quickly access guides, checklists, and actions that help you improve applications and interviews.</p>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">{t('careerResources.toolkitTitle', { defaultValue: 'Your learning toolkit' })}</h2>
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{t('careerResources.toolkitSubtitle', { defaultValue: 'Quickly access guides, checklists, and actions that help you improve applications and interviews.' })}</p>
 
           <div className="mt-8 space-y-4">
             {[
-              { label: 'Resume review checklist', value: '5 steps to sharper formatting and clarity' },
-              { label: 'Interview follow-up templates', value: 'Write thoughtful messages after every call' },
-              { label: 'Skill gap suggestions', value: 'Identify the strongest areas to highlight' },
-              { label: 'Job search planning', value: 'Map your search cadence and priority targets' },
+              { label: t('careerResources.checklistResumeLabel', { defaultValue: 'Resume review checklist' }), value: t('careerResources.checklistResumeValue', { defaultValue: '5 steps to sharper formatting and clarity' }) },
+              { label: t('careerResources.checklistFollowupLabel', { defaultValue: 'Interview follow-up templates' }), value: t('careerResources.checklistFollowupValue', { defaultValue: 'Write thoughtful messages after every call' }) },
+              { label: t('careerResources.checklistSkillsLabel', { defaultValue: 'Skill gap suggestions' }), value: t('careerResources.checklistSkillsValue', { defaultValue: 'Identify the strongest areas to highlight' }) },
+              { label: t('careerResources.checklistPlanningLabel', { defaultValue: 'Job search planning' }), value: t('careerResources.checklistPlanningValue', { defaultValue: 'Map your search cadence and priority targets' }) },
             ].map((item) => (
               <div key={item.label} className="rounded-3xl border border-slate-100 bg-slate-50 p-5 dark:border-gray-700 dark:bg-gray-900">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.label}</p>
@@ -84,7 +86,7 @@ const CareerResources = () => {
                 <h3 className="mt-6 text-xl font-semibold text-slate-900 dark:text-white">{item.title}</h3>
                 <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{item.description}</p>
                 <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-blue-700">
-                  <span>Explore</span>
+                  <span>{t('careerResources.explore', { defaultValue: 'Explore' })}</span>
                   <FiArrowRight className="w-4 h-4 transition group-hover:translate-x-1" />
                 </div>
               </Link>

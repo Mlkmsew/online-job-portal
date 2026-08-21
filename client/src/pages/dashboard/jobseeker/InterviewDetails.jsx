@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   FiArrowLeft,
@@ -19,6 +20,7 @@ import api from '../../../services/api';
 const InterviewDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [interview, setInterview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,8 +34,8 @@ const InterviewDetails = () => {
       setInterview(response.data?.data || null);
     } catch (err) {
       console.error('Failed to load interview:', err);
-      setError(err.response?.data?.message || 'Unable to load interview details.');
-      toast.error(err.response?.data?.message || 'Unable to load interview details.');
+      setError(err.response?.data?.message || t('interviews.loadFailed', { defaultValue: 'Unable to load interview details.' }));
+      toast.error(err.response?.data?.message || t('interviews.loadFailed', { defaultValue: 'Unable to load interview details.' }));
     } finally {
       setLoading(false);
     }
@@ -44,20 +46,20 @@ const InterviewDetails = () => {
   }, [id]);
 
   const formatDate = (value) => {
-    if (!value) return 'TBD';
+    if (!value) return t('applications.tbd', { defaultValue: 'TBD' });
     try {
       return new Date(value).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
     } catch {
-      return 'TBD';
+      return t('applications.tbd', { defaultValue: 'TBD' });
     }
   };
 
   const formatTime = (value) => {
-    if (!value) return 'TBD';
+    if (!value) return t('applications.tbd', { defaultValue: 'TBD' });
     try {
       return new Date(value).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     } catch {
-      return 'TBD';
+      return t('applications.tbd', { defaultValue: 'TBD' });
     }
   };
 
@@ -96,11 +98,11 @@ const InterviewDetails = () => {
           onClick={() => navigate('/dashboard')}
           className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
-          <FiArrowLeft className="h-4 w-4" /> Back to Dashboard
+          <FiArrowLeft className="h-4 w-4" /> {t('interviews.backToDashboard', { defaultValue: 'Back to Dashboard' })}
         </button>
         <div className="mt-8 rounded-3xl border border-rose-200 bg-rose-50 p-6 text-rose-700">
-          <h2 className="text-xl font-semibold">Interview details unavailable</h2>
-          <p className="mt-2 text-sm">{error || 'We could not load the interview details.'}</p>
+          <h2 className="text-xl font-semibold">{t('interviews.detailsUnavailable', { defaultValue: 'Interview details unavailable' })}</h2>
+          <p className="mt-2 text-sm">{error || t('interviews.couldNotLoad', { defaultValue: 'We could not load the interview details.' })}</p>
         </div>
       </div>
     );
@@ -115,15 +117,15 @@ const InterviewDetails = () => {
             onClick={() => navigate('/dashboard')}
             className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
           >
-            <FiArrowLeft className="h-4 w-4" /> Back to Dashboard
+            <FiArrowLeft className="h-4 w-4" /> {t('interviews.backToDashboard', { defaultValue: 'Back to Dashboard' })}
           </button>
           <div className="mt-4">
-            <h1 className="text-3xl font-semibold text-slate-900">Interview Details</h1>
-            <p className="mt-2 text-sm text-slate-500">Review your upcoming interview schedule, location, and employer notes.</p>
+            <h1 className="text-3xl font-semibold text-slate-900">{t('interviews.detailsTitle', { defaultValue: 'Interview Details' })}</h1>
+            <p className="mt-2 text-sm text-slate-500">{t('interviews.detailsSubtitle', { defaultValue: 'Review your upcoming interview schedule, location, and employer notes.' })}</p>
           </div>
         </div>
         <span className={`rounded-full px-4 py-2 text-sm font-semibold ${getStatusBadge(interview.status)}`}>
-          {interview.status || 'Scheduled'}
+          {interview.status || t('interviews.scheduled', { defaultValue: 'Scheduled' })}
         </span>
       </div>
 
@@ -131,16 +133,16 @@ const InterviewDetails = () => {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm text-slate-500">{interview.company?.name || 'Employer'}</p>
-              <h2 className="text-2xl font-semibold text-slate-900">{interview.job?.title || 'Interview for Position'}</h2>
+              <p className="text-sm text-slate-500">{interview.company?.name || t('interviews.employer', { defaultValue: 'Employer' })}</p>
+              <h2 className="text-2xl font-semibold text-slate-900">{interview.job?.title || t('interviews.positionFallback', { defaultValue: 'Interview for Position' })}</h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                <div className="font-semibold text-slate-900">Date</div>
+                <div className="font-semibold text-slate-900">{t('interviews.date', { defaultValue: 'Date' })}</div>
                 <div className="mt-1">{formatDate(interview.scheduledDate)}</div>
               </div>
               <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                <div className="font-semibold text-slate-900">Time</div>
+                <div className="font-semibold text-slate-900">{t('interviews.time', { defaultValue: 'Time' })}</div>
                 <div className="mt-1">{formatTime(interview.scheduledDate)}</div>
               </div>
             </div>
@@ -148,22 +150,22 @@ const InterviewDetails = () => {
 
           <div className="grid gap-5">
             <div className="grid gap-2">
-              <div className="text-sm font-semibold text-slate-900">Interview type</div>
-              <div className="text-sm text-slate-600">{interview.type || 'Interview'}</div>
+              <div className="text-sm font-semibold text-slate-900">{t('interviews.interviewType', { defaultValue: 'Interview type' })}</div>
+              <div className="text-sm text-slate-600">{interview.type || t('interviews.interviewFallback', { defaultValue: 'Interview' })}</div>
             </div>
             <div className="grid gap-2">
-              <div className="text-sm font-semibold text-slate-900">Location</div>
-              <div className="text-sm text-slate-600">{interview.meetingLink || interview.location || 'To be confirmed'}</div>
+              <div className="text-sm font-semibold text-slate-900">{t('interviews.location', { defaultValue: 'Location' })}</div>
+              <div className="text-sm text-slate-600">{interview.meetingLink || interview.location || t('interviews.locationToBeConfirmed', { defaultValue: 'To be confirmed' })}</div>
             </div>
             {interview.instructions && (
               <div className="grid gap-2">
-                <div className="text-sm font-semibold text-slate-900">Employer instructions</div>
+                <div className="text-sm font-semibold text-slate-900">{t('interviews.employerInstructions', { defaultValue: 'Employer instructions' })}</div>
                 <div className="text-sm text-slate-600 whitespace-pre-line">{interview.instructions}</div>
               </div>
             )}
             {interview.note && (
               <div className="grid gap-2">
-                <div className="text-sm font-semibold text-slate-900">Notes from employer</div>
+                <div className="text-sm font-semibold text-slate-900">{t('interviews.notesFromEmployer', { defaultValue: 'Notes from employer' })}</div>
                 <div className="text-sm text-slate-600 whitespace-pre-line">{interview.note}</div>
               </div>
             )}
@@ -176,7 +178,7 @@ const InterviewDetails = () => {
                 type="button"
                 className="inline-flex items-center gap-2 rounded-full bg-[#1769E0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0D5BC4]"
               >
-                <FiLink className="h-4 w-4" /> Join Meeting
+                <FiLink className="h-4 w-4" /> {t('applications.joinMeeting', { defaultValue: 'Join Meeting' })}
               </button>
             )}
             <button
@@ -184,7 +186,7 @@ const InterviewDetails = () => {
               onClick={() => navigate('/dashboard/applications')}
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
-              <FiColumns className="h-4 w-4" /> View Applications
+              <FiColumns className="h-4 w-4" /> {t('interviews.viewApplications', { defaultValue: 'View Applications' })}
             </button>
           </div>
         </div>
@@ -196,23 +198,23 @@ const InterviewDetails = () => {
                 <FiUser className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-900">Your Recruiter</p>
-                <p className="text-sm text-slate-600">{interview.employer?.firstName || 'Employer'} {interview.employer?.lastName || ''}</p>
+                <p className="text-sm font-semibold text-slate-900">{t('interviews.yourRecruiter', { defaultValue: 'Your Recruiter' })}</p>
+                <p className="text-sm text-slate-600">{interview.employer?.firstName || t('interviews.employer', { defaultValue: 'Employer' })} {interview.employer?.lastName || ''}</p>
               </div>
             </div>
 
             <div className="mt-5 space-y-4 text-sm text-slate-700">
               <div className="flex items-center gap-2">
                 <FiMail className="h-4 w-4" />
-                <span>{interview.employer?.email || 'Email not available'}</span>
+                <span>{interview.employer?.email || t('interviews.emailNotAvailable', { defaultValue: 'Email not available' })}</span>
               </div>
               <div className="flex items-center gap-2">
                 <FiMapPin className="h-4 w-4" />
-                <span>{interview.company?.name || 'Company details unavailable'}</span>
+                <span>{interview.company?.name || t('interviews.companyDetailsUnavailable', { defaultValue: 'Company details unavailable' })}</span>
               </div>
               <div className="flex items-center gap-2">
                 <FiCalendar className="h-4 w-4" />
-                <span>{interview.status === 'cancelled' ? 'Interview cancelled' : 'Interview confirmed'}</span>
+                <span>{interview.status === 'cancelled' ? t('applications.interviewCancelled', { defaultValue: 'Interview cancelled' }) : t('interviews.confirmed', { defaultValue: 'Interview confirmed' })}</span>
               </div>
             </div>
           </div>
@@ -223,18 +225,18 @@ const InterviewDetails = () => {
                 <FiPaperclip className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-900">Interview materials</p>
-                <p className="text-sm text-slate-600">Review any documents or notes shared by the recruiter.</p>
+                <p className="text-sm font-semibold text-slate-900">{t('interviews.materialsTitle', { defaultValue: 'Interview materials' })}</p>
+                <p className="text-sm text-slate-600">{t('interviews.materialsSubtitle', { defaultValue: 'Review any documents or notes shared by the recruiter.' })}</p>
               </div>
             </div>
             <div className="mt-5 space-y-3 text-sm text-slate-600">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <div className="font-semibold text-slate-900">Interview agenda</div>
-                <div className="mt-2">Prepare examples of your experience, questions about the role, and notes for the interview.</div>
+                <div className="font-semibold text-slate-900">{t('interviews.agendaTitle', { defaultValue: 'Interview agenda' })}</div>
+                <div className="mt-2">{t('interviews.agendaBody', { defaultValue: 'Prepare examples of your experience, questions about the role, and notes for the interview.' })}</div>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <div className="font-semibold text-slate-900">Status reminder</div>
-                <div className="mt-2">Keep an eye on your email for any updates or rescheduling requests.</div>
+                <div className="font-semibold text-slate-900">{t('interviews.statusReminderTitle', { defaultValue: 'Status reminder' })}</div>
+                <div className="mt-2">{t('interviews.statusReminderBody', { defaultValue: 'Keep an eye on your email for any updates or rescheduling requests.' })}</div>
               </div>
             </div>
           </div>

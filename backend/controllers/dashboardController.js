@@ -7,9 +7,8 @@ const Job = require('../models/job');
 const Company = require('../models/Company');
 const Bookmark = require('../models/Bookmark');
 const Application = require('../models/Application');
-const { calculateJobMatch, calculateMatchScore } = require('../utils/matching');
-const { canRecommendJobs, enrichUserFromResume } = require('../utils/dashboardHelpers');
-const Resume = require('../models/Resume');
+const { calculateJobMatch } = require('../utils/matching');
+const { canRecommendJobs, buildJobSeekerMatchingContext } = require('../utils/dashboardHelpers');
 const mongoose = require('mongoose');
 
 // @desc Get job seeker dashboard
@@ -36,10 +35,8 @@ exports.getDashboard = asyncHandler(async (req, res) => {
   // Recommended jobs: build recommendations based on match scoring engine.
   // Generated once the job seeker has an uploaded CV, a Resume Builder CV, or
   // parsed CV data on their profile.
-  const resumeDoc = await Resume.findOne({ user: userId }).sort({ updatedAt: -1 }).lean();
+  const { resumeDoc, profileForMatching } = await buildJobSeekerMatchingContext(userId);
   const canRecommend = canRecommendJobs(user, resumeDoc);
-  // Match against the profile plus any Resume Builder CV content.
-  const profileForMatching = enrichUserFromResume(user, resumeDoc);
   let recommended = [];
   if (canRecommend) {
     try {

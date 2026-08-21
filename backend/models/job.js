@@ -34,6 +34,13 @@ const jobSchema = new mongoose.Schema(
       enum: ['On-site', 'Remote', 'Hybrid'],
       default: 'On-site',
     },
+    genderPreference: {
+      type: String,
+      enum: ['any', 'male', 'female', 'other'],
+      default: 'any',
+      lowercase: true,
+      trim: true,
+    },
     experienceLevel: {
       type: String,
       enum: ['Entry Level', 'Mid Level', 'Senior Level', 'Lead', 'Manager', 'Director', 'Executive'],
@@ -72,15 +79,17 @@ const jobSchema = new mongoose.Schema(
     },
 
     // Employer-defined application fields/questions shown on the Apply Now page.
-    // Each field carries its own Required/Optional configuration.
+    // Each field carries its own Required/Optional configuration. `options` is
+    // used by the 'select' (dropdown) type.
     applicationFields: [
       {
         label: { type: String, trim: true, maxlength: 200 },
         type: {
           type: String,
-          enum: ['text', 'textarea', 'url', 'number'],
+          enum: ['text', 'textarea', 'url', 'number', 'email', 'phone', 'date', 'select', 'checkbox'],
           default: 'text',
         },
+        options: { type: [String], default: [] },
         required: { type: Boolean, default: false },
       },
     ],

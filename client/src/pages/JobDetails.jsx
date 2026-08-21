@@ -33,14 +33,14 @@ const MAX_RESUME_SIZE = 5 * 1024 * 1024;
 const ALLOWED_RESUME_EXTENSIONS = ['pdf', 'doc', 'docx'];
 
 const StatCard = ({ icon: Icon, label, value }) => (
-  <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+  <div className="rounded-[20px] border border-slate-200 dark:border-gray-800 bg-slate-50/80 dark:bg-gray-800 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
     <div className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
+      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white dark:bg-gray-900 text-emerald-600 shadow-sm">
         <Icon className="h-5 w-5" />
       </div>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{label}</p>
-        <p className="mt-1 text-sm font-semibold text-slate-900">{value}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500">{label}</p>
+        <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-gray-100">{value}</p>
       </div>
     </div>
   </div>
@@ -55,14 +55,14 @@ const accentStyles = {
 const SectionCard = ({ icon: Icon, title, subtitle, children, accent = 'emerald' }) => {
   const style = accentStyles[accent] || accentStyles.emerald;
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-[24px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
       <div className="mb-5 flex items-start gap-3">
         <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${style}`}>
           <Icon className="h-5 w-5" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-          {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">{title}</h3>
+          {subtitle && <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">{subtitle}</p>}
         </div>
       </div>
       {children}
@@ -132,7 +132,7 @@ const JobDetails = () => {
     if (job?.isFeatured) return { label: 'Featured', color: 'bg-amber-50 text-amber-700 border-amber-200' };
     switch (job?.status) {
       case 'paused':
-        return { label: 'Paused', color: 'bg-slate-100 text-slate-700 border-slate-200' };
+        return { label: 'Paused', color: 'bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 border-slate-200 dark:border-gray-800' };
       case 'expired':
         return { label: 'Expired', color: 'bg-red-50 text-red-700 border-red-200' };
       case 'closed':
@@ -140,7 +140,7 @@ const JobDetails = () => {
       case 'active':
         return { label: 'Active', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
       default:
-        return { label: job?.status || 'Draft', color: 'bg-slate-100 text-slate-700 border-slate-200' };
+        return { label: job?.status || 'Draft', color: 'bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 border-slate-200 dark:border-gray-800' };
     }
   };
 
@@ -300,10 +300,10 @@ const JobDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0D1624] px-4 py-8">
         <div className="mx-auto max-w-7xl space-y-6">
           <div className="h-8 w-1/4 animate-pulse rounded-full bg-slate-200" />
-          <div className="h-96 animate-pulse rounded-[32px] border border-slate-200 bg-white" />
+          <div className="h-96 animate-pulse rounded-[32px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900" />
         </div>
       </div>
     );
@@ -312,10 +312,10 @@ const JobDetails = () => {
   if (!job) {
     return (
       <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4 text-center">
-        <div className="rounded-[24px] border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="rounded-[24px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 shadow-sm">
           <FiAlertTriangle className="mx-auto mb-4 h-14 w-14 text-red-500" />
-          <h2 className="mb-2 text-2xl font-bold text-slate-900">Job Not Found</h2>
-          <p className="mb-6 text-sm text-slate-500">The job post you are looking for does not exist or has been closed.</p>
+          <h2 className="mb-2 text-2xl font-bold text-slate-900 dark:text-gray-100">Job Not Found</h2>
+          <p className="mb-6 text-sm text-slate-500 dark:text-gray-400">The job post you are looking for does not exist or has been closed.</p>
           <button onClick={() => navigate('/jobs')} className="rounded-full bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white">
             Back to Browse Jobs
           </button>
@@ -330,19 +330,19 @@ const JobDetails = () => {
   const applicantCount = job?.applicantsCount ?? job?.applicationsCount ?? job?.applicantCount ?? 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0D1624] px-4 py-8 sm:px-6 lg:px-8">
       <div className="w-full max-w-full px-0 sm:px-4">
         <button
           onClick={() => navigate('/jobs')}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[#1769E0] transition hover:text-[#1769E0]"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[#1769E0] dark:text-blue-400 transition hover:text-[#1769E0]"
         >
           <FiArrowLeft className="h-4 w-4" /> Back to Jobs
         </button>
 
         <div className="grid gap-8 xl:grid-cols-[1.7fr_0.9fr]">
           <div className="space-y-6">
-            <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_25px_80px_-35px_rgba(15,23,42,0.45)]">
-              <div className="border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 p-6 sm:p-8 lg:p-10">
+            <div className="overflow-hidden rounded-[32px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_25px_80px_-35px_rgba(15,23,42,0.45)]">
+              <div className="border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 dark:from-emerald-900/25 dark:via-gray-900 dark:to-[#0D1624] p-6 sm:p-8 lg:p-10">
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-3">
@@ -354,25 +354,25 @@ const JobDetails = () => {
                     </div>
 
                     <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
-                      <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm sm:h-24 sm:w-24">
+                      <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[24px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm sm:h-24 sm:w-24">
                         {job.company?.logo ? (
                           <img src={job.company.logo} alt={`${job.company.name} logo`} className="h-full w-full object-contain" />
                         ) : (
-                          <div className="text-sm font-medium text-slate-500">Logo</div>
+                          <div className="text-sm font-medium text-slate-500 dark:text-gray-400">Logo</div>
                         )}
                       </div>
 
                       <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">{job.title}</h1>
-                        <div className="mt-3 flex flex-wrap items-center gap-2 text-base text-slate-600">
-                          <span className="font-semibold text-slate-900">{job.company?.name || 'Company Name'}</span>
+                        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-gray-100 sm:text-4xl">{job.title}</h1>
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-base text-slate-600 dark:text-gray-400">
+                          <span className="font-semibold text-slate-900 dark:text-gray-100">{job.company?.name || 'Company Name'}</span>
                           {job.company?.isVerified && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                               <FiCheckCircle className="h-3.5 w-3.5" /> Verified
                             </span>
                           )}
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-gray-400">
                           <span className="inline-flex items-center gap-2"><FiMapPin className="h-4 w-4" />{job.location?.city ? `${job.location.city}, ${job.location.region}` : job.location?.region || 'Location not specified'}</span>
                           <span className="inline-flex items-center gap-2"><FiBriefcase className="h-4 w-4" />{job.jobType || 'Full-time'}</span>
                           {job.workMode && <span className="inline-flex items-center gap-2"><FiLayers className="h-4 w-4" />{job.workMode}</span>}
@@ -419,13 +419,13 @@ const JobDetails = () => {
                             }
                             toggleBookmark();
                           }}
-                          className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                          className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-300 transition hover:bg-slate-50 dark:hover:bg-gray-800"
                         >
                           {isBookmarked ? t('dashboard.jobCard.saved') : t('jobs.save')}
                         </button>
                       </>
                     )}
-                    <button type="button" onClick={handleCopyJob} className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    <button type="button" onClick={handleCopyJob} className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-300 transition hover:bg-slate-50 dark:hover:bg-gray-800">
                       {t('jobs.share')}
                     </button>
                   </div>
@@ -444,18 +444,18 @@ const JobDetails = () => {
             </div>
 
 
-            <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-semibold text-slate-900">Job Description</h2>
-                  <p className="mt-1 text-sm text-slate-500">A clear view of the role, requirements, and what you can expect.</p>
+                  <h2 className="text-2xl font-semibold text-slate-900 dark:text-gray-100">Job Description</h2>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">A clear view of the role, requirements, and what you can expect.</p>
                 </div>
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">{job.applicationMethod || 'Portal'}</span>
               </div>
 
               <div className="space-y-8">
                 <SectionCard icon={FiTarget} title="Description" subtitle="Role overview" accent="emerald">
-                  <p className="whitespace-pre-line text-sm leading-7 text-slate-600">{job.description}</p>
+                  <p className="whitespace-pre-line text-sm leading-7 text-slate-600 dark:text-gray-400">{job.description}</p>
                 </SectionCard>
 
                 {technicalSkills.length > 0 && (
@@ -486,11 +486,11 @@ const JobDetails = () => {
                   <SectionCard icon={FiCheckCircle} title="Requirements" subtitle="What you should bring" accent="emerald">
                     <div className="grid gap-3 md:grid-cols-2">
                       {requirements.map((item, index) => (
-                        <div key={`${item}-${index}`} className="flex items-start gap-3 rounded-[18px] border border-slate-200 bg-slate-50 p-3">
+                        <div key={`${item}-${index}`} className="flex items-start gap-3 rounded-[18px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 p-3">
                           <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                             <FiCheck className="h-3.5 w-3.5" />
                           </div>
-                          <p className="text-sm leading-6 text-slate-700">{item}</p>
+                          <p className="text-sm leading-6 text-slate-700 dark:text-gray-300">{item}</p>
                         </div>
                       ))}
                     </div>
@@ -501,11 +501,11 @@ const JobDetails = () => {
                   <SectionCard icon={FiTarget} title="Responsibilities" subtitle="What the role will involve" accent="emerald">
                     <div className="grid gap-3 md:grid-cols-2">
                       {responsibilities.map((item, index) => (
-                        <div key={`${item}-${index}`} className="flex items-start gap-3 rounded-[18px] bg-slate-50 px-4 py-3">
+                        <div key={`${item}-${index}`} className="flex items-start gap-3 rounded-[18px] bg-slate-50 dark:bg-gray-800 px-4 py-3">
                           <div className="mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                             <FiChevronRight className="h-3.5 w-3.5" />
                           </div>
-                          <p className="text-sm leading-6 text-slate-700">{item}</p>
+                          <p className="text-sm leading-6 text-slate-700 dark:text-gray-300">{item}</p>
                         </div>
                       ))}
                     </div>
@@ -541,26 +541,26 @@ const JobDetails = () => {
             </div>
 
             {similarJobs.length > 0 && (
-              <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
                 <div className="mb-5 flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl font-semibold text-slate-900">Similar Jobs</h3>
-                    <p className="mt-1 text-sm text-slate-500">Other roles that may interest you.</p>
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-gray-100">Similar Jobs</h3>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">Other roles that may interest you.</p>
                   </div>
                 </div>
                 <div className="grid gap-4 lg:grid-cols-2">
                   {similarJobs.map((sim) => (
-                    <Link key={sim._id} to={`/jobs/${sim._id}`} className="rounded-[22px] border border-slate-200 bg-slate-50 p-5 transition hover:-translate-y-0.5 hover:border-[#1769E0] hover:bg-white">
+                    <Link key={sim._id} to={`/jobs/${sim._id}`} className="rounded-[22px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800 p-5 transition hover:-translate-y-0.5 hover:border-[#1769E0] hover:bg-white dark:hover:bg-gray-900">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <h4 className="font-semibold text-slate-900">{sim.title}</h4>
-                          <p className="mt-1 text-sm text-slate-500">{sim.company?.name || 'Company'}</p>
+                          <h4 className="font-semibold text-slate-900 dark:text-gray-100">{sim.title}</h4>
+                          <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">{sim.company?.name || 'Company'}</p>
                         </div>
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+                        <span className="rounded-full bg-white dark:bg-gray-900 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 dark:text-gray-400">
                           {sim.jobType || 'Full-time'}
                         </span>
                       </div>
-                      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-gray-400">
                         <span className="inline-flex items-center gap-2"><FiMapPin className="h-4 w-4" />{sim.location?.city ? `${sim.location.city}, ${sim.location.region}` : sim.location?.region || 'Location'}</span>
                         <span>{sim.salary?.min && sim.salary?.max ? `ETB ${sim.salary.min.toLocaleString()}-${sim.salary.max.toLocaleString()}` : 'Negotiable'}</span>
                       </div>
@@ -582,47 +582,47 @@ const JobDetails = () => {
           </div>
 
           <aside className="space-y-6">
-            <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
               <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[20px] border border-slate-200 bg-slate-50">
+                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[20px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800">
                   {job.company?.logo ? (
                     <img src={job.company.logo} alt={`${job.company.name} logo`} className="h-full w-full object-contain" />
                   ) : (
-                    <div className="text-sm text-slate-500">Logo</div>
+                    <div className="text-sm text-slate-500 dark:text-gray-400">Logo</div>
                   )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-slate-900">{job.company?.name || 'Company Name'}</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">{job.company?.name || 'Company Name'}</h3>
                     {job.company?.isVerified && <FiCheckCircle className="h-4 w-4 text-emerald-600" />}
                   </div>
-                  <p className="mt-1 text-sm leading-6 text-slate-500">{job.company?.shortDescription || job.company?.description || 'No company summary available.'}</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-gray-400">{job.company?.shortDescription || job.company?.description || 'No company summary available.'}</p>
                 </div>
               </div>
 
-              <div className="mt-5 space-y-3 text-sm text-slate-600">
+              <div className="mt-5 space-y-3 text-sm text-slate-600 dark:text-gray-400">
                 {job.company?.industry && (
-                  <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3">
+                  <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3">
                     <span>Industry</span>
-                    <span className="font-semibold text-slate-900">{job.company.industry}</span>
+                    <span className="font-semibold text-slate-900 dark:text-gray-100">{job.company.industry}</span>
                   </div>
                 )}
                 {job.company?.companySize && (
-                  <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3">
+                  <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3">
                     <span>Company Size</span>
-                    <span className="font-semibold text-slate-900">{job.company.companySize}</span>
+                    <span className="font-semibold text-slate-900 dark:text-gray-100">{job.company.companySize}</span>
                   </div>
                 )}
                 {job.company?.foundedYear && (
-                  <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3">
+                  <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3">
                     <span>Founded</span>
-                    <span className="font-semibold text-slate-900">{job.company.foundedYear}</span>
+                    <span className="font-semibold text-slate-900 dark:text-gray-100">{job.company.foundedYear}</span>
                   </div>
                 )}
                 {job.company?.location?.region && (
-                  <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3">
+                  <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3">
                     <span>Location</span>
-                    <span className="font-semibold text-slate-900">{job.company.location.region}</span>
+                    <span className="font-semibold text-slate-900 dark:text-gray-100">{job.company.location.region}</span>
                   </div>
                 )}
               </div>
@@ -634,42 +634,42 @@ const JobDetails = () => {
               )}
             </div>
 
-            <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-900">Job Summary</h3>
-              <div className="mt-5 space-y-3 text-sm text-slate-600">
-                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3"><span>Industry</span><span className="font-semibold text-slate-900">{job.company?.industry || 'Software'}</span></div>
-                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3"><span>Employment Type</span><span className="font-semibold text-slate-900">{job.jobType || 'Full-time'}</span></div>
-                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3"><span>Work Mode</span><span className="font-semibold text-slate-900">{job.workMode || 'On-site'}</span></div>
-                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3"><span>Salary</span><span className="font-semibold text-slate-900">{job.salary?.min && job.salary?.max ? `${job.salary.min.toLocaleString()}-${job.salary.max.toLocaleString()}` : 'Negotiable'}</span></div>
-                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3"><span>Experience</span><span className="font-semibold text-slate-900">{job.experienceLevel || 'Entry Level'}</span></div>
-                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3"><span>Education</span><span className="font-semibold text-slate-900">{job.educationRequired || 'Bachelor'}</span></div>
-                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3"><span>Open Positions</span><span className="font-semibold text-slate-900">{job.numberOfPositions || 1}</span></div>
-                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3"><span>Deadline</span><span className="font-semibold text-slate-900">{formatDate(job.applicationDeadline)}</span></div>
-                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 px-3 py-3"><span>Application Method</span><span className="font-semibold text-slate-900">{job.applicationMethod || 'Portal'}</span></div>
+            <div className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">Job Summary</h3>
+              <div className="mt-5 space-y-3 text-sm text-slate-600 dark:text-gray-400">
+                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3"><span>Industry</span><span className="font-semibold text-slate-900 dark:text-gray-100">{job.company?.industry || 'Software'}</span></div>
+                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3"><span>Employment Type</span><span className="font-semibold text-slate-900 dark:text-gray-100">{job.jobType || 'Full-time'}</span></div>
+                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3"><span>Work Mode</span><span className="font-semibold text-slate-900 dark:text-gray-100">{job.workMode || 'On-site'}</span></div>
+                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3"><span>Salary</span><span className="font-semibold text-slate-900 dark:text-gray-100">{job.salary?.min && job.salary?.max ? `${job.salary.min.toLocaleString()}-${job.salary.max.toLocaleString()}` : 'Negotiable'}</span></div>
+                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3"><span>Experience</span><span className="font-semibold text-slate-900 dark:text-gray-100">{job.experienceLevel || 'Entry Level'}</span></div>
+                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3"><span>Education</span><span className="font-semibold text-slate-900 dark:text-gray-100">{job.educationRequired || 'Bachelor'}</span></div>
+                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3"><span>Open Positions</span><span className="font-semibold text-slate-900 dark:text-gray-100">{job.numberOfPositions || 1}</span></div>
+                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3"><span>Deadline</span><span className="font-semibold text-slate-900 dark:text-gray-100">{formatDate(job.applicationDeadline)}</span></div>
+                <div className="flex items-center justify-between rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3"><span>Application Method</span><span className="font-semibold text-slate-900 dark:text-gray-100">{job.applicationMethod || 'Portal'}</span></div>
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
               <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[18px] border border-slate-200 bg-slate-50">
+                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[18px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800">
                   {job.postedBy?.avatar ? (
                     <img src={job.postedBy.avatar} alt="Recruiter" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="text-sm text-slate-500">Photo</div>
+                    <div className="text-sm text-slate-500 dark:text-gray-400">Photo</div>
                   )}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900">{job.company?.recruiter?.hrManagerName || `${job.postedBy?.firstName || ''} ${job.postedBy?.lastName || ''}`.trim() || 'Recruiter'}</h3>
-                  <p className="mt-1 text-sm text-slate-500">{job.company?.recruiter?.position || 'Recruiter'}</p>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">{job.company?.recruiter?.hrManagerName || `${job.postedBy?.firstName || ''} ${job.postedBy?.lastName || ''}`.trim() || 'Recruiter'}</h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">{job.company?.recruiter?.position || 'Recruiter'}</p>
                 </div>
               </div>
 
-              <div className="mt-5 space-y-3 text-sm text-slate-600">
+              <div className="mt-5 space-y-3 text-sm text-slate-600 dark:text-gray-400">
                 {job.company?.recruiter?.email && (
-                  <div className="rounded-[16px] bg-slate-50 px-3 py-3"><span className="font-semibold text-slate-900">Email:</span> {job.company.recruiter.email}</div>
+                  <div className="rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3"><span className="font-semibold text-slate-900 dark:text-gray-100">Email:</span> {job.company.recruiter.email}</div>
                 )}
                 {job.company?.recruiter?.phone && (
-                  <div className="rounded-[16px] bg-slate-50 px-3 py-3"><span className="font-semibold text-slate-900">Phone:</span> {job.company.recruiter.phone}</div>
+                  <div className="rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3"><span className="font-semibold text-slate-900 dark:text-gray-100">Phone:</span> {job.company.recruiter.phone}</div>
                 )}
               </div>
 
@@ -678,11 +678,11 @@ const JobDetails = () => {
               </button>
             </div>
 
-            <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-900">Why Join Us?</h3>
-              <div className="mt-5 space-y-3 text-sm text-slate-700">
+            <div className="rounded-[28px] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">Why Join Us?</h3>
+              <div className="mt-5 space-y-3 text-sm text-slate-700 dark:text-gray-300">
                 {['Learning Opportunities', 'Great Team', 'Competitive Salary', 'Flexible Culture', 'Career Growth'].map((item) => (
-                  <div key={item} className="flex items-center gap-3 rounded-[16px] bg-slate-50 px-3 py-3">
+                  <div key={item} className="flex items-center gap-3 rounded-[16px] bg-slate-50 dark:bg-gray-800 px-3 py-3">
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                       <FiCheck className="h-3.5 w-3.5" />
                     </div>
@@ -697,38 +697,38 @@ const JobDetails = () => {
 
       {isMessageModalOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
-          <div className="my-8 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+          <div className="my-8 w-full max-w-2xl rounded-3xl bg-white dark:bg-gray-900 p-6 shadow-2xl">
             <div className="mb-6 flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">{t('messages.startNewConversation') || 'Start a new conversation'}</h2>
-                <p className="text-sm text-gray-500">{t('messages.newConversationSubtitle') || 'Enter the recipient email and your first message.'}</p>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('messages.startNewConversation') || 'Start a new conversation'}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('messages.newConversationSubtitle') || 'Enter the recipient email and your first message.'}</p>
               </div>
-              <button type="button" onClick={() => setIsMessageModalOpen(false)} className="text-gray-500 hover:text-gray-900">{t('common.cancel')}</button>
+              <button type="button" onClick={() => setIsMessageModalOpen(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">{t('common.cancel')}</button>
             </div>
             <form onSubmit={handleSubmitNewMessage} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">{t('auth.email')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth.email')}</label>
                 <input
                   value={messageEmail}
                   onChange={(e) => setMessageEmail(e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500"
+                  className="mt-2 w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-blue-500"
                   placeholder="recipient@example.com"
                   type="email"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">{t('dashboard.messages.title')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('dashboard.messages.title')}</label>
                 <textarea
                   value={messageContent}
                   onChange={(e) => setMessageContent(e.target.value)}
-                  className="mt-2 w-full min-h-[150px] rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-blue-500"
+                  className="mt-2 w-full min-h-[150px] rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-blue-500"
                   placeholder={t('messages.typePlaceholder') || 'Write your message here...'}
                   required
                 />
               </div>
               <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => setIsMessageModalOpen(false)} className="rounded-full border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                <button type="button" onClick={() => setIsMessageModalOpen(false)} className="rounded-full border border-gray-200 dark:border-gray-700 px-5 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
                   {t('common.cancel')}
                 </button>
                 <button type="submit" disabled={isSendingMessage} className="rounded-full bg-[#1769E0] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0D5BC4] disabled:cursor-not-allowed disabled:bg-[#A8C8F5]">

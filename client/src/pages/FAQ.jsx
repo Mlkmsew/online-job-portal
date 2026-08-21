@@ -17,7 +17,7 @@ const FAQ = () => {
         {faqs.map((faq, i) => (
           <div key={i} className="card">
             <h3 className="font-semibold text-lg mb-2">{faq.q}</h3>
-            <p className="text-gray-600">{faq.a}</p>
+            <p className="text-gray-600 dark:text-gray-400">{faq.a}</p>
           </div>
         ))}
       </div>

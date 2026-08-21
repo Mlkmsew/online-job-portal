@@ -158,20 +158,20 @@ const MyApplications = () => {
   );
 
   const formatDate = (date) => {
-    if (!date) return 'TBD';
+    if (!date) return t('applications.tbd', { defaultValue: 'TBD' });
     try {
       const parsed = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
-      if (!parsed || Number.isNaN(parsed.getTime())) return 'TBD';
+      if (!parsed || Number.isNaN(parsed.getTime())) return t('applications.tbd', { defaultValue: 'TBD' });
       return parsed.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
     } catch {
-      return 'TBD';
+      return t('applications.tbd', { defaultValue: 'TBD' });
     }
   };
 
   const formatInterviewTime = (value) => {
-    if (value === undefined || value === null || value === '') return 'TBD';
+    if (value === undefined || value === null || value === '') return t('applications.tbd', { defaultValue: 'TBD' });
     const raw = typeof value === 'string' ? value.trim() : `${value}`.trim();
-    if (!raw || raw === 'null' || raw === 'undefined') return 'TBD';
+    if (!raw || raw === 'null' || raw === 'undefined') return t('applications.tbd', { defaultValue: 'TBD' });
     if (/^\d{1,2}:\d{2}(\s?(am|pm))?$/i.test(raw) || /^\d{1,2}\s?(am|pm)$/i.test(raw)) {
       return raw.toUpperCase();
     }
@@ -184,23 +184,23 @@ const MyApplications = () => {
 
   const normalizeInterviewType = (type) => {
     const raw = `${type || ''}`.trim().toLowerCase();
-    if (raw.includes('phone')) return 'Phone';
-    if (raw.includes('in-person') || raw.includes('in person') || raw.includes('onsite')) return 'In-person';
-    if (raw.includes('zoom') || raw.includes('meet') || raw.includes('video') || raw.includes('online')) return 'Online';
-    return type || 'TBD';
+    if (raw.includes('phone')) return t('applications.typePhone', { defaultValue: 'Phone' });
+    if (raw.includes('in-person') || raw.includes('in person') || raw.includes('onsite')) return t('applications.typeInPerson', { defaultValue: 'In-person' });
+    if (raw.includes('zoom') || raw.includes('meet') || raw.includes('video') || raw.includes('online')) return t('applications.typeOnline', { defaultValue: 'Online' });
+    return type || t('applications.tbd', { defaultValue: 'TBD' });
   };
 
   const getPlatformLabel = (link) => {
     if (!link) return '';
     const normalized = `${link}`.toLowerCase();
-    if (normalized.includes('google.com')) return 'Google Meet';
-    if (normalized.includes('zoom.us') || normalized.includes('zoom.com')) return 'Zoom';
-    if (normalized.includes('teams.microsoft.com') || normalized.includes('microsoft.com')) return 'Microsoft Teams';
-    return 'Online Meeting';
+    if (normalized.includes('google.com')) return t('applications.platformGoogleMeet', { defaultValue: 'Google Meet' });
+    if (normalized.includes('zoom.us') || normalized.includes('zoom.com')) return t('applications.platformZoom', { defaultValue: 'Zoom' });
+    if (normalized.includes('teams.microsoft.com') || normalized.includes('microsoft.com')) return t('applications.platformTeams', { defaultValue: 'Microsoft Teams' });
+    return t('applications.platformOnlineMeeting', { defaultValue: 'Online Meeting' });
   };
 
-  const selectedCompany = selectedApp?.company?.name || 'Company';
-  const selectedJob = selectedApp?.job?.title || 'Role';
+  const selectedCompany = selectedApp?.company?.name || t('applications.company');
+  const selectedJob = selectedApp?.job?.title || t('applications.role', { defaultValue: 'Role' });
   const selectedMeetingLink = selectedInterview?.meetingLink || '';
   const selectedMeetingLocation = selectedInterview?.location || '';
   const selectedInterviewType = normalizeInterviewType(selectedInterview?.type);
@@ -327,7 +327,7 @@ const MyApplications = () => {
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-3xl bg-slate-50 p-4">
                           <p className="text-sm font-semibold text-slate-500">{t('applications.interviewDate')}</p>
-                          <p className="mt-2 text-base font-semibold text-slate-900">{interviewDate ? formatDate(interviewDate) : 'TBD'}</p>
+                          <p className="mt-2 text-base font-semibold text-slate-900">{interviewDate ? formatDate(interviewDate) : t('applications.tbd', { defaultValue: 'TBD' })}</p>
                         </div>
                         <div className="rounded-3xl bg-slate-50 p-4">
                           <p className="text-sm font-semibold text-slate-500">{t('applications.interviewTime')}</p>

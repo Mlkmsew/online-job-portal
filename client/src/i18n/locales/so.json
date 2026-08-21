@@ -61,11 +61,15 @@
     "passwordRequired": "Erayga sirta ah waa loo baahan yahay"
   },
   "home": {
-    "heroTitle": "Nidaamka Maareynta Portal-ka Shaqada ee Online",
+    "heroTitle": "Raadi Shaqada Saxda Ah.\nDhis Mustaqbalkaaga.",
     "heroSubtitle": "Ku xirida Dhalinyarada Itoobiya ee Fursadaha Shaqo",
-    "searchPlaceholder": "Magaca shaqada, ereyada muhiimka ah...",
+    "heroTagline": "Ku xir fursadaha, ogaansho karti aad leedahay, oo qaad tillaabada xigta ee shaqadaada.",
+    "searchPlaceholder": "Magaca shaqada, xirfadaha, ama ereyada muhiimka ah",
     "locationPlaceholder": "Goobta",
     "searchButton": "Raadi Shaqooyinka",
+    "statsActiveJobs": "Shaqooyinka Firfircoon",
+    "statsCompanies": "Shirkadaha",
+    "statsDaily": "Fursado Cusub Maalin Kasta",
     "popularCategories": "Qeybaha Shaqooyinka caanka ah",
     "latestJobs": "Shaqooyinkii ugu dambeeyay",
     "featuredCompanies": "Shirkadaha caanka ah",

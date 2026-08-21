@@ -22,7 +22,7 @@ const normalizeLanguageCode = (code) => {
 };
 
 const LanguageSwitcher = ({ light = false }) => {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -67,7 +67,7 @@ const LanguageSwitcher = ({ light = false }) => {
             ? 'hover:bg-white/10'
             : 'hover:bg-gray-100 dark:hover:bg-gray-800'
         }`}
-        aria-label="Select Language"
+        aria-label={t('common.selectLanguage', { defaultValue: 'Select Language' })}
         aria-haspopup="true"
         aria-expanded={isOpen}
       >

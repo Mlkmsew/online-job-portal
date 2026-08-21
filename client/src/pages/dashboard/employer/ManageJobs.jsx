@@ -75,6 +75,11 @@ const ManageJobs = () => {
                         : job.status}
                     </span>
                     <span>{job.applicantsCount || 0} {t('sidebar.applicants')}</span>
+                    {job.genderPreference && job.genderPreference !== 'any' && (
+                      <span className="text-gray-600">
+                        {t('employer.manageJobs.genderRequirement')} {t(`employer.postJob.genderOptions.${job.genderPreference}`)}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">

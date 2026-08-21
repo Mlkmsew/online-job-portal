@@ -45,49 +45,49 @@ const CATEGORIES = [
     name: 'IT & Software',
     icon: Code2,
     jobs: '124 Jobs',
-    iconBg: 'bg-blue-100 text-blue-700 group-hover:bg-blue-700',
+    iconBg: 'bg-blue-100 text-blue-700 group-hover:bg-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:group-hover:bg-blue-700',
   },
   {
     name: 'Accounting & Finance',
     icon: LineChart,
     jobs: '86 Jobs',
-    iconBg: 'bg-indigo-100 text-indigo-700 group-hover:bg-indigo-700',
+    iconBg: 'bg-indigo-100 text-indigo-700 group-hover:bg-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 dark:group-hover:bg-indigo-700',
   },
   {
     name: 'Engineering',
     icon: Cog,
     jobs: '95 Jobs',
-    iconBg: 'bg-cyan-100 text-cyan-700 group-hover:bg-cyan-700',
+    iconBg: 'bg-cyan-100 text-cyan-700 group-hover:bg-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300 dark:group-hover:bg-cyan-700',
   },
   {
     name: 'Healthcare',
     icon: HeartPulse,
     jobs: '72 Jobs',
-    iconBg: 'bg-rose-100 text-rose-700 group-hover:bg-rose-700',
+    iconBg: 'bg-rose-100 text-rose-700 group-hover:bg-rose-700 dark:bg-rose-900/40 dark:text-rose-300 dark:group-hover:bg-rose-700',
   },
   {
     name: 'Education',
     icon: GraduationCap,
     jobs: '64 Jobs',
-    iconBg: 'bg-amber-100 text-amber-700 group-hover:bg-amber-600',
+    iconBg: 'bg-amber-100 text-amber-700 group-hover:bg-amber-600 dark:bg-amber-900/40 dark:text-amber-300 dark:group-hover:bg-amber-600',
   },
   {
     name: 'Marketing',
     icon: Megaphone,
     jobs: '58 Jobs',
-    iconBg: 'bg-purple-100 text-purple-700 group-hover:bg-purple-700',
+    iconBg: 'bg-purple-100 text-purple-700 group-hover:bg-purple-700 dark:bg-purple-900/40 dark:text-purple-300 dark:group-hover:bg-purple-700',
   },
   {
     name: 'Administration',
     icon: ClipboardList,
     jobs: '49 Jobs',
-    iconBg: 'bg-teal-100 text-teal-700 group-hover:bg-teal-700',
+    iconBg: 'bg-teal-100 text-teal-700 group-hover:bg-teal-700 dark:bg-teal-900/40 dark:text-teal-300 dark:group-hover:bg-teal-700',
   },
   {
     name: 'NGO & Development',
     icon: HeartHandshake,
     jobs: '77 Jobs',
-    iconBg: 'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-700',
+    iconBg: 'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 dark:group-hover:bg-emerald-700',
   },
 ];
 
@@ -124,14 +124,14 @@ const CATEGORY_ICON_MAP = {
 };
 
 const CATEGORY_ICON_BGS = [
-  'bg-blue-100 text-blue-700 group-hover:bg-blue-700',
-  'bg-indigo-100 text-indigo-700 group-hover:bg-indigo-700',
-  'bg-cyan-100 text-cyan-700 group-hover:bg-cyan-700',
-  'bg-rose-100 text-rose-700 group-hover:bg-rose-700',
-  'bg-amber-100 text-amber-700 group-hover:bg-amber-600',
-  'bg-purple-100 text-purple-700 group-hover:bg-purple-700',
-  'bg-teal-100 text-teal-700 group-hover:bg-teal-700',
-  'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-700',
+  'bg-blue-100 text-blue-700 group-hover:bg-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:group-hover:bg-blue-700',
+  'bg-indigo-100 text-indigo-700 group-hover:bg-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 dark:group-hover:bg-indigo-700',
+  'bg-cyan-100 text-cyan-700 group-hover:bg-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300 dark:group-hover:bg-cyan-700',
+  'bg-rose-100 text-rose-700 group-hover:bg-rose-700 dark:bg-rose-900/40 dark:text-rose-300 dark:group-hover:bg-rose-700',
+  'bg-amber-100 text-amber-700 group-hover:bg-amber-600 dark:bg-amber-900/40 dark:text-amber-300 dark:group-hover:bg-amber-600',
+  'bg-purple-100 text-purple-700 group-hover:bg-purple-700 dark:bg-purple-900/40 dark:text-purple-300 dark:group-hover:bg-purple-700',
+  'bg-teal-100 text-teal-700 group-hover:bg-teal-700 dark:bg-teal-900/40 dark:text-teal-300 dark:group-hover:bg-teal-700',
+  'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 dark:group-hover:bg-emerald-700',
 ];
 
 const resolveCategoryIcon = (value) => {
@@ -237,9 +237,9 @@ const slugify = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]+
 
 const SectionHeading = ({ eyebrow, title, subtitle, light, id }) => (
   <div className="mx-auto mb-12 max-w-2xl text-center">
-    <p className={`text-sm font-semibold uppercase tracking-[0.22em] ${light ? 'text-sky-300' : 'text-blue-600'}`}>{eyebrow}</p>
-    <h2 id={id} className={`mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl ${light ? 'text-white' : 'text-[#0F172A]'}`}>{title}</h2>
-    {subtitle && <p className={`mt-4 text-base ${light ? 'text-sky-100/90' : 'text-slate-600'}`}>{subtitle}</p>}
+    <p className={`text-sm font-semibold uppercase tracking-[0.22em] ${light ? 'text-sky-300' : 'text-blue-600 dark:text-blue-400'}`}>{eyebrow}</p>
+    <h2 id={id} className={`mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl ${light ? 'text-white' : 'text-[#0F172A] dark:text-gray-100'}`}>{title}</h2>
+    {subtitle && <p className={`mt-4 text-base ${light ? 'text-sky-100/90' : 'text-slate-600 dark:text-gray-400'}`}>{subtitle}</p>}
   </div>
 );
 
@@ -248,7 +248,7 @@ const LogoAvatar = ({ logo, name, className = 'h-12 w-12 rounded-xl' }) => {
   const hasLogo = !!logo && !failed;
   if (!hasLogo) {
     return (
-      <span className={`flex items-center justify-center ${className} bg-slate-100 text-base font-bold text-slate-700`}>
+      <span className={`flex items-center justify-center ${className} bg-slate-100 text-base font-bold text-slate-700 dark:bg-gray-800 dark:text-gray-300`}>
         {(name || 'C').charAt(0).toUpperCase()}
       </span>
     );
@@ -268,7 +268,7 @@ const Stars = ({ rating }) => (
     {[1, 2, 3, 4, 5].map((n) => (
       <FiStar
         key={n}
-        className={`h-4 w-4 ${n <= rating ? 'text-amber-400' : 'text-slate-300'}`}
+        className={`h-4 w-4 ${n <= rating ? 'text-amber-400' : 'text-slate-300 dark:text-gray-600'}`}
         fill={n <= rating ? 'currentColor' : 'none'}
         aria-hidden="true"
       />
@@ -319,6 +319,7 @@ const Home = () => {
         setCommunityStats({
           jobSeekers: statsData.jobSeekers ?? 0,
           companies: statsData.companies ?? 0,
+          activeJobs: statsData.activeJobs ?? 0,
           applications: statsData.applications ?? 0,
           categories: statsData.categories ?? 0,
         });
@@ -407,13 +408,10 @@ const Home = () => {
     levels: [...new Set(jobs.map((j) => j.experienceLevel).filter(Boolean))],
   }), [jobs]);
 
-  const selectClass = 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
-  const inputClass = 'w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
+  const selectClass = 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300';
 
-  const heroTitle = t('home.heroTitle', { defaultValue: 'ONLINE JOB PORTAL MANAGEMENT SYSTEM' });
-  const heroTitleLines = heroTitle === 'ONLINE JOB PORTAL MANAGEMENT SYSTEM'
-    ? ['ONLINE JOB PORTAL', 'MANAGEMENT', 'SYSTEM']
-    : heroTitle.split(' ');
+  const heroTitle = t('home.heroTitle', { defaultValue: 'FIND THE RIGHT JOB.\nBUILD YOUR FUTURE.' });
+  const heroTitleLines = heroTitle.includes('\n') ? heroTitle.split('\n') : heroTitle.split('. ').filter(Boolean);
 
   const subscribe = (event) => {
     event.preventDefault();
@@ -424,7 +422,7 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-[#0B1220]">
       {/* ════════════════════════════════════════
           1. HERO SECTION
           ════════════════════════════════════════ */}
@@ -434,14 +432,14 @@ const Home = () => {
           style={{ backgroundImage: "url('/images/hero-bg-career.svg')" }}
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#06152B]/85 via-[#0A2A5E]/80 to-[#10337F]/70" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#06152B]/85 via-[#0A2A5E]/80 to-[#10337F]/70 dark:from-[#02040A]/95 dark:via-[#0A1626]/90 dark:to-[#0E1B33]/85" />
 
-        <div className="container-custom relative z-10 py-16 lg:py-24">
+        <div className="container-custom relative z-10 pt-10 pb-16 lg:pt-14 lg:pb-24">
           <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
             {/* Left — copy + search */}
             <div>
               <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-                <h1 className="mt-6 text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+                <h1 className="mt-2 max-w-3xl text-[2.5rem] font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
                   {heroTitleLines.map((line, i) => (
                     <span
                       key={line}
@@ -455,7 +453,10 @@ const Home = () => {
                     </span>
                   ))}
                 </h1>
-                <p className="mt-5 max-w-xl text-base font-semibold leading-relaxed text-sky-100 sm:text-lg [text-shadow:0_2px_12px_rgba(6,30,60,0.6)]">
+                <p className="mt-5 max-w-xl text-base font-medium leading-relaxed text-sky-50 sm:text-lg [text-shadow:0_2px_12px_rgba(6,30,60,0.6)]">
+                  {t('home.heroTagline', { defaultValue: 'Connect with opportunities, discover your potential, and take the next step in your career.' })}
+                </p>
+                <p className="mt-3 max-w-xl text-sm font-medium leading-relaxed tracking-normal text-sky-100/90">
                   {t('home.heroSubtitle', { defaultValue: 'Connecting Ethiopian Youth with Employment Opportunities' })}
                 </p>
               </motion.div>
@@ -463,34 +464,36 @@ const Home = () => {
               {/* Search form */}
               <motion.form
                 onSubmit={handleSearch}
-                className="mt-8 flex w-full max-w-2xl flex-col items-stretch gap-2 rounded-2xl bg-white p-2 shadow-2xl md:flex-row md:items-center"
+                className="mt-8 flex w-full max-w-3xl flex-col items-stretch gap-2 rounded-2xl bg-white p-2 shadow-2xl shadow-blue-950/25 ring-1 ring-black/5 dark:bg-gray-900 dark:ring-white/10 md:flex-row md:items-center"
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.15 }}
                 aria-label="Job search"
               >
-                <div className="relative flex-1">
-                  <FiSearch className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <div className="relative flex-[1.35]">
+                  <FiSearch className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-gray-500" aria-hidden="true" />
                   <input
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
-                    placeholder={t('home.searchPlaceholder', { defaultValue: 'Job title, keywords...' })}
-                    className={inputClass}
+                    placeholder={t('home.searchPlaceholder', { defaultValue: 'Job title, skills, or keywords' })}
+                    aria-label={t('home.searchPlaceholder', { defaultValue: 'Job title, skills, or keywords' })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-blue-500 dark:focus:bg-gray-900"
                   />
                 </div>
-                <div className="hidden h-8 w-px shrink-0 bg-slate-200 md:mx-1 md:block" aria-hidden="true" />
+                <div className="hidden h-9 w-px shrink-0 bg-slate-200 md:block" aria-hidden="true" />
                 <div className="relative flex-1">
-                  <FiMapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                  <FiMapPin className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-gray-500" aria-hidden="true" />
                   <input
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder={t('home.locationPlaceholder', { defaultValue: 'Location' })}
-                    className={inputClass}
+                    aria-label={t('home.locationPlaceholder', { defaultValue: 'Location' })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-blue-500 dark:focus:bg-gray-900"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="ml-0 inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:ml-2"
+                  className="ml-0 inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 md:ml-1"
                 >
                   <FiSearch className="h-4 w-4" aria-hidden="true" />
                   <span>{t('home.searchButton', { defaultValue: 'Search Jobs' })}</span>
@@ -510,6 +513,23 @@ const Home = () => {
                   {t('home.latestJobs', { defaultValue: 'Latest Jobs' })}
                 </Link>
               </div>
+
+              {/* Live platform stats */}
+              {communityStats && communityStats.activeJobs > 0 && (
+                <div className="mt-6 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm font-semibold text-sky-100">
+                  <span>
+                    <span className="text-white">{communityStats.activeJobs.toLocaleString('en-US')}</span>{' '}
+                    {t('home.statsActiveJobs', { defaultValue: 'Active Jobs' })}
+                  </span>
+                  <span className="text-sky-300" aria-hidden="true">•</span>
+                  <span>
+                    <span className="text-white">{communityStats.companies.toLocaleString('en-US')}</span>{' '}
+                    {t('home.statsCompanies', { defaultValue: 'Companies' })}
+                  </span>
+                  <span className="text-sky-300" aria-hidden="true">•</span>
+                  <span className="text-sky-200/90">{t('home.statsDaily', { defaultValue: 'New Opportunities Every Day' })}</span>
+                </div>
+              )}
             </div>
 
             {/* Right — recruitment technology composition */}
@@ -565,7 +585,7 @@ const Home = () => {
       {/* ════════════════════════════════════════
           3. POPULAR JOB CATEGORIES
           ════════════════════════════════════════ */}
-      <section className="bg-slate-50 py-16 lg:py-20" aria-labelledby="categories-heading">
+      <section className="bg-slate-50 py-16 lg:py-20 dark:bg-[#0D1624]" aria-labelledby="categories-heading">
         <div className="container-custom">
           <SectionHeading
             id="categories-heading"
@@ -578,7 +598,7 @@ const Home = () => {
               <Link
                 key={cat.name}
                 to={`/jobs?category=${encodeURIComponent(slugify(cat.name))}`}
-                className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl"
+                className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-800"
               >
                 <span className={`inline-flex h-14 w-14 items-center justify-center rounded-2xl transition-colors duration-300 group-hover:scale-105 group-hover:text-white ${cat.iconBg}`}>
                   {cat.icon ? (
@@ -587,11 +607,11 @@ const Home = () => {
                     <span className="text-xl" aria-hidden="true">{String(cat.name).charAt(0).toUpperCase()}</span>
                   )}
                 </span>
-                <h3 className="mt-5 text-lg font-bold leading-snug text-[#0F172A] transition-colors duration-300 group-hover:text-[#1769E0]">
+                <h3 className="mt-5 text-lg font-bold leading-snug text-[#0F172A] dark:text-gray-100 transition-colors duration-300 group-hover:text-[#1769E0]">
                   {cat.name}
                 </h3>
-                <p className="mt-1.5 text-sm font-medium text-slate-500">{cat.jobs}</p>
-                <span className="absolute right-5 top-6 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:bg-blue-50 group-hover:text-[#1769E0] group-hover:opacity-100 -translate-x-2">
+                <p className="mt-1.5 text-sm font-medium text-slate-500 dark:text-gray-400">{cat.jobs}</p>
+                <span className="absolute right-5 top-6 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:bg-blue-50 group-hover:text-[#1769E0] group-hover:opacity-100 -translate-x-2 dark:bg-gray-800 dark:text-gray-500 dark:group-hover:bg-blue-900/40 dark:group-hover:text-blue-300">
                   <FiArrowRight className="h-4 w-4" aria-hidden="true" />
                 </span>
               </Link>
@@ -600,7 +620,7 @@ const Home = () => {
           <div className="mt-12 text-center">
             <Link
               to="/categories"
-              className="group inline-flex items-center gap-2 rounded-full border-2 border-[#1769E0] px-8 py-3.5 text-sm font-bold text-[#1769E0] transition-all duration-300 hover:bg-[#1769E0] hover:text-white hover:shadow-lg hover:shadow-blue-200"
+              className="group inline-flex items-center gap-2 rounded-full border-2 border-[#1769E0] px-8 py-3.5 text-sm font-bold text-[#1769E0] transition-all duration-300 hover:bg-[#1769E0] hover:text-white hover:shadow-lg hover:shadow-blue-200 dark:text-blue-400"
             >
               {t('home.viewAllCategories', { defaultValue: 'View All Categories' })}
               <FiArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
@@ -612,7 +632,7 @@ const Home = () => {
       {/* ════════════════════════════════════════
           4. LATEST JOBS
           ════════════════════════════════════════ */}
-      <section className="bg-white py-16 lg:py-20" aria-labelledby="latest-jobs-heading">
+      <section className="bg-white py-16 lg:py-20 dark:bg-[#0B1220]" aria-labelledby="latest-jobs-heading">
         <div className="container-custom">
           <SectionHeading
             id="latest-jobs-heading"
@@ -622,7 +642,7 @@ const Home = () => {
           />
 
           {/* Filters */}
-          <div className="mb-8 grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-5">
+          <div className="mb-8 grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-5 dark:border-gray-800 dark:bg-gray-900">
             <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className={selectClass} aria-label="Filter by category">
               <option value="">{t('jobs.category', { defaultValue: 'Category' })}</option>
               {filterOptions.categories.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -649,13 +669,13 @@ const Home = () => {
           {/* Job cards */}
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             {filteredJobs.map((job) => (
-              <div key={job.id} className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl">
+              <div key={job.id} className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-800">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <LogoAvatar logo={job.logo} name={job.companyName} className="h-14 w-14 rounded-2xl" />
                     <div>
-                      <h3 className="text-lg font-bold text-[#0F172A] group-hover:text-blue-700">{job.title}</h3>
-                      <p className="mt-0.5 text-sm font-medium text-slate-500">{job.companyName}</p>
+                      <h3 className="text-lg font-bold text-[#0F172A] dark:text-gray-100 group-hover:text-blue-700">{job.title}</h3>
+                      <p className="mt-0.5 text-sm font-medium text-slate-500 dark:text-gray-400">{job.companyName}</p>
                     </div>
                   </div>
                   <button
@@ -663,25 +683,25 @@ const Home = () => {
                     onClick={() => toggleSave(job.id)}
                     aria-pressed={!!saved[job.id]}
                     aria-label={saved[job.id] ? 'Remove job from saved jobs' : 'Save job'}
-                    className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
-                      saved[job.id] ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600'
+className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
+                      saved[job.id] ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-blue-900/40 dark:hover:text-blue-300'
                     }`}
                   >
                     <FiHeart className="h-4 w-4" fill={saved[job.id] ? 'currentColor' : 'none'} aria-hidden="true" />
                   </button>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">
-                  <span className="inline-flex items-center gap-1.5"><FiMapPin className="h-4 w-4 text-slate-400" aria-hidden="true" />{job.location}</span>
-                  <span className="inline-flex items-center gap-1.5"><FiBriefcase className="h-4 w-4 text-slate-400" aria-hidden="true" />{job.jobType}</span>
-                  <span className="inline-flex items-center gap-1.5"><FiDollarSign className="h-4 w-4 text-slate-400" aria-hidden="true" />{job.salary}</span>
-                  <span className="inline-flex items-center gap-1.5"><FiClock className="h-4 w-4 text-slate-400" aria-hidden="true" />{job.posted}</span>
+                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600 dark:text-gray-400">
+                  <span className="inline-flex items-center gap-1.5"><FiMapPin className="h-4 w-4 text-slate-400 dark:text-gray-500" aria-hidden="true" />{job.location}</span>
+                  <span className="inline-flex items-center gap-1.5"><FiBriefcase className="h-4 w-4 text-slate-400 dark:text-gray-500" aria-hidden="true" />{job.jobType}</span>
+                  <span className="inline-flex items-center gap-1.5"><FiDollarSign className="h-4 w-4 text-slate-400 dark:text-gray-500" aria-hidden="true" />{job.salary}</span>
+                  <span className="inline-flex items-center gap-1.5"><FiClock className="h-4 w-4 text-slate-400 dark:text-gray-500" aria-hidden="true" />{job.posted}</span>
                 </div>
 
                 <div className="mt-5 flex items-center gap-3">
                   <Link
                     to={jobIdIsReal(job.id) ? '/jobs' : `/jobs/${job.id}`}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-600 hover:text-blue-700"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-600 hover:text-blue-700 dark:border-gray-700 dark:text-gray-300 dark:hover:border-blue-500 dark:hover:text-blue-400"
                   >
                     {t('home.viewDetails', { defaultValue: 'View Details' })}
                   </Link>
@@ -714,7 +734,7 @@ const Home = () => {
       {/* ════════════════════════════════════════
           5. TOP COMPANIES
           ════════════════════════════════════════ */}
-      <section className="bg-slate-50 py-16 lg:py-20" aria-labelledby="companies-heading">
+      <section className="bg-slate-50 py-16 lg:py-20 dark:bg-[#0D1624]" aria-labelledby="companies-heading">
         <div className="container-custom">
           <SectionHeading
             id="companies-heading"
@@ -727,21 +747,21 @@ const Home = () => {
               <Link
                 key={company.id}
                 to={`/companies/${company.id}`}
-                className="group rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl"
+                className="group rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-800"
               >
                 <div className="flex justify-center">
                   <LogoAvatar logo={company.logo} name={company.name} className="h-16 w-16 rounded-2xl" />
                 </div>
-                <h3 className="mt-4 text-lg font-bold text-[#0F172A] group-hover:text-blue-700">{company.name}</h3>
-                <p className="mt-1 text-sm font-medium text-slate-500">{company.industry}</p>
-                <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-500">
-                  <FiMapPin className="h-4 w-4 text-slate-400" aria-hidden="true" />{company.location}
+                <h3 className="mt-4 text-lg font-bold text-[#0F172A] dark:text-gray-100 group-hover:text-blue-700">{company.name}</h3>
+                <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">{company.industry}</p>
+                <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-gray-400">
+                  <FiMapPin className="h-4 w-4 text-slate-400 dark:text-gray-500" aria-hidden="true" />{company.location}
                 </p>
-                <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                   <FiBriefcase className="h-3.5 w-3.5" aria-hidden="true" />
                   {company.openPositions} {t('home.openPositions', { defaultValue: 'open positions' })}
                 </p>
-                <div className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-blue-700">
+                <div className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 dark:text-blue-400">
                   {t('home.viewCompany', { defaultValue: 'View Company' })}
                   <FiArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
                 </div>
@@ -763,7 +783,7 @@ const Home = () => {
       {/* ════════════════════════════════════════
           6. HOW IT WORKS
           ════════════════════════════════════════ */}
-      <section className="bg-white py-16 lg:py-20" aria-labelledby="how-heading">
+      <section className="bg-white py-16 lg:py-20 dark:bg-[#0B1220]" aria-labelledby="how-heading">
         <div className="container-custom">
           <SectionHeading
             id="how-heading"
@@ -774,8 +794,8 @@ const Home = () => {
 
           <div className="grid gap-10 lg:grid-cols-2">
             {/* Job Seekers */}
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8">
-              <h3 className="text-xl font-extrabold text-[#0F172A]">{t('home.forJobSeekers', { defaultValue: 'For Job Seekers' })}</h3>
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 dark:border-gray-800 dark:bg-gray-900">
+              <h3 className="text-xl font-extrabold text-[#0F172A] dark:text-gray-100">{t('home.forJobSeekers', { defaultValue: 'For Job Seekers' })}</h3>
               <div className="mt-8 space-y-0">
                 {[
                   { icon: FiUser, title: 'Create an Account' },
@@ -789,8 +809,8 @@ const Home = () => {
                       {i + 1}
                     </span>
                     <div className="pt-1">
-                      <h4 className="text-base font-bold text-[#0F172A]">{step.title}</h4>
-                      <p className="mt-1 text-sm text-slate-500">{t(`home.seekerStep${i + 1}`, { defaultValue: step.title })}</p>
+                      <h4 className="text-base font-bold text-[#0F172A] dark:text-gray-100">{step.title}</h4>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">{t(`home.seekerStep${i + 1}`, { defaultValue: step.title })}</p>
                     </div>
                   </div>
                 ))}
@@ -802,8 +822,8 @@ const Home = () => {
             </div>
 
             {/* Employers */}
-            <div className="rounded-3xl border border-slate-200 bg-blue-50/60 p-8">
-              <h3 className="text-xl font-extrabold text-[#0F172A]">{t('home.forEmployers', { defaultValue: 'For Employers' })}</h3>
+            <div className="rounded-3xl border border-slate-200 bg-blue-50/60 p-8 dark:border-gray-800 dark:bg-blue-900/20">
+              <h3 className="text-xl font-extrabold text-[#0F172A] dark:text-gray-100">{t('home.forEmployers', { defaultValue: 'For Employers' })}</h3>
               <div className="mt-8 space-y-0">
                 {[
                   { icon: FaBuilding, title: 'Register Company' },
@@ -817,8 +837,8 @@ const Home = () => {
                       {i + 1}
                     </span>
                     <div className="pt-1">
-                      <h4 className="text-base font-bold text-[#0F172A]">{step.title}</h4>
-                      <p className="mt-1 text-sm text-slate-500">{t(`home.employerStep${i + 1}`, { defaultValue: step.title })}</p>
+                      <h4 className="text-base font-bold text-[#0F172A] dark:text-gray-100">{step.title}</h4>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">{t(`home.employerStep${i + 1}`, { defaultValue: step.title })}</p>
                     </div>
                   </div>
                 ))}
@@ -865,7 +885,7 @@ const Home = () => {
       {/* ════════════════════════════════════════
           8. WHY CHOOSE US
           ════════════════════════════════════════ */}
-      <section className="bg-slate-50 py-16 lg:py-20" aria-labelledby="why-heading">
+      <section className="bg-slate-50 py-16 lg:py-20 dark:bg-[#0D1624]" aria-labelledby="why-heading">
         <div className="container-custom">
           <SectionHeading
             id="why-heading"
@@ -875,12 +895,12 @@ const Home = () => {
           />
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {FEATURES.map((feature) => (
-              <div key={feature.title} className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 transition-transform duration-300 group-hover:scale-110">
+              <div key={feature.title} className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-xl dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-800">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 transition-transform duration-300 group-hover:scale-110 dark:bg-blue-900/40 dark:text-blue-300">
                   <feature.icon className="h-5 w-5" aria-hidden="true" />
                 </span>
-                <h3 className="mt-4 text-base font-bold text-[#0F172A] group-hover:text-blue-700">{feature.title}</h3>
-                <p className="mt-2 text-sm text-slate-500">{feature.desc}</p>
+                <h3 className="mt-4 text-base font-bold text-[#0F172A] dark:text-gray-100 group-hover:text-blue-700">{feature.title}</h3>
+                <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">{feature.desc}</p>
               </div>
             ))}
           </div>
@@ -890,7 +910,7 @@ const Home = () => {
       {/* ════════════════════════════════════════
           9. CV PROMOTION
           ════════════════════════════════════════ */}
-      <section className="bg-white py-16 lg:py-20" aria-labelledby="cv-heading">
+      <section className="bg-white py-16 lg:py-20 dark:bg-[#0B1220]" aria-labelledby="cv-heading">
         <div className="container-custom">
           <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B1F3F] via-[#0D2A5C] to-[#123B7C]">
             <div className="grid items-center gap-10 p-8 lg:grid-cols-[1.2fr_0.8fr] lg:p-14">
@@ -915,12 +935,12 @@ const Home = () => {
               </div>
               {/* Stylized CV mockup */}
               <div className="hidden lg:flex justify-center">
-                <div className="w-72 rotate-3 rounded-2xl border border-white/20 bg-white p-6 shadow-2xl transition-transform duration-300 hover:rotate-0">
+                <div className="w-72 rotate-3 rounded-2xl border border-white/20 bg-white p-6 shadow-2xl transition-transform duration-300 hover:rotate-0 dark:bg-gray-900">
                   <div className="flex items-center gap-3">
                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white"><FiUser className="h-5 w-5" aria-hidden="true" /></span>
                     <div>
-                      <p className="text-sm font-extrabold text-slate-900">Hanna Bekele</p>
-                      <p className="text-xs text-slate-500">Software Engineer</p>
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-gray-100">Hanna Bekele</p>
+                      <p className="text-xs text-slate-500 dark:text-gray-400">Software Engineer</p>
                     </div>
                   </div>
                   <div className="mt-5 space-y-3">
@@ -932,7 +952,7 @@ const Home = () => {
                   </div>
                   <div className="mt-5 flex flex-wrap gap-2">
                     {['React', 'Node.js', 'SQL', 'Python'].map((skill) => (
-                      <span key={skill} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{skill}</span>
+                      <span key={skill} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">{skill}</span>
                     ))}
                   </div>
                 </div>
@@ -945,7 +965,7 @@ const Home = () => {
       {/* ════════════════════════════════════════
           10. JOB SEEKER & EMPLOYER CTA
           ════════════════════════════════════════ */}
-      <section className="bg-slate-50 py-16 lg:py-20" aria-label="Call to action">
+      <section className="bg-slate-50 py-16 lg:py-20 dark:bg-[#0D1624]" aria-label="Call to action">
         <div className="container-custom">
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-blue-800 p-8 lg:p-10">
@@ -977,7 +997,7 @@ const Home = () => {
       {/* ════════════════════════════════════════
           11. TESTIMONIALS
           ════════════════════════════════════════ */}
-      <section className="bg-white py-16 lg:py-20" aria-labelledby="testimonials-heading">
+      <section className="bg-white py-16 lg:py-20 dark:bg-[#0B1220]" aria-labelledby="testimonials-heading">
         <div className="container-custom">
           <SectionHeading
             id="testimonials-heading"
@@ -987,16 +1007,16 @@ const Home = () => {
           />
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {TESTIMONIALS.map((item) => (
-              <div key={item.name} className="rounded-2xl border border-slate-200 bg-slate-50 p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+              <div key={item.name} className="rounded-2xl border border-slate-200 bg-slate-50 p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-gray-800 dark:bg-gray-900">
                 <Stars rating={item.rating} />
-                <p className="mt-4 text-sm leading-relaxed text-slate-600">“{item.text}”</p>
+                <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-gray-400">“{item.text}”</p>
                 <div className="mt-6 flex items-center gap-3">
                   <span className={`flex h-12 w-12 items-center justify-center rounded-full ${item.color} text-sm font-bold text-white`}>
                     {item.initials}
                   </span>
                   <div>
-                    <p className="text-sm font-bold text-[#0F172A]">{item.name}</p>
-                    <p className="text-xs font-medium text-slate-500">{item.role} · {item.company}</p>
+                    <p className="text-sm font-bold text-[#0F172A] dark:text-gray-100">{item.name}</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-gray-400">{item.role} · {item.company}</p>
                   </div>
                 </div>
               </div>
@@ -1008,27 +1028,27 @@ const Home = () => {
       {/* ════════════════════════════════════════
           12. JOB ALERT SUBSCRIPTION
           ════════════════════════════════════════ */}
-      <section className="bg-slate-50 py-16 lg:py-20" aria-labelledby="alert-heading">
+      <section className="bg-slate-50 py-16 lg:py-20 dark:bg-[#0D1624]" aria-labelledby="alert-heading">
         <div className="container-custom">
-          <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm lg:p-12">
-            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
+          <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm lg:p-12 dark:border-gray-800 dark:bg-gray-900">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
               <FiBell className="h-7 w-7" aria-hidden="true" />
             </span>
-            <h2 id="alert-heading" className="mt-5 text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl">
+            <h2 id="alert-heading" className="mt-5 text-3xl font-extrabold tracking-tight text-[#0F172A] dark:text-gray-100 sm:text-4xl">
               {t('home.alertTitle', { defaultValue: 'Never Miss a Job Opportunity' })}
             </h2>
-            <p className="mt-4 text-base text-slate-600">
+            <p className="mt-4 text-base text-slate-600 dark:text-gray-400">
               {t('home.alertSubtitle', { defaultValue: 'Subscribe to receive the latest job opportunities and career updates.' })}
             </p>
             <form onSubmit={subscribe} className="mx-auto mt-8 flex max-w-lg flex-col gap-3 sm:flex-row">
               <div className="relative flex-1">
-                <FiMail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <FiMail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-gray-500" aria-hidden="true" />
                 <input
                   type="email"
                   name="email"
                   required
                   placeholder={t('home.alertEmail', { defaultValue: 'Enter your email address' })}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500"
                 />
               </div>
               <button
@@ -1039,7 +1059,7 @@ const Home = () => {
                 <FiArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
             </form>
-            <p className="mt-4 text-xs text-slate-400">{t('home.alertPrivacy', { defaultValue: 'We respect your privacy. Unsubscribe at any time.' })}</p>
+            <p className="mt-4 text-xs text-slate-400 dark:text-gray-500">{t('home.alertPrivacy', { defaultValue: 'We respect your privacy. Unsubscribe at any time.' })}</p>
           </div>
         </div>
       </section>

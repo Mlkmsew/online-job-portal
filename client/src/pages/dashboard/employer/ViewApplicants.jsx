@@ -46,6 +46,12 @@ const SORT_OPTIONS = [
   { value: 'status', labelKey: 'interviews.status' },
 ];
 
+const MATCH_FILTER_OPTIONS = [
+  { value: 'all', labelKey: 'employer.applicants.allApplicants' },
+  { value: 'above50', labelKey: 'employer.applicants.above50Match' },
+  { value: 'below50', labelKey: 'employer.applicants.below50Match' },
+];
+
 const getStatusStyles = (status) => {
   switch (status) {
     case 'Submitted':
@@ -110,6 +116,26 @@ const truncateLines = (text, lineCount = 4) => {
   if (!text) return '';
   const lines = text.trim().split('\n').filter(Boolean);
   return lines.slice(0, lineCount).join('\n');
+};
+
+// When the resume endpoint fails, axios returns the error body as a Blob (due to
+// responseType: 'blob'). Read it back so the real backend error message surfaces
+// instead of a generic fallback.
+const extractErrorBlobMessage = async (error) => {
+  const data = error.response?.data;
+  if (data && typeof data.text === 'function' && !(data instanceof Blob)) {
+    return data.message;
+  }
+  if (data instanceof Blob && data.type && data.type.includes('json')) {
+    try {
+      const text = await data.text();
+      const parsed = JSON.parse(text);
+      return parsed?.message || parsed?.error || text;
+    } catch {
+      return null;
+    }
+  }
+  return data?.message || error?.message || null;
 };
 
 const createProfileUrl = (url) => {
@@ -181,6 +207,28 @@ const getApplicantPortfolio = (application, applicant) => {
   };
 };
 
+// Pair this job's employer-configured application fields with the answers the
+// applicant submitted. Matching works by stored fieldId first, then by question
+// label so older applications remain readable.
+const getApplicationAnswers = (application) => {
+  const fields = Array.isArray(application?.job?.applicationFields) ? application.job.applicationFields : [];
+  const answers = Array.isArray(application?.screeningAnswers) ? application.screeningAnswers : [];
+  if (!fields.length) return [];
+  return fields.map((field) => {
+    const fieldId = field._id ? String(field._id) : null;
+    const answer = answers.find(
+      (item) =>
+        (fieldId && item.fieldId && String(item.fieldId) === fieldId) ||
+        (item.question && String(item.question).trim() === String(field.label || '').trim())
+    );
+    return {
+      label: field.label,
+      value: String(answer?.answer ?? '').trim(),
+      required: !!field.required,
+    };
+  });
+};
+
 const ViewApplicants = () => {
   const { t } = useTranslation();
   const { jobId } = useParams();
@@ -190,6 +238,7 @@ const ViewApplicants = () => {
 
   const [selectedJobId, setSelectedJobId] = useState(jobId || 'all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [matchFilter, setMatchFilter] = useState('all');
   const [sortBy, setSortBy] = useState('-matchScore');
   const [searchTerm, setSearchTerm] = useState('');
   // viewMode removed — always use list layout (single column)
@@ -200,6 +249,7 @@ const ViewApplicants = () => {
   const [interviewModal, setInterviewModal] = useState(null);
   const [interviewForm, setInterviewForm] = useState({ interviewDate: '', interviewTime: '', interviewLocation: '' });
   const [activeProfile, setActiveProfile] = useState(null);
+  const [expandedCoverLetters, setExpandedCoverLetters] = useState({});
 
   useEffect(() => {
     setSelectedJobId(jobId || 'all');
@@ -210,11 +260,12 @@ const ViewApplicants = () => {
     dispatch(fetchEmployerApplications({
       job: selectedJobId === 'all' ? undefined : selectedJobId,
       status: selectedStatus === 'all' ? undefined : selectedStatus,
+      matchBand: matchFilter === 'all' ? undefined : matchFilter,
       sort: sortBy,
       page,
       limit: 10,
     }));
-  }, [dispatch, selectedJobId, selectedStatus, sortBy, page]);
+  }, [dispatch, selectedJobId, selectedStatus, matchFilter, sortBy, page]);
 
   useEffect(() => {
     const map = {};
@@ -274,6 +325,7 @@ const ViewApplicants = () => {
       dispatch(fetchEmployerApplications({
         job: selectedJobId === 'all' ? undefined : selectedJobId,
         status: selectedStatus === 'all' ? undefined : selectedStatus,
+        matchBand: matchFilter === 'all' ? undefined : matchFilter,
         sort: sortBy,
         page,
         limit: 10,
@@ -294,6 +346,7 @@ const ViewApplicants = () => {
       dispatch(fetchEmployerApplications({
         job: selectedJobId === 'all' ? undefined : selectedJobId,
         status: selectedStatus === 'all' ? undefined : selectedStatus,
+        matchBand: matchFilter === 'all' ? undefined : matchFilter,
         sort: sortBy,
         page,
         limit: 10,
@@ -325,6 +378,7 @@ const ViewApplicants = () => {
       dispatch(fetchEmployerApplications({
         job: selectedJobId === 'all' ? undefined : selectedJobId,
         status: selectedStatus === 'all' ? undefined : selectedStatus,
+        matchBand: matchFilter === 'all' ? undefined : matchFilter,
         sort: sortBy,
         page,
         limit: 10,
@@ -348,6 +402,7 @@ const ViewApplicants = () => {
       dispatch(fetchEmployerApplications({
         job: selectedJobId === 'all' ? undefined : selectedJobId,
         status: selectedStatus === 'all' ? undefined : selectedStatus,
+        matchBand: matchFilter === 'all' ? undefined : matchFilter,
         sort: sortBy,
         page,
         limit: 10,
@@ -361,14 +416,57 @@ const ViewApplicants = () => {
     setActiveProfile(application);
   };
 
+  const toggleCoverLetter = (applicationId) => {
+    setExpandedCoverLetters((prev) => ({ ...prev, [applicationId]: !prev[applicationId] }));
+  };
+
   const handleViewResume = async (applicationId) => {
     try {
       const response = await api.get(`/applications/${applicationId}/resume`, { responseType: 'blob' });
-      const blobUrl = window.URL.createObjectURL(response.data);
+      const blob = response.data;
+      if (!blob || !blob.type || !blob.type.includes('pdf')) {
+        toast.error(t('employer.applicants.resumeNotPdf'));
+        return;
+      }
+      const blobUrl = window.URL.createObjectURL(blob);
       window.open(blobUrl, '_blank');
       setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Unable to view resume.');
+      const message = await extractErrorBlobMessage(error);
+      toast.error(message || 'Unable to view resume.');
+    }
+  };
+
+  const handleDownloadResume = async (applicationId, fallbackName = 'resume') => {
+    try {
+      const response = await api.get(`/applications/${applicationId}/resume`, { responseType: 'blob' });
+      const blobUrl = window.URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fallbackName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+    } catch (error) {
+      const message = await extractErrorBlobMessage(error);
+      toast.error(message || 'Unable to download resume.');
+    }
+  };
+
+  const handlePrintResume = async (applicationId) => {
+    try {
+      const response = await api.get(`/applications/${applicationId}/resume`, { responseType: 'blob' });
+      const blobUrl = window.URL.createObjectURL(response.data);
+      const win = window.open(blobUrl, '_blank');
+      if (win) {
+        win.focus();
+        setTimeout(() => win.print(), 700);
+      }
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+    } catch (error) {
+      const message = await extractErrorBlobMessage(error);
+      toast.error(message || 'Unable to print resume.');
     }
   };
 
@@ -463,6 +561,17 @@ const ViewApplicants = () => {
             </select>
 
             <select
+              value={matchFilter}
+              onChange={(event) => { setMatchFilter(event.target.value); setPage(1); }}
+              className="input w-full xl:w-auto xl:min-w-[200px]"
+              aria-label="Filter by match score"
+            >
+              {MATCH_FILTER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
+              ))}
+            </select>
+
+            <select
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value)}
               className="input w-full xl:w-auto xl:min-w-[220px]"
@@ -547,7 +656,13 @@ const ViewApplicants = () => {
           <div className="rounded-3xl bg-[#EAF2FE] p-8">
             <Users className="mx-auto h-12 w-12 text-[#0D5BC4]" />
           </div>
-          <h2 className="text-2xl font-semibold text-slate-900">{t('employer.applicants.noApplicants')}</h2>
+          <h2 className="text-2xl font-semibold text-slate-900">
+            {matchFilter === 'above50'
+              ? t('employer.applicants.noApplicantsAbove50')
+              : matchFilter === 'below50'
+                ? t('employer.applicants.noApplicantsBelow50')
+                : t('employer.applicants.noApplicants')}
+          </h2>
           <p className="max-w-none text-sm text-slate-500">{t('employer.applicants.noApplicantsSub')}</p>
         </div>
       ) : (
@@ -566,53 +681,59 @@ const ViewApplicants = () => {
             const fileName = getFileNameFromUrl(resumeUrl);
             const resumeDate = formatDate(application.appliedAt || application.createdAt);
             const { website: portfolio, github, linkedin } = getApplicantPortfolio(application, applicant);
-            const shortCoverLetter = truncateLines(application.coverLetter || 'No cover letter provided.', 4);
-            const coverLetterLines = (application.coverLetter || '').split('\n').filter(Boolean).length;
-            const isCoverLetterTruncated = coverLetterLines > 4 || (application.coverLetter || '').length > 220;
+            const coverLetterText = application.coverLetter || '';
+            const hasCoverLetter = Boolean(coverLetterText.trim());
+            const shortCoverLetter = truncateLines(coverLetterText || 'No cover letter provided.', 4);
+            const coverLetterLines = coverLetterText.split('\n').filter(Boolean).length;
+            const isCoverLetterTruncated = coverLetterLines > 4 || coverLetterText.length > 220;
+            const isCoverLetterExpanded = Boolean(expandedCoverLetters[application._id]);
+            const applicationAnswers = getApplicationAnswers(application);
 
             return (
               <article key={application._id} className="w-full bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                <div className="relative">
-                  <div className={`absolute right-6 top-6 z-20 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${getStatusStyles(application.status)}`}>
-                    {getStatusLabel(application.status, t)}
+                <div className="space-y-6">
+                  <div className="flex justify-end">
+                    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${getStatusStyles(application.status)}`}>
+                      {getStatusLabel(application.status, t)}
+                    </span>
                   </div>
-                  <div className="grid gap-6 lg:grid-cols-3">
-                    <div className="space-y-5 lg:col-span-1">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#DCEAFD] text-[#0A4FA8] overflow-hidden">
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <div className="space-y-5 lg:col-span-1 min-w-0">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex items-center gap-4 cursor-pointer min-w-0" onClick={() => handleProfileOpen(application)}>
+                          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-[#DCEAFD] text-[#0A4FA8] overflow-hidden">
                             {applicant.avatar ? (
                               <img src={applicant.avatar} alt={`${applicant.firstName || 'Candidate'} avatar`} className="h-full w-full object-cover" />
                             ) : (
                               <User className="h-8 w-8" />
                             )}
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-xl font-semibold text-slate-900">{applicant.firstName || t('interviews.candidate')} {applicant.lastName || ''}</h3>
+                              <h3 className="text-xl font-semibold text-slate-900 break-words [overflow-wrap:anywhere]">{applicant.firstName || t('interviews.candidate')} {applicant.lastName || ''}</h3>
                               {isNew && <span className="rounded-full bg-[#DCEAFD] px-2.5 py-1 text-xs font-semibold text-[#0A4FA8]">{t('common.new') || 'New'}</span>}
                             </div>
-                            <p className="mt-1 text-sm text-slate-500">{t('employer.applicants.appliedFor')} {job.title || 'Unknown role'}</p>
-                            <div className="mt-3 flex flex-wrap gap-3 text-sm text-slate-500">
-                              <span className="inline-flex items-center gap-2"><Mail className="h-3.5 w-3.5" />{applicant.email || t('employer.applicants.notProvided')}</span>
-                              <span className="inline-flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{applicant.phone || t('employer.applicants.notProvided')}</span>
+                            <p className="mt-1 text-sm text-slate-500 break-words [overflow-wrap:anywhere]">{t('employer.applicants.appliedFor')} {job.title || 'Unknown role'}</p>
+                            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-500 min-w-0">
+                              <span className="inline-flex items-center gap-2 min-w-0 [overflow-wrap:anywhere]"><Mail className="h-3.5 w-3.5 shrink-0" />{applicant.email || t('employer.applicants.notProvided')}</span>
+                              <span className="inline-flex items-center gap-2 min-w-0 [overflow-wrap:anywhere]"><MapPin className="h-3.5 w-3.5 shrink-0" />{applicant.phone || t('employer.applicants.notProvided')}</span>
                             </div>
                           </div>
                         </div>
-                        <div className="space-y-1 rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm">
-                          <div className="flex items-center gap-2 text-slate-500"><CalendarDays className="h-4 w-4" /> {t('employer.applicants.appliedDate')} {formatDate(application.appliedAt || application.createdAt)}</div>
-                          <div className="flex items-center gap-2 text-slate-500"><MapPin className="h-4 w-4" /> {location}</div>
+                        <div className="space-y-1 rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm min-w-0">
+                          <div className="flex items-center gap-2 text-slate-500 [overflow-wrap:anywhere]"><CalendarDays className="h-4 w-4 shrink-0" /> {t('employer.applicants.appliedDate')} {formatDate(application.appliedAt || application.createdAt)}</div>
+                          <div className="flex items-center gap-2 text-slate-500 [overflow-wrap:anywhere]"><MapPin className="h-4 w-4 shrink-0" /> {location}</div>
                         </div>
                       </div>
 
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 min-w-0">
                           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('employer.applicants.education')}</p>
-                          <p className="mt-3 text-sm text-slate-700">{education}</p>
+                          <p className="mt-3 text-sm text-slate-700 break-words [overflow-wrap:anywhere]">{education}</p>
                         </div>
-                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 min-w-0">
                           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('employer.applicants.experience')}</p>
-                          <p className="mt-3 text-sm text-slate-700">{experience}</p>
+                          <p className="mt-3 text-sm text-slate-700 break-words [overflow-wrap:anywhere]">{experience}</p>
                         </div>
                       </div>
 
@@ -628,26 +749,55 @@ const ViewApplicants = () => {
 
                         <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
                           <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('employer.applicants.coverLetter')}</p>
-                              <p className="mt-3 whitespace-pre-line text-sm text-slate-700">{shortCoverLetter}</p>
-                            </div>
-                            {isCoverLetterTruncated && (
-                              <button type="button" onClick={() => handleProfileOpen(application)} className="text-sm font-semibold text-[#1769E0] hover:text-[#1769E0]">{t('employer.applicants.readMore')}</button>
+                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('employer.applicants.coverLetter')}</p>
+                          </div>
+                          <div className="mt-3 w-full min-w-0 max-w-full">
+                            <p className={`whitespace-pre-line text-sm text-slate-700 break-words [overflow-wrap:anywhere] ${isCoverLetterExpanded ? '' : 'line-clamp-4'}`}>
+                              {hasCoverLetter
+                                ? (isCoverLetterExpanded ? coverLetterText : shortCoverLetter)
+                                : t('employer.applicants.noCoverLetter')}
+                            </p>
+                            {hasCoverLetter && isCoverLetterTruncated && (
+                              <button
+                                type="button"
+                                onClick={() => toggleCoverLetter(application._id)}
+                                className="mt-2 text-sm font-semibold text-[#1769E0] hover:text-[#0D5BC4]"
+                              >
+                                {isCoverLetterExpanded ? t('employer.applicants.readLess') : t('employer.applicants.readMore')}
+                              </button>
                             )}
                           </div>
                         </div>
+
+                        {applicationAnswers.length > 0 && (
+                          <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('employer.applicants.applicationQuestions')}</p>
+                            <div className="mt-3 space-y-3">
+                              {applicationAnswers.map((item) => (
+                                <div key={item.label} className="rounded-2xl bg-slate-50 p-3">
+                                  <p className="text-xs font-semibold text-slate-500">
+                                    {item.label}
+                                    {item.required && <span className="ml-1 text-rose-500">*</span>}
+                                  </p>
+                                  <p className="mt-1 whitespace-pre-line break-words text-sm text-slate-800 [overflow-wrap:anywhere]">
+                                    {item.value || t('employer.applicants.notProvided')}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="space-y-6 lg:col-span-1">
+                    <div className="space-y-6 lg:col-span-1 min-w-0">
                       <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                         <div className="flex items-center justify-between gap-4">
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-sm uppercase tracking-[0.2em] text-slate-400">{t('employer.applicants.match')}</p>
                             <p className="mt-1 text-2xl font-semibold text-slate-900">{matchScore}%</p>
                           </div>
-                          <div className="relative h-24 w-24 overflow-visible">
+                          <div className="relative h-24 w-24 shrink-0 overflow-visible">
                             <svg viewBox="0 0 36 36" className="h-24 w-24">
                               <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="#E2E8F0" strokeWidth="3.5" />
                               <path
@@ -671,18 +821,23 @@ const ViewApplicants = () => {
 
                       <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-1">
                         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('employer.applicants.resume')}</p>
-                        <p className="mt-3 text-sm font-semibold text-slate-900">{fileName}</p>
-                        <p className="mt-1 text-sm text-slate-500">{t('employer.applicants.uploaded')} {resumeDate}</p>
-                        <p className="mt-1 text-sm text-slate-500">{t('employer.applicants.fileSizeNotAvailable')}</p>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleViewResume(application._id)}
-                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#1769E0] hover:text-[#1769E0]"
-                          >
-                            <ExternalLink className="h-4 w-4" /> {t('employer.applicants.viewResume')}
-                          </button>
-                        </div>
+                        {resumeUrl ? (
+                          <>
+                            <p className="mt-3 break-words text-sm font-semibold text-slate-900 [overflow-wrap:anywhere]">{fileName}</p>
+                            <p className="mt-1 text-sm text-slate-500">{t('employer.applicants.uploaded')} {resumeDate}</p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleViewResume(application._id)}
+                                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#1769E0] hover:text-[#1769E0]"
+                              >
+                                <ExternalLink className="h-4 w-4" /> {t('employer.applicants.viewResume')}
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="mt-3 text-sm text-slate-500">{t('employer.applicants.noResume')}</p>
+                        )}
                       </div>
 
                       <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -723,7 +878,7 @@ const ViewApplicants = () => {
                     </div>
                   </div>
 
-                  <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 lg:col-span-3 lg:sticky lg:bottom-4 lg:z-30 shadow-sm">
+                  <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
                         <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('employer.applicants.currentStatus')}</p>
@@ -761,7 +916,7 @@ const ViewApplicants = () => {
                     </div>
                   </div>
 
-                  <div className="mt-6 rounded-3xl border border-slate-200 bg-amber-50 p-5 shadow-sm lg:col-span-3">
+                  <div className="rounded-3xl border border-slate-200 bg-amber-50 p-5 shadow-sm">
                     <div className="flex items-center justify-between gap-4">
                       <h4 className="text-sm font-semibold text-slate-900">{t('employer.applicants.employerNotesPrivate')}</h4>
                       <span className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('employer.applicants.visibleTeamOnly')}</span>
@@ -942,6 +1097,26 @@ const ViewApplicants = () => {
                   </div>
                 </section>
 
+                {/* Application Questions */}
+                {getApplicationAnswers(activeProfile).length > 0 && (
+                  <section className="rounded-2xl border border-slate-100 bg-white p-4">
+                    <p className="text-sm uppercase tracking-[0.2em] text-slate-400">{t('employer.applicants.applicationQuestions')}</p>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      {getApplicationAnswers(activeProfile).map((item) => (
+                        <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                          <p className="text-xs font-semibold text-slate-500">
+                            {item.label}
+                            {item.required && <span className="ml-1 text-rose-500">*</span>}
+                          </p>
+                          <p className="mt-1 whitespace-pre-line break-words text-sm text-slate-800 [overflow-wrap:anywhere]">
+                            {item.value || t('employer.applicants.notProvided')}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 <div className="grid gap-6 md:grid-cols-3">
                   {/* Match Analysis */}
                   <div className="md:col-span-1 rounded-2xl border border-slate-100 bg-white p-4">
@@ -977,16 +1152,24 @@ const ViewApplicants = () => {
                   {/* Resume & Portfolio */}
                   <div className="md:col-span-2 rounded-2xl border border-slate-100 bg-white p-4">
                     <div className="flex items-start justify-between gap-4">
-                      <div>
+                      <div className="min-w-0 max-w-full">
                         <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Resume</p>
-                        <p className="mt-2 text-sm font-semibold text-slate-900">{getFileNameFromUrl(activeProfile.resumeUrl || activeProfile.applicant?.cv)}</p>
-                        <p className="mt-1 text-sm text-slate-500">Uploaded {formatDate(activeProfile.appliedAt || activeProfile.createdAt)} • File size: Not available • Type: PDF</p>
+                        {activeProfile.resumeUrl || activeProfile.applicant?.cv ? (
+                          <>
+                            <p className="mt-2 break-words text-sm font-semibold text-slate-900 [overflow-wrap:anywhere]">{getFileNameFromUrl(activeProfile.resumeUrl || activeProfile.applicant?.cv)}</p>
+                            <p className="mt-1 text-sm text-slate-500">Uploaded {formatDate(activeProfile.appliedAt || activeProfile.createdAt)}</p>
+                          </>
+                        ) : (
+                          <p className="mt-2 text-sm text-slate-500">No resume uploaded</p>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => window.open(`${api.defaults.baseURL}/applications/${activeProfile._id}/resume`, '_blank')} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">View</button>
-                        <button type="button" onClick={() => window.open(`${api.defaults.baseURL}/applications/${activeProfile._id}/resume?download=1`, '_blank')} className="inline-flex items-center gap-2 rounded-md bg-[#1769E0] px-3 py-2 text-sm font-semibold text-white">Download</button>
-                        <button type="button" onClick={() => { const w = window.open(`${api.defaults.baseURL}/applications/${activeProfile._id}/resume`, '_blank'); if (w) { w.focus(); setTimeout(() => w.print(), 700); } }} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">Print</button>
-                      </div>
+                      {(activeProfile.resumeUrl || activeProfile.applicant?.cv) && (
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={() => handleViewResume(activeProfile._id)} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">View</button>
+                          <button type="button" onClick={() => handleDownloadResume(activeProfile._id, getFileNameFromUrl(activeProfile.resumeUrl || activeProfile.applicant?.cv))} className="inline-flex items-center gap-2 rounded-md bg-[#1769E0] px-3 py-2 text-sm font-semibold text-white">Download</button>
+                          <button type="button" onClick={() => handlePrintResume(activeProfile._id)} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">Print</button>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-4 grid gap-4 md:grid-cols-3">

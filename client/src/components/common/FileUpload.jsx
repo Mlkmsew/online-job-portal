@@ -4,15 +4,19 @@
 import { useState, useRef } from 'react';
 import { FaCloudUploadAlt, FaFile, FaTimes, FaCheckCircle } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 const FileUpload = ({
   accept = '*',
   multiple = false,
   maxSize = 5 * 1024 * 1024, // 5MB default
   onFileSelect,
-  label = 'Upload File',
-  helperText = 'Drag and drop or click to upload',
+  label,
+  helperText,
 }) => {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t('common.uploadFile', { defaultValue: 'Upload File' });
+  const resolvedHelperText = helperText ?? t('common.dragDropUpload', { defaultValue: 'Drag and drop or click to upload' });
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [error, setError] = useState('');
@@ -21,7 +25,10 @@ const FileUpload = ({
 
   const validateFile = (file) => {
     if (file.size > maxSize) {
-      return `File size exceeds ${(maxSize / 1024 / 1024).toFixed(1)}MB`;
+      return t('common.fileSizeExceeded', {
+        defaultValue: 'File size exceeds {{size}}MB',
+        size: (maxSize / 1024 / 1024).toFixed(1),
+      });
     }
     
     if (accept !== '*') {
@@ -37,7 +44,10 @@ const FileUpload = ({
       });
       
       if (!isValid) {
-        return `File type not accepted. Allowed: ${accept}`;
+        return t('common.fileTypeNotAccepted', {
+          defaultValue: 'File type not accepted. Allowed: {{types}}',
+          types: accept,
+        });
       }
     }
     
@@ -60,7 +70,7 @@ const FileUpload = ({
     }
     
     if (!multiple && validFiles.length > 1) {
-      setError('Only one file is allowed');
+      setError(t('common.onlyOneFile', { defaultValue: 'Only one file is allowed' }));
       return;
     }
     
@@ -153,17 +163,17 @@ const FileUpload = ({
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    if (bytes < 1024) return t('common.fileSizeBytes', { defaultValue: '{{size}} B', size: bytes });
+    if (bytes < 1024 * 1024) return t('common.fileSizeKB', { defaultValue: '{{size}} KB', size: (bytes / 1024).toFixed(1) });
+    return t('common.fileSizeMB', { defaultValue: '{{size}} MB', size: (bytes / 1024 / 1024).toFixed(1) });
   };
 
   return (
     <div className="w-full">
       {/* Label */}
-      {label && (
+      {resolvedLabel && (
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {label}
+          {resolvedLabel}
         </label>
       )}
 
@@ -192,13 +202,13 @@ const FileUpload = ({
         <FaCloudUploadAlt className="mx-auto text-5xl text-gray-400 dark:text-gray-500 mb-4" />
         
         <p className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {helperText}
+          {resolvedHelperText}
         </p>
         
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {accept !== '*' && `Accepted files: ${accept}`}
+          {accept !== '*' && t('common.acceptedFiles', { defaultValue: 'Accepted files: {{types}}', types: accept })}
           {accept !== '*' && maxSize && ' • '}
-          {maxSize && `Max size: ${(maxSize / 1024 / 1024).toFixed(1)}MB`}
+          {maxSize && t('common.maxSize', { defaultValue: 'Max size: {{size}}MB', size: (maxSize / 1024 / 1024).toFixed(1) })}
         </p>
       </div>
 

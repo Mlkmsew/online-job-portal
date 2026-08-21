@@ -175,6 +175,13 @@ const normalizeImportedResume = (data) => {
   return base;
 };
 
+// Experience/Education can be a single object (legacy/new resume) or an array of
+// entries (loaded from the backend, which stores them as arrays). The editor
+// always edits the first entry, so both shapes must be handled without changing
+// the filled data when the template is switched.
+const getFirstEntry = (value) =>
+  Array.isArray(value) ? (value[0] || {}) : (value && typeof value === 'object' ? value : {});
+
 const ResumeBuilder = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
@@ -553,7 +560,7 @@ const ResumeBuilder = () => {
   const handleConfirmTitle = (e) => {
     e.preventDefault();
     if (!newResumeTitle.trim()) {
-      toast.error('Please enter a resume title');
+      toast.error(t('resume.enterTitle', { defaultValue: 'Please enter a resume title' }));
       return;
     }
 
@@ -934,6 +941,12 @@ const ResumeBuilder = () => {
         if (section === 'languages' && field === 'value') {
           return withDirty({ ...r, languages: value }, 'languages');
         }
+        if (Array.isArray(r[section])) {
+          const entries = [...r[section]];
+          if (entries.length === 0) entries.push({});
+          entries[0] = { ...(entries[0] || {}), [field]: value };
+          return withDirty({ ...r, [section]: entries }, dirtyKey);
+        }
         return withDirty({
           ...r,
           [section]: {
@@ -1306,7 +1319,7 @@ const ResumeBuilder = () => {
 
   const handleAddDutyExample = (example) => {
     if (!activeResume) return;
-    const currentDuties = activeResume.experience?.duties || '';
+    const currentDuties = getFirstEntry(activeResume.experience).duties || '';
     const newDuties = currentDuties 
       ? `${currentDuties}\nâ€¢ ${example}` 
       : `â€¢ ${example}`;
@@ -1357,8 +1370,10 @@ const ResumeBuilder = () => {
     const fullName = [resume.profile?.firstName, resume.profile?.middleName, resume.profile?.lastName].filter(Boolean).join(' ');
     const profession = resume.profile?.profession?.trim();
     const hasSummary = Boolean(resume.summary?.text?.trim());
-    const hasExperience = Boolean(resume.experience?.jobTitle?.trim() || resume.experience?.employer?.trim());
-    const hasEducation = Boolean(resume.education?.degree?.trim() || resume.education?.fieldOfStudy?.trim());
+    const firstExperience = getFirstEntry(resume.experience);
+    const firstEducation = getFirstEntry(resume.education);
+    const hasExperience = Boolean(firstExperience?.jobTitle?.trim() || firstExperience?.employer?.trim());
+    const hasEducation = Boolean(firstEducation?.degree?.trim() || firstEducation?.fieldOfStudy?.trim());
     const hasContact = Boolean(resume.profile?.email?.trim() || resume.profile?.phone?.trim());
     const hasSkills = (resume.skills || []).some(skill => skill?.name?.trim());
     const hasSoftSkills = (resume.softSkills || []).some(skill => skill?.trim());
@@ -1409,8 +1424,8 @@ const ResumeBuilder = () => {
                 {hasExperience && (
                   <section>
                     <h4 className="text-sm font-semibold uppercase text-gray-600">Experience</h4>
-                    {resume.experience?.jobTitle && <p className="mt-2 font-semibold">{resume.experience.jobTitle}</p>}
-                    {resume.experience?.employer && <p className="text-sm text-gray-600">{resume.experience.employer}</p>}
+                    {firstExperience?.jobTitle && <p className="mt-2 font-semibold">{firstExperience.jobTitle}</p>}
+                    {firstExperience?.employer && <p className="text-sm text-gray-600">{firstExperience.employer}</p>}
                   </section>
                 )}
 
@@ -1418,9 +1433,9 @@ const ResumeBuilder = () => {
                   <section>
                     <h4 className="text-sm font-semibold uppercase text-gray-600">Education</h4>
                     <p className="mt-2 text-sm text-gray-700">
-                      {resume.education?.degree ? resume.education.degree : ''}
-                      {resume.education?.degree && resume.education?.fieldOfStudy ? ' in ' : ''}
-                      {resume.education?.fieldOfStudy || ''}
+                      {firstEducation?.degree ? firstEducation.degree : ''}
+                      {firstEducation?.degree && firstEducation?.fieldOfStudy ? ' in ' : ''}
+                      {firstEducation?.fieldOfStudy || ''}
                     </p>
                   </section>
                 )}
@@ -2072,7 +2087,7 @@ const ResumeBuilder = () => {
                         <label className="block text-sm font-medium mb-1.5">Job Title</label>
                         <input
                           type="text"
-                          value={activeResume.experience?.jobTitle || ''}
+                          value={getFirstEntry(activeResume.experience).jobTitle || ''}
                           onChange={(e) => handleFieldChange('experience', 'jobTitle', e.target.value)}
                           className="input"
                         />
@@ -2081,7 +2096,7 @@ const ResumeBuilder = () => {
                         <label className="block text-sm font-medium mb-1.5">Employer</label>
                         <input
                           type="text"
-                          value={activeResume.experience?.employer || ''}
+                          value={getFirstEntry(activeResume.experience).employer || ''}
                           onChange={(e) => handleFieldChange('experience', 'employer', e.target.value)}
                           className="input"
                         />
@@ -2090,7 +2105,7 @@ const ResumeBuilder = () => {
                         <label className="block text-sm font-medium mb-1.5">City</label>
                         <input
                           type="text"
-                          value={activeResume.experience?.city || ''}
+                          value={getFirstEntry(activeResume.experience).city || ''}
                           onChange={(e) => handleFieldChange('experience', 'city', e.target.value)}
                           className="input"
                         />
@@ -2099,7 +2114,7 @@ const ResumeBuilder = () => {
                         <label className="block text-sm font-medium mb-1.5">State</label>
                         <input
                           type="text"
-                          value={activeResume.experience?.state || ''}
+                          value={getFirstEntry(activeResume.experience).state || ''}
                           onChange={(e) => handleFieldChange('experience', 'state', e.target.value)}
                           className="input"
                         />
@@ -2108,7 +2123,7 @@ const ResumeBuilder = () => {
                         <label className="block text-sm font-medium mb-1.5">Start Date</label>
                         <input
                           type="date"
-                          value={activeResume.experience?.startDate || ''}
+                          value={getFirstEntry(activeResume.experience).startDate || ''}
                           onChange={(e) => handleFieldChange('experience', 'startDate', e.target.value)}
                           className="input"
                         />
@@ -2117,8 +2132,8 @@ const ResumeBuilder = () => {
                         <label className="block text-sm font-medium mb-1.5">End Date</label>
                         <input
                           type="date"
-                          disabled={activeResume.experience?.currentWork}
-                          value={activeResume.experience?.currentWork ? '' : (activeResume.experience?.endDate || '')}
+                          disabled={getFirstEntry(activeResume.experience).currentWork}
+                          value={getFirstEntry(activeResume.experience).currentWork ? '' : (getFirstEntry(activeResume.experience).endDate || '')}
                           onChange={(e) => handleFieldChange('experience', 'endDate', e.target.value)}
                           className="input disabled:opacity-50"
                         />
@@ -2129,7 +2144,7 @@ const ResumeBuilder = () => {
                       <input
                         type="checkbox"
                         id="currentWork"
-                        checked={activeResume.experience?.currentWork || false}
+                        checked={getFirstEntry(activeResume.experience).currentWork || false}
                         onChange={(e) => handleFieldChange('experience', 'currentWork', e.target.checked)}
                         className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                       />
@@ -2153,7 +2168,7 @@ const ResumeBuilder = () => {
                       <textarea
                         rows="6"
                         placeholder="Enter Job Responsibilities"
-                        value={activeResume.experience?.duties || ''}
+                        value={getFirstEntry(activeResume.experience).duties || ''}
                         onChange={(e) => handleFieldChange('experience', 'duties', e.target.value)}
                         className="w-full resize-none border-none bg-white p-4 text-sm focus:outline-none dark:bg-gray-800"
                       />
@@ -2202,7 +2217,7 @@ const ResumeBuilder = () => {
                     <label className="block text-sm font-medium mb-1.5">School Name</label>
                     <input
                       type="text"
-                      value={activeResume.education?.schoolName || ''}
+                      value={getFirstEntry(activeResume.education).schoolName || ''}
                       onChange={(e) => handleFieldChange('education', 'schoolName', e.target.value)}
                       className="input"
                     />
@@ -2211,7 +2226,7 @@ const ResumeBuilder = () => {
                     <label className="block text-sm font-medium mb-1.5">City</label>
                     <input
                       type="text"
-                      value={activeResume.education?.city || ''}
+                      value={getFirstEntry(activeResume.education).city || ''}
                       onChange={(e) => handleFieldChange('education', 'city', e.target.value)}
                       className="input"
                     />
@@ -2220,7 +2235,7 @@ const ResumeBuilder = () => {
                     <label className="block text-sm font-medium mb-1.5">State</label>
                     <input
                       type="text"
-                      value={activeResume.education?.state || ''}
+                      value={getFirstEntry(activeResume.education).state || ''}
                       onChange={(e) => handleFieldChange('education', 'state', e.target.value)}
                       className="input"
                     />
@@ -2228,7 +2243,7 @@ const ResumeBuilder = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1.5">Select a degree</label>
                     <select
-                      value={activeResume.education?.degree || 'Select'}
+                      value={getFirstEntry(activeResume.education).degree || 'Select'}
                       onChange={(e) => handleFieldChange('education', 'degree', e.target.value)}
                       className="select"
                     >
@@ -2243,7 +2258,7 @@ const ResumeBuilder = () => {
                     <label className="block text-sm font-medium mb-1.5">Field of Study</label>
                     <input
                       type="text"
-                      value={activeResume.education?.fieldOfStudy || ''}
+                      value={getFirstEntry(activeResume.education).fieldOfStudy || ''}
                       onChange={(e) => handleFieldChange('education', 'fieldOfStudy', e.target.value)}
                       className="input"
                     />
@@ -2252,7 +2267,7 @@ const ResumeBuilder = () => {
                     <label className="block text-sm font-medium mb-1.5">Graduation Start Date</label>
                     <input
                       type="date"
-                      value={activeResume.education?.startDate || ''}
+                      value={getFirstEntry(activeResume.education).startDate || ''}
                       onChange={(e) => handleFieldChange('education', 'startDate', e.target.value)}
                       className="input"
                     />
@@ -2261,8 +2276,8 @@ const ResumeBuilder = () => {
                     <label className="block text-sm font-medium mb-1.5">Graduation End Date</label>
                     <input
                       type="date"
-                      disabled={activeResume.education?.currentStudy}
-                      value={activeResume.education?.currentStudy ? '' : (activeResume.education?.endDate || '')}
+                      disabled={getFirstEntry(activeResume.education).currentStudy}
+                      value={getFirstEntry(activeResume.education).currentStudy ? '' : (getFirstEntry(activeResume.education).endDate || '')}
                       onChange={(e) => handleFieldChange('education', 'endDate', e.target.value)}
                       className="input disabled:opacity-50"
                     />
@@ -2273,7 +2288,7 @@ const ResumeBuilder = () => {
                   <input
                     type="checkbox"
                     id="currentStudy"
-                    checked={activeResume.education?.currentStudy || false}
+                    checked={getFirstEntry(activeResume.education).currentStudy || false}
                     onChange={(e) => handleFieldChange('education', 'currentStudy', e.target.checked)}
                     className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />

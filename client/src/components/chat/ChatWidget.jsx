@@ -6,8 +6,10 @@ import { useSelector } from 'react-redux';
 import { FaComments, FaTimes, FaPaperPlane } from 'react-icons/fa';
 import socketService from '../../services/socket';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 const ChatWidget = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -88,7 +90,7 @@ const ChatWidget = () => {
         className="fixed bottom-6 right-6 bg-teal-600 hover:bg-teal-700 text-white rounded-full p-4 shadow-lg z-50 transition-colors"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        aria-label="Open Chat"
+        aria-label={t('chat.openChat', { defaultValue: 'Open Chat' })}
       >
         {isOpen ? <FaTimes size={24} /> : <FaComments size={24} />}
         {onlineUsers.length > 0 && !isOpen && (
@@ -110,9 +112,9 @@ const ChatWidget = () => {
             {/* Chat Header */}
             <div className="bg-teal-600 text-white p-4 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold">Messages</h3>
+                <h3 className="font-semibold">{t('nav.messages', { defaultValue: 'Messages' })}</h3>
                 <p className="text-xs opacity-90">
-                  {onlineUsers.length} online
+                  {t('chat.onlineCount', { defaultValue: '{{count}} online', count: onlineUsers.length })}
                 </p>
               </div>
               <button
@@ -128,8 +130,8 @@ const ChatWidget = () => {
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 dark:text-gray-400 mt-8">
                   <FaComments className="mx-auto text-4xl mb-2 opacity-50" />
-                  <p>No messages yet</p>
-                  <p className="text-sm">Start a conversation!</p>
+                  <p>{t('messages.noMessagesYet', { defaultValue: 'No messages yet' })}</p>
+                  <p className="text-sm">{t('chat.startConversationPrompt', { defaultValue: 'Start a conversation!' })}</p>
                 </div>
               ) : (
                 messages.map((msg, index) => (
@@ -180,7 +182,7 @@ const ChatWidget = () => {
                   type="text"
                   value={inputMessage}
                   onChange={handleTyping}
-                  placeholder="Type a message..."
+                  placeholder={t('chat.typePlaceholder', { defaultValue: 'Type a message...' })}
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 />
                 <button

@@ -8,7 +8,9 @@ const Interview = require('../models/Interview');
 const { asyncHandler, paginate, createNotification } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 const { sendEmail, emailTemplates } = require('../config/email');
-const { calculateMatchScore } = require('../utils/matching');
+const { calculateMatchScore, calculateJobMatch } = require('../utils/matching');
+const { parseResumeSkills } = require('../utils/resumeParser');
+const { buildJobSeekerMatchingContext } = require('../utils/dashboardHelpers');
 const { cloudinary } = require('../config/cloudinary');
 const path = require('path');
 const fs = require('fs');
@@ -52,8 +54,13 @@ const streamCloudinaryFile = async (url, res, downloadName) => {
   if (!info) return false;
 
   const timestamp = Math.floor(Date.now() / 1000);
-  const params = { public_id: info.publicId, timestamp, type: 'upload' };
-  if (info.format) params.format = info.format;
+  // For 'raw' resources Cloudinary stores the public id WITH its extension
+  // (e.g. ethiojob/cvs/test.pdf); for 'image' resources the extension is the
+  // format and the public id excludes it.
+  const publicId =
+    info.resourceType === 'raw' && info.format ? `${info.publicId}.${info.format}` : info.publicId;
+  const params = { public_id: publicId, timestamp, type: 'upload' };
+  if (info.format && info.resourceType !== 'raw') params.format = info.format;
 
   const signature = cloudinary.utils.api_sign_request(params, process.env.CLOUDINARY_API_SECRET);
   const qs = Object.keys(params)
@@ -64,13 +71,50 @@ const streamCloudinaryFile = async (url, res, downloadName) => {
 
   const response = await fetch(downloadUrl);
   if (!response.ok) {
+    const errText = (await response.text()).slice(0, 300);
+    console.error(`[downloadResume] Cloudinary download failed (${response.status}): ${errText}`);
     throw new AppError('Unable to download resume from storage.', 502);
   }
 
   const buffer = Buffer.from(await response.arrayBuffer());
   const contentType = response.headers.get('content-type') || 'application/octet-stream';
-  res.setHeader('Content-Type', contentType);
-  res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
+
+  // Guard against Cloudinary returning an error payload (HTML/JSON) with a 200
+  // status instead of the actual resume file. Use magic bytes to detect the real
+  // file type so PDF resumes are served as PDF and other formats (DOCX, JPG,
+  // PNG) keep their real content type instead of being forced into a blank PDF.
+  const looksLikePdf = buffer.length > 0 && buffer.slice(0, 5).toString('utf8') === '%PDF-';
+  const looksLikeJpeg = buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  const looksLikePng = buffer.length > 4 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
+  const looksLikeDocx = buffer.length > 4 && buffer[0] === 0x50 && buffer[1] === 0x4b && (buffer[2] === 0x03 || buffer[2] === 0x05 || buffer[2] === 0x07);
+  const looksLikeHtml = /^\s*</.test(buffer.slice(0, 512).toString('utf8'));
+
+  let fileContentType = 'application/octet-stream';
+  if (looksLikePdf) fileContentType = 'application/pdf';
+  else if (looksLikeJpeg) fileContentType = 'image/jpeg';
+  else if (looksLikePng) fileContentType = 'image/png';
+  else if (looksLikeDocx) fileContentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+  // A genuine file is one of the known types OR the server-reported content type
+  // looks like a real document/image. Error payloads (HTML/JSON/text) are not.
+  const reportedLooksLikeFile = /^(application|image|text\/plain)/i.test(contentType) && !looksLikeHtml;
+  if (!looksLikePdf && !looksLikeJpeg && !looksLikePng && !looksLikeDocx && !reportedLooksLikeFile) {
+    console.error(`[downloadResume] Cloudinary returned non-file payload (${contentType}, ${buffer.length}B)`);
+    throw new AppError('The stored resume is not a readable file.', 502);
+  }
+
+  // Derive a sensible filename extension for the download name.
+  const extMap = {
+    'application/pdf': '.pdf',
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+  };
+  const baseName = downloadName.replace(/\.[^/.]+$/, '');
+  const finalName = `${baseName}${extMap[fileContentType] || path.extname(url) || '.bin'}`;
+
+  res.setHeader('Content-Type', fileContentType);
+  res.setHeader('Content-Disposition', `attachment; filename="${finalName}"`);
   res.send(buffer);
   return true;
 };
@@ -176,6 +220,49 @@ const getMissingRequiredFields = (job, answers) => {
   return missing;
 };
 
+// Validate the submitted answer format for a single application field.
+// Returns an error message string, or null when the answer is acceptable.
+const getFieldAnswerError = (field, value) => {
+  if (!value) return null; // emptiness is handled by the required-field check
+
+  switch (field.type) {
+    case 'email':
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? null : `"${field.label}" must be a valid email address.`;
+    case 'url':
+      try {
+        const parsed = new URL(value);
+        return ['http:', 'https:'].includes(parsed.protocol)
+          ? null
+          : `"${field.label}" must be a valid http(s) URL.`;
+      } catch {
+        return `"${field.label}" must be a valid URL.`;
+      }
+    case 'number': {
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? null : `"${field.label}" must be a number.`;
+    }
+    case 'phone': {
+      const digits = value.replace(/\D/g, '');
+      return digits.length >= 7 && digits.length <= 15
+        ? null
+        : `"${field.label}" must be a valid phone number.`;
+    }
+    case 'date':
+      return Number.isNaN(new Date(value).getTime()) ? null : `"${field.label}" must be a valid date.`;
+    case 'select':
+      if (Array.isArray(field.options) && field.options.length && !field.options.includes(value)) {
+        return `"${field.label}" must be one of the provided options.`;
+      }
+      return null;
+    case 'checkbox':
+      return ['yes', 'no', 'true', 'false'].includes(value.toLowerCase())
+        ? null
+        : `"${field.label}" must be Yes or No.`;
+    default:
+      return null;
+  }
+};
+
 // @desc    Apply for job
 // @route   POST /api/applications
 // @access  Private (Job Seeker)
@@ -204,6 +291,22 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
     return next(new AppError('Application deadline has passed.', 400));
   }
 
+  // Gender restriction is an employer-set eligibility rule, separate from the
+  // matching score. Jobs without a preference (legacy documents included) are
+  // open to everyone.
+  const requiredGender = job.genderPreference || 'any';
+  if (requiredGender !== 'any') {
+    const applicantGender = String(req.user?.gender || '').trim().toLowerCase();
+    if (applicantGender !== requiredGender) {
+      return next(
+        new AppError(
+          `This position is open to ${requiredGender} applicants only. Please make sure your profile gender matches the requirement.`,
+          403
+        )
+      );
+    }
+  }
+
   // Validate employer-configured required application fields. A required field
   // must have a non-empty (after trim) answer, even if it is missing from the
   // submitted request entirely. Optional fields may be empty or missing.
@@ -214,8 +317,18 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
       new AppError(`The following required field(s) must be completed: ${missingRequiredFields.join(', ')}`, 400)
     );
   }
+  // Server-side format validation for answered fields so the API cannot be
+  // bypassed with malformed values (bad email/URL/number/date or an answer
+  // outside a dropdown's configured options).
+  if (Array.isArray(job.applicationFields)) {
+    for (const field of job.applicationFields) {
+      const error = getFieldAnswerError(field, getAnswerValue(field, screeningAnswers));
+      if (error) return next(new AppError(error, 400));
+    }
+  }
   const normalizedScreeningAnswers = screeningAnswers
     .map((answer) => ({
+      fieldId: answer.fieldId ? String(answer.fieldId) : undefined,
       question: String(answer.question || '').trim(),
       answer: String(answer.answer || '').trim(),
     }))
@@ -276,6 +389,7 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
       coverLetter,
       useProfileCV,
       resumeUrl: req.file ? req.file.path : req.user.cv,
+      resumePublicId: req.file ? req.file.filename : null,
       matchScore,
       expectedSalary,
       isSalaryNegotiable: isSalaryNegotiable === 'true' || isSalaryNegotiable === true,
@@ -348,11 +462,80 @@ exports.getEmployerApplications = asyncHandler(async (req, res) => {
   // Default sorting to highest matchScore first
   const sortBy = req.query.sort || '-matchScore';
 
-  const { results, pagination } = await paginate(Application, query, req.query, [
-    'job',
-    { path: 'applicant', populate: { path: 'skills' } },
-    'company',
-  ], sortBy);
+  // Optional match-score band filter ('above50' | 'below50'). Match scores are
+  // recomputed after the DB fetch, so the band must be applied to the freshly
+  // recomputed values (the same numbers returned to the client) instead of the
+  // stored ones. Exactly 50 belongs to neither band.
+  const matchBand =
+    req.query.matchBand === 'above50' || req.query.matchBand === 'below50' ? req.query.matchBand : null;
+
+  const recomputeMatchScores = async (applications) => {
+    await Promise.all(
+      applications.map(async (application) => {
+        const applicantId = application.applicant?._id || application.applicant;
+        if (!applicantId || !application.job?._id) return;
+        const { profileForMatching } = await buildJobSeekerMatchingContext(applicantId);
+        const match = calculateJobMatch(application.job, profileForMatching);
+        application.matchScore = match.matchScore ?? match.score ?? 0;
+      })
+    );
+  };
+
+  let results;
+  let pagination;
+
+  if (matchBand) {
+    // Fetch every matching application so the band can be applied to freshly
+    // computed scores before slicing out the requested page.
+    let all = await Application.find(query)
+      .populate('job')
+      .populate({ path: 'applicant', populate: { path: 'skills' } })
+      .populate('company')
+      .sort(sortBy);
+
+    await recomputeMatchScores(all);
+
+    if (sortBy === '-matchScore') {
+      all.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+    }
+
+    const filtered = all.filter((application) =>
+      matchBand === 'above50' ? (application.matchScore || 0) > 50 : (application.matchScore || 0) < 50
+    );
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const total = filtered.length;
+    results = filtered.slice((page - 1) * limit, page * limit);
+    pagination = {
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+      hasNext: page < Math.ceil(total / limit),
+      hasPrev: page > 1,
+    };
+  } else {
+    const paginated = await paginate(Application, query, req.query, [
+      'job',
+      { path: 'applicant', populate: { path: 'skills' } },
+      'company',
+    ], sortBy);
+
+    results = paginated.results;
+    pagination = paginated.pagination;
+
+    // Recompute each applicant's match score with the exact same profile
+    // (user profile + latest Resume Builder CV) and scoring engine used by the
+    // job seeker's recommendations, so the employer sees the same percentage
+    // the candidate sees for the same job and CV.
+    await recomputeMatchScores(results);
+  }
+
+  // Keep the sort order consistent with the freshly computed match scores.
+  if (sortBy === '-matchScore') {
+    results.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+  }
 
   res.status(200).json({ success: true, count: results.length, pagination, data: results });
 });
