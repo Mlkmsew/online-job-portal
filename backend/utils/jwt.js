@@ -24,7 +24,7 @@ const generateRefreshToken = (id) => {
 /**
  * Send token response with cookie
  */
-const sendTokenResponse = (user, statusCode, res, message = 'Success') => {
+const sendTokenResponse = (user, statusCode, res, message = 'Success', extra = {}) => {
   const accessToken = generateAccessToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
 
@@ -36,11 +36,20 @@ const sendTokenResponse = (user, statusCode, res, message = 'Success') => {
     sameSite: 'none',
   };
 
-  // Remove password from output
+  // Remove password & security-sensitive fields from output
   const userObj = user.toObject ? user.toObject() : { ...user };
   delete userObj.password;
   delete userObj.resetPasswordToken;
+  delete userObj.resetPasswordExpire;
   delete userObj.emailVerificationToken;
+  delete userObj.otpCode;
+  delete userObj.otpExpire;
+  delete userObj.pendingEmailOTP;
+  delete userObj.pendingEmailExpire;
+  delete userObj.otpResendLockUntil;
+  delete userObj.refreshTokens; // stored hashed refresh tokens
+  // accessToken / refreshToken are intentionally kept: the frontend
+  // registration & login flow depends on them (authSlice stores payload.accessToken).
   // Persist hashed refresh token for remember-me sessions when user is a mongoose doc
   try {
     if (user && typeof user.addRefreshToken === 'function') {
@@ -61,6 +70,7 @@ const sendTokenResponse = (user, statusCode, res, message = 'Success') => {
       accessToken,
       refreshToken,
       user: userObj,
+      ...extra,
     });
 };
 

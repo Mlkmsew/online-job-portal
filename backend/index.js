@@ -141,15 +141,9 @@ app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api/resumes', require('./routes/resumeRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
 
-// Development-only debug routes
-if (process.env.NODE_ENV === 'development') {
-  try {
-    app.use('/api/debug', require('./routes/debugRoutes'));
-    console.log('🔧 Debug routes mounted at /api/debug');
-  } catch (e) {
-    console.error('Failed to mount debug routes:', e.message || e);
-  }
-}
+// NOTE: Debug/test email routes were removed for security. The former
+// POST /api/debug/send-test-email endpoint allowed anyone to send emails
+// from the configured account whenever NODE_ENV was not "production".
 
 // ============================================
 // Serve Frontend in Production

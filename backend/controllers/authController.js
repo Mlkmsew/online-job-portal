@@ -13,6 +13,16 @@ const { AppError } = require('../middleware/errorHandler');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+// Safe logging helpers — never print full emails, OTPs, passwords or secrets
+const maskEmail = (value) => {
+  if (!value || typeof value !== 'string') return '(not set)';
+  const at = value.indexOf('@');
+  if (at === -1) return `${value.slice(0, 2)}***`;
+  return `${value.slice(0, Math.min(2, at))}***@${value.slice(at + 1)}`;
+};
+const maskEmailsInText = (text) =>
+  String(text || '').replace(/[\w.+-]+@[\w.-]+\.\w+/g, (match) => maskEmail(match));
+
 // @desc    Register new user
 // @route   POST /api/auth/register
 // @access  Public
@@ -36,27 +46,29 @@ exports.register = asyncHandler(async (req, res, next) => {
   });
   // Generate numeric OTP for email verification
   const code = user.generateOTP();
+  console.log('[OTP] generated');
   await user.save({ validateBeforeSave: false });
+  console.log('[OTP] saved');
 
   // Send verification OTP email
+  let emailSent = true;
   try {
     // Prefer a dedicated OTP template if available
-    if (emailTemplates.verifyOTP) {
-      const template = emailTemplates.verifyOTP(user.firstName, code);
-      await sendEmail({ to: user.email, ...template });
-    } else {
-      await sendEmail({ to: user.email, subject: 'Your verification code', text: `Your verification code: ${code}` });
-    }
+    console.log(`[EMAIL] called to=${maskEmail(user.email)}`);
+    const mailOptions = emailTemplates.verifyOTP
+      ? emailTemplates.verifyOTP(user.firstName, code)
+      : { subject: 'Your verification code', text: `Your verification code: ${code}` };
+    const info = await sendEmail({ to: user.email, ...mailOptions });
+    console.log('[EMAIL] success');
+    console.log(`[EMAIL] messageId=${info?.messageId || 'n/a'}`);
   } catch (emailErr) {
-    // Don't fail registration if email fails
-    console.error('Email failed:', emailErr.message);
-    // Development fallback: print OTP to server console
-    try {
-      console.log('🔔 Verification email failed to send. Development fallback:');
-      console.log(`OTP code (DEV): ${code} for ${user.email}`);
-    } catch (e) {
-      // ignore logging errors
-    }
+    // Registration itself must not fail when the SMTP server is unavailable —
+    // the account exists and the user can request a new code via resend OTP.
+    // The response carries `emailSent: false` so clients can warn the user.
+    emailSent = false;
+    console.error(
+      `[EMAIL] failed code=${emailErr?.code || emailErr?.name || 'n/a'} message=${maskEmailsInText(emailErr?.message || String(emailErr))}`
+    );
   }
 
   // Notify admins of a new registration (never blocks the signup flow)
@@ -73,7 +85,16 @@ exports.register = asyncHandler(async (req, res, next) => {
     sender: user._id,
   });
 
-  sendTokenResponse(user, 201, res, 'Registration successful! Please check your email to verify your account.');
+  console.log(`[REGISTER] completed emailSent=${emailSent}`);
+  sendTokenResponse(
+    user,
+    201,
+    res,
+    emailSent
+      ? 'Registration successful! Please check your email to verify your account.'
+      : 'Registration successful, but the verification email could not be sent. Please use "Resend OTP" after logging in.',
+    { emailSent }
+  );
 });
 
 // @desc    Login user
@@ -211,17 +232,13 @@ exports.sendOTP = asyncHandler(async (req, res, next) => {
   try {
     await sendEmail({ to: user.email, subject: 'Your verification code', text: `Your verification code: ${code}` });
   } catch (err) {
-    console.error('OTP email failed:', err.message);
-    // Development fallback: print OTP to server console and return success in dev
-    try {
-      console.log('🔔 OTP email failed to send. Development fallback:');
-      console.log(`OTP code (DEV): ${code} for ${user.email}`);
-    } catch (e) {
-      // ignore
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      return res.status(200).json({ success: true, message: 'OTP printed to server console (development).' });
+    console.error(`OTP email failed (user=${user._id}):`, err?.code || err?.name || 'send failed');
+    // Raw OTP codes are never printed anywhere — logs carry delivery status only.
+    if (process.env.NODE_ENV !== 'production') {
+      return res.status(200).json({
+        success: true,
+        message: 'OTP email could not be delivered right now. Please try again shortly.',
+      });
     }
 
     return next(new AppError('Could not send OTP email.', 500));

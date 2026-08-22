@@ -4,35 +4,185 @@
 const nodemailer = require('nodemailer');
 const { resolveClientURL } = require('../utils/getLocalIP');
 
-// Create reusable transporter
+// Mask an email address for safe logging: "me***@gmail.com"
+const maskEmail = (value) => {
+  if (!value || typeof value !== 'string') return '(not set)';
+  const at = value.indexOf('@');
+  if (at === -1) return `${value.slice(0, 2)}***`;
+  return `${value.slice(0, Math.min(2, at))}***@${value.slice(at + 1)}`;
+};
+
+// Strip/replace any email addresses that SMTP error messages may embed
+const maskEmailsInText = (text) => {
+  if (!text) return '';
+  return String(text).replace(/[\w.+-]+@[\w.-]+\.\w+/g, (match) => maskEmail(match));
+};
+
+// ============================================
+// Transport selection
+// - EMAIL_PROVIDER=https -> Brevo HTTPS API (port 443). Required on Render
+//   free tier because outbound SMTP ports (25/465/587) are blocked there.
+// - EMAIL_PROVIDER=smtp  -> classic Nodemailer SMTP (local development).
+// ============================================
+const emailProvider = (process.env.EMAIL_PROVIDER || 'smtp').trim().toLowerCase() === 'https'
+  ? 'https'
+  : 'smtp';
+
+// Read environment variables (names must match .env.example exactly)
 const emailHost = process.env.EMAIL_HOST?.trim();
-const emailPort = parseInt(process.env.EMAIL_PORT, 10) || 587;
+const emailPortRaw = parseInt(process.env.EMAIL_PORT, 10);
+const emailPort = Number.isFinite(emailPortRaw) ? emailPortRaw : 587;
 const emailSecure = process.env.EMAIL_SECURE === 'true';
 const emailUser = process.env.EMAIL_USER?.trim();
 const emailPass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
+const brevoApiKey = (process.env.BREVO_API_KEY || '').trim();
 
-if (!emailHost || !emailUser || !emailPass) {
-  console.error('❌ Email configuration is incomplete. Please set EMAIL_HOST, EMAIL_USER, and EMAIL_PASS in backend/.env.');
+// Parse EMAIL_FROM which may be:
+//   "OnlineJob Portal <me@gmail.com>"  |  "OnlineJob Portal me@gmail.com"  |  "me@gmail.com"
+const parseFromAddress = (raw) => {
+  const value = (raw || '').trim();
+  const bracket = value.match(/^(.*?)<\s*([^>]+@[^>]+)\s*>$/);
+  if (bracket) return { name: bracket[1].trim().replace(/^["']|["']$/g, ''), email: bracket[2].trim() };
+  const token = value.split(/\s+/).find((part) => part.includes('@'));
+  if (!token) return null;
+  const name = value.replace(token, '').trim().replace(/^["']|["']$/g, '');
+  return { name: name || 'OnlineJob Portal', email: token };
+};
+const fromAddress = parseFromAddress(process.env.EMAIL_FROM) || { name: 'OnlineJob Portal', email: emailUser };
+
+const missingEmailVars =
+  emailProvider === 'https'
+    ? [
+        !brevoApiKey && 'BREVO_API_KEY',
+        !fromAddress?.email && 'EMAIL_FROM (must contain a valid sender email)',
+      ].filter(Boolean)
+    : [
+        !emailHost && 'EMAIL_HOST',
+        !emailUser && 'EMAIL_USER',
+        !emailPass && 'EMAIL_PASS',
+      ].filter(Boolean);
+
+if (missingEmailVars.length > 0) {
+  console.error(
+    `❌ Email configuration incomplete — missing: ${missingEmailVars.join(', ')}. ` +
+    'OTP emails will fail until these are set in the deployment environment.'
+  );
+}
+// Safe startup summary (never logs secrets)
+const providerSummary =
+  emailProvider === 'https'
+    ? `provider=brevo(HTTPS/443), from=${maskEmail(fromAddress.email)}, apiKey=${brevoApiKey ? 'set' : 'MISSING'}`
+    : `provider=smtp, host=${emailHost || '(not set)'}, port=${emailPort}, secure=${emailSecure}, ` +
+      `user=${maskEmail(emailUser)}, pass=${emailPass ? 'set' : 'MISSING'}`;
+console.log(`📧 Email config: ${providerSummary}, from=${process.env.EMAIL_FROM ? 'set' : 'default'}`);
+
+// Create reusable transporter only for the SMTP fallback path.
+// In https mode no TCP/SMTP connection is ever created or verified.
+const transporter =
+  emailProvider === 'smtp'
+    ? nodemailer.createTransport({
+        host: emailHost,
+        port: emailPort,
+        secure: emailSecure,
+        auth: {
+          user: emailUser,
+          pass: emailPass,
+        },
+        tls: {
+          // Allow self-signed certs for some SMTP providers in dev environments
+          rejectUnauthorized: process.env.NODE_ENV === 'production',
+        },
+      })
+    : null;
+
+// Verify transporter connectivity on startup (SMTP mode only; helps debug issues in logs)
+if (transporter) {
+  transporter.verify()
+    .then(() => {
+      console.log(`✅ SMTP transporter ready (host=${emailHost || '(not set)'}:${emailPort}, secure=${emailSecure})`);
+    })
+    .catch((err) => {
+      console.error('❌ SMTP transporter verification failed:');
+      console.error(`   name=${err?.name || 'Error'} code=${err?.code || 'n/a'} command=${err?.command || 'n/a'}`);
+      console.error(`   message=${maskEmailsInText(err?.message || String(err))}`);
+      if (err?.response) console.error(`   smtpResponse=${maskEmailsInText(err.response)}`);
+    });
+} else {
+  console.log('✅ Brevo HTTPS transport configured (api.brevo.com:443) — no SMTP connection will be attempted');
 }
 
-const transporter = nodemailer.createTransport({
-  host: emailHost,
-  port: emailPort,
-  secure: emailSecure,
-  auth: {
-    user: emailUser,
-    pass: emailPass,
-  },
-  tls: {
-    // Allow self-signed certs for some SMTP providers in dev environments
-    rejectUnauthorized: process.env.NODE_ENV === 'production',
-  },
-});
+/**
+ * Send an email through the Brevo HTTPS API (port 443).
+ * @param {Object} options - { to, subject, html?, text? }
+ * @returns {Promise<{messageId: string, accepted: string[], rejected: string[]}>}
+ */
+const sendEmailViaBrevo = async (options) => {
+  if (!brevoApiKey) {
+    throw Object.assign(new Error('Brevo API key is not configured'), { code: 'BREVO_NO_KEY' });
+  }
 
-// Verify transporter connectivity on startup (helps debug SMTP issues)
-transporter.verify()
-  .then(() => console.log('✅ Nodemailer transporter is ready'))
-  .catch((err) => console.error('❌ Nodemailer transporter verification failed:', err));
+  const payload = {
+    sender: { name: fromAddress.name || 'OnlineJob Portal', email: fromAddress.email },
+    to: [{ email: options.to }],
+    subject: options.subject,
+  };
+  if (options.html) payload.htmlContent = options.html;
+  if (options.text) payload.textContent = options.text;
+
+  // Hard timeout so a slow API can never stall a registration request
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  let resp;
+  try {
+    resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': brevoApiKey,
+        'content-type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    if (err?.name === 'AbortError') {
+      throw Object.assign(new Error('Brevo API request timed out after 15000ms'), { code: 'BREVO_TIMEOUT' });
+    }
+    throw Object.assign(
+      new Error(maskEmailsInText(err?.message || 'Network error while calling Brevo API')),
+      { code: err?.code || 'BREVO_NETWORK_ERROR' }
+    );
+  }
+  clearTimeout(timer);
+
+  const rawBody = await resp.text();
+  if (!resp.ok) {
+    let detail = '';
+    try {
+      const parsed = JSON.parse(rawBody);
+      detail = parsed?.message || parsed?.detail || '';
+    } catch (_) {
+      detail = rawBody.slice(0, 300);
+    }
+    throw Object.assign(
+      new Error(`Brevo API error status=${resp.status} message=${maskEmailsInText(detail) || '(no detail)'}`),
+      { code: `BREVO_HTTP_${resp.status}` }
+    );
+  }
+
+  let data = {};
+  try {
+    data = JSON.parse(rawBody);
+  } catch (_) {
+    data = {};
+  }
+  return {
+    messageId: data.messageId || 'n/a',
+    accepted: [options.to],
+    rejected: [],
+  };
+};
 
 /**
  * Send email utility
@@ -47,30 +197,43 @@ const sendEmail = async (options) => {
     text: options.text,
   };
 
+  console.log(
+    `📧 Email send started: to=${maskEmail(mailOptions.to)} via ` +
+    (emailProvider === 'https' ? 'api.brevo.com:443(HTTPS)' : `${emailHost || '(not set)'}:${emailPort}`) +
+    ` subject="${mailOptions.subject}"`
+  );
+
+  if (emailProvider === 'https') {
+    try {
+      const info = await sendEmailViaBrevo(mailOptions);
+      console.log(
+        `📧 Email sent: messageId=${info.messageId || 'n/a'} accepted=${info.accepted?.length || 0} ` +
+        `rejected=${info.rejected?.length || 0} response="brevo https accepted"`
+      );
+      return info;
+    } catch (error) {
+      console.error('❌ Email sending failed:');
+      console.error(`   name=${error?.name || 'Error'} code=${error?.code || 'n/a'}`);
+      console.error(`   message=${maskEmailsInText(error?.message || String(error))}`);
+      throw error;
+    }
+  }
+
   try {
     const info = await transporter.sendMail(mailOptions);
-    // Log detailed info to assist debugging delivery issues
-    console.log(`📧 Email sent: ${info.messageId}`);
-    if (info.accepted && info.accepted.length) console.log('Accepted:', info.accepted);
-    if (info.rejected && info.rejected.length) console.log('Rejected:', info.rejected);
-    if (info.response) console.log('SMTP response:', info.response);
+    console.log(
+      `📧 Email sent: messageId=${info.messageId || 'n/a'} accepted=${info.accepted?.length || 0} ` +
+      `rejected=${info.rejected?.length || 0} response="${info.response || ''}"`
+    );
+    if (info.rejected && info.rejected.length > 0) {
+      console.error('⚠️ Some recipients were rejected by the SMTP server');
+    }
     return info;
   } catch (error) {
-    console.error('❌ Email sending failed:', error && error.message ? error.message : error);
-    // In development, print the full mail options so token/code can be retrieved
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        console.log('--- Mail options (DEV) ---');
-        console.log('To:', mailOptions.to);
-        console.log('Subject:', mailOptions.subject);
-        if (mailOptions.text) console.log('Text:', mailOptions.text);
-        // Avoid printing large HTML by truncating
-        if (mailOptions.html) console.log('HTML (truncated):', mailOptions.html.substring(0, 400));
-        console.log('-------------------------');
-      } catch (e) {
-        // ignore
-      }
-    }
+    console.error('❌ Email sending failed:');
+    console.error(`   name=${error?.name || 'Error'} code=${error?.code || 'n/a'} command=${error?.command || 'n/a'}`);
+    console.error(`   message=${maskEmailsInText(error?.message || String(error))}`);
+    if (error?.response) console.error(`   smtpResponse=${maskEmailsInText(error.response)}`);
     throw error;
   }
 };
