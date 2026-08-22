@@ -1,5 +1,5 @@
 // ============================================
-// Email Configuration - Nodemailer
+// Email Configuration - Brevo HTTPS API (primary) / Nodemailer SMTP (local dev only)
 // ============================================
 const nodemailer = require('nodemailer');
 const { resolveClientURL } = require('../utils/getLocalIP');
@@ -128,6 +128,7 @@ const sendEmailViaBrevo = async (options) => {
   };
   if (options.html) payload.htmlContent = options.html;
   if (options.text) payload.textContent = options.text;
+  if (options.replyTo) payload.replyTo = { email: options.replyTo };
 
   // Hard timeout so a slow API can never stall a registration request
   const controller = new AbortController();
@@ -195,6 +196,7 @@ const sendEmail = async (options) => {
     subject: options.subject,
     html: options.html,
     text: options.text,
+    replyTo: options.replyTo,
   };
 
   console.log(
