@@ -971,7 +971,7 @@ const EmployerInterviews = () => {
                                 <Star className="h-4 w-4" /> {t('interviews.evaluationSummary')}
                               </button>
                               <button type="button" onClick={() => openAssessmentModal(interview)} className="inline-flex items-center gap-2 rounded-full border border-amber-200 px-3 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-50">
-                                <Star className="h-4 w-4" /> {t('interviews.evaluate')}
+                                <Star className="h-4 w-4" /> {t('interviews.completeAssessment')}
                               </button>
                             </>
                           ) : null}

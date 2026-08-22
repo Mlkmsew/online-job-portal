@@ -1,5 +1,8 @@
 import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { MemoryRouter } from 'react-router-dom';
 import LatestJobs from './LatestJobs';
+import { setupStore } from '../../store/store';
 import { vi } from 'vitest';
 
 vi.mock('../../services/api', () => ({
@@ -21,7 +24,13 @@ vi.mock('../../services/api', () => ({
 
 describe('LatestJobs', () => {
   it('renders job cards without crashing when location is an object', async () => {
-    render(<LatestJobs />);
+    render(
+      <Provider store={setupStore()}>
+        <MemoryRouter>
+          <LatestJobs />
+        </MemoryRouter>
+      </Provider>
+    );
 
     expect(await screen.findByText('Frontend Developer')).toBeInTheDocument();
     expect(screen.getByText('EthioTech')).toBeInTheDocument();

@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setupStore } from '../store/store';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key) => key }),
@@ -70,9 +72,11 @@ describe('Jobs page', () => {
 
   it('renders jobs from the backend payload', async () => {
     render(
-      <MemoryRouter>
-        <Jobs />
-      </MemoryRouter>
+      <Provider store={setupStore()}>
+        <MemoryRouter>
+          <Jobs />
+        </MemoryRouter>
+      </Provider>
     );
 
     expect(await screen.findByText('Frontend Developer')).toBeInTheDocument();

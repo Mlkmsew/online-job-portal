@@ -34,10 +34,6 @@ vi.mock('react-hot-toast', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key) => key, i18n: { language: 'en' } }),
-}));
-
 describe('JobSeekerProfile', () => {
   beforeEach(() => {
     currentStore = buildStore(buildUser());
@@ -50,8 +46,8 @@ describe('JobSeekerProfile', () => {
     const technicalGroup = screen.getByTestId('technical-skills-group');
     const softGroup = screen.getByTestId('soft-skills-group');
 
-    expect(within(technicalGroup).getByText('profile.technicalSkills')).toBeInTheDocument();
-    expect(within(softGroup).getByText('profile.softSkills')).toBeInTheDocument();
+    expect(within(technicalGroup).getByText('Technical Skills')).toBeInTheDocument();
+    expect(within(softGroup).getByText('Soft Skills')).toBeInTheDocument();
 
     expect(within(technicalGroup).getByText('Java')).toBeInTheDocument();
     expect(within(technicalGroup).getByText('Python')).toBeInTheDocument();
@@ -69,13 +65,13 @@ describe('JobSeekerProfile', () => {
     render(<Profile />);
 
     // The empty-state text can appear in the header preview and the Skills section
-    expect(screen.getAllByText('profile.noSkills').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('No skills added yet.').length).toBeGreaterThan(0);
   });
 
   it('shows the Edit Skills modal with category-specific inputs and controls', () => {
     render(<Profile />);
 
-    fireEvent.click(screen.getByText('profile.editSkills'));
+    fireEvent.click(screen.getByText('Edit Skills'));
 
     const technicalGroup = screen.getByTestId('modal-technical-skills-group');
     const softGroup = screen.getByTestId('modal-soft-skills-group');
@@ -97,7 +93,7 @@ describe('JobSeekerProfile', () => {
   it('adds a new skill to the selected category before saving', () => {
     render(<Profile />);
 
-    fireEvent.click(screen.getByText('profile.editSkills'));
+    fireEvent.click(screen.getByText('Edit Skills'));
 
     const technicalGroup = screen.getByTestId('modal-technical-skills-group');
     const softGroup = screen.getByTestId('modal-soft-skills-group');
@@ -117,7 +113,7 @@ describe('JobSeekerProfile', () => {
   it('removes a skill from the selected category when deleted', () => {
     render(<Profile />);
 
-    fireEvent.click(screen.getByText('profile.editSkills'));
+    fireEvent.click(screen.getByText('Edit Skills'));
 
     const technicalGroup = screen.getByTestId('modal-technical-skills-group');
     const deleteButtons = within(technicalGroup).getAllByTitle('Delete');

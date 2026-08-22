@@ -11,7 +11,13 @@ describe('resume template registry', () => {
       'minimal',
       'classic',
       'executive',
-      'creative'
+      'creative',
+      'chrono',
+      'elegant',
+      'circular',
+      'luxe',
+      'casual',
+      'horizontal'
     ]);
   });
 
