@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { OTP_EXPIRE_MINUTES } = require('../config/otpPolicy');
 
 const userSchema = new mongoose.Schema(
     {
@@ -160,11 +161,12 @@ userSchema.methods.generateEmailVerificationToken = function () {
     return token;
 };
 
-// Generate numeric OTP (6 digits) using a cryptographically secure source
+// Generate numeric OTP (6 digits) using a cryptographically secure source.
+// Lifetime comes from config/otpPolicy.js so the email copy always matches.
 userSchema.methods.generateOTP = function () {
     const code = crypto.randomInt(100000, 1000000).toString();
     this.otpCode = crypto.createHash('sha256').update(code).digest('hex');
-    this.otpExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    this.otpExpire = Date.now() + OTP_EXPIRE_MINUTES * 60 * 1000;
     return code;
 };
 

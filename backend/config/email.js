@@ -3,6 +3,11 @@
 // ============================================
 const nodemailer = require('nodemailer');
 const { resolveClientURL } = require('../utils/getLocalIP');
+const { OTP_EXPIRE_MINUTES } = require('./otpPolicy');
+
+// Expiry phrase shared by every OTP email so copy can never drift from the
+// actual backend expiration defined in config/otpPolicy.js
+const otpExpiryPhrase = `${OTP_EXPIRE_MINUTES} minute${OTP_EXPIRE_MINUTES !== 1 ? 's' : ''}`;
 
 // Mask an email address for safe logging: "me***@gmail.com"
 const maskEmail = (value) => {
@@ -296,7 +301,7 @@ const emailTemplates = {
 
   verifyOTP: (name, code) => ({
     subject: 'Your verification code - OnlineJob Portal',
-    text: `Hello ${name},\n\nYour verification code is: ${code}. It expires in 10 minutes.\n\nIf you did not request this, please ignore this email.\n\n— OnlineJob Portal`,
+    text: `Hello ${name},\n\nYour verification code is: ${code}. It expires in ${otpExpiryPhrase}.\n\nIf you did not request this, please ignore this email.\n\n— OnlineJob Portal`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -306,7 +311,7 @@ const emailTemplates = {
           <h2 style="color:#0F766E">Hello, ${name} 👋</h2>
           <p>Your verification code is:</p>
           <p style="font-size:22px;font-weight:bold;letter-spacing:4px">${code}</p>
-          <p style="color:#64748B">This code expires in <strong>10 minutes</strong>. If you didn't create an account, please ignore this email.</p>
+          <p style="color:#64748B">This code expires in <strong>${otpExpiryPhrase}</strong>. If you didn't create an account, please ignore this email.</p>
           <hr style="margin-top:20px;border:none;border-top:1px solid #EEF2F7" />
           <p style="font-size:12px;color:#94A3B8">© OnlineJob Portal</p>
         </div>
