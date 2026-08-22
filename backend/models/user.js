@@ -90,6 +90,8 @@ const userSchema = new mongoose.Schema(
         // OTP resend throttling: max attempts then a temporary lockout
         otpResendCount: { type: Number, default: 0 },
         otpResendLockUntil: Date,
+        // Transient token guarding atomic resend claims (rollback on failed delivery)
+        otpResendClaimId: String,
         twoFactorEnabled: { type: Boolean, default: false },
         twoFactorSecret: String,
         // Social providers
@@ -158,9 +160,9 @@ userSchema.methods.generateEmailVerificationToken = function () {
     return token;
 };
 
-// Generate numeric OTP (6 digits)
+// Generate numeric OTP (6 digits) using a cryptographically secure source
 userSchema.methods.generateOTP = function () {
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = crypto.randomInt(100000, 1000000).toString();
     this.otpCode = crypto.createHash('sha256').update(code).digest('hex');
     this.otpExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
     return code;

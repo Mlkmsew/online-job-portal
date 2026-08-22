@@ -191,15 +191,16 @@ exports.verifyOTP = asyncHandler(async (req, res, next) => {
   res.status(200).json({ success: true, message: 'Email verified successfully.' });
 });
 
-// @desc    Send OTP to email (for verification)
+// @desc    Send / resend OTP to email (for verification)
 // @route   POST /api/auth/send-otp
 // @access  Public (or protected if no email provided)
 exports.sendOTP = asyncHandler(async (req, res, next) => {
-  const { email } = req.body;
+  const rawEmail = req.body.email;
   let user;
 
-  if (email) {
-    user = await User.findOne({ email });
+  if (rawEmail) {
+    // Normalize consistently so casing/whitespace variants cannot bypass limits
+    user = await User.findOne({ email: String(rawEmail).trim().toLowerCase() });
     if (!user) return next(new AppError('Email not found.', 404));
   } else if (req.user) {
     user = await User.findById(req.user.id);
@@ -207,44 +208,140 @@ exports.sendOTP = asyncHandler(async (req, res, next) => {
     return next(new AppError('Email is required.', 400));
   }
 
-  // Throttle OTP resends: max OTP_RESEND_MAX_ATTEMPTS sends, then lock out for OTP_RESEND_LOCK_HOURS
+  if (user.isEmailVerified) {
+    return next(new AppError('Email is already verified.', 400));
+  }
+
   const maxAttempts = parseInt(process.env.OTP_RESEND_MAX_ATTEMPTS || '3', 10);
-  const lockHours = parseInt(process.env.OTP_RESEND_LOCK_HOURS || '3', 10);
+  const lockHours = parseInt(process.env.OTP_RESEND_LOCK_HOURS || '4', 10);
+  const lockMs = lockHours * 60 * 60 * 1000;
+  const now = Date.now();
 
-  if (user.otpResendLockUntil && user.otpResendLockUntil > Date.now()) {
-    const mins = Math.ceil((user.otpResendLockUntil - Date.now()) / 60000);
-    const hours = Math.floor(mins / 60);
-    const msg = hours >= 1
-      ? `Too many OTP requests. Please try again in ${hours} hour${hours > 1 ? 's' : ''}.`
-      : `Too many OTP requests. Please try again in ${mins} minute${mins > 1 ? 's' : ''}.`;
-    return next(new AppError(msg, 429));
+  const sendBlockedResponse = (lockUntilDate, retryAfterSecondsOverride) => {
+    const retryAfterSeconds =
+      retryAfterSecondsOverride ??
+      Math.max(1, Math.ceil((lockUntilDate.getTime() - Date.now()) / 1000));
+    return res.status(429).json({
+      success: false,
+      message: 'Too many OTP resend attempts. Please try again later.',
+      blocked: true,
+      retryAfterSeconds,
+      retryAfter: lockUntilDate.toISOString(),
+    });
+  };
+
+  // Automatic unblock: an expired lock clears itself here and resets the
+  // window — no admin action or cleanup job required.
+  if (user.otpResendLockUntil && user.otpResendLockUntil.getTime() <= now) {
+    const cleared = await User.updateOne(
+      { _id: user._id, otpResendLockUntil: user.otpResendLockUntil },
+      { $set: { otpResendCount: 0 }, $unset: { otpResendLockUntil: '', otpResendClaimId: '' } }
+    );
+    if (cleared.modifiedCount > 0) {
+      user.otpResendCount = 0;
+      user.otpResendLockUntil = undefined;
+    }
   }
 
-  user.otpResendCount = (user.otpResendCount || 0) + 1;
-  if (user.otpResendCount >= maxAttempts) {
-    user.otpResendLockUntil = new Date(Date.now() + lockHours * 60 * 60 * 1000);
-    user.otpResendCount = 0;
+  // Server-side block enforcement (frontend state is never trusted)
+  if (user.otpResendLockUntil && user.otpResendLockUntil.getTime() > now) {
+    return sendBlockedResponse(user.otpResendLockUntil);
   }
 
+  // Defensive self-heal for inconsistent legacy data (counter exhausted but
+  // no lock recorded): start a fresh block window now instead of failing.
+  if ((user.otpResendCount || 0) >= maxAttempts) {
+    const lockUntilDate = new Date(now + lockMs);
+    const locked = await User.findOneAndUpdate(
+      {
+        _id: user._id,
+        $or: [{ otpResendLockUntil: null }, { otpResendLockUntil: { $exists: false } }],
+      },
+      { $set: { otpResendLockUntil: lockUntilDate } }
+    );
+    if (locked) return sendBlockedResponse(lockUntilDate);
+  }
+
+  // Atomic claim of one resend slot BEFORE sending. The compound filter
+  // guarantees two simultaneous requests can never both pass once the limit
+  // or the lock is reached; losers match nothing and get a 429.
+  const claimToken = crypto.randomBytes(16).toString('hex');
+  const claimed = await User.findOneAndUpdate(
+    {
+      _id: user._id,
+      $and: [
+        { otpResendCount: { $lt: maxAttempts } },
+        {
+          $or: [
+            { otpResendLockUntil: { $exists: false } },
+            { otpResendLockUntil: null },
+          ],
+        },
+      ],
+    },
+    { $inc: { otpResendCount: 1 }, $set: { otpResendClaimId: claimToken } },
+    { new: true }
+  );
+
+  if (!claimed) {
+    const fresh = await User.findById(user._id).select('otpResendLockUntil');
+    return sendBlockedResponse(fresh?.otpResendLockUntil || new Date(now + lockMs));
+  }
+  user = claimed;
+
+  // Persist the fresh OTP atomically before delivery
   const code = user.generateOTP();
-  await user.save({ validateBeforeSave: false });
+  console.log('[OTP] regenerated for resend');
+  await User.updateOne(
+    { _id: user._id },
+    { otpCode: user.otpCode, otpExpire: user.otpExpire }
+  );
 
   try {
-    await sendEmail({ to: user.email, subject: 'Your verification code', text: `Your verification code: ${code}` });
+    const template = emailTemplates.verifyOTP
+      ? emailTemplates.verifyOTP(user.firstName, code)
+      : { subject: 'Your verification code', text: `Your verification code: ${code}` };
+    await sendEmail({ to: user.email, ...template });
   } catch (err) {
-    console.error(`OTP email failed (user=${user._id}):`, err?.code || err?.name || 'send failed');
-    // Raw OTP codes are never printed anywhere — logs carry delivery status only.
-    if (process.env.NODE_ENV !== 'production') {
-      return res.status(200).json({
-        success: true,
-        message: 'OTP email could not be delivered right now. Please try again shortly.',
-      });
-    }
-
-    return next(new AppError('Could not send OTP email.', 500));
+    console.error(
+      `[EMAIL] resend failed user=${user._id} code=${err?.code || err?.name || 'n/a'} ` +
+      `message=${maskEmailsInText(err?.message || String(err))}`
+    );
+    // Failed delivery must not consume quota: roll back ONLY this attempt.
+    // The claim-token guard keeps concurrent rollbacks from cancelling each
+    // other's claims.
+    await User.updateOne(
+      { _id: user._id, otpResendClaimId: claimToken },
+      { $inc: { otpResendCount: -1 }, $unset: { otpResendClaimId: '' } }
+    );
+    return next(new AppError('Could not send the verification email right now. Please try again shortly.', 502));
   }
 
-  res.status(200).json({ success: true, message: 'OTP sent to email.' });
+  const remaining = Math.max(0, maxAttempts - (user.otpResendCount || 0));
+
+  if (remaining === 0) {
+    // The 3rd successful resend still delivers, then starts the block window
+    const lockUntilDate = new Date(now + lockMs);
+    await User.updateOne(
+      { _id: user._id, otpResendCount: { $gte: maxAttempts } },
+      { $set: { otpResendLockUntil: lockUntilDate } }
+    );
+    console.log(`[OTP] resend limit reached user=${user._id} blockedForHours=${lockHours}`);
+    return res.status(200).json({
+      success: true,
+      message: 'A new verification code has been sent. This was your last resend attempt.',
+      remainingResends: 0,
+      blocked: true,
+      retryAfterSeconds: Math.round(lockMs / 1000),
+      retryAfter: lockUntilDate.toISOString(),
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'A new verification code has been sent to your email.',
+    remainingResends: remaining,
+  });
 });
 
 // @desc    Request email change (sends OTP to new email)
