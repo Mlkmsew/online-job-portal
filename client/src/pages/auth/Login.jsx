@@ -74,7 +74,7 @@ const Login = () => {
             <p className="mt-2 text-base text-[#475569] dark:text-gray-400">{t('auth.loginSubtitle')}</p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-8 w-full space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} autoComplete="off" className="mt-8 w-full space-y-5">
             {/* Email */}
             <div>
               <label className="mb-2 block text-sm font-medium text-[#14213D] dark:text-gray-100">{t('auth.email')}</label>
@@ -82,6 +82,7 @@ const Login = () => {
                 <FiMail className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-[#1769E0] dark:text-blue-400" />
                 <input
                   type="email"
+                  autoComplete="off"
                   {...register('email', { required: t('auth.emailRequired') })}
                   className="w-full rounded-xl border border-[#E2E8F0] bg-white py-3.5 pr-4 pl-12 text-[#0F172A] placeholder-slate-400 transition outline-none focus:border-[#1769E0] focus:ring-2 focus:ring-[#1769E0]/30 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500"
                   placeholder={t('auth.emailPlaceholder')}
@@ -97,6 +98,7 @@ const Login = () => {
                 <FiLock className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-[#1769E0] dark:text-blue-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   {...register('password', { required: t('auth.passwordRequired') })}
                   className="w-full rounded-xl border border-[#E2E8F0] bg-white py-3.5 pr-12 pl-12 text-[#0F172A] placeholder-slate-400 transition outline-none focus:border-[#1769E0] focus:ring-2 focus:ring-[#1769E0]/30 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500"
                   placeholder="••••••••"

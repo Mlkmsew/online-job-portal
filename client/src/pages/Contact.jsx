@@ -84,7 +84,6 @@ const Contact = () => {
       title: t('contact.info.emailLabel', { defaultValue: 'Email' }),
       items: [
         { label: 'melkamsewalehegn@gmail.com', href: 'mailto:melkamsewalehegn@gmail.com' },
-        { label: 'thebuilder6763@gmail.com', href: 'mailto:thebuilder6763@gmail.com' },
         { label: 'yimer5759@gmail.com', href: 'mailto:yimer5759@gmail.com' },
       ],
     },

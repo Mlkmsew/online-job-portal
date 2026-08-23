@@ -74,7 +74,7 @@ const Register = () => {
         <div className="card">
           <h2 className="text-2xl font-bold text-center mb-6">{t('auth.register')}</h2>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} autoComplete="off" className="space-y-4">
             {/* Name Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -238,6 +238,7 @@ const Register = () => {
                 <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   {...register('password', {
                     required: t('auth.passwordRequired'),
                     minLength: { value: 8, message: t('auth.weakPassword') },
@@ -264,6 +265,7 @@ const Register = () => {
                 <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   {...register('confirmPassword', {
                     required: t('auth.passwordRequired'),
                     validate: value => value === password || t('auth.passwordMismatch')
