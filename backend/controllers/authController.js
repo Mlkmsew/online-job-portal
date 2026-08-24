@@ -837,8 +837,13 @@ exports.uploadCV = asyncHandler(async (req, res, next) => {
   user.cv = req.file.path;
   user.cvPublicId = req.file.filename;
   user.cvOriginalName = req.file.originalname;
-  // A fresh upload clears the detach lock so recommendations work again.
+  // A fresh upload clears the detach lock so recommendations work again,
+  // bumps the CV version and INVALIDATES any previous CV's parsed data
+  // BEFORE parsing, so stale analysis can never be served while parsing or
+  // after a parse failure.
   user.cvDetachedAt = null;
+  user.cvVersion = (user.cvVersion || 0) + 1;
+  user.resumeAnalysis = undefined;
 
   try {
     const analysis = await parseResumeSkills(user.cv);
@@ -848,7 +853,11 @@ exports.uploadCV = asyncHandler(async (req, res, next) => {
     const combinedSkillIds = Array.from(new Set([...existingSkillIds, ...resumeSkillIds]));
 
     user.skills = combinedSkillIds;
+    // Fresh analysis bound to THIS file's identity (Cloudinary public id).
     user.resumeAnalysis = {
+      cvId: req.file.filename,
+      skillNames: extractedSkills.map((s) => s?.name).filter(Boolean),
+      professionalTitle: analysis.professionalTitle || undefined,
       skills: extractedSkills,
       experienceYears: analysis.experienceYears,
       education: analysis.education,

@@ -8,7 +8,7 @@ const Company = require('../models/Company');
 const Bookmark = require('../models/Bookmark');
 const Application = require('../models/Application');
 const { calculateJobMatch } = require('../utils/matching');
-const { canRecommendJobs, buildJobSeekerMatchingContext } = require('../utils/dashboardHelpers');
+const { canRecommendJobs, buildCvMatchingProfile, buildJobSeekerMatchingContext } = require('../utils/dashboardHelpers');
 const mongoose = require('mongoose');
 
 // @desc Get job seeker dashboard
@@ -32,14 +32,15 @@ exports.getDashboard = asyncHandler(async (req, res) => {
       .populate('employer', 'firstName lastName'),
   ]);
 
-  // Recommended jobs: build recommendations based on match scoring engine.
-  // Generated once the job seeker has an uploaded CV, a Resume Builder CV, or
-  // parsed CV data on their profile.
+  // Recommended jobs are calculated from the CURRENTLY UPLOADED CV ONLY.
+  // profileForMatching (profile + Resume Builder) is still used below for the
+  // generic "latest opportunities" ranking, but never for recommendations.
   const { resumeDoc, profileForMatching } = await buildJobSeekerMatchingContext(userId);
-  const canRecommend = canRecommendJobs(user, resumeDoc);
+  const canRecommend = canRecommendJobs(user);
   let recommended = [];
   if (canRecommend) {
     try {
+      const cvProfile = buildCvMatchingProfile(user);
       const appliedJobIds = new Set(
         (await Application.find({ applicant: userId }).select('job')).map((app) => app.job?.toString()).filter(Boolean)
       );
@@ -52,7 +53,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
       const unappliedJobs = jobs.filter((j) => !appliedJobIds.has(j._id.toString()));
 
       const scoredJobs = unappliedJobs.map((job) => {
-        const match = calculateJobMatch(job, profileForMatching);
+        const match = calculateJobMatch(job, cvProfile);
         const score = match.matchScore ?? match.score ?? 0;
         return {
           ...job.toObject(),
@@ -117,8 +118,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
     cvUrl: user.cv,
     cvOriginalName: user.cvOriginalName,
     resumeBuilderCV: Boolean(resumeDoc),
-  };
-  const certificates = user.certificates || [];
+  };  const certificates = user.certificates || [];
 
   // Skill stats
   const skillCount = (user.skills || []).length;

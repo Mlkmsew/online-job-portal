@@ -21,6 +21,9 @@ const userSchema = new mongoose.Schema(
         // no new CV uploaded), profile data and Resume Builder documents must
         // NOT be used as substitute CV sources for job recommendations.
         cvDetachedAt: { type: Date, default: null },
+        // Incremented on every CV upload so consumers can distinguish CV A
+        // from CV B and never reuse analysis from a previous file.
+        cvVersion: { type: Number, default: 0 },
         phone: String,
         gender: String,
         headline: String,
@@ -59,12 +62,20 @@ const userSchema = new mongoose.Schema(
                 description: String,
             },
         ],
+        // Cache of the CURRENTLY UPLOADED CV's parsed content. Written only
+        // by uploadCV (which invalidates any previous analysis first) and
+        // cleared by deleteCV. cvId ties the cache to the exact Cloudinary
+        // public id of the file it was parsed from, so stale data from a
+        // removed/replaced CV can never be reused.
         resumeAnalysis: {
             skills: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Skill' }],
+            skillNames: [String],
             education: [String],
             experienceYears: Number,
             location: String,
             certifications: [String],
+            professionalTitle: String,
+            cvId: String,
             rawText: String,
         },
         careerInterests: [String],

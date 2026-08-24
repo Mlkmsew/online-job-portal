@@ -220,8 +220,18 @@ test('removing the CV locks recommendations until a new CV is uploaded', async (
   const fakeResumeBuilderDoc = { _id: 'resume-doc-1' };
   assert.equal(canRecommendJobs(afterDoc, fakeResumeBuilderDoc), false);
 
-  // Uploading a new CV re-arms recommendations.
+  // Uploading a new CV re-arms recommendations — uploadCV persists BOTH the
+  // file reference and its freshly parsed analysis together.
   afterDoc.cv = 'https://res.cloudinary.com/demo/raw/upload/ethiojob/cvs/new.pdf';
+  assert.equal(canRecommendJobs(afterDoc, fakeResumeBuilderDoc), false); // file alone is not enough
+
+  afterDoc.cvPublicId = 'ethiojob/cvs/new';
+  afterDoc.resumeAnalysis = {
+    cvId: 'ethiojob/cvs/new',
+    skillNames: ['Python', 'Django'],
+    experienceYears: 2,
+    education: ['BSc'],
+  };
   assert.equal(canRecommendJobs(afterDoc, fakeResumeBuilderDoc), true);
 });
 

@@ -469,16 +469,14 @@ exports.getRecommendations = asyncHandler(async (req, res, next) => {
   const User = require('../models/user');
   const Application = require('../models/Application');
   const { calculateJobMatch } = require('../utils/matching');
-  const { canRecommendJobs, buildJobSeekerMatchingContext } = require('../utils/dashboardHelpers');
+  const { canRecommendJobs, buildCvMatchingProfile } = require('../utils/dashboardHelpers');
 
   const userId = req.user.id || req.user._id;
   const user = await User.findById(userId).select('-password');
   if (!user) return next(new AppError('User not found.', 404));
 
-  // Recommendations require an uploaded CV, a Resume Builder CV, or parsed CV
-  // data on the profile.
-  const { resumeDoc, profileForMatching } = await buildJobSeekerMatchingContext(userId);
-  const hasCV = canRecommendJobs(user, resumeDoc);
+  // Recommendations require the CURRENTLY UPLOADED CV only.
+  const hasCV = canRecommendJobs(user);
 
   if (!hasCV) {
     return res.status(200).json({
@@ -504,7 +502,7 @@ exports.getRecommendations = asyncHandler(async (req, res, next) => {
   const unappliedJobs = activeJobs.filter((j) => !appliedJobIds.has(j._id.toString()));
 
   const scoredJobs = unappliedJobs.map((job) => {
-    const match = calculateJobMatch(job, profileForMatching);
+    const match = calculateJobMatch(job, buildCvMatchingProfile(user));
     const score = match.matchScore ?? match.score ?? 0;
 
     return {

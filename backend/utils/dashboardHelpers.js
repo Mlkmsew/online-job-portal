@@ -21,16 +21,86 @@ const hasProfileCVData = (user) => {
   return Boolean(hasSkills || hasExperience || hasEducation || hasTitle);
 };
 
-// Recommendations unlock once the job seeker has an uploaded CV, a Resume
-// Builder CV, or parsed CV data on their profile. After an explicit CV
-// removal (cvDetachedAt set) only uploading a new CV re-arms them — profile
-// skills/experience and Resume Builder documents are never used as fallbacks.
-const canRecommendJobs = (user, hasResumeCV) => {
+// True when the user's parsed-CV cache exists AND belongs to the currently
+// uploaded file (identity via Cloudinary public id) and carries usable data.
+const hasCurrentCvAnalysis = (user) => {
+  if (!user?.cv || !user?.resumeAnalysis) return false;
+  const analysis = user.resumeAnalysis;
+  // Identity check: analysis from a previous CV must never be reused.
+  if (analysis.cvId && user.cvPublicId && analysis.cvId !== user.cvPublicId) return false;
+  const hasSkills =
+    (Array.isArray(analysis.skillNames) && analysis.skillNames.length > 0) ||
+    (Array.isArray(analysis.skills) && analysis.skills.length > 0);
+  return Boolean(
+    hasSkills ||
+      analysis.experienceYears != null ||
+      (Array.isArray(analysis.education) && analysis.education.length > 0) ||
+      analysis.professionalTitle ||
+      (analysis.rawText && analysis.rawText.length > 0)
+  );
+};
+
+// Recommendations require the CURRENTLY UPLOADED CV only. Profile skills,
+// experience, Resume Builder documents, old parsed data and detach state can
+// never unlock or substitute for it.
+const canRecommendJobs = (user) => {
   if (!user) return false;
-  // An uploaded CV always unlocks recommendations (and clears the detach lock).
-  if (user.cv) return true;
-  if (user.cvDetachedAt) return false;
-  return Boolean(hasResumeCV) || hasProfileCVData(user);
+  return hasCurrentCvAnalysis(user);
+};
+
+// Build a matching profile derived STRICTLY from the current uploaded CV's
+// parsed analysis. No profile fields (technicalSkills, softSkills, bio,
+// experienceDetails, educationDetails, preferences...) and no Resume Builder
+// content may leak into recommendation scoring through this object.
+const buildCvMatchingProfile = (user) => {
+  const analysis = user?.resumeAnalysis || {};
+
+  let skillNames = Array.isArray(analysis.skillNames) ? analysis.skillNames.filter(Boolean) : [];
+  if (skillNames.length === 0 && Array.isArray(analysis.skills)) {
+    skillNames = analysis.skills
+      .map((s) => {
+        if (!s) return '';
+        const name = typeof s === 'object' ? s.name || s.title : String(s);
+        return name ? String(name) : '';
+      })
+      .filter(Boolean);
+  }
+
+  const education = Array.isArray(analysis.education)
+    ? analysis.education.map((e) => ({ degree: typeof e === 'object' ? e?.degree || '' : String(e), institution: '' }))
+    : [];
+  const certifications = Array.isArray(analysis.certifications)
+    ? analysis.certifications.map((c) => ({ name: typeof c === 'object' ? c?.name || '' : String(c) }))
+    : [];
+
+  return {
+    _id: user?._id,
+    __cvOnlyProfile: true,
+    technicalSkills: skillNames,
+    skills: [],
+    skillNames,
+    softSkills: [],
+    experienceYears: analysis.experienceYears ?? null,
+    experienceDetails: [],
+    experience: '',
+    educationDetails: education,
+    education: [],
+    certificates: certifications,
+    headline: analysis.professionalTitle || '',
+    currentRole: analysis.professionalTitle || '',
+    bio: '',
+    location: analysis.location ? { region: analysis.location } : null,
+    jobPreferences: {},
+    careerInterests: [],
+    resumeAnalysis: {
+      skills: Array.isArray(analysis.skills) ? analysis.skills : [],
+      education: Array.isArray(analysis.education) ? analysis.education : [],
+      experienceYears: analysis.experienceYears ?? null,
+      location: analysis.location,
+      certifications: Array.isArray(analysis.certifications) ? analysis.certifications : [],
+      professionalTitle: analysis.professionalTitle,
+    },
+  };
 };
 
 // Overlay a Resume Builder CV onto a plain copy of the user profile so the
@@ -115,4 +185,12 @@ const buildJobSeekerMatchingContext = async (userId) => {
   return { user, resumeDoc, profileForMatching: enrichUserFromResume(user, resumeDoc) };
 };
 
-module.exports = { canRecommendJobs, hasProfileSkills, hasProfileCVData, enrichUserFromResume, buildJobSeekerMatchingContext };
+module.exports = {
+  canRecommendJobs,
+  hasCurrentCvAnalysis,
+  hasProfileSkills,
+  hasProfileCVData,
+  buildCvMatchingProfile,
+  enrichUserFromResume,
+  buildJobSeekerMatchingContext,
+};

@@ -1,48 +1,49 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { canRecommendJobs } = require('../utils/dashboardHelpers');
+const { canRecommendJobs, buildCvMatchingProfile } = require('../utils/dashboardHelpers');
 
-test('does not allow recommendations when a user has profile skills but no uploaded CV', () => {
-  const user = {
-    skills: [{ _id: 'skill-1' }],
-    resumeAnalysis: { skills: [] },
-  };
+// A well-formed analysis of the CURRENT uploaded CV.
+const cvAAnalysis = {
+  cvId: 'ethiojob/cvs/cv-a',
+  skillNames: ['HTML', 'CSS', 'React', 'JavaScript'],
+  experienceYears: 3,
+  education: ['BSc Computer Science'],
+  professionalTitle: 'Frontend Developer',
+};
 
-  assert.equal(canRecommendJobs(user), false);
-});
-
-test('allows recommendations when a user has uploaded a CV', () => {
-  const user = {
-    cv: 'https://res.cloudinary.com/example/cvs/curriculum.pdf',
-    skills: [],
-    resumeAnalysis: { skills: [] },
-  };
-
+test('allows recommendations when a CV is uploaded with a matching parsed analysis', () => {
+  const user = { cv: 'https://res.cloudinary.com/x/cvs/cv-a.pdf', cvPublicId: 'ethiojob/cvs/cv-a', resumeAnalysis: cvAAnalysis };
   assert.equal(canRecommendJobs(user), true);
 });
 
-test('does not allow recommendations when a user has no profile data', () => {
-  const user = {
-    skills: [],
-    resumeAnalysis: { skills: [] },
-  };
+test('does not allow recommendations when a CV is uploaded but parsing failed (no analysis)', () => {
+  const user = { cv: 'https://res.cloudinary.com/x/cvs/cv-a.pdf', cvPublicId: 'ethiojob/cvs/cv-a', resumeAnalysis: {} };
+  assert.equal(canRecommendJobs(user), false);
+});
 
+test('does not allow recommendations from profile skills alone', () => {
+  const user = {
+    technicalSkills: ['React'],
+    softSkills: ['Teamwork'],
+    skillNames: ['React', 'Teamwork'],
+  };
   assert.equal(canRecommendJobs(user), false);
 });
 
 test('does not allow recommendations from profile experience alone', () => {
-  const user = {
-    experienceYears: 5,
-    technicalSkills: ['React'],
-    softSkills: ['Teamwork'],
-  };
-
+  const user = { experienceYears: 5, experienceDetails: [{ title: 'Dev' }] };
   assert.equal(canRecommendJobs(user), false);
 });
 
-test('does not allow recommendations after CV removal even with profile skills, experience and a Resume Builder CV', () => {
-  // State right after DELETE /auth/upload-cv: parsed-CV cache cleared,
-  // cvDetachedAt set, profile fields and Resume Builder docs still present.
+test('does not allow a Resume Builder document to substitute for an uploaded CV', () => {
+  const user = {
+    technicalSkills: ['React'],
+    // legacy second argument is no longer honored
+  };
+  assert.equal(canRecommendJobs(user, { _id: 'resume-doc' }), false);
+});
+
+test('does not allow recommendations after CV removal even with profile data and builder docs', () => {
   const user = {
     skillNames: ['React', 'Node.js'],
     technicalSkills: ['React'],
@@ -51,18 +52,40 @@ test('does not allow recommendations after CV removal even with profile skills, 
     educationDetails: [{ degree: 'BSc' }],
     cvDetachedAt: new Date(),
   };
-  const resumeBuilderDoc = { _id: 'resume-doc-1' };
-
-  assert.equal(canRecommendJobs(user, resumeBuilderDoc), false);
+  assert.equal(canRecommendJobs(user, { _id: 'resume-doc' }), false);
 });
 
-test('allows recommendations again after uploading a new CV following removal', () => {
+test('does not allow recommendations when analysis belongs to a previous CV (stale identity)', () => {
   const user = {
-    cv: 'https://res.cloudinary.com/example/cvs/new-cv.pdf',
-    cvDetachedAt: new Date(),
-    skills: [],
+    cv: 'https://res.cloudinary.com/x/cvs/cv-b.pdf',
+    cvPublicId: 'ethiojob/cvs/cv-b',
+    resumeAnalysis: { ...cvAAnalysis }, // cvId still points at CV A
   };
-  const resumeBuilderDoc = { _id: 'resume-doc-1' };
+  assert.equal(canRecommendJobs(user), false);
+});
 
-  assert.equal(canRecommendJobs(user, resumeBuilderDoc), true);
+test('buildCvMatchingProfile exposes only CV data — profile fields never leak in', () => {
+  const user = {
+    _id: 'u1',
+    technicalSkills: ['Go', 'Rust'],           // profile-only noise
+    softSkills: ['Leadership'],
+    bio: 'Go developer',
+    headline: 'Systems Engineer',
+    experienceDetails: [{ title: 'Dev' }],
+    educationDetails: [{ degree: 'PhD' }],
+    certificates: [{ name: 'CEH' }],
+    jobPreferences: { preferredJobTypes: ['Contract'] },
+    resumeAnalysis: cvAAnalysis,
+  };
+
+  const profile = buildCvMatchingProfile(user);
+
+  assert.deepEqual(profile.technicalSkills, ['HTML', 'CSS', 'React', 'JavaScript']);
+  assert.equal(profile.bio, '');
+  assert.equal(profile.headline, 'Frontend Developer'); // from the CV, not the profile
+  assert.deepEqual(profile.softSkills, []);
+  assert.deepEqual(profile.experienceDetails, []);
+  assert.notEqual(profile.educationDetails[0].degree, 'PhD');
+  assert.deepEqual(profile.certificates, []); // no CV certifications in this analysis
+  assert.ok(profile.__cvOnlyProfile);
 });
