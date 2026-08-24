@@ -837,6 +837,8 @@ exports.uploadCV = asyncHandler(async (req, res, next) => {
   user.cv = req.file.path;
   user.cvPublicId = req.file.filename;
   user.cvOriginalName = req.file.originalname;
+  // A fresh upload clears the detach lock so recommendations work again.
+  user.cvDetachedAt = null;
 
   try {
     const analysis = await parseResumeSkills(user.cv);
@@ -894,6 +896,45 @@ exports.uploadCV = asyncHandler(async (req, res, next) => {
   }
 
   res.status(200).json({ success: true, message: 'CV uploaded.', data: user });
+});
+
+// @desc    Remove uploaded CV document (profile & Resume Builder data untouched)
+// @route   DELETE /api/auth/upload-cv
+// @access  Private
+exports.deleteCV = asyncHandler(async (req, res, next) => {
+  const userId = req.user.id || req.user._id;
+  const existingUser = await User.findById(userId);
+  if (!existingUser) return next(new AppError('User not found.', 404));
+
+  const hadUploadedCV = Boolean(existingUser.cv || existingUser.cvPublicId);
+
+  // Delete the stored file from Cloudinary when a reference exists.
+  if (existingUser.cvPublicId) {
+    try {
+      const cloudinary = require('cloudinary').v2;
+      await cloudinary.uploader.destroy(existingUser.cvPublicId);
+    } catch (err) {
+      console.warn('Cloudinary CV deletion failed (non-fatal):', err.message);
+    }
+  }
+
+  // Clear the uploaded document fields AND the CV-derived analysis cache, then
+  // mark the CV as explicitly detached so profile skills/experience and Resume
+  // Builder documents are NOT used as fallback recommendation sources until a
+  // new CV is uploaded. Profile and Resume Builder data remain untouched.
+  const user = await User.findByIdAndUpdate(
+    userId,
+    {
+      $unset: { cv: '', cvPublicId: '', cvOriginalName: '', resumeAnalysis: '' },
+      $set: { cvDetachedAt: new Date() },
+    },
+    { new: true }
+  ).populate('skills', 'name slug');
+
+  user.calculateProfileCompleteness();
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json({ success: true, message: hadUploadedCV ? 'CV removed.' : 'No CV document uploaded.', data: user });
 });
 
 // @desc    Upload certificate

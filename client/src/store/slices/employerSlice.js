@@ -60,6 +60,18 @@ export const fetchEmployerCompany = createAsyncThunk(
   }
 );
 
+export const resubmitCompany = createAsyncThunk(
+  'employer/resubmitCompany',
+  async (companyId, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/companies/${companyId}/resubmit`);
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to resubmit company');
+    }
+  }
+);
+
 export const fetchEmployerJobs = createAsyncThunk(
   'employer/fetchJobs',
   async (_, { rejectWithValue }) => {
@@ -120,6 +132,9 @@ const employerSlice = createSlice({
       .addCase(fetchEmployerCompany.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(resubmitCompany.fulfilled, (state, action) => {
+        state.company = action.payload;
       })
       .addCase(fetchEmployerJobs.pending, (state) => {
         state.loading = true;

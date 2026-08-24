@@ -13,10 +13,15 @@
 //   3. Professional Summary
 //   4. Education
 //   5. Work Experience
-//   6. Skills
-//   7. Languages
-//   8. Certifications
-//   9. Profile Photo
+//   6. Skills (Technical + Soft)
+//   7. Projects
+//   8. Languages
+//   9. Additional Information
+//
+// Certifications are intentionally NOT scored: the Resume Builder no longer
+// exposes a Certifications tab, so an uneditable section must never reduce
+// the CV Score. The profile photo is also optional and excluded (templates
+// fall back to initials), so a missing photo never reduces the score either.
 // ============================================
 
 const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
@@ -37,9 +42,9 @@ export const RESUME_SECTIONS = [
   'Education',
   'Work Experience',
   'Skills',
+  'Projects',
   'Languages',
-  'Certifications',
-  'Profile Photo',
+  'Additional Information',
 ];
 
 /**
@@ -108,23 +113,56 @@ export const calculateResumeCompletion = (resume = {}) => {
     hasEntry(resume.softSkills);
   if (hasSkills) completed += 1;
 
-  // 7. Languages
+  // 7. Projects (array or legacy single object; needs a title or description)
+  const projectList = Array.isArray(resume.projects)
+    ? resume.projects
+    : resume.projects && typeof resume.projects === 'object'
+      ? [resume.projects]
+      : [];
+  const hasProjects = projectList.some(
+    (project) => project && (hasText(project.title) || hasText(project.description))
+  );
+  if (hasProjects) completed += 1;
+
+  // 8. Languages
   const hasLanguages = hasEntry(resume.languages, (lang) =>
     typeof lang === 'object' ? lang?.name : lang
   );
   if (hasLanguages) completed += 1;
 
-  // 8. Certifications
-  const hasCertifications = hasEntry(resume.certifications, (cert) => {
-    if (typeof cert === 'object') return cert?.name || cert?.title || cert?.certification || cert?.issuer;
-    return cert;
-  });
-  if (hasCertifications) completed += 1;
+  // 9. Additional Information (custom sections and/or interests/hobbies)
+  const rawInterests = resume.interests;
+  const interestsComplete = typeof rawInterests === 'string'
+    ? hasText(rawInterests)
+    : hasText(rawInterests?.text);
+  const additionalSections = resume.additionalInfo;
+  const hasAdditionalInfo =
+    interestsComplete ||
+    Boolean(
+      additionalSections &&
+        typeof additionalSections === 'object' &&
+        Object.values(additionalSections).some((section) => {
+          const entries = Array.isArray(section)
+            ? section
+            : Array.isArray(section?.items)
+              ? section.items
+              : typeof section?.text === 'string'
+                ? [section.text]
+                : [];
+          return entries.some((item) => {
+            if (typeof item === 'string') return hasText(item);
+            return Boolean(
+              item &&
+                (hasText(item.title) || hasText(item.name) || hasText(item.description) || hasText(item.detail))
+            );
+          });
+        })
+    );
+  if (hasAdditionalInfo) completed += 1;
 
-  // 9. Profile Photo
-  if (Boolean(resume.photo?.dataUrl) || Boolean(resume.photo?.url)) completed += 1;
+  // The profile photo is optional and deliberately excluded from scoring.
 
-  return Math.round((completed / RESUME_SECTIONS.length) * 100);
+  return Math.min(100, Math.max(0, Math.round((completed / RESUME_SECTIONS.length) * 100)));
 };
 
 /**

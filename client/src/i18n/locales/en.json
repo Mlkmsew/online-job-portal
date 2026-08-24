@@ -1182,7 +1182,8 @@
       "error": {
         "loadFailed": "Failed to load job for editing",
         "loadDetailsFailed": "Failed to load job details",
-        "saveFailed": "Failed to save job"
+        "saveFailed": "Failed to save job",
+        "companyNotApproved": "Your company must be approved by an admin before you can post jobs."
       },
       "experience": {
         "entryLevel": "Entry Level (0-2 years)",
@@ -1207,7 +1208,10 @@
         "male": "Male",
         "female": "Female",
         "other": "Other"
-      }
+      },
+      "companyUnderReview": "Company Under Review",
+      "companyApprovalRequired": "Your company profile is pending admin approval. You can post jobs once your company has been approved.",
+      "viewCompanyStatus": "View Company Status"
     },
     "tabs": {
       "account": "Account",
@@ -1587,7 +1591,10 @@
         "removeReplaceCover": "Remove / Replace Cover",
         "removeReplace": "Remove / Replace",
         "view": "View",
-        "openInNewTab": "Open in New Tab"
+        "openInNewTab": "Open in New Tab",
+        "editCompanyProfile": "Edit Company Profile",
+        "resubmit": "Resubmit for Review",
+        "resubmitting": "Resubmitting..."
       },
       "statuses": {
         "verified": "Verified",
@@ -1596,7 +1603,8 @@
         "imageDocumentReady": "Image document ready",
         "licensePending": "License Pending",
         "tinPending": "TIN Pending",
-        "registrationPending": "Registration Pending"
+        "registrationPending": "Registration Pending",
+        "rejected": "Rejected"
       },
       "previewLabels": {
         "livePreview": "Live Preview",
@@ -1623,12 +1631,19 @@
       },
       "success": {
         "updated": "Company profile saved successfully!",
-        "submitted": "Company profile created successfully!"
+        "submitted": "Company profile created successfully!",
+        "resubmitted": "Company resubmitted! Waiting for admin approval."
       },
       "error": {
         "uploadLogo": "Please upload a company logo.",
         "saveFailed": "Failed to save company profile. Please try again."
-      }
+      },
+      "rejected": {
+        "title": "Company Profile Rejected",
+        "reasonLabel": "Reason",
+        "instructions": "Please update your company information and resubmit it for review."
+      },
+      "pendingReviewNotice": "Your company profile is pending admin review. It will be visible to job seekers after approval."
     },
     "jobs": {
       "title": "All Posted Jobs",
@@ -1919,6 +1934,10 @@
     "noCVUploaded": "No CV document uploaded yet",
     "uploadCV": "Upload CV",
     "replaceCV": "Replace CV",
+    "removeCV": "Remove CV",
+    "confirmRemoveCV": "Are you sure you want to remove your uploaded CV?",
+    "cvRemoved": "Resume / CV removed.",
+    "cvRemoveFailed": "Failed to remove resume.",
     "downloadCV": "Download CV",
     "deleteCV": "Delete CV",
     "builderCVActive": "Resume Builder CV set as your active CV",

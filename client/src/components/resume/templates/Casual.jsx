@@ -1,5 +1,6 @@
 import './shared.css';
 import { getColorTokens, getInitials, getResumeViewModel } from './templateUtils';
+import AdditionalInfoSections from './AdditionalInfoSections';
 
 export const Casual = ({ resume, color = 'blue', compact = false }) => {
   const view = getResumeViewModel(resume);
@@ -10,7 +11,9 @@ export const Casual = ({ resume, color = 'blue', compact = false }) => {
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
   const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
   const languages = Array.isArray(view.languages) ? view.languages : [];
-  const qualities = Array.isArray(view.qualities) ? view.qualities : [];
+  const softSkills = (Array.isArray(view.softSkills) ? view.softSkills : []).map((skill) => (typeof skill === 'string' ? skill : skill?.name)).filter(Boolean);
+  const skills = (Array.isArray(view.skills) ? view.skills : []).filter((skill) => skill?.name);
+  const projects = Array.isArray(view.projects) ? view.projects.filter(Boolean) : [];
   const hasContact = view.contact?.email || view.contact?.phone || view.contact?.location || view.contact?.linkedin;
 
   return (
@@ -95,15 +98,30 @@ export const Casual = ({ resume, color = 'blue', compact = false }) => {
             )}
 
             {/* Qualities / Skills Section */}
-            {qualities.length > 0 && (
+            {softSkills.length > 0 && (
               <div>
                 <p style={{ fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.4)', paddingBottom: '6px', marginBottom: '12px', letterSpacing: '1px' }}>
                   Qualities
                 </p>
-                {qualities.map((qual, idx) => (
+                {softSkills.map((qual, idx) => (
                   <div key={`qual-${idx}`} style={{ fontSize: '12px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ width: '6px', height: '6px', backgroundColor: '#ffffff', borderRadius: '50%' }}></span>
                     <span>{typeof qual === 'string' ? qual : qual.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Skills Section */}
+            {skills.length > 0 && (
+              <div style={{ marginTop: '20px' }}>
+                <p style={{ fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.4)', paddingBottom: '6px', marginBottom: '12px', letterSpacing: '1px' }}>
+                  Skills
+                </p>
+                {skills.map((skill, idx) => (
+                  <div key={`${skill.name}-${idx}`} style={{ fontSize: '12px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '6px', height: '6px', backgroundColor: '#ffffff', borderRadius: '50%' }}></span>
+                    <span>{skill.name}</span>
                   </div>
                 ))}
               </div>
@@ -203,6 +221,23 @@ export const Casual = ({ resume, color = 'blue', compact = false }) => {
               </div>
             )}
 
+            {/* Projects Section */}
+            {projects.length > 0 && (
+              <div style={{ marginTop: '24px' }}>
+                <h2 style={{ fontSize: '15px', fontWeight: 'bold', textTransform: 'uppercase', color: '#111827', borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', marginBottom: '12px', letterSpacing: '0.5px' }}>
+                  Projects
+                </h2>
+                {projects.map((project, idx) => (
+                  <div key={`${project.title || 'project'}-${idx}`} style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111827' }}>{project.title}</div>
+                    {project.description && (
+                      <p style={{ fontSize: '11px', color: '#374151', lineHeight: '1.4', margin: '4px 0 0 0' }}>{project.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
           {/* Certifications Section */}
             {(view.certifications || []).length > 0 && (
               <div style={{ marginTop: '24px' }}>
@@ -224,6 +259,11 @@ export const Casual = ({ resume, color = 'blue', compact = false }) => {
                 ))}
               </div>
             )}
+
+          <AdditionalInfoSections
+            sections={view.additionalInfo}
+            style={{ marginTop: '18px' }}
+          />
 
           </div>
 

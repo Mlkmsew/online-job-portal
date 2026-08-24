@@ -22,10 +22,15 @@ const hasProfileCVData = (user) => {
 };
 
 // Recommendations unlock once the job seeker has an uploaded CV, a Resume
-// Builder CV, or parsed CV data on their profile.
+// Builder CV, or parsed CV data on their profile. After an explicit CV
+// removal (cvDetachedAt set) only uploading a new CV re-arms them — profile
+// skills/experience and Resume Builder documents are never used as fallbacks.
 const canRecommendJobs = (user, hasResumeCV) => {
   if (!user) return false;
-  return Boolean(user.cv) || Boolean(hasResumeCV) || hasProfileCVData(user);
+  // An uploaded CV always unlocks recommendations (and clears the detach lock).
+  if (user.cv) return true;
+  if (user.cvDetachedAt) return false;
+  return Boolean(hasResumeCV) || hasProfileCVData(user);
 };
 
 // Overlay a Resume Builder CV onto a plain copy of the user profile so the

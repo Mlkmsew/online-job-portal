@@ -75,6 +75,8 @@ const companySchema = new mongoose.Schema(
     isFeatured: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     rejectionReason: { type: String, default: '' },
+    reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    reviewedAt: { type: Date },
 
     // Stats
     totalJobs: { type: Number, default: 0 },

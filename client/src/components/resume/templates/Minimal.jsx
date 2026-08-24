@@ -10,6 +10,10 @@ export const Minimal = ({ resume, color = 'black', compact = false }) => {
 
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
   const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
+  const skills = (Array.isArray(view.skills) ? view.skills : []).filter((skill) => skill?.name);
+  const softSkills = (Array.isArray(view.softSkills) ? view.softSkills : []).map((skill) => (typeof skill === 'string' ? skill : skill?.name)).filter(Boolean);
+  const languages = Array.isArray(view.languages) ? view.languages.filter(Boolean) : [];
+  const projects = Array.isArray(view.projects) ? view.projects.filter(Boolean) : [];
   const hasContact = view.contact?.email || view.contact?.phone || view.contact?.location || view.contact?.linkedin;
 
   return (
@@ -137,16 +141,70 @@ export const Minimal = ({ resume, color = 'black', compact = false }) => {
             </div>
           )}
 
+          {/* SECTION: Projects */}
+          {projects.length > 0 && (
+            <div>
+              <div style={{ backgroundColor: '#000000', color: '#ffffff', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', marginBottom: '14px' }}>
+                Projects
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {projects.map((project, idx) => (
+                  <div key={`project-${idx}`}>
+                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#000000' }}>
+                      {project.title}
+                    </div>
+                    {project.description && (
+                      <p style={{ fontSize: '11px', color: '#374151', lineHeight: '1.4', margin: '4px 0 0 0' }}>{project.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* SECTION: Skills */}
-          {view.skills && view.skills.length > 0 && (
+          {skills.length > 0 && (
             <div>
               <div style={{ backgroundColor: '#000000', color: '#ffffff', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', marginBottom: '10px' }}>
                 Skills
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {view.skills.map((skill, index) => (
+                {skills.map((skill, index) => (
                   <span key={`${skill.name || 'skill'}-${index}`} style={{ backgroundColor: '#f3f4f6', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500', color: '#1f2937' }}>
                     {skill.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+        {/* SECTION: Soft Skills */}
+          {softSkills.length > 0 && (
+            <div>
+              <div style={{ backgroundColor: '#000000', color: '#ffffff', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', marginBottom: '10px' }}>
+                Soft Skills
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {softSkills.map((skill, index) => (
+                  <span key={`${skill}-${index}`} style={{ backgroundColor: '#f3f4f6', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500', color: '#1f2937' }}>
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+        {/* SECTION: Languages */}
+          {languages.length > 0 && (
+            <div>
+              <div style={{ backgroundColor: '#000000', color: '#ffffff', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', marginBottom: '10px' }}>
+                Languages
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {languages.map((language, index) => (
+                  <span key={`${language}-${index}`} style={{ backgroundColor: '#f3f4f6', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500', color: '#1f2937' }}>
+                    {typeof language === 'string' ? language : language.name}
                   </span>
                 ))}
               </div>

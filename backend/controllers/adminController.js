@@ -562,9 +562,15 @@ exports.getCompanies = asyncHandler(async (req, res) => {
 exports.approveCompany = asyncHandler(async (req, res, next) => {
   const company = await Company.findById(req.params.id);
   if (!company) return next(new AppError('Company not found.', 404));
+  if (company.isApproved) {
+    return next(new AppError('Company is already approved.', 400));
+  }
+
   company.isApproved = true;
   company.isActive = true;
   company.rejectionReason = '';
+  company.reviewedBy = req.user.id;
+  company.reviewedAt = new Date();
   await company.save({ validateBeforeSave: false });
 
   if (company.owner) {
@@ -589,6 +595,12 @@ exports.approveCompany = asyncHandler(async (req, res, next) => {
 exports.rejectCompany = asyncHandler(async (req, res, next) => {
   const company = await Company.findById(req.params.id);
   if (!company) return next(new AppError('Company not found.', 404));
+  if (company.isApproved) {
+    return next(new AppError('Company is already approved. Revoke approval before rejecting.', 400));
+  }
+  if (company.isActive === false && company.rejectionReason) {
+    return next(new AppError('Company has already been rejected.', 400));
+  }
 
   const rejectionReason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
   if (!rejectionReason) {
@@ -598,6 +610,8 @@ exports.rejectCompany = asyncHandler(async (req, res, next) => {
   company.isApproved = false;
   company.isActive = false;
   company.rejectionReason = rejectionReason;
+  company.reviewedBy = req.user.id;
+  company.reviewedAt = new Date();
   await company.save({ validateBeforeSave: false });
 
   if (company.owner) {

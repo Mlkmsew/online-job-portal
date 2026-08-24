@@ -1,7 +1,7 @@
 // ============================================
 // Dashboard Layout — Unified Ethiopian Portal
 // ============================================
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import AdminHeaderActions from './AdminHeaderActions';
 import { useEffect, useState } from 'react';
@@ -19,6 +19,7 @@ const DashboardLayout = () => {
   const dispatch = useDispatch();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useSelector((state) => state.auth);
+  const location = useLocation();
 
   // Global socket listeners — keep the sidebar unread badge + online indicators live
   useEffect(() => {
@@ -49,6 +50,9 @@ const DashboardLayout = () => {
 
   const fontSize = user?.settings?.appearance?.fontSize || 'Medium';
   const role = user?.role || 'jobseeker';
+  // Resume Builder pulls its sticky section nav close to the global header,
+  // so the scroll container gets a tighter top padding on that page only.
+  const isResumeBuilder = location.pathname === '/dashboard/resume';
 
   return (
     <div
@@ -135,7 +139,13 @@ const DashboardLayout = () => {
         </header>
 
         {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 sidebar-scroll">
+        <main
+          className={
+            isResumeBuilder
+              ? 'flex-1 overflow-y-auto sidebar-scroll px-4 pb-4 pt-0 sm:px-6 sm:pb-6 sm:pt-0 lg:px-8 lg:pb-8 lg:pt-0'
+              : 'flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 sidebar-scroll'
+          }
+        >
           <Outlet />
         </main>
       </div>

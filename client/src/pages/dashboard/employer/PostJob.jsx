@@ -319,6 +319,10 @@ const PostJob = () => {
       toast.error('You must register a company profile before posting a job.');
       return;
     }
+    if (!company.isApproved) {
+      toast.error(t('employer.postJob.error.companyNotApproved'));
+      return;
+    }
 
     setLoading(true);
     try {
@@ -385,6 +389,20 @@ const PostJob = () => {
         </p>
         <button onClick={() => navigate('/employer/company')} className="btn btn-primary">
           {t('employer.postJob.setupCompanyProfile')}
+        </button>
+      </div>
+    );
+  }
+
+  if (!company.isApproved) {
+    return (
+      <div className="card text-center py-12">
+        <h2 className="text-2xl font-bold mb-4">{t('employer.postJob.companyUnderReview')}</h2>
+        <p className="text-gray-600 mb-6">
+          {t('employer.postJob.companyApprovalRequired')}
+        </p>
+        <button onClick={() => navigate('/employer/company')} className="btn btn-primary">
+          {t('employer.postJob.viewCompanyStatus')}
         </button>
       </div>
     );

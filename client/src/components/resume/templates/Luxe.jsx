@@ -9,6 +9,10 @@ export const Luxe = ({ resume, color = 'indigo', compact = false }) => {
 
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
   const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
+  const skills = (Array.isArray(view.skills) ? view.skills : []).filter((skill) => skill?.name);
+  const softSkills = (Array.isArray(view.softSkills) ? view.softSkills : []).map((skill) => (typeof skill === 'string' ? skill : skill?.name)).filter(Boolean);
+  const languages = Array.isArray(view.languages) ? view.languages.filter(Boolean) : [];
+  const projects = Array.isArray(view.projects) ? view.projects.filter(Boolean) : [];
   const hasContact = view.contact?.email || view.contact?.phone || view.contact?.location || view.contact?.linkedin || view.photo;
 
   return (
@@ -164,7 +168,79 @@ export const Luxe = ({ resume, color = 'indigo', compact = false }) => {
             </div>
           )}
 
-        {/* SECTION 5: Certifications */}
+          {/* SECTION 5: Projects */}
+          {projects.length > 0 && (
+            <div>
+              <h2 style={{ fontSize: '15px', fontWeight: 'bold', color: '#111827', borderBottom: '1px solid #e5e7eb', paddingBottom: '6px', marginBottom: '14px' }}>
+                Projects
+              </h2>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {projects.map((project, idx) => (
+                  <div key={`${project.title || 'project'}-${idx}`} style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '15px' }}>
+                    <div></div>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111827' }}>{project.title}</div>
+                      {project.description && (
+                        <p style={{ fontSize: '11px', color: '#374151', lineHeight: '1.4', margin: '4px 0 0 0' }}>{project.description}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        {/* SECTION 6: Skills */}
+          {skills.length > 0 && (
+            <div>
+              <h2 style={{ fontSize: '15px', fontWeight: 'bold', color: '#111827', borderBottom: '1px solid #e5e7eb', paddingBottom: '6px', marginBottom: '12px' }}>
+                Skills
+              </h2>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {skills.map((skill, idx) => (
+                  <span key={`${skill.name}-${idx}`} style={{ backgroundColor: tokens.accentSoft, color: tokens.accent, padding: '3px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>
+                    {skill.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+        {/* SECTION 7: Soft Skills */}
+          {softSkills.length > 0 && (
+            <div>
+              <h2 style={{ fontSize: '15px', fontWeight: 'bold', color: '#111827', borderBottom: '1px solid #e5e7eb', paddingBottom: '6px', marginBottom: '12px' }}>
+                Soft Skills
+              </h2>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {softSkills.map((skill, idx) => (
+                  <span key={`${skill}-${idx}`} style={{ backgroundColor: tokens.accentSoft, color: tokens.accent, padding: '3px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+        {/* SECTION 8: Languages */}
+          {languages.length > 0 && (
+            <div>
+              <h2 style={{ fontSize: '15px', fontWeight: 'bold', color: '#111827', borderBottom: '1px solid #e5e7eb', paddingBottom: '6px', marginBottom: '12px' }}>
+                Languages
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
+                {languages.map((language, idx) => (
+                  <div key={`${language}-${idx}`} style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                    <span style={{ fontWeight: 'bold', color: tokens.accent }}>Language</span>
+                    <span style={{ color: '#111827' }}>{typeof language === 'string' ? language : language.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        {/* SECTION 9: Certifications */}
           {(view.certifications || []).length > 0 && (
             <div>
               <h2 style={{ fontSize: '15px', fontWeight: 'bold', color: '#111827', borderBottom: '1px solid #e5e7eb', paddingBottom: '6px', marginBottom: '12px' }}>

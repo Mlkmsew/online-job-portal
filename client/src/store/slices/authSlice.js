@@ -132,6 +132,15 @@ export const deleteAvatar = createAsyncThunk('auth/deleteAvatar', async (_, { re
   }
 });
 
+export const deleteCV = createAsyncThunk('auth/deleteCV', async (_, { rejectWithValue }) => {
+  try {
+    const response = await api.delete('/auth/upload-cv');
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message);
+  }
+});
+
 export const updateSettings = createAsyncThunk('auth/updateSettings', async (settingsPayload, { rejectWithValue }) => {
   try {
     const response = await api.put('/auth/update-settings', { settings: settingsPayload });
@@ -278,6 +287,10 @@ const authSlice = createSlice({
         localStorage.setItem('user', JSON.stringify(state.user));
       })
       .addCase(deleteAvatar.fulfilled, (state, action) => {
+        state.user = normalizeUser(action.payload.data);
+        localStorage.setItem('user', JSON.stringify(state.user));
+      })
+      .addCase(deleteCV.fulfilled, (state, action) => {
         state.user = normalizeUser(action.payload.data);
         localStorage.setItem('user', JSON.stringify(state.user));
       })

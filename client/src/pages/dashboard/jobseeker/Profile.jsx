@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { updateProfile, uploadAvatar, uploadCV, deleteAvatar } from '../../../store/slices/authSlice';
+import { updateProfile, uploadAvatar, uploadCV, deleteAvatar, deleteCV } from '../../../store/slices/authSlice';
 import { calculateProfileCompletion } from '../../../utils/resumeCompletion';
 import { toast } from 'react-hot-toast';
 import {
@@ -191,6 +191,10 @@ const JobSeekerProfile = () => {
   const resumeUploaded = Boolean(user?.cv);
   const resumeFileName = user?.cvOriginalName || (user?.cv ? user.cv.split('/').pop() : null);
   const resumeUrl = user?.cv || null;
+  // A CV is "attached" when an uploaded document exists OR a Resume Builder
+  // CV is selected as the active CV — both show in the attachment card and
+  // both must expose the Remove action.
+  const hasAttachedCV = Boolean((resumeUploaded && resumeUrl) || activeBuilderCV);
   const initials = `${user?.firstName?.[0] || 'U'}${user?.lastName?.[0] || ''}`;
 
   /* Save updated profile payload directly to Database */
@@ -304,6 +308,22 @@ const JobSeekerProfile = () => {
       setCvFile(null);
     } catch (err) {
       toast.error(err || t('profile.cvUploadFailed', { defaultValue: 'Failed to upload resume.' }));
+    }
+  };
+
+  /* Direct CV remove handler — clears the attached CV reference (uploaded
+     document via the backend and/or the active Resume Builder CV selection).
+     Resume Builder data and profile sections remain untouched. */
+  const handleRemoveCV = async () => {
+    if (!window.confirm(t('profile.confirmRemoveCV', { defaultValue: 'Are you sure you want to remove your uploaded CV?' }))) return;
+    setCvMenuOpen(false);
+    try {
+      await dispatch(deleteCV()).unwrap();
+      localStorage.removeItem(activeCVStorageKey);
+      setActiveBuilderCV(null);
+      toast.success(t('profile.cvRemoved', { defaultValue: 'Resume / CV removed.' }));
+    } catch (err) {
+      toast.error(err || t('profile.cvRemoveFailed', { defaultValue: 'Failed to remove resume.' }));
     }
   };
 
@@ -1076,7 +1096,7 @@ const JobSeekerProfile = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {resumeUploaded && resumeUrl && (
               <a
                 href={resumeUrl}
@@ -1145,6 +1165,16 @@ const JobSeekerProfile = () => {
 
               <input ref={cvFileInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCVSelect} />
             </div>
+            {hasAttachedCV && (
+              <button
+                type="button"
+                onClick={handleRemoveCV}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 transition"
+              >
+                <FiTrash2 className="h-3.5 w-3.5" />
+                {t('profile.removeCV') || 'Remove CV'}
+              </button>
+            )}
           </div>
         </div>
       </section>

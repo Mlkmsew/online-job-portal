@@ -39,6 +39,8 @@ const EmployerSettings = () => {
     fullName: 'Employer',
     workEmail: '',
     companyName: '',
+    jobTitle: '',
+    phone: '',
   });
   const [notifications, setNotifications] = useState({
     newApplications: true,
@@ -133,7 +135,7 @@ const EmployerSettings = () => {
       setSaveMessage(error?.response?.data?.message || t('employer.settings.messages.photoUploadFailed'));
       window.clearTimeout(window.__employerSettingsSaveTimer);
       window.__employerSettingsSaveTimer = window.setTimeout(() => setSaveMessage(''), 4000);
-    } fontFinally: {
+    } finally {
       event.target.value = '';
     }
   };
@@ -148,6 +150,8 @@ const EmployerSettings = () => {
           fullName: savedSettings.account.fullName || prev.fullName,
           workEmail: savedSettings.account.workEmail || prev.workEmail,
           companyName: savedSettings.account.companyName || prev.companyName,
+          jobTitle: savedSettings.account.jobTitle || prev.jobTitle,
+          phone: savedSettings.account.phone || prev.phone,
         }));
       }
 
@@ -181,6 +185,8 @@ const EmployerSettings = () => {
         fullName,
         workEmail: storedUser.email || prev.workEmail,
         companyName: storedUser.companyName || prev.companyName,
+        jobTitle: storedUser.headline || storedUser.currentRole || storedUser.jobTitle || prev.jobTitle,
+        phone: storedUser.phone || prev.phone,
       }));
       if (storedUser.avatar) setAvatarUrl(storedUser.avatar);
     }
@@ -196,6 +202,8 @@ const EmployerSettings = () => {
           ...prev,
           fullName: nextFullName,
           workEmail: user.email || prev.workEmail,
+          jobTitle: user.headline || user.currentRole || prev.jobTitle,
+          phone: user.phone || prev.phone,
         }));
         if (user.avatar) setAvatarUrl(user.avatar);
 
@@ -267,7 +275,8 @@ const EmployerSettings = () => {
         firstName,
         lastName,
         email: account.workEmail,
-        phone: '+251 911 234 567',
+        phone: (account.phone || '').trim(),
+        headline: (account.jobTitle || '').trim(),
       };
 
       const profileResponse = await api.put('/auth/update-profile', profilePayload);
@@ -284,6 +293,8 @@ const EmployerSettings = () => {
             fullName: account.fullName,
             workEmail: account.workEmail,
             companyName: account.companyName,
+            jobTitle: account.jobTitle,
+            phone: account.phone,
           },
           companyProfile: {
             companyName: account.companyName,
@@ -306,6 +317,8 @@ const EmployerSettings = () => {
           fullName: account.fullName,
           workEmail: account.workEmail,
           companyName: account.companyName,
+          jobTitle: account.jobTitle,
+          phone: account.phone,
         },
         companyProfile: {
           companyName: account.companyName,
@@ -539,9 +552,10 @@ const EmployerSettings = () => {
                     <div>
                       <label className="mb-2 block text-sm font-medium text-slate-700">{t('employer.settings.account.jobTitle')}</label>
                       <input
-                        value={t('employer.settings.account.recruitmentLead')}
-                        readOnly
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm text-slate-600 outline-none"
+                        value={account.jobTitle}
+                        onChange={(event) => setAccount((prev) => ({ ...prev, jobTitle: event.target.value }))}
+                        placeholder={t('employer.settings.account.recruitmentLead')}
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#1769E0] focus:ring-2 focus:ring-[#DCEAFD]"
                       />
                     </div>
                   </div>
@@ -565,9 +579,11 @@ const EmployerSettings = () => {
                       <div className="relative">
                         <FiPhone className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
                         <input
-                          value="+251 911 234 567"
-                          readOnly
-                          className="w-full rounded-2xl border border-slate-200 bg-slate-100 py-3 pl-11 pr-4 text-sm text-slate-600 outline-none"
+                          type="tel"
+                          value={account.phone}
+                          onChange={(event) => setAccount((prev) => ({ ...prev, phone: event.target.value }))}
+                          placeholder="+251 911 234 567"
+                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-800 outline-none transition focus:border-[#1769E0] focus:ring-2 focus:ring-[#DCEAFD]"
                         />
                       </div>
                     </div>

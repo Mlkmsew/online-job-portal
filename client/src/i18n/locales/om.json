@@ -559,7 +559,8 @@
       "error": {
         "loadFailed": "Hojii gulaaliif fe'uun hin milkaa'in",
         "loadDetailsFailed": "Bal'ina hojii fe'uun hin milkaa'in",
-        "saveFailed": "Hojii olkaa'uun hin milkaa'in"
+        "saveFailed": "Hojii olkaa'uun hin milkaa'in",
+        "companyNotApproved": "Your company must be approved by an admin before you can post jobs."
       },
       "experience": {
         "entryLevel": "Jalqabaa (0-2 years)",
@@ -606,7 +607,10 @@
         "male": "Dhiira",
         "female": "Dubartii",
         "other": "Kan Biraa"
-      }
+      },
+      "companyUnderReview": "Company Under Review",
+      "companyApprovalRequired": "Your company profile is pending admin approval. You can post jobs once your company has been approved.",
+      "viewCompanyStatus": "View Company Status"
     },
     "tabs": {
       "account": "Herrega",
@@ -986,7 +990,10 @@
         "removeReplaceCover": "Suuraa Haguuggii Haqii / Bakka Buusi",
         "removeReplace": "Haqii / Bakka Buusi",
         "view": "Ilaali",
-        "openInNewTab": "Taabii Haaraa keessatti Bani"
+        "openInNewTab": "Taabii Haaraa keessatti Bani",
+        "editCompanyProfile": "Edit Company Profile",
+        "resubmit": "Resubmit for Review",
+        "resubmitting": "Resubmitting..."
       },
       "statuses": {
         "verified": "Mirkanaa'e",
@@ -995,7 +1002,8 @@
         "imageDocumentReady": "Sanadi suuraa qophaa'e",
         "licensePending": "Hayyamni Eegaa",
         "tinPending": "TIN Eegaa",
-        "registrationPending": "Galmeessaan Eegaa"
+        "registrationPending": "Galmeessaan Eegaa",
+        "rejected": "Rejected"
       },
       "previewLabels": {
         "livePreview": "Ilaalcha Kallattii",
@@ -1022,12 +1030,19 @@
       },
       "success": {
         "updated": "Profaayiliin dhaabbata milkaa'inaan olka'eera!",
-        "submitted": "Profaayiliin dhaabbata milkaa'inaan uumameera!"
+        "submitted": "Profaayiliin dhaabbata milkaa'inaan uumameera!",
+        "resubmitted": "Company resubmitted! Waiting for admin approval."
       },
       "error": {
         "uploadLogo": "Mallattoo dhaabbata fe'aa.",
         "saveFailed": "Profaayilii dhaabbata olkaa'uu hin dandeenye. Mee irra deebi'i yaali."
-      }
+      },
+      "rejected": {
+        "title": "Company Profile Rejected",
+        "reasonLabel": "Reason",
+        "instructions": "Please update your company information and resubmit it for review."
+      },
+      "pendingReviewNotice": "Your company profile is pending admin review. It will be visible to job seekers after approval."
     },
     "jobs": {
       "title": "Hojiiwwan Maxxansaman Hunda",
@@ -1878,6 +1893,10 @@
     "noCVUploaded": "CVn fe'ame hin jiru",
     "uploadCV": "CV Fe'i",
     "replaceCV": "CV Jijjiiri",
+    "removeCV": "CV Haqi",
+    "confirmRemoveCV": "CV kee ol kaa'ame haquuf yaada qabdaa?",
+    "cvRemoved": "CV haqameera.",
+    "cvRemoveFailed": "CV haquun hin milkoofne.",
     "downloadCV": "CV Buufadhu",
     "deleteCV": "CV Haqii",
     "builderCVActive": "CV Buildeerii CV aktiivii ta'ee kan muudame",

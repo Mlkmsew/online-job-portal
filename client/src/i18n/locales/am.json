@@ -1182,7 +1182,8 @@
       "error": {
         "loadFailed": "ስራውን ለመጫን አልተሳካም",
         "loadDetailsFailed": "የስራውን ዝርዝር መጫን አልተሳካም",
-        "saveFailed": "ስራውን ማስቀመጥ አልተሳካም"
+        "saveFailed": "ስራውን ማስቀመጥ አልተሳካም",
+        "companyNotApproved": "Your company must be approved by an admin before you can post jobs."
       },
       "experience": {
         "entryLevel": "ጀማሪ (0-2 ዓመት)",
@@ -1229,7 +1230,10 @@
         "male": "ወንድ",
         "female": "ሴት",
         "other": "ሌላ"
-      }
+      },
+      "companyUnderReview": "Company Under Review",
+      "companyApprovalRequired": "Your company profile is pending admin approval. You can post jobs once your company has been approved.",
+      "viewCompanyStatus": "View Company Status"
     },
     "tabs": {
       "account": "መለያ",
@@ -1609,7 +1613,10 @@
         "removeReplaceCover": "የሽፋን ምስል ያስወግዱ / ይቀይሩ",
         "removeReplace": "ያስወግዱ / ይቀይሩ",
         "view": "ይመልከቱ",
-        "openInNewTab": "በአዲስ ትር ይክፈቱ"
+        "openInNewTab": "በአዲስ ትር ይክፈቱ",
+        "editCompanyProfile": "Edit Company Profile",
+        "resubmit": "Resubmit for Review",
+        "resubmitting": "Resubmitting..."
       },
       "statuses": {
         "verified": "የተረጋገጠ",
@@ -1618,7 +1625,8 @@
         "imageDocumentReady": "የምስል ሰነድ ዝግጁ ነው",
         "licensePending": "ፈቃድ በጠባቂ",
         "tinPending": "TIN በጠባቂ",
-        "registrationPending": "ምዝገባ በጠባቂ"
+        "registrationPending": "ምዝገባ በጠባቂ",
+        "rejected": "Rejected"
       },
       "previewLabels": {
         "livePreview": "ቀጥታ ቅድሚያ እይታ",
@@ -1645,12 +1653,19 @@
       },
       "success": {
         "updated": "የድርጅቱ መገለጫ በተሳካ ሁኔታ ተቀምጧል!",
-        "submitted": "የድርጅቱ መገለጫ በተሳካ ሁኔታ ተፈጥሯል!"
+        "submitted": "የድርጅቱ መገለጫ በተሳካ ሁኔታ ተፈጥሯል!",
+        "resubmitted": "Company resubmitted! Waiting for admin approval."
       },
       "error": {
         "uploadLogo": "እባክዎ የድርጅት ሎጎ ይጫኑ።",
         "saveFailed": "የድርጅቱ መገለጫ ማስቀመጥ አልቻለም። እባክዎ እንደገና ይሞክሩ።"
-      }
+      },
+      "rejected": {
+        "title": "Company Profile Rejected",
+        "reasonLabel": "Reason",
+        "instructions": "Please update your company information and resubmit it for review."
+      },
+      "pendingReviewNotice": "Your company profile is pending admin review. It will be visible to job seekers after approval."
     },
     "jobs": {
       "title": "ሁሉም የተለቀቁ ስራዎች",
@@ -1941,6 +1956,10 @@
     "noCVUploaded": "ምንም የተጫነ ሲቪ የለም",
     "uploadCV": "ሲቪ ጫን",
     "replaceCV": "ሲቪ ይቀይሩ",
+    "removeCV": "ሲቪ አስወግድ",
+    "confirmRemoveCV": "የተጫነውን ሲቪ ማስወገድ እርግጠኛ ነዎት?",
+    "cvRemoved": "ሲቪ በተሳካ ሁኔታ ተወግዷል።",
+    "cvRemoveFailed": "ሲቪን ማስወገድ አልተሳካም።",
     "downloadCV": "ሲቪ አውርድ",
     "deleteCV": "ሲቪ ሰርዝ",
     "builderCVActive": "የResume Builder ሲቪ እንደ ንቁ ሲቪዎ ተዘጋጅቷል",

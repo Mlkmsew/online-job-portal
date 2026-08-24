@@ -67,6 +67,16 @@ describe('template render parity (templates render only user data)', () => {
 
       expect(html).toContain('ActualFirstNameXYZ');
       expect(html).toContain('ActualLastNameXYZ');
+      // Every populated section must appear regardless of template
+      expect(html).toContain('Actual summary line one.');
+      expect(html).toContain('ActualJobTitleXYZ');
+      expect(html).toContain('ActualEmployerXYZ');
+      expect(html).toContain('ActualSchoolXYZ');
+      expect(html).toContain('ActualSkillXYZ');
+      expect(html).toContain('ActualSoftSkillXYZ');
+      expect(html).toContain('ActualLanguageXYZ');
+      expect(html).toContain('ActualCertXYZ');
+      expect(html).toContain('ActualProjectXYZ');
 
       DEMO_STRINGS.forEach((demo) => {
         expect(html).not.toContain(demo);

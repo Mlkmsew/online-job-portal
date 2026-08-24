@@ -12,6 +12,8 @@ export const Creative = ({ resume, color = 'blue', compact = false }) => {
   const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
   const hasContact = view.contact?.email || view.contact?.phone;
   const hasSkills = (view.skills || []).filter((skill) => skill?.name).length > 0;
+  const softSkills = (Array.isArray(view.softSkills) ? view.softSkills : []).map((skill) => (typeof skill === 'string' ? skill : skill?.name)).filter(Boolean);
+  const languages = Array.isArray(view.languages) ? view.languages.filter(Boolean) : [];
   const hasExperience = experiences.length > 0;
   const hasEducation = educations.length > 0;
 
@@ -44,10 +46,30 @@ export const Creative = ({ resume, color = 'blue', compact = false }) => {
               <div className="resume-template__section">
                 <p className="resume-template__eyebrow" style={{ color: '#dbeafe' }}>Highlights</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {(view.skills || []).filter((skill) => skill?.name).slice(0, 5).map((skill, index) => (
+                  {(view.skills || []).filter((skill) => skill?.name).map((skill, index) => (
                     <div key={`${skill.name}-${index}`} className="resume-template__pill" style={{ background: 'rgba(255,255,255,0.14)', color: '#fff' }}>{skill.name}</div>
                   ))}
                 </div>
+              </div>
+            )}
+            {softSkills.length > 0 && (
+              <div className="resume-template__section">
+                <p className="resume-template__eyebrow" style={{ color: '#dbeafe' }}>Soft Skills</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {softSkills.map((skill, index) => (
+                    <span key={`${skill}-${index}`} className="resume-template__pill" style={{ background: 'rgba(255,255,255,0.14)', color: '#fff' }}>{skill}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {languages.length > 0 && (
+              <div className="resume-template__section">
+                <p className="resume-template__eyebrow" style={{ color: '#dbeafe' }}>Languages</p>
+                <ul className="resume-template__list" style={{ color: '#f9fafb' }}>
+                  {languages.map((language, index) => (
+                    <li key={`${language}-${index}`}>{typeof language === 'string' ? language : language.name}</li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>

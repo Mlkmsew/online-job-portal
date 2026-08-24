@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getCompanies, getTrustedCompanies, getCompany, createCompany, updateCompany, deleteCompany, uploadLogo, getMyCompany,
+  getCompanies, getTrustedCompanies, getCompany, createCompany, updateCompany, deleteCompany, uploadLogo, getMyCompany, resubmitCompany,
 } = require('../controllers/companyController');
 const { protect, authorize, requireEmailVerified } = require('../middleware/auth');
 const { uploadLogo: logoUpload, uploadCompany } = require('../config/cloudinary');
@@ -27,6 +27,7 @@ const companyUploadFields = [
 ];
 router.post('/', uploadCompany.fields(companyUploadFields), companyValidator, validate, createCompany);
 router.put('/:id', uploadCompany.fields(companyUploadFields), updateCompany);
+router.put('/:id/resubmit', resubmitCompany);
 router.delete('/:id', deleteCompany);
 router.put('/:id/logo', uploadLimiter, logoUpload.single('logo'), uploadLogo);
 

@@ -35,7 +35,8 @@ const fillEducation = (resume) => ({ ...resume, education: { ...resume.education
 const fillExperience = (resume) => ({ ...resume, experience: { ...resume.experience, jobTitle: 'Engineer', employer: 'Acme' } });
 const fillSkills = (resume) => ({ ...resume, skills: [{ name: 'React' }] });
 const fillLanguages = (resume) => ({ ...resume, languages: [{ name: 'English', level: 'Fluent' }] });
-const fillCertifications = (resume) => ({ ...resume, certifications: [{ name: 'AWS Certified' }] });
+const fillProjects = (resume) => ({ ...resume, projects: [{ title: 'Portal', description: 'MERN job portal' }] });
+const fillAdditionalInfo = (resume) => ({ ...resume, interests: { text: 'Reading, Cycling' }, additionalInfo: {} });
 const fillPhoto = (resume) => ({ ...resume, photo: { dataUrl: 'data:image/jpeg;base64,xxx' } });
 
 describe('calculateResumeCompletion', () => {
@@ -66,13 +67,96 @@ describe('calculateResumeCompletion', () => {
     expect(calculateResumeCompletion(resume)).toBe(percent(5));
   });
 
-  it('returns 100% when every section is completed', () => {
+  it('returns 100% when every scored section is completed', () => {
     let resume = emptyResume();
     [
       fillPersonal, fillContact, fillSummary, fillEducation,
-      fillExperience, fillSkills, fillLanguages, fillCertifications, fillPhoto,
+      fillExperience, fillSkills, fillProjects, fillLanguages,
+      fillAdditionalInfo,
     ].forEach((fill) => { resume = fill(resume); });
     expect(calculateResumeCompletion(resume)).toBe(100);
+  });
+
+  it('gives a fully populated CV without a photo exactly 100% (photo is optional)', () => {
+    let resume = emptyResume();
+    [
+      fillPersonal, fillContact, fillSummary, fillEducation,
+      fillExperience, fillSkills, fillProjects, fillLanguages,
+      fillAdditionalInfo,
+    ].forEach((fill) => { resume = fill(resume); });
+    expect(resume.photo).toBeNull();
+    expect(calculateResumeCompletion(resume)).toBe(100);
+    // Adding a photo must not change the score either way.
+    expect(calculateResumeCompletion(fillPhoto(resume))).toBe(100);
+  });
+
+  it('ignores certifications since the builder no longer exposes that tab', () => {
+    const withoutCerts = { ...emptyResume(), certifications: [] };
+    const withCerts = {
+      ...withoutCerts,
+      certifications: [{ name: 'AWS Certified' }],
+    };
+    expect(calculateResumeCompletion(withCerts)).toBe(calculateResumeCompletion(withoutCerts));
+  });
+
+  it('scores the same regardless of the selected template', () => {
+    let resume = emptyResume();
+    [
+      fillPersonal, fillContact, fillSummary, fillEducation,
+      fillExperience, fillSkills, fillProjects, fillLanguages,
+      fillAdditionalInfo,
+    ].forEach((fill) => { resume = fill(resume); });
+    const scores = ['modern-ats', 'minimal', 'classic', 'luxe', 'horizontal'].map(
+      (template) => calculateResumeCompletion({ ...resume, template })
+    );
+    expect(new Set(scores).size).toBe(1);
+    expect(scores[0]).toBe(100);
+  });
+
+  it('never returns a score below 0 or above 100', () => {
+    const samples = [
+      undefined,
+      null,
+      emptyResume(),
+      fillPersonal(emptyResume()),
+      { ...emptyResume(), photo: { url: 'x' } },
+      Array.from({ length: 50 }).reduce((acc) => ({ ...acc, unknownField: 'x' }), {}),
+    ];
+    samples.forEach((sample) => {
+      const score = calculateResumeCompletion(sample);
+      expect(score).toBeGreaterThanOrEqual(0);
+      expect(score).toBeLessThanOrEqual(100);
+      expect(Number.isInteger(score)).toBe(true);
+    });
+  });
+
+  it('counts legacy single-object projects and array-shaped experience/education', () => {
+    const resume = {
+      ...emptyResume(),
+      projects: { title: 'Legacy Project', description: '' },
+      experience: [{ jobTitle: 'Dev', employer: 'Co' }],
+      education: [{ schoolName: 'Uni' }],
+    };
+    // personal/contact still empty → education + experience + skills? none + projects = 3 of 10
+    expect(calculateResumeCompletion(resume)).toBe(percent(3));
+  });
+
+  it('accepts custom additional sections and string interests as Additional Information', () => {
+    const withCustomSection = {
+      ...emptyResume(),
+      interests: { text: '' },
+      additionalInfo: { sec1: { title: 'Awards', items: ['Employee of the Year'] } },
+    };
+    expect(calculateResumeCompletion(withCustomSection)).toBe(percent(1));
+
+    const withStringInterests = { ...emptyResume(), interests: 'Chess' };
+    expect(calculateResumeCompletion(withStringInterests)).toBe(percent(1));
+
+    const blankCustomSection = {
+      ...emptyResume(),
+      additionalInfo: { sec1: { title: '', items: [''] } },
+    };
+    expect(calculateResumeCompletion(blankCustomSection)).toBe(0);
   });
 
   it('does not count empty placeholder entries as completed', () => {
@@ -82,6 +166,9 @@ describe('calculateResumeCompletion', () => {
       languages: [{ name: '', level: 'Select' }],
       softSkills: [''],
       certifications: [{}],
+      projects: [{ title: '', description: '' }],
+      interests: { text: '   ' },
+      additionalInfo: {},
     };
     expect(calculateResumeCompletion(resume)).toBe(0);
   });
@@ -107,13 +194,18 @@ describe('buildResumeFromProfile / calculateProfileCompletion', () => {
       bio: 'I build products.',
       location: { city: 'Addis Ababa', address: 'Bole' },
       skillNames: ['Product'],
+      softSkills: ['Leadership'],
       languages: [{ name: 'Amharic', level: 'Fluent' }],
       experienceDetails: [{ title: 'PM', company: 'TechCo' }],
       educationDetails: [{ degree: 'MSc', institution: 'AAU' }],
       certificates: [{ name: 'PMP' }],
+      portfolio: [{ label: 'Design Sprint', url: 'https://example.com' }],
+      interests: 'Mentoring',
       avatar: 'https://example.com/avatar.jpg',
     };
+    // Photo is optional — the avatar above is deliberately ignored by scoring.
     expect(calculateProfileCompletion(user)).toBe(100);
+    expect(calculateProfileCompletion({ ...user, avatar: undefined })).toBe(100);
 
     expect(calculateProfileCompletion({ firstName: 'Jane' })).toBe(percent(1));
     expect(calculateProfileCompletion({})).toBe(0);

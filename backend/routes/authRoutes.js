@@ -6,7 +6,7 @@ const router = express.Router();
 const {
   register, login, logout, getMe, verifyEmail, resendVerification,
   forgotPassword, resetPasswordWithOTP, updatePassword, refreshToken,
-  updateProfile, updateSettings, deactivateAccount, deleteAccount, uploadAvatar, deleteAvatar, uploadCV, uploadCertificate,
+  updateProfile, updateSettings, deactivateAccount, deleteAccount, uploadAvatar, deleteAvatar, uploadCV, deleteCV, uploadCertificate,
   verifyOTP, requestEmailChange, confirmEmailChange, googleLogin, githubLogin,
   sendOTP,
 } = require('../controllers/authController');
@@ -44,6 +44,7 @@ router.delete('/delete-account', deleteAccount);
 router.put('/upload-avatar', uploadLimiter, avatarUpload.single('avatar'), uploadAvatar);
 router.delete('/upload-avatar', protect, deleteAvatar);
 router.put('/upload-cv', uploadLimiter, cvUpload.single('cv'), uploadCV);
+router.delete('/upload-cv', protect, deleteCV);
 router.post('/upload-certificate', uploadLimiter, uploadCert.single('certificate'), uploadCertificate);
 
 module.exports = router;

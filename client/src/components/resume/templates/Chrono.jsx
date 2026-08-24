@@ -11,6 +11,9 @@ export const Chrono = ({ resume, color = 'blue', compact = false }) => {
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
   const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
   const languages = Array.isArray(view.languages) ? view.languages : [];
+  const skills = (Array.isArray(view.skills) ? view.skills : []).filter((skill) => skill?.name);
+  const softSkills = (Array.isArray(view.softSkills) ? view.softSkills : []).map((skill) => (typeof skill === 'string' ? skill : skill?.name)).filter(Boolean);
+  const projects = Array.isArray(view.projects) ? view.projects.filter(Boolean) : [];
 
   return (
     <div className={`resume-template-shell ${compact ? 'resume-template--compact' : ''}`}>
@@ -124,6 +127,57 @@ export const Chrono = ({ resume, color = 'blue', compact = false }) => {
                 </div>
               </div>
             ))}
+
+            {/* Projects Section */}
+            {projects.length > 0 && (
+              <div style={{ marginTop: '24px' }}>
+                <p className="resume-template__eyebrow" style={{ color: tokens.accent, fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px', marginBottom: '10px' }}>
+                  Projects
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {projects.map((project, idx) => (
+                    <div key={`${project.title || 'project'}-${idx}`}>
+                      <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111827' }}>{project.title}</div>
+                      {project.description && (
+                        <p style={{ fontSize: '12px', color: '#374151', lineHeight: '1.4', margin: '4px 0 0 0' }}>{project.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Skills Section */}
+            {skills.length > 0 && (
+              <div style={{ marginTop: '24px' }}>
+                <p className="resume-template__eyebrow" style={{ color: tokens.accent, fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px', marginBottom: '10px' }}>
+                  Skills
+                </p>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {skills.map((skill, idx) => (
+                    <span key={`${skill.name}-${idx}`} style={{ backgroundColor: tokens.accentSoft, color: tokens.accent, padding: '4px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                      {skill.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Soft Skills Section */}
+            {softSkills.length > 0 && (
+              <div style={{ marginTop: '24px' }}>
+                <p className="resume-template__eyebrow" style={{ color: tokens.accent, fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px', marginBottom: '10px' }}>
+                  Soft Skills
+                </p>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {softSkills.map((skill, idx) => (
+                    <span key={`${skill}-${idx}`} style={{ backgroundColor: tokens.accentSoft, color: tokens.accent, padding: '4px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: '500' }}>
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Languages Section */}
             {languages.length > 0 && (

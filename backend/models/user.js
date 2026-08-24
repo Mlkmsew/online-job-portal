@@ -17,6 +17,10 @@ const userSchema = new mongoose.Schema(
         cv: String,
         cvPublicId: String,
         cvOriginalName: String,
+        // Set when the job seeker explicitly removes their CV. While set (and
+        // no new CV uploaded), profile data and Resume Builder documents must
+        // NOT be used as substitute CV sources for job recommendations.
+        cvDetachedAt: { type: Date, default: null },
         phone: String,
         gender: String,
         headline: String,

@@ -11,8 +11,10 @@ export const Elegant = ({ resume, color = 'purple', compact = false }) => {
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
   const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
   const languages = Array.isArray(view.languages) ? view.languages : [];
-  const qualities = Array.isArray(view.qualities) ? view.qualities : [];
-  const hobbies = Array.isArray(view.hobbies) ? view.hobbies : (Array.isArray(view.interests) ? view.interests : []);
+  const softSkills = (Array.isArray(view.softSkills) ? view.softSkills : []).map((skill) => (typeof skill === 'string' ? skill : skill?.name)).filter(Boolean);
+  const hobbies = String(view.interests || '').split(/[\n,]/).map((item) => item.trim()).filter(Boolean);
+  const skills = (Array.isArray(view.skills) ? view.skills : []).filter((skill) => skill?.name);
+  const projects = Array.isArray(view.projects) ? view.projects.filter(Boolean) : [];
 
   return (
     <div className={`resume-template-shell ${compact ? 'resume-template--compact' : ''}`}>
@@ -32,7 +34,7 @@ export const Elegant = ({ resume, color = 'purple', compact = false }) => {
                   <div key={`lang-${idx}`} style={{ marginBottom: '10px', fontSize: '11px' }}>
                     <div style={{ marginBottom: '4px' }}>{typeof lang === 'string' ? lang : lang.name}</div>
                     <div style={{ height: '4px', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ width: '85%O', height: '100%', backgroundColor: tokens.accent }}></div>
+                      <div style={{ width: '85%', height: '100%', backgroundColor: tokens.accent }}></div>
                     </div>
                   </div>
                 ))}
@@ -40,12 +42,12 @@ export const Elegant = ({ resume, color = 'purple', compact = false }) => {
             )}
 
             {/* Qualities */}
-            {qualities.length > 0 && (
+            {softSkills.length > 0 && (
               <div>
                 <p style={{ fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', color: '#ffffff', borderBottom: '1px solid rgba(255,255,255,0.3)', paddingBottom: '6px', marginBottom: '12px', letterSpacing: '0.5px' }}>
                   Qualities
                 </p>
-                {qualities.map((qual, idx) => (
+                {softSkills.map((qual, idx) => (
                   <div key={`qual-${idx}`} style={{ fontSize: '11px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '6px', height: '6px', backgroundColor: tokens.accent, display: 'inline-block' }}></span>
                     <span>{typeof qual === 'string' ? qual : qual.name}</span>
@@ -195,6 +197,41 @@ export const Elegant = ({ resume, color = 'purple', compact = false }) => {
                   ))}
                 </div>
               )}
+
+            {/* Projects */}
+            {projects.length > 0 && (
+              <div>
+                <div style={{ backgroundColor: tokens.accent, color: '#ffffff', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', marginBottom: '12px' }}>
+                  Projects
+                </div>
+                {projects.map((project, idx) => (
+                  <div key={`${project.title || 'project'}-${idx}`} style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111827' }}>
+                      {project.title}
+                    </div>
+                    {project.description && (
+                      <p style={{ fontSize: '11px', color: '#374151', lineHeight: '1.4', margin: '4px 0 0 0' }}>{project.description}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Skills */}
+            {skills.length > 0 && (
+              <div>
+                <div style={{ backgroundColor: tokens.accent, color: '#ffffff', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', marginBottom: '10px' }}>
+                  Skills
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {skills.map((skill, idx) => (
+                    <span key={`${skill.name}-${idx}`} style={{ backgroundColor: tokens.accentSoft, color: tokens.accent, padding: '3px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>
+                      {skill.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Certifications */}
               {(view.certifications || []).length > 0 && (

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { fetchEmployerCompany } from '../../../store/slices/employerSlice';
+import { fetchEmployerCompany, resubmitCompany } from '../../../store/slices/employerSlice';
 import { useForm } from 'react-hook-form';
 import api from '../../../services/api';
 import { sanitizeEthiopianPhone } from '../../../utils/helpers';
@@ -25,6 +25,9 @@ import {
   FiLinkedin,
   FiInstagram,
   FiSend,
+  FiAlertTriangle,
+  FiClock,
+  FiRefreshCw,
 } from 'react-icons/fi';
 
 const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5000+'];
@@ -100,12 +103,39 @@ const getFormValues = (company = {}) => ({
   },
 });
 
+// Mirrors the admin review logic: approved = isApproved; rejected = deactivated by a review;
+// anything else that is not yet approved is pending review.
+const getCompanyStatus = (company) => {
+  if (!company) return null;
+  if (company.isApproved) return 'approved';
+  if (company.isActive === false) return 'rejected';
+  return 'pending';
+};
+
 const CompanyProfile = () => {
   const dispatch = useDispatch();
   const { t } = useTranslation();
   const { company, loading } = useSelector((state) => state.employer);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
+  const companyStatus = getCompanyStatus(company);
+  const isRejected = companyStatus === 'rejected';
+  const isPending = companyStatus === 'pending';
+
+  const handleResubmit = async () => {
+    if (!company?._id || resubmitting) return;
+    setResubmitting(true);
+    try {
+      await dispatch(resubmitCompany(company._id)).unwrap();
+      toast.success(t('employer.companyProfile.success.resubmitted'));
+    } catch (error) {
+      toast.error(error?.message || t('employer.companyProfile.error.saveFailed'));
+    } finally {
+      setResubmitting(false);
+    }
+  };
+
   const [logoFile, setLogoFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
   const [businessLicenseFile, setBusinessLicenseFile] = useState(null);
@@ -483,6 +513,57 @@ const CompanyProfile = () => {
           <div className="h-full rounded-full bg-[#1769E0] transition-all" style={{ width: `${completionPercent}%` }} />
         </div>
       </div>
+
+      {isRejected && (
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/40">
+          <div className="flex items-start gap-3">
+            <FiAlertTriangle className="mt-1 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-red-800 dark:text-red-300">
+                {t('employer.companyProfile.rejected.title')}
+              </h2>
+              {company?.rejectionReason && (
+                <p className="mt-2 text-sm text-red-700 dark:text-red-300">
+                  <span className="font-semibold">{t('employer.companyProfile.rejected.reasonLabel')}:</span>{' '}
+                  {company.rejectionReason}
+                </p>
+              )}
+              <p className="mt-2 text-sm text-red-700 dark:text-red-300">
+                {t('employer.companyProfile.rejected.instructions')}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  disabled={isEditing || saving || resubmitting}
+                  className="btn btn-outline border-red-300 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/40"
+                >
+                  <FiFileText className="h-4 w-4" />
+                  {t('employer.companyProfile.actions.editCompanyProfile')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResubmit}
+                  disabled={isEditing || saving || resubmitting}
+                  className="btn btn-primary"
+                >
+                  <FiRefreshCw className={`h-4 w-4 ${resubmitting ? 'animate-spin' : ''}`} />
+                  {resubmitting ? t('employer.companyProfile.actions.resubmitting') : t('employer.companyProfile.actions.resubmit')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isPending && !isRejected && (
+        <div className="flex items-center gap-3 rounded-3xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
+          <FiClock className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+            {t('employer.companyProfile.pendingReviewNotice')}
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1.7fr_0.9fr]">
         <div className="space-y-6">
@@ -1067,8 +1148,12 @@ const CompanyProfile = () => {
                 <h2 className="mt-3 text-2xl font-semibold text-gray-900 dark:text-white">{preview.name}</h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{preview.industry}</p>
               </div>
-              <span className={(company?.isApproved || company?.isApproved === false) ? (company?.isApproved ? 'badge badge-success' : 'badge badge-warning') : 'badge badge-warning'}>
-                {company?.isApproved ? t('employer.companyProfile.statuses.verified') : t('employer.companyProfile.statuses.pending')}
+              <span className={companyStatus === 'approved' ? 'badge badge-success' : isRejected ? 'badge badge-danger' : 'badge badge-warning'}>
+                {companyStatus === 'approved'
+                  ? t('employer.companyProfile.statuses.verified')
+                  : isRejected
+                    ? t('employer.companyProfile.statuses.rejected')
+                    : t('employer.companyProfile.statuses.pending')}
               </span>
             </div>
 

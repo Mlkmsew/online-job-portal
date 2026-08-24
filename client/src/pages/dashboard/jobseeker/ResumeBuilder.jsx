@@ -399,7 +399,7 @@ const ResumeBuilder = () => {
       new Promise((resolve) => setTimeout(resolve, 1500)),
     ]).then(() => printWindow.print()).catch(() => printWindow.print());
   };
-  const TABS = ['Profile', 'Summary', 'Experience', 'Education', 'Skills', 'Certifications', 'Languages', 'Additional Info', 'Template'];
+  const TABS = ['Profile', 'Summary', 'Experience', 'Education', 'Skills', 'Languages', 'Additional Info', 'Template'];
   const [activeTab, setActiveTab] = useState('Profile');
   const [searchQuery, setSearchQuery] = useState('');
   const [exampleSearch, setExampleSearch] = useState('');
@@ -1283,40 +1283,6 @@ const ResumeBuilder = () => {
     saveToStorage(updated);
   };
 
-  const handleCertificationChange = (index, field, value) => {
-    const updated = resumes.map(r => {
-      if (r.id === activeResumeId) {
-        const newCertifications = [...(r.certifications || [])];
-        const current = newCertifications[index] || { name: '', issuer: '', year: '' };
-        newCertifications[index] = { ...current, [field]: value };
-        return withDirty({ ...r, certifications: newCertifications }, 'certifications');
-      }
-      return r;
-    });
-    saveToStorage(updated);
-  };
-
-  const handleAddCertification = () => {
-    const updated = resumes.map(r => {
-      if (r.id === activeResumeId) {
-        return withDirty({ ...r, certifications: [...(r.certifications || []), { name: '', issuer: '', year: '' }] }, 'certifications');
-      }
-      return r;
-    });
-    saveToStorage(updated);
-  };
-
-  const handleRemoveCertification = (index) => {
-    const updated = resumes.map(r => {
-      if (r.id === activeResumeId) {
-        const newCertifications = (r.certifications || []).filter((_, idx) => idx !== index);
-        return withDirty({ ...r, certifications: newCertifications }, 'certifications');
-      }
-      return r;
-    });
-    saveToStorage(updated);
-  };
-
   const handleAddDutyExample = (example) => {
     if (!activeResume) return;
     const currentDuties = getFirstEntry(activeResume.experience).duties || '';
@@ -1741,7 +1707,7 @@ const ResumeBuilder = () => {
       {/* Resume Form Editor */}
       {view === 'editor' && activeResume && (
         <div className="space-y-6 animate-slide-up">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-2 dark:border-gray-700">
+          <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 bg-white/95 pt-2 pb-2 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-900/95">
             <div className="flex flex-wrap gap-2">
               {TABS.map((tab) => (
                 <button
@@ -2855,89 +2821,6 @@ const ResumeBuilder = () => {
                   </div>
                 )}
 
-            {activeTab === 'Certifications' && (
-              <div className="space-y-6">
-                <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-                        <FiAward className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Certifications</p>
-                        <h3 className="text-lg font-semibold text-slate-900">Showcase your professional credentials</h3>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddCertification}
-                      className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                    >
-                      <FiPlusCircle className="mr-2 h-4 w-4" /> Add certification
-                    </button>
-                  </div>
-                </div>
-
-                {(activeResume.certifications || []).length === 0 ? (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-600">
-                    No certifications added yet. Add your certificates to boost your CV score.
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(activeResume.certifications || []).map((cert, index) => (
-                      <div key={index} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
-                          <div className="grid gap-4 md:grid-cols-3">
-                            <div>
-                              <label className="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Certification name</label>
-                              <input
-                                type="text"
-                                value={cert?.name || ''}
-                                onChange={(e) => handleCertificationChange(index, 'name', e.target.value)}
-                                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
-                                placeholder="e.g. AWS Certified Solutions Architect"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Issuing organization</label>
-                              <input
-                                type="text"
-                                value={cert?.issuer || ''}
-                                onChange={(e) => handleCertificationChange(index, 'issuer', e.target.value)}
-                                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
-                                placeholder="e.g. Amazon Web Services"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Year</label>
-                              <input
-                                type="text"
-                                value={cert?.year || ''}
-                                onChange={(e) => handleCertificationChange(index, 'year', e.target.value)}
-                                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white"
-                                placeholder="e.g. 2024"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 justify-end">
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveCertification(index)}
-                              className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-                              aria-label="Delete certification"
-                            >
-                              <FiTrash className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
             {activeTab === 'Summary' && (
               <div className="space-y-6">
                 <div className="rounded-xl bg-sky-500 p-4 text-white shadow-sm">
@@ -3024,7 +2907,7 @@ const ResumeBuilder = () => {
               </div>
             )}
 
-            {!['Profile', 'Experience', 'Education', 'Skills', 'Summary', 'Languages', 'Certifications', 'Additional Info', 'Template'].includes(activeTab) && (
+            {!['Profile', 'Experience', 'Education', 'Skills', 'Summary', 'Languages', 'Additional Info', 'Template'].includes(activeTab) && (
               <div className="py-10 text-center">
                 <FiFileText className="mx-auto mb-3 h-16 w-16 text-gray-300" />
                 <h3 className="text-lg font-semibold">{activeTab} Section Editor</h3>

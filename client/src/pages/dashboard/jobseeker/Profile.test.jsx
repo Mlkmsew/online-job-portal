@@ -36,6 +36,7 @@ vi.mock('react-hot-toast', () => ({
 
 describe('JobSeekerProfile', () => {
   beforeEach(() => {
+    localStorage.clear();
     currentStore = buildStore(buildUser());
     mockDispatch.mockClear();
   });
@@ -121,5 +122,44 @@ describe('JobSeekerProfile', () => {
 
     expect(within(technicalGroup).queryByText('Java')).not.toBeInTheDocument();
     expect(within(technicalGroup).getByText('Python')).toBeInTheDocument();
+  });
+
+  describe('Attached Resume Document actions', () => {
+    it('renders View, Replace CV and Remove CV together when a CV document is uploaded', () => {
+      currentStore = buildStore(
+        buildUser({ cv: 'https://res.cloudinary.com/demo/cvs/my-cv.pdf', cvOriginalName: 'my-cv.pdf' })
+      );
+
+      render(<Profile />);
+
+      expect(screen.getByRole('link', { name: /view/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /replace cv/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /remove cv/i })).toBeInTheDocument();
+    });
+
+    it('renders Remove CV even when only an active Resume Builder CV is selected (no uploaded file)', () => {
+      localStorage.setItem(
+        'ethiojob_active_cv_jane@example.com',
+        JSON.stringify({ id: 'resume_1', title: 'resume', createdAt: new Date().toISOString() })
+      );
+      currentStore = buildStore(buildUser());
+
+      render(<Profile />);
+
+      // Card shows the builder CV title but still must expose Remove CV.
+      expect(screen.getByText(/resume/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /replace cv/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /remove cv/i })).toBeInTheDocument();
+    });
+
+    it('hides View and Remove CV when nothing is attached', () => {
+      currentStore = buildStore(buildUser());
+
+      render(<Profile />);
+
+      expect(screen.queryByRole('link', { name: /view/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /remove cv/i })).not.toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: /upload cv/i }).length).toBeGreaterThan(0);
+    });
   });
 });

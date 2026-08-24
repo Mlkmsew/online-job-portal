@@ -10,6 +10,9 @@ export const Classic = ({ resume, color = 'blue', compact = false }) => {
 
   const hasContact = view.contact?.email || view.contact?.phone || view.contact?.location;
   const hasSkills = (view.skills || []).filter((skill) => skill?.name).length > 0;
+  const softSkills = (Array.isArray(view.softSkills) ? view.softSkills : []).map((skill) => (typeof skill === 'string' ? skill : skill?.name)).filter(Boolean);
+  const languages = Array.isArray(view.languages) ? view.languages.filter(Boolean) : [];
+  const projects = Array.isArray(view.projects) ? view.projects.filter(Boolean) : [];
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
   const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
   const hasExperience = experiences.length > 0;
@@ -73,6 +76,17 @@ export const Classic = ({ resume, color = 'blue', compact = false }) => {
               ))}
             </div>
           )}
+          {projects.length > 0 && (
+            <div className="resume-template__section">
+              <p className="resume-template__eyebrow">Projects</p>
+              {projects.map((project, index) => (
+                <div key={`${project.title || 'project'}-${index}`} className="resume-template__entry">
+                  <div className="resume-template__entry-title">{project.title}</div>
+                  <div className="resume-template__content">{project.description}</div>
+                </div>
+              ))}
+            </div>
+          )}
           {(view.certifications || []).length > 0 && (
             <div className="resume-template__section">
               <p className="resume-template__eyebrow">Certifications</p>
@@ -92,6 +106,26 @@ export const Classic = ({ resume, color = 'blue', compact = false }) => {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {(view.skills || []).filter((skill) => skill?.name).map((skill, index) => (
                   <span key={`${skill.name || 'skill'}-${index}`} className="resume-template__pill">{skill.name}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {softSkills.length > 0 && (
+            <div className="resume-template__section">
+              <p className="resume-template__eyebrow">Soft Skills</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {softSkills.map((skill, index) => (
+                  <span key={`${skill}-${index}`} className="resume-template__pill">{skill}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {languages.length > 0 && (
+            <div className="resume-template__section">
+              <p className="resume-template__eyebrow">Languages</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {languages.map((language, index) => (
+                  <span key={`${language}-${index}`} className="resume-template__pill">{typeof language === 'string' ? language : language.name}</span>
                 ))}
               </div>
             </div>

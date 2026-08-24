@@ -10,6 +10,10 @@ export const Horizontal = ({ resume, color = 'blue', compact = false }) => {
 
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
   const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
+  const skills = (Array.isArray(view.skills) ? view.skills : []).filter((skill) => skill?.name);
+  const softSkills = (Array.isArray(view.softSkills) ? view.softSkills : []).map((skill) => (typeof skill === 'string' ? skill : skill?.name)).filter(Boolean);
+  const languages = Array.isArray(view.languages) ? view.languages.filter(Boolean) : [];
+  const projects = Array.isArray(view.projects) ? view.projects.filter(Boolean) : [];
   const hasContact = view.contact?.email || view.contact?.phone || view.contact?.location || view.contact?.linkedin;
 
   return (
@@ -83,6 +87,48 @@ export const Horizontal = ({ resume, color = 'blue', compact = false }) => {
                         <div style={{ color: '#111827', wordBreak: 'break-all' }}>{view.contact.linkedin}</div>
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Skills Section */}
+              {skills.length > 0 && (
+                <div>
+                  <p style={{ fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', color: tokens.accent, borderBottom: '1px solid #d1d5db', paddingBottom: '5px', marginBottom: '12px', letterSpacing: '0.5px' }}>
+                    Skills
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+                    {skills.map((skill, idx) => (
+                      <div key={`${skill.name}-${idx}`} style={{ color: '#111827' }}>{skill.name}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Soft Skills Section */}
+              {softSkills.length > 0 && (
+                <div>
+                  <p style={{ fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', color: tokens.accent, borderBottom: '1px solid #d1d5db', paddingBottom: '5px', marginBottom: '12px', letterSpacing: '0.5px' }}>
+                    Soft Skills
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+                    {softSkills.map((skill, idx) => (
+                      <div key={`${skill}-${idx}`} style={{ color: '#111827' }}>{skill}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Languages Section */}
+              {languages.length > 0 && (
+                <div>
+                  <p style={{ fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', color: tokens.accent, borderBottom: '1px solid #d1d5db', paddingBottom: '5px', marginBottom: '12px', letterSpacing: '0.5px' }}>
+                    Languages
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px' }}>
+                    {languages.map((language, idx) => (
+                      <div key={`${language}-${idx}`} style={{ color: '#111827' }}>{typeof language === 'string' ? language : language.name}</div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -162,6 +208,23 @@ export const Horizontal = ({ resume, color = 'blue', compact = false }) => {
                       <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>
                         {edu.schoolName || edu.institution} {edu.city ? `, ${edu.city}` : ''}
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Projects */}
+              {projects.length > 0 && (
+                <div>
+                  <h2 style={{ fontSize: '15px', fontWeight: 'bold', textTransform: 'uppercase', color: tokens.accent, borderBottom: '1px solid #e5e7eb', paddingBottom: '4px', marginBottom: '14px', letterSpacing: '0.5px' }}>
+                    Projects
+                  </h2>
+                  {projects.map((project, idx) => (
+                    <div key={`${project.title || 'project'}-${idx}`} style={{ marginBottom: '14px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#111827' }}>{project.title}</div>
+                      {project.description && (
+                        <p style={{ fontSize: '11px', color: '#374151', lineHeight: '1.4', margin: '4px 0 0 0' }}>{project.description}</p>
+                      )}
                     </div>
                   ))}
                 </div>

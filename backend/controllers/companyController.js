@@ -331,4 +331,44 @@ exports.getMyCompany = asyncHandler(async (req, res, next) => {
   res.status(200).json({ success: true, data: company });
 });
 
+// @desc    Resubmit a rejected company profile for admin review
+// @route   PUT /api/companies/:id/resubmit
+// @access  Private (Owner)
+exports.resubmitCompany = asyncHandler(async (req, res, next) => {
+  const company = await Company.findById(req.params.id);
+  if (!company) return next(new AppError('Company not found.', 404));
+  if (company.owner.toString() !== req.user.id) {
+    return next(new AppError('Not authorized.', 403));
+  }
+  if (company.isApproved) {
+    return next(new AppError('Company is already approved.', 400));
+  }
+  if (company.isActive !== false || !company.rejectionReason) {
+    return next(new AppError('Only a rejected company can be resubmitted for review.', 400));
+  }
+
+  // Back to pending review — approval is still decided by an admin.
+  company.isApproved = false;
+  company.isActive = true;
+  company.rejectionReason = '';
+  company.reviewedBy = undefined;
+  company.reviewedAt = undefined;
+  await company.save({ validateBeforeSave: false });
+
+  notifyAllAdmins({
+    type: 'company_pending_approval',
+    title: 'Company resubmitted for review',
+    message: `${company.name} was updated and resubmitted for approval.`,
+    link: '/admin/companies',
+    data: { companyId: company._id },
+    sender: req.user.id,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Company resubmitted! Waiting for admin approval.',
+    data: company,
+  });
+});
+
 module.exports = exports;

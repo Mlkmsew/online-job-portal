@@ -14,6 +14,10 @@ export const Executive = ({ resume, color = 'purple', compact = false }) => {
 
   const experiences = Array.isArray(view.experiences) ? view.experiences : (view.experience ? [view.experience] : []);
   const educations = Array.isArray(view.educations) ? view.educations : (view.education ? [view.education] : []);
+  const skills = (Array.isArray(view.skills) ? view.skills : []).filter((skill) => skill?.name);
+  const softSkills = (Array.isArray(view.softSkills) ? view.softSkills : []).map((skill) => (typeof skill === 'string' ? skill : skill?.name)).filter(Boolean);
+  const languages = Array.isArray(view.languages) ? view.languages.filter(Boolean) : [];
+  const projects = Array.isArray(view.projects) ? view.projects.filter(Boolean) : [];
   const hasContact = view.contact?.email || view.contact?.phone || view.contact?.location;
   const hasExperience = experiences.length > 0;
   const hasEducation = educations.length > 0;
@@ -38,14 +42,34 @@ export const Executive = ({ resume, color = 'purple', compact = false }) => {
                 {view.contact?.location && <div className="professional-sidebar__item">{view.contact.location}</div>}
               </div>
             )}
-            {view.skills.length > 0 && (
+            {skills.length > 0 && (
               <div className="professional-sidebar__group">
                 <p className="professional-heading">Skills</p>
                 <div className="professional-chip-list">
-                  {view.skills.slice(0, 6).map((skill, index) => (
+                  {skills.map((skill, index) => (
                     <span key={`${skill.name}-${index}`} className="professional-chip">{skill.name}</span>
                   ))}
                 </div>
+              </div>
+            )}
+            {softSkills.length > 0 && (
+              <div className="professional-sidebar__group">
+                <p className="professional-heading">Soft Skills</p>
+                <div className="professional-chip-list">
+                  {softSkills.map((skill, index) => (
+                    <span key={`${skill}-${index}`} className="professional-chip">{skill}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {languages.length > 0 && (
+              <div className="professional-sidebar__group">
+                <p className="professional-heading">Languages</p>
+                {languages.map((language, index) => (
+                  <div key={`${language}-${index}`} className="professional-sidebar__item">
+                    {typeof language === 'string' ? language : language.name}
+                  </div>
+                ))}
               </div>
             )}
           </aside>
@@ -94,6 +118,17 @@ export const Executive = ({ resume, color = 'purple', compact = false }) => {
                       </div>
                       <div className="experience-date">{edu.startDate}{edu.startDate && edu.endDate ? ' — ' : ''}{edu.endDate}</div>
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {projects.length > 0 && (
+              <div className="professional-section">
+                <p className="resume-template__eyebrow">Projects</p>
+                {projects.map((project, index) => (
+                  <div key={`${project.title || 'project'}-${index}`} className="resume-template__entry">
+                    <div className="resume-template__entry-title">{project.title}</div>
+                    <div className="resume-template__content">{project.description}</div>
                   </div>
                 ))}
               </div>

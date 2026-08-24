@@ -238,6 +238,11 @@ exports.createJob = asyncHandler(async (req, res, next) => {
     return next(new AppError('You do not own this company.', 403));
   }
 
+  // Employers may only post jobs once their company profile has been approved by admin
+  if (!company.isApproved) {
+    return next(new AppError('Your company profile is awaiting admin approval. You can post jobs once it has been approved.', 403));
+  }
+
   req.body.postedBy = req.user.id;
   req.body.isApproved = false;
   req.body.status = 'pending'; // Always start as pending — awaiting admin approval
