@@ -43,11 +43,28 @@ const resumeSchema = new mongoose.Schema(
     // Fields explicitly edited inside the CV. These are preserved when
     // profile data is synced into the CV.
     dirtyFields: { type: Array, default: [] },
+
+    // Exactly one Resume Builder resume per user may be the default.
+    // The default resume drives job recommendations.
+    isDefault: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
 resumeSchema.index({ user: 1, updatedAt: -1 });
+resumeSchema.index({ user: 1, isDefault: 1 }, { sparse: true });
+
+// Auto-promote to default when this is the user's first resume or no
+// default currently exists.  Works for both controller-mediated creates
+// and direct Resume.create() calls.
+resumeSchema.pre('save', async function (next) {
+  if (!this.isNew) return next();
+  if (this.isDefault) return next();
+  const ResumeModel = mongoose.models.Resume || mongoose.model('Resume');
+  const defaultExists = await ResumeModel.exists({ user: this.user, isDefault: true, _id: { $ne: this._id } });
+  if (!defaultExists) this.isDefault = true;
+  next();
+});
 
 const Resume = mongoose.models.Resume || mongoose.model('Resume', resumeSchema);
 module.exports = Resume;

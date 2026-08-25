@@ -170,6 +170,11 @@ jobSchema.pre('save', async function (next) {
     this.status = 'expired';
   }
 
+  // Auto-reactivate if deadline moved to the future and job was previously approved
+  if (this.applicationDeadline > new Date() && this.status === 'expired' && this.isApproved) {
+    this.status = 'published';
+  }
+
   next();
 });
 

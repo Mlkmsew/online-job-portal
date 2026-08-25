@@ -331,6 +331,8 @@
       "noCVTitle": "Please upload your CV to see recommended jobs",
       "noCVSubtitle": "Recommendations are powered by your resume. Upload your CV so we can match you with the right opportunities.",
       "uploadCVBtn": "Upload CV",
+      "unreadableTitle": "We couldn’t read your CV",
+      "unreadableSubtitle": "Your CV was uploaded, but we could not extract enough readable information to generate recommendations. Please upload a CV with selectable text.",
       "recErrorTitle": "Could not load recommended jobs",
       "recErrorSubtitle": "Something went wrong while loading your recommendations. Please try again.",
       "retryBtn": "Retry"
@@ -344,6 +346,7 @@
     },
     "jobCard": {
       "matchedSkills": "Matched Skills",
+      "noMatchedSkills": "No skills from your CV match this job yet.",
       "missing": "Missing",
       "excellentMatch": "Excellent Match",
       "goodMatch": "Good Match",

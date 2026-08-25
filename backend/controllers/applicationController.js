@@ -11,41 +11,9 @@ const { sendEmail, emailTemplates } = require('../config/email');
 const { calculateMatchScore, calculateJobMatch } = require('../utils/matching');
 const { parseResumeSkills } = require('../utils/resumeParser');
 const { buildJobSeekerMatchingContext } = require('../utils/dashboardHelpers');
-const { cloudinary } = require('../config/cloudinary');
+const { parseCloudinaryUrl, buildSignedDownloadUrl } = require('../utils/cloudinaryFile');
 const path = require('path');
 const fs = require('fs');
-
-// Parse a Cloudinary delivery URL into resource type, public id and format.
-// Returns null for non-Cloudinary URLs.
-const parseCloudinaryUrl = (url) => {
-  try {
-    const parsed = new URL(url);
-    if (!/res\.cloudinary\.com$/i.test(parsed.hostname)) return null;
-    const segments = parsed.pathname.split('/').filter(Boolean);
-    const uploadIdx = segments.indexOf('upload');
-    if (uploadIdx === -1) return null;
-    const resourceType = segments[uploadIdx - 1];
-    // Everything after 'upload', skipping any version (v123) segment
-    let assetSegments = segments.slice(uploadIdx + 1);
-    if (assetSegments.length && /^v\d+$/.test(assetSegments[0])) {
-      assetSegments = assetSegments.slice(1);
-    }
-    if (!assetSegments.length) return null;
-    const filename = assetSegments[assetSegments.length - 1];
-    const lastDot = filename.lastIndexOf('.');
-    const publicId = [
-      ...assetSegments.slice(0, -1),
-      lastDot !== -1 ? filename.slice(0, lastDot) : filename,
-    ].join('/');
-    return {
-      resourceType,
-      publicId,
-      format: lastDot !== -1 ? filename.slice(lastDot + 1) : '',
-    };
-  } catch {
-    return null;
-  }
-};
 
 // Stream a Cloudinary-hosted file through the backend using the authenticated
 // admin download API (public delivery URLs are rejected by the account ACL).
@@ -53,21 +21,7 @@ const streamCloudinaryFile = async (url, res, downloadName) => {
   const info = parseCloudinaryUrl(url);
   if (!info) return false;
 
-  const timestamp = Math.floor(Date.now() / 1000);
-  // For 'raw' resources Cloudinary stores the public id WITH its extension
-  // (e.g. ethiojob/cvs/test.pdf); for 'image' resources the extension is the
-  // format and the public id excludes it.
-  const publicId =
-    info.resourceType === 'raw' && info.format ? `${info.publicId}.${info.format}` : info.publicId;
-  const params = { public_id: publicId, timestamp, type: 'upload' };
-  if (info.format && info.resourceType !== 'raw') params.format = info.format;
-
-  const signature = cloudinary.utils.api_sign_request(params, process.env.CLOUDINARY_API_SECRET);
-  const qs = Object.keys(params)
-    .sort()
-    .map((key) => `${key}=${params[key]}`)
-    .join('&');
-  const downloadUrl = `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/${info.resourceType}/download?${qs}&signature=${signature}&api_key=${process.env.CLOUDINARY_API_KEY}`;
+  const downloadUrl = buildSignedDownloadUrl(info).url;
 
   const response = await fetch(downloadUrl);
   if (!response.ok) {
@@ -353,7 +307,9 @@ exports.applyJob = asyncHandler(async (req, res, next) => {
   // If a resume file was uploaded for this application, parse it and persist resume analysis
   if (req.file) {
     try {
-      const { skills: extractedSkills, experienceYears, education, certifications, location, text } = await parseResumeSkills(req.file.path);
+      const { skills: extractedSkills, experienceYears, education, certifications, location, text } = await parseResumeSkills(req.file.path, {
+        cvPublicId: req.file.filename,
+      });
       const existingSkillIds = (user.skills || []).map((skill) => skill._id ? skill._id.toString() : skill.toString());
       const resumeSkillIds = extractedSkills.map((skill) => skill._id.toString());
       const combinedSkillIds = Array.from(new Set([...existingSkillIds, ...resumeSkillIds]));

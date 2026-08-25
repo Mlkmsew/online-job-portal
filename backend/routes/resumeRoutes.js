@@ -10,6 +10,7 @@ const {
   updateResume,
   deleteResume,
   syncProfile,
+  setDefault,
 } = require('../controllers/resumeController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -19,5 +20,6 @@ router.use(protect, authorize('jobseeker'));
 router.route('/').get(getResumes).post(createResume);
 router.route('/:id').get(getResume).put(updateResume).delete(deleteResume);
 router.post('/:id/sync-profile', syncProfile);
+router.patch('/:id/default', setDefault);
 
 module.exports = router;

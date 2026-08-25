@@ -23,6 +23,7 @@
   "author": "OnlineJob Portal Team",
   "license": "MIT",
   "dependencies": {
+    "@napi-rs/canvas": "^1.0.8",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.3",
     "compression": "^1.7.4",
@@ -47,10 +48,12 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.7",
     "pdf-parse": "^1.1.4",
-    "pdfjs-dist": "^4.10.38",
+    "pdf-to-img": "^4.5.0",
+    "pdfjs-dist": "^4.2.67",
     "pngjs": "^7.0.0",
     "puppeteer-core": "^25.3.0",
     "socket.io": "^4.6.2",
+    "tesseract.js": "^5.1.1",
     "uuid": "^9.0.1",
     "xss-clean": "^0.1.4"
   },

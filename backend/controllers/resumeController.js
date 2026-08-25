@@ -12,6 +12,39 @@ const { AppError } = require('../middleware/errorHandler');
 const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 
 // ---------------------------------------------------------------------------
+// Default resume helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Clear all default flags for a user, then set exactly one resume as default.
+ * Returns the updated default resume document.
+ */
+const setResumeAsDefault = async (userId, resumeId) => {
+  await Resume.updateMany({ user: userId, isDefault: true }, { $set: { isDefault: false } });
+  const updated = await Resume.findOneAndUpdate(
+    { _id: resumeId, user: userId },
+    { $set: { isDefault: true } },
+    { new: true },
+  );
+  return updated;
+};
+
+/**
+ * When no default exists, pick the most recently updated resume and
+ * persist it as the user's default.  Returns the newly-promoted resume
+ * or null if the user has no resumes.
+ */
+const ensureDefaultResume = async (userId) => {
+  const existing = await Resume.findOne({ user: userId, isDefault: true }).lean();
+  if (existing) return existing;
+
+  const latest = await Resume.findOne({ user: userId }).sort({ updatedAt: -1 }).lean();
+  if (!latest) return null;
+
+  return setResumeAsDefault(userId, latest._id);
+};
+
+// ---------------------------------------------------------------------------
 // Profile -> resume snapshot helpers (mirror the frontend mapping)
 // ---------------------------------------------------------------------------
 
@@ -246,7 +279,16 @@ exports.createResume = asyncHandler(async (req, res, next) => {
     additionalInfo: additionalInfo || {},
     sectionOrder: Array.isArray(sectionOrder) ? sectionOrder : [],
     dirtyFields: Array.isArray(dirtyFields) ? dirtyFields : [],
+    isDefault: req.body.isDefault === true,
   });
+
+  // Auto-promote to default when this is the user's first resume or no
+  // default currently exists.
+  const defaultExists = await Resume.exists({ user: req.user._id, isDefault: true, _id: { $ne: resume._id } });
+  if (!defaultExists) {
+    await setResumeAsDefault(req.user._id, resume._id);
+    resume.isDefault = true;
+  }
 
   res.status(201).json({ success: true, message: 'Resume created successfully.', data: resume });
 });
@@ -273,6 +315,20 @@ exports.updateResume = asyncHandler(async (req, res, next) => {
     return next(new AppError('Resume title cannot be empty.', 400));
   }
 
+  // Handle default flag change — must enforce single-default invariant.
+  if (req.body.isDefault === true && !resume.isDefault) {
+    await setResumeAsDefault(req.user._id, resume._id);
+    resume.isDefault = true;
+  } else if (req.body.isDefault === false && resume.isDefault) {
+    // Cannot unset the only default without promoting another; promote the
+    // most recently updated remaining resume.
+    const other = await Resume.findOne({ user: req.user._id, _id: { $ne: resume._id } }).sort({ updatedAt: -1 });
+    if (other) {
+      await setResumeAsDefault(req.user._id, other._id);
+    }
+    resume.isDefault = false;
+  }
+
   await resume.save();
 
   res.status(200).json({ success: true, message: 'Resume updated successfully.', data: resume });
@@ -282,8 +338,21 @@ exports.updateResume = asyncHandler(async (req, res, next) => {
 // @route   DELETE /api/resumes/:id
 // @access  Private (jobseeker)
 exports.deleteResume = asyncHandler(async (req, res, next) => {
-  const resume = await Resume.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+  const resume = await Resume.findOne({ _id: req.params.id, user: req.user._id });
   if (!resume) return next(new AppError('Resume not found.', 404));
+
+  const wasDefault = resume.isDefault;
+  await Resume.deleteOne({ _id: resume._id });
+
+  // If we deleted the default, promote the most recently updated remaining
+  // resume.  If none remains, no default is needed.
+  if (wasDefault) {
+    const nextDefault = await Resume.findOne({ user: req.user._id }).sort({ updatedAt: -1 });
+    if (nextDefault) {
+      await setResumeAsDefault(req.user._id, nextDefault._id);
+    }
+  }
+
   res.status(200).json({ success: true, message: 'Resume deleted successfully.', data: {} });
 });
 
@@ -306,6 +375,21 @@ exports.syncProfile = asyncHandler(async (req, res, next) => {
   await resume.save();
 
   res.status(200).json({ success: true, message: 'Profile data synced into resume.', data: resume });
+});
+
+// @desc    Set a resume as the user's default (active) resume
+// @route   PATCH /api/resumes/:id/default
+// @access  Private (jobseeker)
+exports.setDefault = asyncHandler(async (req, res, next) => {
+  const resume = await Resume.findOne({ _id: req.params.id, user: req.user._id });
+  if (!resume) return next(new AppError('Resume not found.', 404));
+
+  if (resume.isDefault) {
+    return res.status(200).json({ success: true, message: 'Resume is already the default.', data: resume });
+  }
+
+  const updated = await setResumeAsDefault(req.user._id, resume._id);
+  res.status(200).json({ success: true, message: 'Default resume updated.', data: updated });
 });
 
 module.exports = exports;

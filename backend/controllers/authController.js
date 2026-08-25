@@ -5,11 +5,19 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/user');
+const Resume = require('../models/Resume');
 const { sendTokenResponse, generateAccessToken } = require('../utils/jwt');
 const { sendEmail, emailTemplates, getClientURL } = require('../config/email');
 const { asyncHandler, notifyAllAdmins } = require('../utils/helpers');
 const { parseResumeSkills } = require('../utils/resumeParser');
 const { AppError } = require('../middleware/errorHandler');
+
+// Safe CV diagnostics — metadata only, never CV text or personal data.
+const diag = (label, meta = {}) => {
+  try {
+    console.info(`[cv-upload] ${label}`, JSON.stringify(meta));
+  } catch {}
+};
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -837,6 +845,10 @@ exports.uploadCV = asyncHandler(async (req, res, next) => {
   user.cv = req.file.path;
   user.cvPublicId = req.file.filename;
   user.cvOriginalName = req.file.originalname;
+  diag('cv_stored', {
+    publicIdPresent: Boolean(req.file.filename),
+    originalNamePresent: Boolean(req.file.originalname),
+  });
   // A fresh upload clears the detach lock so recommendations work again,
   // bumps the CV version and INVALIDATES any previous CV's parsed data
   // BEFORE parsing, so stale analysis can never be served while parsing or
@@ -846,10 +858,17 @@ exports.uploadCV = asyncHandler(async (req, res, next) => {
   user.resumeAnalysis = undefined;
 
   try {
-    const analysis = await parseResumeSkills(user.cv);
+    // Pass the stored Cloudinary public id so the parser can obtain the file
+    // bytes via the authenticated (API-secret-signed) download endpoint when
+    // public delivery of the stored PDF is blocked by account security.
+    const analysis = await parseResumeSkills(user.cv, { cvPublicId: req.file.filename });
     const extractedSkills = analysis.skills || [];
+    // Fallback-catalog matches carry no _id (no Skill document exists), so only
+    // DB-backed entries may join the ObjectId arrays; their NAMES still feed
+    // resumeAnalysis.skillNames and therefore recommendation matching.
+    const dbBackedSkills = extractedSkills.filter((skill) => skill && skill._id);
     const existingSkillIds = (user.skills || []).map((id) => id.toString());
-    const resumeSkillIds = extractedSkills.map((skill) => skill._id.toString());
+    const resumeSkillIds = dbBackedSkills.map((skill) => skill._id.toString());
     const combinedSkillIds = Array.from(new Set([...existingSkillIds, ...resumeSkillIds]));
 
     user.skills = combinedSkillIds;
@@ -858,13 +877,27 @@ exports.uploadCV = asyncHandler(async (req, res, next) => {
       cvId: req.file.filename,
       skillNames: extractedSkills.map((s) => s?.name).filter(Boolean),
       professionalTitle: analysis.professionalTitle || undefined,
-      skills: extractedSkills,
+      skills: dbBackedSkills,
       experienceYears: analysis.experienceYears,
       education: analysis.education,
       certifications: analysis.certifications,
       location: analysis.location,
       rawText: analysis.text,
+      textSource: analysis.__meta?.textSource || 'embedded',
     };
+
+    diag('cv_analysis_created', {
+      fileType: analysis.__meta?.fileType,
+      pages: analysis.__meta?.pages,
+      textSource: analysis.__meta?.textSource,
+      bytes: analysis.__meta?.bytes,
+      skillsMatched: extractedSkills.length,
+      experienceYearsFound: analysis.experienceYears != null,
+      educationEntries: Array.isArray(analysis.education) ? analysis.education.length : 0,
+      titleFound: Boolean(analysis.professionalTitle),
+      cvIdMatch: user.resumeAnalysis.cvId === user.cvPublicId,
+      cvVersion: user.cvVersion,
+    });
 
     // Auto-populate the profile from CV data when the field is missing.
     if (analysis.professionalTitle && !user.headline) {
@@ -904,7 +937,83 @@ exports.uploadCV = asyncHandler(async (req, res, next) => {
     await user.save({ validateBeforeSave: false });
   }
 
-  res.status(200).json({ success: true, message: 'CV uploaded.', data: user });
+  // After a successful CV upload, create or update a Resume Builder record
+  // from the parsed data and make it the default resume for recommendations.
+  // The Resume Builder record is a normal Resume document — it follows all
+  // default-resume rules.  user.cv / resumeAnalysis are NOT used for
+  // recommendations; only this Resume Builder document is.
+  if (user.resumeAnalysis) {
+    const a = user.resumeAnalysis;
+    const resumeSkills = Array.isArray(a.skillNames)
+      ? a.skillNames.filter(Boolean).map((name) => ({ name }))
+      : [];
+    const resumeCerts = Array.isArray(a.certifications)
+      ? a.certifications.map((c) => (typeof c === 'object' ? { name: c.name || c.title || '', ...c } : { name: String(c) }))
+      : [];
+    const resumeEdu = Array.isArray(a.education)
+      ? a.education.map((e) => (typeof e === 'object' ? e : { degree: String(e) }))
+      : [];
+
+    // Build the experience array from the user's profile data (which may have
+    // been auto-populated from the CV just above).
+    const resumeExp = [];
+    if (user.experienceYears != null || user.headline) {
+      resumeExp.push({
+        jobTitle: a.professionalTitle || user.currentRole || '',
+        duties: typeof user.experience === 'string' ? user.experience : '',
+      });
+    }
+
+    const cvResumeData = {
+      title: user.cvOriginalName || 'Uploaded CV',
+      profile: {
+        title: a.professionalTitle || user.headline || user.currentRole || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+      },
+      skills: resumeSkills,
+      certifications: resumeCerts,
+      education: resumeEdu,
+      experience: resumeExp,
+    };
+
+    // Find the existing CV-derived resume (if any) or create a new one.
+    // The tag `source: 'cv-upload'` marks resumes created by the upload flow.
+    let cvResume = await Resume.findOne({ user: user._id, title: user.cvOriginalName || 'Uploaded CV' }).sort({ updatedAt: -1 });
+
+    if (cvResume) {
+      Object.assign(cvResume, cvResumeData);
+      await cvResume.save();
+    } else {
+      cvResume = await Resume.create({
+        user: user._id,
+        ...cvResumeData,
+        isDefault: false, // setResumeAsDefault below handles promotion
+        status: 'completed',
+      });
+    }
+
+    // Promote this CV-derived resume to default.  Clear all existing defaults
+    // first to enforce the single-default invariant.
+    await Resume.updateMany({ user: user._id, isDefault: true }, { $set: { isDefault: false } });
+    await Resume.updateOne({ _id: cvResume._id }, { $set: { isDefault: true } });
+  }
+
+  // Explicit parse outcome so the frontend can tell "unreadable CV" apart
+  // from a successful upload that unlocks recommendations.
+  const { hasCurrentCvAnalysis } = require('../utils/dashboardHelpers');
+  const analysisUsable = hasCurrentCvAnalysis(user);
+  const parseAttempted = Boolean(user.resumeAnalysis && user.resumeAnalysis.rawText != null);
+  res.status(200).json({
+    success: true,
+    parseStatus: analysisUsable ? 'ok' : parseAttempted ? 'insufficient_content' : 'failed',
+    message: analysisUsable
+      ? 'CV uploaded.'
+      : 'CV uploaded, but we could not extract enough readable text from this file for job recommendations.',
+    data: user,
+  });
 });
 
 // @desc    Remove uploaded CV document (profile & Resume Builder data untouched)
@@ -921,7 +1030,12 @@ exports.deleteCV = asyncHandler(async (req, res, next) => {
   if (existingUser.cvPublicId) {
     try {
       const cloudinary = require('cloudinary').v2;
-      await cloudinary.uploader.destroy(existingUser.cvPublicId);
+      // CVs are stored as raw assets (raw-storage fix); legacy uploads were
+      // image-type. Try raw first, fall back to image; misses are non-fatal.
+      const result = await cloudinary.uploader.destroy(existingUser.cvPublicId, { resource_type: 'raw' });
+      if (!result || result.result !== 'ok') {
+        await cloudinary.uploader.destroy(existingUser.cvPublicId);
+      }
     } catch (err) {
       console.warn('Cloudinary CV deletion failed (non-fatal):', err.message);
     }

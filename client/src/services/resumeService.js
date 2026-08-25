@@ -9,5 +9,6 @@ export const createResume = (data) => api.post('/resumes', data);
 export const updateResume = (id, data) => api.put(`/resumes/${id}`, data);
 export const deleteResume = (id) => api.delete(`/resumes/${id}`);
 export const syncResumeProfile = (id) => api.post(`/resumes/${id}/sync-profile`);
+export const setDefaultResume = (id) => api.patch(`/resumes/${id}/default`);
 
-export default { getResumes, getResume, createResume, updateResume, deleteResume, syncResumeProfile };
+export default { getResumes, getResume, createResume, updateResume, deleteResume, syncResumeProfile, setDefaultResume };

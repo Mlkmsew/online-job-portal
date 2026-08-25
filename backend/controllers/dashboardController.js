@@ -8,8 +8,7 @@ const Company = require('../models/Company');
 const Bookmark = require('../models/Bookmark');
 const Application = require('../models/Application');
 const { calculateJobMatch } = require('../utils/matching');
-const { canRecommendJobs, buildCvMatchingProfile, buildJobSeekerMatchingContext } = require('../utils/dashboardHelpers');
-const mongoose = require('mongoose');
+const { getRecommendationSourceAndProfile, buildJobSeekerMatchingContext } = require('../utils/dashboardHelpers');const mongoose = require('mongoose');
 
 // @desc Get job seeker dashboard
 // @route GET /api/dashboard
@@ -32,15 +31,18 @@ exports.getDashboard = asyncHandler(async (req, res) => {
       .populate('employer', 'firstName lastName'),
   ]);
 
-  // Recommended jobs are calculated from the CURRENTLY UPLOADED CV ONLY.
-  // profileForMatching (profile + Resume Builder) is still used below for the
-  // generic "latest opportunities" ranking, but never for recommendations.
+  // Recommended jobs: Resume Builder + Profile data only.
+  //   'profile' → user has Resume Builder data and/or profile fields
+  //   'none'    → no usable data exists
   const { resumeDoc, profileForMatching } = await buildJobSeekerMatchingContext(userId);
-  const canRecommend = canRecommendJobs(user);
+  const { source: recommendationSource, profile: recProfile } = await getRecommendationSourceAndProfile(user);
+  const canRecommend = recommendationSource !== 'none';
+  const recommendationState = recommendationSource === 'profile'
+    ? 'ready'
+    : 'no_cv';
   let recommended = [];
-  if (canRecommend) {
+  if (canRecommend && recProfile) {
     try {
-      const cvProfile = buildCvMatchingProfile(user);
       const appliedJobIds = new Set(
         (await Application.find({ applicant: userId }).select('job')).map((app) => app.job?.toString()).filter(Boolean)
       );
@@ -53,7 +55,7 @@ exports.getDashboard = asyncHandler(async (req, res) => {
       const unappliedJobs = jobs.filter((j) => !appliedJobIds.has(j._id.toString()));
 
       const scoredJobs = unappliedJobs.map((job) => {
-        const match = calculateJobMatch(job, cvProfile);
+        const match = calculateJobMatch(job, recProfile, recommendationSource);
         const score = match.matchScore ?? match.score ?? 0;
         return {
           ...job.toObject(),
@@ -155,6 +157,12 @@ exports.getDashboard = asyncHandler(async (req, res) => {
       profileCompleteness: user.profileCompleteness || 0,
       profileComplete: (user.profileCompleteness || 0) >= 70,
       canRecommend,
+      recommendationState,
+      recommendationSource,
+      recommendationMessage:
+        recommendationState === 'no_cv'
+          ? 'Complete your profile or create a Resume Builder CV to get personalized job recommendations.'
+          : undefined,
       upcomingInterviews,
       unreadMessages,
       unreadNotifications,

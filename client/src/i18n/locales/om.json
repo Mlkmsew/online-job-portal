@@ -337,6 +337,8 @@
       "noCVTitle": "Hojiiwwan siif aadaa argachuuf maaloo CV kee fe'i",
       "noCVSubtitle": "Gorsi koofiyaa CV kee irratti hundaa'a. Akka hojiwwan sirrii sitti himnuuf maaloo CV kee fe'i.",
       "uploadCVBtn": "CV Fe'i",
+      "unreadableTitle": "CV kee dubbisuu hin dandeenye",
+      "unreadableSubtitle": "CV kee fe'ameera, garuu gorsa argachuuf odeeffannoo dubbisuuf qabu baasuun dadhabne. Maaloo barreeffama dubbisamu qabu CV fe'i.",
       "recErrorTitle": "Hojiiwwan aadaa fe'uu hin dandeenye",
       "recErrorSubtitle": "Gorsa kee yeroo fe'u dogoggorri uumame. Maaloo irra deebi'i yaali.",
       "retryBtn": "Irra deebi'i yaali"
@@ -350,6 +352,7 @@
     },
     "jobCard": {
       "matchedSkills": "Dandeettiiwwan Wataqatan",
+      "noMatchedSkills": "Dandeettii CV kee irraa kan ka'e lallee hojjaa kana waliin hin wataqatinne.",
       "missing": "Kan Hir'atan",
       "excellentMatch": "Wataqinsa Gaarii",
       "goodMatch": "Wataqinsa Gaarii",

@@ -14,7 +14,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { PhoneIcon, MailIcon, LocationIcon, GlobeIcon, DotIcon } from '../../../components/icons/ResumeIcons';
 import { uploadAvatar } from '../../../store/slices/authSlice';
-import { getResumes, createResume, updateResume, deleteResume } from '../../../services/resumeService';
+import { getResumes, createResume, updateResume, deleteResume, setDefaultResume } from '../../../services/resumeService';
 import TemplateBadge from '../../../components/resume/templates/TemplateBadge';
 import TemplateSearch from '../../../components/resume/templates/TemplateSearch';
 import TemplateFilter from '../../../components/resume/templates/TemplateFilter';
@@ -629,6 +629,20 @@ const ResumeBuilder = () => {
         const backendId = target._id || target.id;
         deleteResume(backendId).catch(() => {});
       }
+    }
+  };
+
+  const handleSetDefault = async (resumeId) => {
+    const target = resumes.find((r) => r.id === resumeId);
+    if (!target || target.isDefault) return;
+    const backendId = target._id || target.id;
+    try {
+      await setDefaultResume(backendId);
+      const updated = resumes.map((r) => ({ ...r, isDefault: r.id === resumeId }));
+      saveToStorage(updated);
+      toast.success('Default resume updated');
+    } catch {
+      toast.error('Failed to update default resume');
     }
   };
 
@@ -1564,7 +1578,14 @@ const ResumeBuilder = () => {
                 {/* Details */}
                 <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
                   <div>
-                    <h3 className="truncate text-base font-semibold text-slate-900 dark:text-white">{resume.title}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="truncate text-base font-semibold text-slate-900 dark:text-white">{resume.title}</h3>
+                      {resume.isDefault && (
+                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-[#EAF2FE] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1769E0] dark:bg-[#1769E0]/20 dark:text-[#3B82F6]">
+                          <FiCheckCircle className="h-3 w-3" /> Default
+                        </span>
+                      )}
+                    </div>
                     <div className="mt-2 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
                       <span>Score</span>
                       <span className="font-semibold text-slate-600 dark:text-slate-300">{resume.score}%</span>
@@ -1575,7 +1596,16 @@ const ResumeBuilder = () => {
                   </div>
 
                   {/* Actions buttons */}
-                  <div className="mt-4 flex items-center gap-2">
+                  <div className="mt-4 flex items-center gap-2 flex-wrap">
+                    {!resume.isDefault && (
+                      <button
+                        title="Set as default"
+                        onClick={() => handleSetDefault(resume.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-[#1769E0] transition-colors hover:bg-[#EAF2FE] dark:border-slate-600 dark:text-[#3B82F6] dark:hover:bg-[#1769E0]/10"
+                      >
+                        <FiCheck className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                     <button 
                       onClick={() => handleEditResume(resume.id)}
                       className="btn btn-outline inline-flex items-center gap-1 rounded-lg border-[#1769E0] px-3 py-1.5 text-xs font-semibold text-[#1769E0] hover:bg-[#EAF2FE] dark:hover:bg-[#1769E0]/10"

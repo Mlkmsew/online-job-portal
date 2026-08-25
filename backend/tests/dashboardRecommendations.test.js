@@ -1,91 +1,103 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { canRecommendJobs, buildCvMatchingProfile } = require('../utils/dashboardHelpers');
+const { hasProfileOrResumeData, buildCombinedResumeProfile } = require('../utils/dashboardHelpers');
 
-// A well-formed analysis of the CURRENT uploaded CV.
-const cvAAnalysis = {
-  cvId: 'ethiojob/cvs/cv-a',
-  skillNames: ['HTML', 'CSS', 'React', 'JavaScript'],
-  experienceYears: 3,
-  education: ['BSc Computer Science'],
-  professionalTitle: 'Frontend Developer',
-};
-
-test('allows recommendations when a CV is uploaded with a matching parsed analysis', () => {
-  const user = { cv: 'https://res.cloudinary.com/x/cvs/cv-a.pdf', cvPublicId: 'ethiojob/cvs/cv-a', resumeAnalysis: cvAAnalysis };
-  assert.equal(canRecommendJobs(user), true);
+test('allows recommendations when profile has technical skills', () => {
+  const user = { technicalSkills: ['React'] };
+  assert.equal(hasProfileOrResumeData(user), true);
 });
 
-test('does not allow recommendations when a CV is uploaded but parsing failed (no analysis)', () => {
-  const user = { cv: 'https://res.cloudinary.com/x/cvs/cv-a.pdf', cvPublicId: 'ethiojob/cvs/cv-a', resumeAnalysis: {} };
-  assert.equal(canRecommendJobs(user), false);
-});
-
-test('does not allow recommendations from profile skills alone', () => {
-  const user = {
-    technicalSkills: ['React'],
-    softSkills: ['Teamwork'],
-    skillNames: ['React', 'Teamwork'],
-  };
-  assert.equal(canRecommendJobs(user), false);
-});
-
-test('does not allow recommendations from profile experience alone', () => {
+test('allows recommendations when profile has experience', () => {
   const user = { experienceYears: 5, experienceDetails: [{ title: 'Dev' }] };
-  assert.equal(canRecommendJobs(user), false);
+  assert.equal(hasProfileOrResumeData(user), true);
 });
 
-test('does not allow a Resume Builder document to substitute for an uploaded CV', () => {
-  const user = {
-    technicalSkills: ['React'],
-    // legacy second argument is no longer honored
-  };
-  assert.equal(canRecommendJobs(user, { _id: 'resume-doc' }), false);
+test('allows recommendations when profile has education', () => {
+  const user = { educationDetails: [{ degree: 'BSc' }] };
+  assert.equal(hasProfileOrResumeData(user), true);
 });
 
-test('does not allow recommendations after CV removal even with profile data and builder docs', () => {
-  const user = {
-    skillNames: ['React', 'Node.js'],
-    technicalSkills: ['React'],
-    softSkills: ['Teamwork'],
-    experienceYears: 4,
-    educationDetails: [{ degree: 'BSc' }],
-    cvDetachedAt: new Date(),
-  };
-  assert.equal(canRecommendJobs(user, { _id: 'resume-doc' }), false);
+test('allows recommendations when profile has a headline/title', () => {
+  const user = { headline: 'Frontend Developer' };
+  assert.equal(hasProfileOrResumeData(user), true);
 });
 
-test('does not allow recommendations when analysis belongs to a previous CV (stale identity)', () => {
-  const user = {
-    cv: 'https://res.cloudinary.com/x/cvs/cv-b.pdf',
-    cvPublicId: 'ethiojob/cvs/cv-b',
-    resumeAnalysis: { ...cvAAnalysis }, // cvId still points at CV A
-  };
-  assert.equal(canRecommendJobs(user), false);
+test('does not allow recommendations when profile is empty', () => {
+  const user = {};
+  assert.equal(hasProfileOrResumeData(user), false);
 });
 
-test('buildCvMatchingProfile exposes only CV data — profile fields never leak in', () => {
+test('does not allow recommendations for null user', () => {
+  assert.equal(hasProfileOrResumeData(null), false);
+});
+
+test('allows recommendations with Resume Builder skills combined with profile', () => {
+  const user = { technicalSkills: ['React'] };
+  const resumeDoc = { skills: [{ name: 'Node.js' }], softSkills: [] };
+  const profile = buildCombinedResumeProfile(user, resumeDoc);
+  assert.ok(profile.technicalSkills.includes('React'), 'profile skill preserved');
+  assert.ok(profile.technicalSkills.includes('Node.js'), 'Resume Builder skill added');
+  assert.equal(hasProfileOrResumeData(profile), true);
+});
+
+test('Resume Builder title fills in missing profile headline', () => {
+  const user = {};
+  const resumeDoc = { profile: { title: 'Backend Developer' } };
+  const profile = buildCombinedResumeProfile(user, resumeDoc);
+  assert.equal(profile.headline, 'Backend Developer');
+  assert.equal(profile.currentRole, 'Backend Developer');
+});
+
+test('profile headline takes precedence over Resume Builder title', () => {
+  const user = { headline: 'Full Stack Dev' };
+  const resumeDoc = { profile: { title: 'Backend Developer' } };
+  const profile = buildCombinedResumeProfile(user, resumeDoc);
+  assert.equal(profile.headline, 'Full Stack Dev');
+});
+
+test('Resume Builder experience fills in when profile experience is empty', () => {
+  const user = {};
+  const resumeDoc = { experience: [{ title: 'Dev 1' }, { title: 'Dev 2' }] };
+  const profile = buildCombinedResumeProfile(user, resumeDoc);
+  assert.equal(profile.experienceYears, 2);
+});
+
+test('profile experienceYears takes precedence over Resume Builder', () => {
+  const user = { experienceYears: 5 };
+  const resumeDoc = { experience: [{ title: 'Dev 1' }] };
+  const profile = buildCombinedResumeProfile(user, resumeDoc);
+  assert.equal(profile.experienceYears, 5);
+});
+
+test('Resume Builder education fills in when profile education is empty', () => {
+  const user = {};
+  const resumeDoc = { education: [{ degree: 'BSc', institution: 'AAU' }] };
+  const profile = buildCombinedResumeProfile(user, resumeDoc);
+  assert.equal(profile.educationDetails.length, 1);
+  assert.equal(profile.educationDetails[0].degree, 'BSc');
+});
+
+test('combined profile excludes bio, jobPreferences, careerInterests', () => {
   const user = {
-    _id: 'u1',
-    technicalSkills: ['Go', 'Rust'],           // profile-only noise
-    softSkills: ['Leadership'],
-    bio: 'Go developer',
-    headline: 'Systems Engineer',
-    experienceDetails: [{ title: 'Dev' }],
-    educationDetails: [{ degree: 'PhD' }],
-    certificates: [{ name: 'CEH' }],
+    bio: 'Must not leak',
     jobPreferences: { preferredJobTypes: ['Contract'] },
-    resumeAnalysis: cvAAnalysis,
+    careerInterests: ['Healthcare'],
   };
-
-  const profile = buildCvMatchingProfile(user);
-
-  assert.deepEqual(profile.technicalSkills, ['HTML', 'CSS', 'React', 'JavaScript']);
+  const profile = buildCombinedResumeProfile(user, null);
   assert.equal(profile.bio, '');
-  assert.equal(profile.headline, 'Frontend Developer'); // from the CV, not the profile
-  assert.deepEqual(profile.softSkills, []);
-  assert.deepEqual(profile.experienceDetails, []);
-  assert.notEqual(profile.educationDetails[0].degree, 'PhD');
-  assert.deepEqual(profile.certificates, []); // no CV certifications in this analysis
-  assert.ok(profile.__cvOnlyProfile);
+  assert.deepEqual(profile.jobPreferences, {});
+  assert.deepEqual(profile.careerInterests, []);
+});
+
+test('combined profile excludes resumeAnalysis', () => {
+  const user = {
+    resumeAnalysis: { skills: ['Hacked'], professionalTitle: 'Hacker' },
+  };
+  const profile = buildCombinedResumeProfile(user, null);
+  assert.equal(profile.resumeAnalysis, undefined);
+  assert.ok(!profile.technicalSkills.includes('Hacked'));
+});
+
+test('null user returns source none', () => {
+  assert.equal(hasProfileOrResumeData(null), false);
 });

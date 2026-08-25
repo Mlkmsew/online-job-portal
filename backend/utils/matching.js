@@ -126,14 +126,6 @@ const extractUserSkillNames = (user) => {
     });
   }
 
-  // 4. Resume analysis skills
-  if (Array.isArray(user?.resumeAnalysis?.skills)) {
-    user.resumeAnalysis.skills.forEach((s) => {
-      const name = typeof s === 'object' ? s.name || s.title : String(s);
-      if (name) skills.add(name);
-    });
-  }
-
   return Array.from(skills).filter(Boolean);
 };
 
@@ -229,11 +221,15 @@ const calculateSkillMatch = (job, user) => {
     if (userNormalizedSkills.has(norm)) {
       matchedSkills.push(jobSkill);
     } else {
-      // Fuzzy token check
-      const matchedByFuzzy = userRawSkills.some((uSkill) => {
-        const uNorm = normalizeSkillName(uSkill);
-        return uNorm.includes(norm) || norm.includes(uNorm);
-      });
+      // Fuzzy token check. Degenerate single-character normalizations
+      // ("C++" -> "c", "C#" -> "c") must never substring-match unrelated
+      // skills, so both normalized names must be at least 3 chars.
+      const matchedByFuzzy =
+        norm.length >= 3 &&
+        userRawSkills.some((uSkill) => {
+          const uNorm = normalizeSkillName(uSkill);
+          return uNorm.length >= 3 && (uNorm.includes(norm) || norm.includes(uNorm));
+        });
       if (matchedByFuzzy) {
         matchedSkills.push(jobSkill);
       } else {
@@ -259,9 +255,6 @@ const calculateSkillMatch = (job, user) => {
  */
 const calculateExperienceMatch = (job, user) => {
   let userYears = user?.experienceYears;
-  if (userYears == null && user?.resumeAnalysis?.experienceYears != null) {
-    userYears = user.resumeAnalysis.experienceYears;
-  }
   if (userYears == null && Array.isArray(user?.experienceDetails) && user.experienceDetails.length > 0) {
     userYears = user.experienceDetails.length;
   }
@@ -302,10 +295,6 @@ const calculateEducationMatch = (job, user) => {
   if (Array.isArray(user?.education)) {
     user.education.forEach((e) => candidateEdus.push(normalizeText(e)));
   }
-  if (Array.isArray(user?.resumeAnalysis?.education)) {
-    user.resumeAnalysis.education.forEach((e) => candidateEdus.push(normalizeText(e)));
-  }
-
   if (!candidateEdus.length) return 40; // Neutral fallback
 
   const jobEduNorm = normalizeText(jobEdu);
@@ -325,7 +314,6 @@ const calculateCertificationMatch = (job, user) => {
 
   const userCerts = [
     ...(Array.isArray(user?.certificates) ? user.certificates.map((c) => c.name || c) : []),
-    ...(Array.isArray(user?.resumeAnalysis?.certifications) ? user.resumeAnalysis.certifications : []),
   ].filter(Boolean);
 
   return userCerts.length > 0 ? 100 : 20;
@@ -338,7 +326,7 @@ const calculateLocationMatch = (job, user) => {
   if (!job?.workMode || job.workMode === 'Remote' || job.isRemote) return 100;
 
   const candidateLoc = normalizeText(
-    `${user?.location?.city || ''} ${user?.location?.address || ''} ${user?.location?.region || ''} ${user?.resumeAnalysis?.location || ''}`
+    `${user?.location?.city || ''} ${user?.location?.address || ''} ${user?.location?.region || ''}`
   );
   if (!candidateLoc) return 70; // Neutral fallback
 
@@ -392,13 +380,6 @@ const extractUserPreferences = (user) => {
     ...(Array.isArray(prefs.careerInterests) ? prefs.careerInterests : []),
     ...(Array.isArray(user?.careerInterests) ? user.careerInterests : []),
   ]);
-  // Also derive preferences from resume analysis / headline when available
-  if (user?.resumeAnalysis?.careerInterests) {
-    (Array.isArray(user.resumeAnalysis.careerInterests)
-      ? user.resumeAnalysis.careerInterests
-      : [user.resumeAnalysis.careerInterests]
-    ).forEach((v) => v && interests.add(v));
-  }
   return { jobTypes, industries, interests };
 };
 
@@ -434,23 +415,14 @@ const calculatePreferenceMatch = (job, user) => {
 /**
  * Build a human-readable reason explaining why the job is recommended.
  */
-const buildMatchReason = (user, job, skillResult, experienceScore) => {
+const buildMatchReason = (user, job, skillResult, experienceScore, source) => {
   const matched = skillResult?.matchedSkills || [];
-  let reason = '';
 
   if (matched.length > 0) {
-    const skillList = matched.slice(0, 3).join(', ');
-    const years = Number(user?.experienceYears ?? user?.resumeAnalysis?.experienceYears ?? 0) || 0;
-    reason = `Strong match based on your ${skillList}${years > 0 ? ` and ${years} year${years === 1 ? '' : 's'} of experience` : ''}.`;
-  } else if (experienceScore >= 80) {
-    reason = `Strong match based on your ${experienceScore === 100 ? '' : ''}experience and background.`;
-  } else if (skillResult?.score >= 40) {
-    reason = 'Good match based on your profile skills and background.';
-  } else {
-    reason = 'Potential match based on your profile.';
+    const skillList = matched.join(', ');
+    return `Matched skills: ${skillList}.`;
   }
-
-  return reason;
+  return 'No skills from your profile match this job yet.';
 };
 
 /**
@@ -460,7 +432,7 @@ const buildMatchReason = (user, job, skillResult, experienceScore) => {
  */
 const calculateTitleMatch = (job, user) => {
   const userTitle = normalizeText(
-    `${user?.headline || ''} ${user?.currentRole || ''} ${user?.resumeAnalysis?.professionalTitle || ''}`
+    `${user?.headline || ''} ${user?.currentRole || ''}`
   );
   if (!userTitle) return 60;
 
@@ -487,7 +459,7 @@ const calculateTitleMatch = (job, user) => {
 /**
  * Main Job Match Calculation Function
  */
-const calculateJobMatch = (job, user) => {
+const calculateJobMatch = (job, user, source) => {
   if (!job || !user) {
     return { score: 0, details: {}, why: [] };
   }
@@ -551,7 +523,7 @@ const calculateJobMatch = (job, user) => {
     matchScore,
     matchedSkills: skillResult.matchedSkills,
     missingSkills: skillResult.missingSkills,
-    reason: buildMatchReason(user, job, skillResult, experienceScore),
+    reason: buildMatchReason(user, job, skillResult, experienceScore, source),
     details,
     why,
   };

@@ -76,6 +76,9 @@ const userSchema = new mongoose.Schema(
             certifications: [String],
             professionalTitle: String,
             cvId: String,
+            // How the text was obtained: 'embedded' (selectable-text PDF/DOCX)
+            // or 'ocr' (scanned/image-based PDF read via OCR fallback).
+            textSource: String,
             rawText: String,
         },
         careerInterests: [String],

@@ -365,6 +365,15 @@ exports.updateJob = asyncHandler(async (req, res, next) => {
     req.body.applicationFields = normalizeApplicationFields(req.body.applicationFields);
   }
 
+  // Auto-reactivate an expired job when the employer sets a future deadline.
+  // findByIdAndUpdate bypasses pre-save hooks, so we handle this here.
+  if (job.status === 'expired' && job.isApproved) {
+    const newDeadline = req.body.applicationDeadline ? new Date(req.body.applicationDeadline) : job.applicationDeadline;
+    if (newDeadline > new Date()) {
+      req.body.status = 'published';
+    }
+  }
+
   job = await Job.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
   res.status(200).json({ success: true, message: 'Job updated.', data: job });
 });
@@ -469,23 +478,24 @@ exports.getRecommendations = asyncHandler(async (req, res, next) => {
   const User = require('../models/user');
   const Application = require('../models/Application');
   const { calculateJobMatch } = require('../utils/matching');
-  const { canRecommendJobs, buildCvMatchingProfile } = require('../utils/dashboardHelpers');
+  const { getRecommendationSourceAndProfile } = require('../utils/dashboardHelpers');
 
   const userId = req.user.id || req.user._id;
   const user = await User.findById(userId).select('-password');
   if (!user) return next(new AppError('User not found.', 404));
 
-  // Recommendations require the CURRENTLY UPLOADED CV only.
-  const hasCV = canRecommendJobs(user);
+  // Resume Builder + Profile data only.
+  const { source: recommendationSource, profile: recProfile } = await getRecommendationSourceAndProfile(user);
 
-  if (!hasCV) {
+  if (!recProfile) {
     return res.status(200).json({
       success: true,
       hasCV: false,
+      recommendationSource: 'none',
       count: 0,
       recommendations: [],
       data: [],
-      message: 'Upload your CV to get job recommendations.',
+      message: 'Complete your profile or create a Resume Builder CV to get job recommendations.',
     });
   }
 
@@ -502,7 +512,7 @@ exports.getRecommendations = asyncHandler(async (req, res, next) => {
   const unappliedJobs = activeJobs.filter((j) => !appliedJobIds.has(j._id.toString()));
 
   const scoredJobs = unappliedJobs.map((job) => {
-    const match = calculateJobMatch(job, buildCvMatchingProfile(user));
+    const match = calculateJobMatch(job, recProfile, recommendationSource);
     const score = match.matchScore ?? match.score ?? 0;
 
     return {
@@ -535,7 +545,8 @@ exports.getRecommendations = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    hasCV: true,
+    hasCV: false,
+    recommendationSource,
     count: recommendations.length,
     recommendations,
     data: recommendations,

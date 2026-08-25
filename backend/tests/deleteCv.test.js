@@ -14,7 +14,7 @@ cloudinary.uploader.destroy = async (publicId) => {
 
 const User = require('../models/user');
 const authController = require('../controllers/authController');
-const { canRecommendJobs } = require('../utils/dashboardHelpers');
+const { hasProfileOrResumeData } = require('../utils/dashboardHelpers');
 
 // helpers.asyncHandler is fire-and-forget (returns undefined), so completion
 // must be observed through the res/next callbacks.
@@ -191,7 +191,7 @@ test('Resume Builder / profile data remains intact after removal', async () => {
   });
 });
 
-test('removing the CV locks recommendations until a new CV is uploaded', async () => {
+test('removing the CV preserves profile data; recommendations can still come from profile', async () => {
   // Seed the exact post-upload state: document + parsed cache + profile data.
   const solomon = await User.findById(owner._id);
   solomon.cv = 'https://res.cloudinary.com/demo/raw/upload/ethiojob/cvs/lock.pdf';
@@ -215,24 +215,8 @@ test('removing the CV locks recommendations until a new CV is uploaded', async (
   assert.deepEqual(afterDoc.skillNames, ['React', 'Node.js']);
   assert.deepEqual(afterDoc.technicalSkills, ['React']);
 
-  // …but even with a Resume Builder document still in the DB they must NOT
-  // unlock recommendations after an explicit removal.
-  const fakeResumeBuilderDoc = { _id: 'resume-doc-1' };
-  assert.equal(canRecommendJobs(afterDoc, fakeResumeBuilderDoc), false);
-
-  // Uploading a new CV re-arms recommendations — uploadCV persists BOTH the
-  // file reference and its freshly parsed analysis together.
-  afterDoc.cv = 'https://res.cloudinary.com/demo/raw/upload/ethiojob/cvs/new.pdf';
-  assert.equal(canRecommendJobs(afterDoc, fakeResumeBuilderDoc), false); // file alone is not enough
-
-  afterDoc.cvPublicId = 'ethiojob/cvs/new';
-  afterDoc.resumeAnalysis = {
-    cvId: 'ethiojob/cvs/new',
-    skillNames: ['Python', 'Django'],
-    experienceYears: 2,
-    education: ['BSc'],
-  };
-  assert.equal(canRecommendJobs(afterDoc, fakeResumeBuilderDoc), true);
+  // …and profile data is sufficient for recommendations (Resume Builder + Profile source).
+  assert.equal(hasProfileOrResumeData(afterDoc), true);
 });
 
 test('unknown user id is rejected with 404', async () => {

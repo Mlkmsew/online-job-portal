@@ -53,12 +53,16 @@ const companyStorage = new CloudinaryStorage({
   },
 });
 
-// Storage for CVs / resumes (PDF)
+// Storage for CVs / resumes (PDF).
+// resource_type 'auto' stores PDFs as IMAGE assets; accounts with Cloudinary's
+// default "Allow delivery of PDF files" security restriction enabled then deny
+// ALL delivery of those assets (HTTP 401 + 1x1 gif placeholder), which breaks
+// the parser's re-download step. Raw resources are served verbatim.
 const cvStorage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'ethiojob/cvs',
-    resource_type: 'auto',
+    resource_type: 'raw',
   },
 });
 

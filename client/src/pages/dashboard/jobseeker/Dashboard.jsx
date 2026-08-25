@@ -297,6 +297,10 @@ const JobSeekerDashboard = () => {
   const unreadMessages = messageCount !== null ? Number(messageCount) : Number(dashboardData?.unreadMessages || 0);
   const unreadNotifications = notificationCount !== null ? Number(notificationCount) : Number(dashboardData?.unreadNotifications || 0);
   const resumeHasCV = Boolean(dashboardData?.resume?.hasCV || user?.cv);
+  // Backend verdict on the recommendation pipeline for the CURRENT uploaded
+  // CV: 'no_cv' | 'cv_unreadable' | 'ready'. Falls back to a client-side guess
+  // only before the dashboard payload arrives.
+  const recommendationState = dashboardData?.recommendationState || (resumeHasCV ? 'ready' : 'no_cv');
   const upcomingInterviews = Array.isArray(dashboardData?.upcomingInterviews) ? dashboardData.upcomingInterviews : [];
 
   const applicationCounts = useMemo(() => {
@@ -702,6 +706,21 @@ const JobSeekerDashboard = () => {
                 </div>
               </div>
             ))
+          ) : recommendationState === 'cv_unreadable' ? (
+            <div className="col-span-full rounded-[20px] border border-dashed border-amber-200 bg-amber-50/60 p-8 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 mb-3">
+                <FiAlertCircle className="h-6 w-6" />
+              </div>
+              <h3 className="font-bold text-[#101828] text-base mb-1">{t('dashboard.recommendedJobs.unreadableTitle', { defaultValue: 'We couldn’t read your CV' })}</h3>
+              <p className="text-[#667085] text-xs max-w-md mx-auto mb-4">{t('dashboard.recommendedJobs.unreadableSubtitle', { defaultValue: 'Your CV was uploaded, but we could not extract enough readable information to generate recommendations. Please upload a CV with selectable text.' })}</p>
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard/profile')}
+                className="dashboard-btn inline-flex items-center gap-2 rounded-xl bg-[#1769E0] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#0D5BC4] shadow-xs"
+              >
+                <FiUploadCloud className="w-4 h-4" /> {t('dashboard.recommendedJobs.uploadCVBtn', { defaultValue: 'Upload CV' })}
+              </button>
+            </div>
           ) : !resumeHasCV ? (
             <div className="col-span-full rounded-[20px] border border-dashed border-[#E4E7EC] bg-[#F8FAFC] p-8 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1769E0]/10 text-[#1769E0] mb-3">
@@ -801,19 +820,25 @@ const JobSeekerDashboard = () => {
                     </div>
 
                     {/* Matched Skills */}
-                    {Array.isArray(job.matchedSkills) && job.matchedSkills.length > 0 && (
+                    {Array.isArray(job.matchedSkills) && (
                       <div className="mt-3">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-[#98A2B3]">{t('dashboard.jobCard.matchedSkills')}</p>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {job.matchedSkills.slice(0, 3).map((sk, idx) => (
-                            <span key={idx} className="rounded-md bg-blue-50 text-[#1769E0] text-[11px] px-2 py-0.5 font-medium border border-blue-100">
-                              ✓ {sk}
-                            </span>
-                          ))}
-                          {job.matchedSkills.length > 3 && (
-                            <span className="text-[10px] text-[#98A2B3] self-center">+{job.matchedSkills.length - 3}</span>
-                          )}
-                        </div>
+                        {job.matchedSkills.length > 0 ? (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {job.matchedSkills.slice(0, 5).map((sk, idx) => (
+                              <span key={idx} className="rounded-md bg-blue-50 text-[#1769E0] text-[11px] px-2 py-0.5 font-medium border border-blue-100">
+                                ✓ {sk}
+                              </span>
+                            ))}
+                            {job.matchedSkills.length > 5 && (
+                              <span className="text-[10px] text-[#98A2B3] self-center">+{job.matchedSkills.length - 5}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-[11px] text-[#98A2B3] italic">
+                            {t('dashboard.jobCard.noMatchedSkills')}
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -822,7 +847,7 @@ const JobSeekerDashboard = () => {
                       <div className="mt-2">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-[#98A2B3]">{t('dashboard.jobCard.missing')}</p>
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {job.missingSkills.slice(0, 2).map((sk, idx) => (
+                          {job.missingSkills.slice(0, 4).map((sk, idx) => (
                             <span key={idx} className="rounded-md bg-rose-50 text-rose-700 text-[11px] px-2 py-0.5 font-medium border border-rose-100">
                               {sk}
                             </span>

@@ -4,103 +4,190 @@ const Resume = require('../models/Resume');
 const hasProfileSkills = (user) => {
   const directSkills = Array.isArray(user?.skills) ? user.skills : [];
   const skillNames = Array.isArray(user?.skillNames) ? user.skillNames : [];
-  const resumeSkills = Array.isArray(user?.resumeAnalysis?.skills) ? user.resumeAnalysis.skills : [];
+  const technicalSkills = Array.isArray(user?.technicalSkills) ? user.technicalSkills : [];
 
-  return directSkills.length > 0 || skillNames.length > 0 || resumeSkills.length > 0;
+  return directSkills.length > 0 || skillNames.length > 0 || technicalSkills.length > 0;
 };
 
-// True when the user has parsed CV data (created by the CV upload pipeline),
-// i.e. a CV was uploaded at some point even if the file reference is gone.
-const hasProfileCVData = (user) => {
-  const analysis = user?.resumeAnalysis;
-  if (!analysis) return false;
-  const hasSkills = Array.isArray(analysis.skills) && analysis.skills.length > 0;
-  const hasExperience = analysis.experienceYears != null;
-  const hasEducation = Array.isArray(analysis.education) && analysis.education.length > 0;
-  const hasTitle = Boolean(analysis.professionalTitle);
-  return Boolean(hasSkills || hasExperience || hasEducation || hasTitle);
-};
-
-// True when the user's parsed-CV cache exists AND belongs to the currently
-// uploaded file (identity via Cloudinary public id) and carries usable data.
+// Check if the currently uploaded CV's parsed analysis is usable for the
+// upload response feedback (parseStatus).  NOT used for recommendations.
 const hasCurrentCvAnalysis = (user) => {
   if (!user?.cv || !user?.resumeAnalysis) return false;
   const analysis = user.resumeAnalysis;
-  // Identity check: analysis from a previous CV must never be reused.
   if (analysis.cvId && user.cvPublicId && analysis.cvId !== user.cvPublicId) return false;
   const hasSkills =
     (Array.isArray(analysis.skillNames) && analysis.skillNames.length > 0) ||
     (Array.isArray(analysis.skills) && analysis.skills.length > 0);
-  return Boolean(
-    hasSkills ||
-      analysis.experienceYears != null ||
-      (Array.isArray(analysis.education) && analysis.education.length > 0) ||
-      analysis.professionalTitle ||
-      (analysis.rawText && analysis.rawText.length > 0)
-  );
+  const hasTitle = Boolean(typeof analysis.professionalTitle === 'string' && analysis.professionalTitle.trim());
+  return Boolean(hasSkills || hasTitle || analysis.experienceYears != null);
 };
 
-// Recommendations require the CURRENTLY UPLOADED CV only. Profile skills,
-// experience, Resume Builder documents, old parsed data and detach state can
-// never unlock or substitute for it.
-const canRecommendJobs = (user) => {
+// True when the user's profile OR Resume Builder document has enough
+// fields to produce meaningful recommendations.  Only the fields
+// that the matching engine actually reads are considered:
+//   technicalSkills / skillNames / skills, experience, education, title.
+const hasProfileOrResumeData = (user) => {
   if (!user) return false;
-  return hasCurrentCvAnalysis(user);
+  const hasSkills =
+    (Array.isArray(user.technicalSkills) && user.technicalSkills.length > 0) ||
+    (Array.isArray(user.skillNames) && user.skillNames.length > 0) ||
+    (Array.isArray(user.skills) && user.skills.length > 0);
+  const hasExperience =
+    user.experienceYears != null ||
+    (Array.isArray(user.experienceDetails) && user.experienceDetails.length > 0) ||
+    Boolean(user.experience);
+  const hasEducation =
+    (Array.isArray(user.educationDetails) && user.educationDetails.length > 0) ||
+    (Array.isArray(user.education) && user.education.length > 0);
+  const hasTitle = Boolean(
+    typeof user.headline === 'string' && user.headline.trim()
+  ) || Boolean(
+    typeof user.currentRole === 'string' && user.currentRole.trim()
+  );
+  return Boolean(hasSkills || hasExperience || hasEducation || hasTitle);
 };
 
-// Build a matching profile derived STRICTLY from the current uploaded CV's
-// parsed analysis. No profile fields (technicalSkills, softSkills, bio,
-// experienceDetails, educationDetails, preferences...) and no Resume Builder
-// content may leak into recommendation scoring through this object.
-const buildCvMatchingProfile = (user) => {
-  const analysis = user?.resumeAnalysis || {};
+// Build a matching profile from the user's profile fields and Resume Builder
+// data combined.  Resume Builder data overlays onto profile fields (Resume
+// Builder skills are added to profile skills, Resume Builder title fills in
+// missing headline, etc.).
+//
+// Sources used: Profile fields + Resume Builder document.
+// Explicitly excluded: uploaded CV / resumeAnalysis, localStorage,
+// stale parsed data, bio, preferences unrelated to matching.
+const buildCombinedResumeProfile = (user, resumeDoc) => {
+  // Start with profile fields.
+  const technicalSkills = [
+    ...(Array.isArray(user.technicalSkills) ? user.technicalSkills : []),
+  ];
+  const soft = Array.isArray(user.softSkills) ? user.softSkills : [];
+  const profileSkillNames = [
+    ...(Array.isArray(user.skillNames) ? user.skillNames : []),
+  ];
 
-  let skillNames = Array.isArray(analysis.skillNames) ? analysis.skillNames.filter(Boolean) : [];
-  if (skillNames.length === 0 && Array.isArray(analysis.skills)) {
-    skillNames = analysis.skills
-      .map((s) => {
-        if (!s) return '';
-        const name = typeof s === 'object' ? s.name || s.title : String(s);
-        return name ? String(name) : '';
-      })
-      .filter(Boolean);
+  // Overlay Resume Builder skills.
+  if (resumeDoc) {
+    if (Array.isArray(resumeDoc.skills)) {
+      resumeDoc.skills.forEach((s) => {
+        const name = typeof s === 'object' ? s.name || s.title || s.label : String(s);
+        if (name) {
+          technicalSkills.push(String(name));
+          profileSkillNames.push(String(name));
+        }
+      });
+    }
+    if (Array.isArray(resumeDoc.softSkills)) {
+      resumeDoc.softSkills.forEach((s) => {
+        const name = typeof s === 'object' ? s.name || s.title || s.label : String(s);
+        if (name) soft.push(String(name));
+      });
+    }
   }
 
-  const education = Array.isArray(analysis.education)
-    ? analysis.education.map((e) => ({ degree: typeof e === 'object' ? e?.degree || '' : String(e), institution: '' }))
+  // Deduplicate skills.
+  const uniqueTech = [...new Set(technicalSkills)];
+  const uniqueSkillNames = [...new Set(profileSkillNames)];
+  const uniqueSoft = [...new Set(soft)];
+
+  // Education: profile first, then overlay Resume Builder if profile is empty.
+  let education = Array.isArray(user.educationDetails)
+    ? user.educationDetails.map((e) => ({
+        degree: typeof e === 'object' ? e.degree || '' : String(e),
+        institution: typeof e === 'object' ? e.institution || '' : '',
+      }))
+    : Array.isArray(user.education)
+      ? user.education.map((e) => ({ degree: String(e), institution: '' }))
+      : [];
+
+  if (education.length === 0 && resumeDoc && Array.isArray(resumeDoc.education) && resumeDoc.education.length > 0) {
+    education = resumeDoc.education.map((e) => ({
+      degree: e.degree || e.qualification || e.certificate || e.field || '',
+      institution: e.institution || e.school || e.university || e.schoolName || '',
+    }));
+  }
+
+  // Certifications: profile first, then overlay Resume Builder if profile is empty.
+  let certifications = Array.isArray(user.certificates)
+    ? user.certificates.map((c) => ({ name: typeof c === 'object' ? c.name || '' : String(c) }))
     : [];
-  const certifications = Array.isArray(analysis.certifications)
-    ? analysis.certifications.map((c) => ({ name: typeof c === 'object' ? c?.name || '' : String(c) }))
-    : [];
+
+  if (certifications.length === 0 && resumeDoc && Array.isArray(resumeDoc.certifications) && resumeDoc.certifications.length > 0) {
+    certifications = resumeDoc.certifications.map((c) => ({
+      name: typeof c === 'object' ? c.name || c.title || '' : String(c),
+    }));
+  }
+
+  // Experience years: profile first, then Resume Builder.
+  let experienceYears = user.experienceYears ?? null;
+  if (experienceYears == null && resumeDoc && Array.isArray(resumeDoc.experience) && resumeDoc.experience.length > 0) {
+    experienceYears = resumeDoc.experience.length;
+  }
+
+  // Title: profile first, then Resume Builder.
+  const headline = user.headline || user.currentRole || '';
+  const resumeTitle = resumeDoc?.profile?.title || resumeDoc?.profile?.headline || resumeDoc?.profile?.jobTitle || '';
+  const title = headline || resumeTitle;
+
+  // Location: profile only (Resume Builder does not store location).
+  const location = user.location || null;
 
   return {
     _id: user?._id,
-    __cvOnlyProfile: true,
-    technicalSkills: skillNames,
-    skills: [],
-    skillNames,
-    softSkills: [],
-    experienceYears: analysis.experienceYears ?? null,
-    experienceDetails: [],
-    experience: '',
+    __combinedProfile: true,
+    technicalSkills: uniqueTech,
+    skills: Array.isArray(user.skills) ? user.skills : [],
+    skillNames: uniqueSkillNames,
+    softSkills: uniqueSoft,
+    experienceYears,
+    experienceDetails: Array.isArray(user.experienceDetails) ? user.experienceDetails : [],
+    experience: typeof user.experience === 'string' ? user.experience : '',
     educationDetails: education,
-    education: [],
+    education: Array.isArray(user.education) ? user.education : [],
     certificates: certifications,
-    headline: analysis.professionalTitle || '',
-    currentRole: analysis.professionalTitle || '',
+    headline: title,
+    currentRole: title,
     bio: '',
-    location: analysis.location ? { region: analysis.location } : null,
+    location,
     jobPreferences: {},
     careerInterests: [],
-    resumeAnalysis: {
-      skills: Array.isArray(analysis.skills) ? analysis.skills : [],
-      education: Array.isArray(analysis.education) ? analysis.education : [],
-      experienceYears: analysis.experienceYears ?? null,
-      location: analysis.location,
-      certifications: Array.isArray(analysis.certifications) ? analysis.certifications : [],
-      professionalTitle: analysis.professionalTitle,
-    },
   };
+};
+
+// Determine the recommendation source and build the appropriate matching
+// profile.  Source priority:
+//   1. 'profile' — user has Resume Builder data and/or profile fields
+//   2. 'none'    — no usable data exists
+//
+// Uploaded CV / resumeAnalysis is NEVER used for recommendations.
+// Only the CURRENT DEFAULT Resume Builder resume is used.
+const getRecommendationSourceAndProfile = async (user) => {
+  if (!user) return { source: 'none', profile: null };
+
+  // Load the user's default Resume Builder document.
+  // If no default exists but resumes are present, pick the most recently
+  // updated one and persist it as the default (lazy initialisation).
+  let resumeDoc = await Resume.findOne({ user: user._id, isDefault: true }).lean();
+
+  if (!resumeDoc) {
+    // No default flagged — pick the most recently updated resume.
+    const latest = await Resume.findOne({ user: user._id }).sort({ updatedAt: -1 }).lean();
+    if (latest) {
+      // Persist as default (best-effort — ignore errors).
+      await Resume.updateMany({ user: user._id, isDefault: true }, { $set: { isDefault: false } });
+      await Resume.updateOne({ _id: latest._id }, { $set: { isDefault: true } });
+      resumeDoc = { ...latest, isDefault: true };
+    }
+  }
+
+  // Check if profile + Resume Builder combined have enough data.
+  const combinedProfile = buildCombinedResumeProfile(user, resumeDoc);
+  const hasData = hasProfileOrResumeData(combinedProfile);
+
+  if (hasData) {
+    return { source: 'profile', profile: combinedProfile };
+  }
+
+  return { source: 'none', profile: null };
 };
 
 // Overlay a Resume Builder CV onto a plain copy of the user profile so the
@@ -176,21 +263,32 @@ const enrichUserFromResume = (user, resume) => {
 
 // Load the exact user profile object the matching engine scores against,
 // identical to the one used for job seeker recommendations (raw profile plus
-// the latest Resume Builder CV). Sharing this single source guarantees the
-// employer-side applicant match score is the same percentage the candidate
-// sees for the same job and CV.
+// the current default Resume Builder CV).  Sharing this single source
+// guarantees the employer-side applicant match score is the same percentage
+// the candidate sees for the same job and CV.
 const buildJobSeekerMatchingContext = async (userId) => {
   const user = await User.findById(userId).select('-password');
-  const resumeDoc = await Resume.findOne({ user: userId }).sort({ updatedAt: -1 }).lean();
+
+  // Use the default Resume Builder resume.  Lazy-init if needed.
+  let resumeDoc = await Resume.findOne({ user: userId, isDefault: true }).lean();
+  if (!resumeDoc) {
+    const latest = await Resume.findOne({ user: userId }).sort({ updatedAt: -1 }).lean();
+    if (latest) {
+      await Resume.updateMany({ user: userId, isDefault: true }, { $set: { isDefault: false } });
+      await Resume.updateOne({ _id: latest._id }, { $set: { isDefault: true } });
+      resumeDoc = { ...latest, isDefault: true };
+    }
+  }
+
   return { user, resumeDoc, profileForMatching: enrichUserFromResume(user, resumeDoc) };
 };
 
 module.exports = {
-  canRecommendJobs,
-  hasCurrentCvAnalysis,
   hasProfileSkills,
-  hasProfileCVData,
-  buildCvMatchingProfile,
+  hasCurrentCvAnalysis,
+  hasProfileOrResumeData,
+  buildCombinedResumeProfile,
+  getRecommendationSourceAndProfile,
   enrichUserFromResume,
   buildJobSeekerMatchingContext,
 };

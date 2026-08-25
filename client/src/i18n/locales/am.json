@@ -352,6 +352,8 @@
       "noCVTitle": "የተመከሩ ስራዎችን ለማየት እባክዎ የእርስዎን CV ይስቀሉ",
       "noCVSubtitle": "ምክሮቹ በስራ ማመልከቻ ደብዳቤዎ ላይ የተመሰረቱ ናቸው። ከትክክለኛዎቹ እድሎች ጋር እንድናጣምርዎ የእርስዎን CV ይስቀሉ።",
       "uploadCVBtn": "CV ይስቀሉ",
+      "unreadableTitle": "CVዎን ማንበብ አልቻልንም",
+      "unreadableSubtitle": "CVዎ ተሰቅሏል፣ ነገር ግን ለምክሮች በቂ የሚነበብ መረጃ ማውጣት አልቻልንም። እባክዎ የሚነበብ ጽሑፍ ያለው CV ይስቀሉ።",
       "recErrorTitle": "የተመከሩ ስራዎች መጫን አልተሳካም",
       "recErrorSubtitle": "ምክሮችዎን በማጫን ጊዜ ስህተት ተከስቷል። እባክዎ እንደገና ይሞክሩ።",
       "retryBtn": "እንደገና ይሞክሩ"
@@ -365,6 +367,7 @@
     },
     "jobCard": {
       "matchedSkills": "የተጣጣሙ ክህሎቶች",
+      "noMatchedSkills": "ከCV አስתם ምንም ክህሎት ከዚህ ሥራ ጋር አልተመሳሰሉም።",
       "missing": "የሚቀሩ",
       "excellentMatch": "በጣም ጥሩ ተዛማጅ",
       "goodMatch": "ጥሩ ተዛማጅ",
