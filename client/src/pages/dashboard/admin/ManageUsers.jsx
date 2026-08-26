@@ -201,9 +201,6 @@ const UserRow = ({ user }) => {
   return (
     <tr className="group border-b border-gray-50 transition hover:bg-gray-50/70 dark:border-gray-700 dark:hover:bg-gray-700/40">
       <td className="px-4 py-3.5">
-        <input type="checkbox" className="h-4 w-4 rounded border-gray-300 accent-emerald-600" aria-label={t('admin.users.selectUser', { defaultValue: 'Select user' })} />
-      </td>
-      <td className="px-4 py-3.5">
         <Link to={`/admin/users/${user._id}`} className="flex min-w-0 items-center gap-3">
           <Avatar user={user} size="h-10 w-10" text="text-xs" />
           <div className="min-w-0">
@@ -465,9 +462,6 @@ const ManageUsers = () => {
               <table className="w-full min-w-[860px] text-left">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/80 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-400">
-                    <th className="px-4 py-3.5">
-                      <input type="checkbox" className="h-4 w-4 rounded border-gray-300 accent-emerald-600" aria-label={t('admin.users.selectAll', { defaultValue: 'Select all' })} />
-                    </th>
                     <th className="px-4 py-3.5">{t('admin.users.colUser', { defaultValue: 'User' })}</th>
                     <th className="px-4 py-3.5">{t('admin.users.colEmail', { defaultValue: 'Email' })}</th>
                     <th className="px-4 py-3.5">{t('admin.users.colRole', { defaultValue: 'Role' })}</th>

@@ -14,7 +14,7 @@ const ManageCompanies = () => {
   const { companies, loading } = useSelector((state) => state.admin);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [verificationFilter, setVerificationFilter] = useState('All');
+  const [approvalFilter, setApprovalFilter] = useState('All');
   const [industryFilter, setIndustryFilter] = useState('All');
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
@@ -52,16 +52,16 @@ const ManageCompanies = () => {
         if (statusFilter === 'Rejected' && !(company.isActive === false && !company.isApproved)) return false;
       }
 
-      if (verificationFilter !== 'All') {
-        if (verificationFilter === 'Verified' && !company.isVerified) return false;
-        if (verificationFilter === 'Unverified' && company.isVerified) return false;
+      if (approvalFilter !== 'All') {
+        if (approvalFilter === 'Approved' && !company.isApproved) return false;
+        if (approvalFilter === 'Unapproved' && company.isApproved) return false;
       }
 
       if (industryFilter !== 'All' && company.industry !== industryFilter) return false;
 
       return true;
     });
-  }, [companies, searchText, statusFilter, verificationFilter, industryFilter]);
+  }, [companies, searchText, statusFilter, approvalFilter, industryFilter]);
 
   const industryOptions = useMemo(() => {
     const industries = Array.from(new Set(companies.map((company) => company.industry).filter(Boolean)));
@@ -153,10 +153,11 @@ const ManageCompanies = () => {
   };
 
   const handleMessageCompany = (company) => {
-    if (company.email) {
-      window.location.href = `mailto:${company.email}`;
+    const owner = company.owner;
+    if (owner?._id) {
+      navigate('/admin/messages', { state: { recipientId: owner._id, recipientName: [owner.firstName, owner.lastName].filter(Boolean).join(' ') || owner.email } });
     } else {
-      toast(t('admin.manageCompanies.noCompanyEmail') || 'No company email available');
+      toast(t('admin.manageCompanies.noCompanyEmail') || 'No company owner available');
     }
   };
 
@@ -164,7 +165,7 @@ const ManageCompanies = () => {
     const params = {};
     if (searchText.trim()) params.search = searchText.trim();
     if (statusFilter !== 'All') params.status = statusFilter;
-    if (verificationFilter !== 'All') params.isVerified = verificationFilter === 'Verified' ? 'true' : 'false';
+    if (approvalFilter !== 'All') params.isVerified = approvalFilter === 'Approved' ? 'true' : 'false';
     if (industryFilter !== 'All') params.industry = industryFilter;
     dispatch(fetchAdminCompanies(params));
   };
@@ -172,7 +173,7 @@ const ManageCompanies = () => {
   const resetFilters = () => {
     setSearchText('');
     setStatusFilter('All');
-    setVerificationFilter('All');
+    setApprovalFilter('All');
     setIndustryFilter('All');
     dispatch(fetchAdminCompanies());
   };
@@ -239,15 +240,15 @@ const ManageCompanies = () => {
           </label>
 
           <label className="block">
-            <span className="text-sm text-gray-500">{t('admin.manageCompanies.verification') || 'Verification'}</span>
+            <span className="text-sm text-gray-500">{t('admin.manageCompanies.approval') || 'Approval'}</span>
             <select
-              value={verificationFilter}
-              onChange={(e) => setVerificationFilter(e.target.value)}
+              value={approvalFilter}
+              onChange={(e) => setApprovalFilter(e.target.value)}
               className="input mt-2"
             >
               <option value="All">{t('admin.status.all') || 'All'}</option>
-              <option value="Verified">{t('admin.status.verified') || 'Verified'}</option>
-              <option value="Unverified">{t('admin.status.unverified') || 'Unverified'}</option>
+              <option value="Approved">{t('admin.status.approved') || 'Approved'}</option>
+              <option value="Unapproved">{t('admin.status.unapproved') || 'Unapproved'}</option>
             </select>
           </label>
 
@@ -287,7 +288,6 @@ const ManageCompanies = () => {
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">{t('admin.manageCompanies.industry') || 'Industry'}</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">{t('admin.manageCompanies.ownerContact') || 'Owner / Contact'}</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">{t('admin.manageCompanies.status') || 'Status'}</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">{t('admin.manageCompanies.verification') || 'Verification'}</th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-600">{t('admin.manageCompanies.jobs') || 'Jobs'}</th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-600">{t('admin.manageCompanies.applicants') || 'Applicants'}</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">{t('admin.manageCompanies.joinedDate') || 'Joined Date'}</th>
@@ -297,7 +297,7 @@ const ManageCompanies = () => {
           <tbody className="divide-y divide-gray-200 bg-white">
             {loading ? (
               <tr>
-                <td colSpan="9" className="px-4 py-8 text-center text-gray-500">{t('admin.manageCompanies.loading') || 'Loading companies...'}</td>
+                <td colSpan="8" className="px-4 py-8 text-center text-gray-500">{t('admin.manageCompanies.loading') || 'Loading companies...'}</td>
               </tr>
             ) : filteredCompanies.length > 0 ? (
               filteredCompanies.map((company) => {
@@ -325,11 +325,6 @@ const ManageCompanies = () => {
                         {statusLabel(company)}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-sm">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${company.isVerified ? 'bg-[#DCF2E8] text-[#065F46]' : 'bg-[#F1F5F9] text-[#4B5563]'}`}>
-                        {company.isVerified ? (t('admin.status.verified') || 'Verified') : (t('admin.status.unverified') || 'Unverified')}
-                      </span>
-                    </td>
                     <td className="whitespace-nowrap px-4 py-4 text-right text-sm text-gray-700">{totalJobs}</td>
                     <td className="whitespace-nowrap px-4 py-4 text-right text-sm text-gray-700">{applicantsCount}</td>
                     <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-700">{company.createdAt ? format(new Date(company.createdAt), 'MMM dd, yyyy') : '—'}</td>
@@ -337,12 +332,6 @@ const ManageCompanies = () => {
                       <div className="flex items-center justify-center gap-2">
                         <button type="button" onClick={() => handleOpenReview(company)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-primary-300 hover:text-primary-600" aria-label={t('admin.manageCompanies.viewDetails') || 'View details'}>
                           <FiEye />
-                        </button>
-                        <button type="button" onClick={() => handleManageJobs(company)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-primary-300 hover:text-primary-600" aria-label={t('admin.manageCompanies.manageJobs') || 'Manage jobs'}>
-                          <FiBriefcase />
-                        </button>
-                        <button type="button" onClick={() => handleViewApplicants(company)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-primary-300 hover:text-primary-600" aria-label={t('admin.manageCompanies.viewApplicants') || 'View applicants'}>
-                          <FiUsers />
                         </button>
                         <button type="button" onClick={() => handleEditCompany(company)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-primary-300 hover:text-primary-600" aria-label={t('admin.manageCompanies.editCompany') || 'Edit company'}>
                           <FiEdit2 />
@@ -357,7 +346,7 @@ const ManageCompanies = () => {
               })
             ) : (
               <tr>
-                <td colSpan="9" className="px-4 py-8 text-center text-gray-500">
+                <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
                   {t('admin.manageCompanies.noCompanies') || 'No companies match the selected filters.'}
                 </td>
               </tr>

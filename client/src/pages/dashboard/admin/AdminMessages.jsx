@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { format, isToday, isYesterday } from 'date-fns';
@@ -170,8 +170,11 @@ const AdminMessages = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const conversationIdFromUrl = searchParams.get('conversationId');
+  const preselectedRecipientId = location.state?.recipientId || null;
+  const preselectedRecipientName = location.state?.recipientName || '';
   const { user } = useSelector((state) => state.auth);
   const onlineUsers = useSelector((state) => state.messages.onlineUsers);
   const currentUserId = user?._id;
@@ -275,6 +278,14 @@ const AdminMessages = () => {
       }
     }
   }, [conversationIdFromUrl, conversations, selectedId, loadMessages]);
+
+  useEffect(() => {
+    if (preselectedRecipientId) {
+      setSelectedRecipient({ _id: preselectedRecipientId, firstName: preselectedRecipientName.split(' ')[0] || '', lastName: preselectedRecipientName.split(' ').slice(1).join('') || '' });
+      setNewMessageOpen(true);
+      navigate('/admin/messages', { replace: true, state: {} });
+    }
+  }, [preselectedRecipientId, preselectedRecipientName, navigate]);
 
   const handleSelectConversation = (conversation) => {
     setSelectedId(conversation._id);
