@@ -487,37 +487,9 @@ const ViewApplicants = () => {
 
   return (
     <div className="w-full flex-1 max-w-none min-w-0 px-6 py-8">
-      {/* Top header */}
-      <div className="flex items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <button className="p-2 rounded-md text-slate-600 hover:bg-slate-100">
-            <Menu className="h-5 w-5" />
-          </button>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#0D5BC4]">{t('employer.applicants.title')}</p>
-            <h1 className="mt-2 text-2xl font-semibold leading-tight text-slate-900">{t('employer.applicants.title')}</h1>
-            <p className="mt-1 text-sm text-slate-600">{t('employer.applicants.subtitle')}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button className="p-2 rounded-md text-slate-600 hover:bg-slate-100">
-            <Search className="h-5 w-5" />
-          </button>
-          <div className="relative">
-            <button className="p-2 rounded-md text-slate-600 hover:bg-slate-100">
-              <Bell className="h-5 w-5" />
-            </button>
-            <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-rose-600 text-white text-xs px-1.5 py-0.5">1</span>
-          </div>
-          <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-slate-200">
-            <img src={user?.avatar || '/images/avatar-placeholder.png'} alt="profile" className="h-8 w-8 rounded-full object-cover" />
-            <div className="text-sm">
-              <div className="font-medium text-slate-900">{user?.firstName} {user?.lastName}</div>
-              <div className="text-xs text-slate-500">{user?.company || user?.role || 'Employer'}</div>
-            </div>
-          </div>
-        </div>
+      <div className="min-w-0">
+        <h1 className="text-2xl font-semibold leading-tight text-slate-900">{t('employer.applicants.title')}</h1>
+        <p className="mt-1 text-sm text-slate-600">{t('employer.applicants.subtitle')}</p>
       </div>
 
       {/* Filter toolbar */}

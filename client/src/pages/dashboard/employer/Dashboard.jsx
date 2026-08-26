@@ -51,8 +51,9 @@ const EmployerDashboard = () => {
     (async () => {
       try {
         setFetchingApi(true);
-        const [dashboardRes, notificationCountRes, chatCountRes] = await Promise.all([
+        const [dashboardRes, notificationsRes, notificationCountRes, chatCountRes] = await Promise.all([
           api.get('/employer/dashboard'),
+          api.get('/notifications', { params: { excludeType: 'new_message', limit: 8 } }),
           api.get('/notifications/unread/count?excludeType=new_message'),
           api.get('/messages/unread/count'),
         ]);
@@ -60,7 +61,7 @@ const EmployerDashboard = () => {
         const dash = dashboardRes.data?.data || dashboardRes.data || null;
         setDashboardData(dash);
         setInterviews(dash?.upcomingInterviews || []);
-        setNotifications((dash?.recentNotifications || []).filter((n) => n.type !== 'new_message'));
+        setNotifications(notificationsRes.data?.data || []);
         if (notificationCountRes.data?.count !== undefined) setUnreadNotificationCount(notificationCountRes.data.count);
         if (chatCountRes.data?.count !== undefined) setUnreadChatCount(chatCountRes.data.count);
       } catch (err) {
@@ -168,6 +169,30 @@ const EmployerDashboard = () => {
     }
   };
 
+  const handleNotificationClick = async (notif) => {
+    if (!notif.isRead) {
+      try {
+        await api.put(`/notifications/${notif._id}/read`);
+        setNotifications((prev) => prev.map((n) => (n._id === notif._id ? { ...n, isRead: true, readAt: new Date().toISOString() } : n)));
+        setUnreadNotificationCount((prev) => Math.max(0, prev - 1));
+      } catch {
+        // silently fail — count will be corrected on next fetch
+      }
+    }
+    setShowNotifications(false);
+    if (notif.link) navigate(notif.link);
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    try {
+      await api.put('/notifications/read-all?excludeType=new_message');
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true, readAt: new Date().toISOString() })));
+      setUnreadNotificationCount(0);
+    } catch {
+      // silently fail — count will be corrected on next fetch
+    }
+  };
+
   const activeCompany = company || stats.company;
 
   const companyLocation = useMemo(() => {
@@ -231,14 +256,37 @@ const EmployerDashboard = () => {
               <div className="absolute right-0 z-[60] mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-[#E1E8E4] dark:border-[#23483D] bg-white dark:bg-[#142A24] p-3 shadow-xl">
                 <div className="flex items-center justify-between border-b border-[#E1E8E4] dark:border-[#23483D] pb-2">
                   <h4 className="text-xs font-bold text-[#14231F] dark:text-[#F4F8F6]">{t('dashboard.notifications.title')}</h4>
-                  <Link to="/employer/applicants" className="text-xs font-semibold text-[#1769E0] dark:text-[#3B82F6] hover:underline">{t('common.viewAll')}</Link>
+                  <div className="flex items-center gap-2">
+                    {unreadNotificationCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAllNotificationsRead}
+                        className="text-[10px] font-semibold text-[#1769E0] dark:text-[#3B82F6] hover:underline"
+                      >
+                        {t('dashboard.notifications.markAllRead') || 'Mark all read'}
+                      </button>
+                    )}
+                    <Link to="/employer/applicants" className="text-xs font-semibold text-[#1769E0] dark:text-[#3B82F6] hover:underline">{t('common.viewAll')}</Link>
+                  </div>
                 </div>
                 <div className="mt-2 max-h-52 space-y-2 overflow-auto sidebar-scroll">
                   {notifications.length > 0 ? (
                     notifications.map((notif) => (
-                      <div key={notif._id} className="p-2 rounded-lg bg-slate-50 dark:bg-[#10231E] text-xs text-[#14231F] dark:text-[#F4F8F6]">
-                        {notif.message || notif.title}
-                      </div>
+                      <button
+                        key={notif._id}
+                        type="button"
+                        onClick={() => handleNotificationClick(notif)}
+                        className={`w-full text-left p-2 rounded-lg text-xs transition hover:bg-slate-100 dark:hover:bg-[#18342C] ${
+                          notif.isRead
+                            ? 'bg-white dark:bg-[#142A24] text-[#64746E] dark:text-[#A9BBB4]'
+                            : 'bg-[#EAF2FE] dark:bg-[#041D3F]/40 text-[#14231F] dark:text-[#F4F8F6] font-semibold'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          {!notif.isRead && <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1769E0] dark:bg-[#3B82F6]" />}
+                          <span className="line-clamp-2">{notif.message || notif.title}</span>
+                        </div>
+                      </button>
                     ))
                   ) : (
                     <div className="py-2 text-xs text-[#64746E] dark:text-[#A9BBB4]">
