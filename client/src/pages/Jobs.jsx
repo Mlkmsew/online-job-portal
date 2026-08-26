@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Select from 'react-select';
 import { useSelector } from 'react-redux';
@@ -71,6 +71,7 @@ const Jobs = () => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const limit = 12;
+  const isInitialMount = useRef(true);
 
   const skillOptions = useMemo(
     () => skills.map((skill) => ({ value: skill._id, label: skill.name })),
@@ -231,6 +232,10 @@ const Jobs = () => {
   };
 
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (selectedCategory) params.set('category', selectedCategory);

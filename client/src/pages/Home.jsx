@@ -500,19 +500,6 @@ const Home = () => {
                 </button>
               </motion.form>
 
-              {/* Quick links */}
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <span className="text-sm font-semibold text-sky-200">{t('home.quickLinks', { defaultValue: 'Quick Links:' })}</span>
-                <Link to="/jobs" className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20">
-                  {t('home.popularJobs', { defaultValue: 'Popular Jobs' })}
-                </Link>
-                <Link to="/jobs?workMode=remote" className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20">
-                  {t('home.remoteJobs', { defaultValue: 'Remote Jobs' })}
-                </Link>
-                <Link to="/jobs?postedWithinDays=7" className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/20">
-                  {t('home.latestJobs', { defaultValue: 'Latest Jobs' })}
-                </Link>
-              </div>
 
               {/* Live platform stats */}
               {communityStats && communityStats.activeJobs > 0 && (
