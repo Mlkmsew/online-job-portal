@@ -24,6 +24,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { fetchEmployerDashboard } from '../../../store/slices/employerSlice';
 import { logout } from '../../../store/slices/authSlice';
 import api from '../../../services/api';
+import { getCompanyProfileCompletion } from '../../../utils/companyCompletion';
 import toast from 'react-hot-toast';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -85,19 +86,10 @@ const EmployerDashboard = () => {
   const interviewsCount = stats.interviewsCount ?? interviews?.length ?? 0;
   const hiredCount = stats.hiredCount ?? applications?.filter((item) => ['hired', 'Hired', 'Selected'].includes(item.status)).length ?? 0;
 
-  const profileCompletion = useMemo(() => {
-    const targetCompany = company || stats.company;
-    if (!targetCompany) return 0;
-    const fields = [
-      targetCompany.name,
-      targetCompany.description,
-      targetCompany.industry,
-      targetCompany.location?.address || targetCompany.location,
-      targetCompany.logo,
-    ];
-    const filled = fields.filter(Boolean).length;
-    return Math.round((filled / fields.length) * 100);
-  }, [company, stats.company]);
+  const profileCompletion = useMemo(
+    () => getCompanyProfileCompletion(company || stats.company),
+    [company, stats.company]
+  );
 
   // Real Analytics Funnel Percentages calculated directly from database records
   const analyticsFunnel = useMemo(() => {

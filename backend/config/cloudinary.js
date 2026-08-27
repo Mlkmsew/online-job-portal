@@ -34,6 +34,10 @@ const logoStorage = new CloudinaryStorage({
 });
 
 // Storage for company assets uploaded during profile creation
+// Verification documents (PDF/DOC/DOCX) are uploaded as `raw` resources so they
+// are served verbatim. Storing PDFs as `auto` (image) assets triggers Cloudinary's
+// "delivery of PDF files" restriction on many accounts, which returns HTTP 401 +
+// a 1x1 placeholder and breaks the document preview/download. Raw delivery avoids that.
 const companyStorage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
@@ -45,10 +49,11 @@ const companyStorage = new CloudinaryStorage({
       tinCertificate: 'ethiojob/company-documents',
       companyRegistration: 'ethiojob/company-documents',
     };
+    const isDocument = ['businessLicense', 'tinCertificate', 'companyRegistration'].includes(field);
     return {
       folder: folderMap[field] || 'ethiojob/company-assets',
       allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'svg', 'pdf', 'doc', 'docx'],
-      resource_type: 'auto',
+      resource_type: isDocument ? 'raw' : 'auto',
     };
   },
 });

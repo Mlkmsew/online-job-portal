@@ -3,6 +3,7 @@
 // ============================================
 const Company = require('../models/Company');
 const Job = require('../models/job');
+const { cloudinary } = require('../config/cloudinary');
 const { asyncHandler, paginate, escapeRegex, notifyAllAdmins } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 
@@ -197,16 +198,22 @@ exports.createCompany = asyncHandler(async (req, res, next) => {
   if (files.businessLicense?.[0]) {
     req.body.businessLicense = files.businessLicense[0].path;
     req.body.businessLicensePublicId = files.businessLicense[0].filename;
+    req.body.businessLicenseName = files.businessLicense[0].originalname;
+    req.body.businessLicenseMime = files.businessLicense[0].mimetype;
   }
 
   if (files.tinCertificate?.[0]) {
     req.body.tinCertificate = files.tinCertificate[0].path;
     req.body.tinCertificatePublicId = files.tinCertificate[0].filename;
+    req.body.tinCertificateName = files.tinCertificate[0].originalname;
+    req.body.tinCertificateMime = files.tinCertificate[0].mimetype;
   }
 
   if (files.companyRegistration?.[0]) {
     req.body.companyRegistration = files.companyRegistration[0].path;
     req.body.companyRegistrationPublicId = files.companyRegistration[0].filename;
+    req.body.companyRegistrationName = files.companyRegistration[0].originalname;
+    req.body.companyRegistrationMime = files.companyRegistration[0].mimetype;
   }
 
   // Admin-created companies are considered approved and active by default.
@@ -262,33 +269,193 @@ exports.updateCompany = asyncHandler(async (req, res, next) => {
     return next(new AppError('Not authorized.', 403));
   }
 
-  const sanitizeMediaField = (field) => {
+  // Normalize the multer file map into fieldname -> [files] (same shape used by createCompany)
+  const files = (function normalizeFiles(filesInput) {
+    if (!filesInput) return {};
+
+    let fileEntries = [];
+    if (Array.isArray(filesInput)) {
+      fileEntries = filesInput;
+    } else if (filesInput && typeof filesInput === 'object') {
+      fileEntries = Object.values(filesInput).flatMap((fileOrArray) =>
+        Array.isArray(fileOrArray) ? fileOrArray : [fileOrArray]
+      );
+    }
+
+    if (!Array.isArray(fileEntries)) return {};
+
+    return fileEntries.reduce((acc, file) => {
+      if (!file || typeof file !== 'object' || !file.fieldname) return acc;
+      if (!acc[file.fieldname]) acc[file.fieldname] = [];
+      acc[file.fieldname].push(file);
+      return acc;
+    }, {});
+  })(req.files);
+
+  // For each media/document field:
+  //  - a newly uploaded file wins -> persist its Cloudinary SECURE URL + public id
+  //  - otherwise keep an explicitly provided string (existing URL) or clear it (empty string)
+  //  - when nothing is provided the existing database value is left untouched
+  const handleMediaField = (field) => {
+    if (files[field]?.[0]) {
+      req.body[field] = files[field][0].path;
+      req.body[`${field}PublicId`] = files[field][0].filename;
+      req.body[`${field}Name`] = files[field][0].originalname;
+      req.body[`${field}Mime`] = files[field][0].mimetype;
+      return;
+    }
+
+    if (req.body[field] === undefined) return;
+
     const value = req.body[field];
-    if (value && typeof value === 'object') {
-      const cleaned = typeof value.url === 'string' ? value.url : typeof value.path === 'string' ? value.path : '';
-      if (cleaned) {
-        req.body[field] = cleaned;
-      } else {
-        delete req.body[field];
+    if (typeof value === 'string') {
+      req.body[field] = value; // existing URL, or empty string for intentional removal
+      // When a document is intentionally removed, also clear its name + mime.
+      if (value === '' && ['businessLicense', 'tinCertificate', 'companyRegistration'].includes(field)) {
+        req.body[`${field}Name`] = '';
+        req.body[`${field}Mime`] = '';
       }
+    } else if (value && typeof value === 'object') {
+      req.body[field] = typeof value.url === 'string' ? value.url : typeof value.path === 'string' ? value.path : '';
+    } else {
+      delete req.body[field];
     }
   };
 
-  sanitizeMediaField('logo');
-  sanitizeMediaField('coverImage');
+  ['logo', 'coverImage', 'businessLicense', 'tinCertificate', 'companyRegistration'].forEach(handleMediaField);
 
   const allowedFields = [
     'name', 'description', 'shortDescription', 'tagline', 'industry', 'companySize',
     'foundedYear', 'companyType', 'website', 'email', 'phone', 'location',
     'socialLinks', 'recruiter', 'benefits', 'techStack', 'logo', 'logoPublicId', 'coverImage', 'coverImagePublicId',
-    'businessLicense', 'businessLicensePublicId', 'tinCertificate', 'tinCertificatePublicId',
-    'companyRegistration', 'companyRegistrationPublicId', 'registrationNumber',
+    'businessLicense', 'businessLicensePublicId', 'businessLicenseName', 'businessLicenseMime',
+    'tinCertificate', 'tinCertificatePublicId', 'tinCertificateName', 'tinCertificateMime',
+    'companyRegistration', 'companyRegistrationPublicId', 'companyRegistrationName', 'companyRegistrationMime',
+    'registrationNumber',
   ];
   const updates = {};
   allowedFields.forEach((f) => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
 
   company = await Company.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
   res.status(200).json({ success: true, message: 'Company updated.', data: company });
+});
+
+// @desc    Admin: stream a company verification document (proxy to Cloudinary)
+// @route   GET /api/admin/companies/:id/documents/:docType
+// @access  Private (Admin) - authenticated via protectPreview
+// The browser never talks to Cloudinary directly and credentials stay server-side.
+// Only the document that belongs to the requested company record is ever fetched,
+// and only from our own Cloudinary account (no open proxy for arbitrary URLs).
+exports.previewCompanyDocument = asyncHandler(async (req, res, next) => {
+  const { id, docType } = req.params;
+  const fieldMap = {
+    businessLicense: 'businessLicense',
+    tinCertificate: 'tinCertificate',
+    companyRegistration: 'companyRegistration',
+  };
+  const field = fieldMap[docType];
+  if (!field) return next(new AppError('Invalid document type.', 400));
+  if (!id.match(/^[0-9a-fA-F]{24}$/)) return next(new AppError('Invalid company id.', 400));
+
+  const company = await Company.findById(id);
+  if (!company) return next(new AppError('Company not found.', 404));
+
+  const rawValue = company[field];
+  if (!rawValue || typeof rawValue !== 'string') {
+    return next(new AppError('Document not found for this company.', 404));
+  }
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  if (!cloudName) return next(new AppError('Storage is not configured.', 500));
+
+  // Original filename (used for Content-Disposition / display). We never expose
+  // the Cloudinary public id to the admin UI.
+  const originalName = company[`${field}Name`];
+  const extFromName = (originalName || '').split('.').pop()?.toLowerCase();
+  const extFromUrl = (rawValue.split('?')[0].split('/').pop().split('.').pop() || '').toLowerCase();
+  const ext = extFromName || extFromUrl || 'pdf';
+
+  const mimeFromExt = {
+    pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+    gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  }[ext];
+
+  // Build a list of server-side fetch sources. We prefer Cloudinary's signed
+  // private-download URL so we bypass the account's "delivery of PDF files"
+  // restriction that makes image-delivered PDFs return HTTP 401, and so the
+  // browser never contacts Cloudinary directly. Only our own cloud is ever used.
+  const sources = [];
+  let publicId = null;
+  let resourceTypeHint = null;
+
+  if (/^https?:\/\//i.test(rawValue)) {
+    if (!rawValue.includes(`res.cloudinary.com/${cloudName}`)) {
+      return next(new AppError('Document source is not allowed.', 400));
+    }
+    const match = rawValue.split('?')[0].match(/\/(?:raw|image)\/upload\/(?:v\d+\/)?(.+)$/i);
+    if (match) {
+      publicId = decodeURIComponent(match[1]);
+      resourceTypeHint = /\/raw\/upload\//i.test(rawValue) ? 'raw' : 'image';
+    }
+  } else {
+    // Legacy bare public id.
+    publicId = rawValue;
+  }
+
+  if (publicId) {
+    const order = resourceTypeHint
+      ? [resourceTypeHint, resourceTypeHint === 'raw' ? 'image' : 'raw']
+      : ['raw', 'image'];
+    for (const rt of order) {
+      try {
+        sources.push(
+          cloudinary.utils.private_download_url(publicId, ext, { resource_type: rt, type: 'upload' })
+        );
+      } catch (_) { /* ignore */ }
+    }
+  }
+
+  // Last-resort fallback for current raw delivery URLs (new uploads).
+  if (/^https?:\/\//i.test(rawValue) && rawValue.includes('/raw/upload/')) {
+    sources.unshift(rawValue);
+  }
+
+  if (!sources.length) {
+    return next(new AppError('Document source could not be resolved.', 400));
+  }
+
+  let upstream = null;
+  for (const src of sources) {
+    try {
+      const r = await fetch(src);
+      if (r.ok && r.body) { upstream = r; break; }
+    } catch (_) { /* try next source */ }
+  }
+  if (!upstream) {
+    return next(new AppError('Failed to retrieve document from storage.', 502));
+  }
+
+  const buffer = Buffer.from(await upstream.arrayBuffer());
+  if (!buffer.length) return next(new AppError('Document is empty.', 404));
+
+  let contentType = company[`${field}Mime`] || mimeFromExt || null;
+  const head = buffer.subarray(0, 5).toString('latin1');
+  if (!contentType || contentType === 'application/octet-stream') {
+    if (head === '%PDF-') contentType = 'application/pdf';
+    else if (upstream.headers.get('content-type')) contentType = upstream.headers.get('content-type');
+    else contentType = mimeFromExt || 'application/octet-stream';
+  }
+  const isPdf = contentType === 'application/pdf' || head === '%PDF-';
+
+  const dispositionName = (originalName || `${docType}.${ext}`).replace(/"/g, '');
+  res.set('Content-Type', contentType);
+  res.set('Content-Disposition', `inline; filename="${dispositionName}"`);
+  res.set('Content-Length', String(buffer.length));
+  res.set('Cache-Control', 'private, max-age=300');
+  res.set('X-Content-Type-Options', 'nosniff');
+  return res.send(buffer);
 });
 
 // @desc    Delete company

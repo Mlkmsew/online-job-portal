@@ -6,6 +6,7 @@ import { fetchEmployerCompany, resubmitCompany } from '../../../store/slices/emp
 import { useForm } from 'react-hook-form';
 import api from '../../../services/api';
 import { sanitizeEthiopianPhone } from '../../../utils/helpers';
+import { COMPANY_PROFILE_COMPLETION_FIELDS } from '../../../utils/companyCompletion';
 import toast from 'react-hot-toast';
 import { REGIONS, REGION_CITIES } from '../../../constants/locations';
 import {
@@ -32,6 +33,7 @@ import {
 
 const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5000+'];
 const FOUNDED_YEARS = Array.from({ length: 50 }, (_, index) => new Date().getFullYear() - index);
+const COMPANY_TYPES = ['Private', 'Public', 'Non-Profit', 'NGO', 'Government', 'Startup', 'MNC', 'Other'];
 
 const PORTAL_HOME_URL = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -189,31 +191,7 @@ const CompanyProfile = () => {
     e.target.value = next;
     setValue(name, next, { shouldDirty: true, shouldValidate: true });
   };
-  const watchedFields = watch([
-    'name',
-    'description',
-    'industry',
-    'companySize',
-    'foundedYear',
-    'companyType',
-    'website',
-    'email',
-    'phone',
-    'location.region',
-    'location.city',
-    'location.address',
-    'socialLinks.linkedin',
-    'socialLinks.facebook',
-    'socialLinks.telegram',
-    'socialLinks.instagram',
-    'recruiter.hrManagerName',
-    'recruiter.position',
-    'recruiter.email',
-    'recruiter.phone',
-    'documents.businessLicense',
-    'documents.tinCertificate',
-    'documents.companyRegistration',
-  ]);
+  const watchedFields = watch(COMPANY_PROFILE_COMPLETION_FIELDS);
 
   const selectedCities = useMemo(
     () => (selectedRegion ? REGION_CITIES[selectedRegion] || [] : []),
@@ -248,9 +226,9 @@ const CompanyProfile = () => {
       email: getPreviewValue(formPreview.recruiter?.email, company?.recruiter?.email, ''),
       phone: getPreviewValue(formPreview.recruiter?.phone, company?.recruiter?.phone, ''),
     },
-    businessLicense: businessLicenseFile ? businessLicenseFile.name : company?.businessLicense ? company.businessLicense.split('/').pop() : '',
-    tinCertificate: tinCertificateFile ? tinCertificateFile.name : company?.tinCertificate ? company.tinCertificate.split('/').pop() : '',
-    companyRegistration: companyRegistrationFile ? companyRegistrationFile.name : company?.companyRegistration ? company.companyRegistration.split('/').pop() : '',
+    businessLicense: businessLicenseFile ? businessLicenseFile.name : company?.businessLicense ? company.businessLicenseName || company.businessLicense.split('/').pop() : '',
+    tinCertificate: tinCertificateFile ? tinCertificateFile.name : company?.tinCertificate ? company.tinCertificateName || company.tinCertificate.split('/').pop() : '',
+    companyRegistration: companyRegistrationFile ? companyRegistrationFile.name : company?.companyRegistration ? company.companyRegistrationName || company.companyRegistration.split('/').pop() : '',
   };
 
   const completionPercent = useMemo(() => {
@@ -433,6 +411,12 @@ const CompanyProfile = () => {
       });
 
       toast.success(company ? t('employer.companyProfile.success.updated') : t('employer.companyProfile.success.submitted'));
+      // Clear local file objects so subsequent previews/views use the persisted backend URLs.
+      setLogoFile(null);
+      setCoverFile(null);
+      setBusinessLicenseFile(null);
+      setTinCertificateFile(null);
+      setCompanyRegistrationFile(null);
       dispatch(fetchEmployerCompany());
       setIsEditing(false);
     } catch (error) {
@@ -699,6 +683,18 @@ const CompanyProfile = () => {
                     <option value="">{t('employer.companyProfile.previewLabels.selectYear')}</option>
                     {FOUNDED_YEARS.map((year) => (
                       <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2">{t('employer.companyProfile.fields.companyType')}</label>
+                  <select
+                    {...register('companyType')}
+                    disabled={!isEditing}
+                    className="select"
+                  >
+                    {COMPANY_TYPES.map((type) => (
+                      <option key={type} value={type}>{t(`employer.companyProfile.options.companyType.${type}`)}</option>
                     ))}
                   </select>
                 </div>

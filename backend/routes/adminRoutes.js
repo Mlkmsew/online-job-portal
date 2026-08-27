@@ -18,7 +18,17 @@ const {
   reviewVerification,
   suspendUserForFraud,
 } = require('../controllers/certificateController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, protectPreview } = require('../middleware/auth');
+const { previewCompanyDocument } = require('../controllers/companyController');
+
+// Document-preview proxy (Admin). Uses protectPreview (header/?token=/cookie) so
+// the <iframe> can authenticate. Mounted BEFORE the global admin auth so the
+// global `protect, authorize('admin')` middleware does not short-circuit it, and
+// scoped to the document paths so unrelated admin routes aren't double-authed.
+const previewRouter = express.Router();
+previewRouter.use(protectPreview);
+previewRouter.get('/:id/documents/:docType', previewCompanyDocument);
+router.use('/companies', previewRouter);
 
 router.use(protect, authorize('admin'));
 

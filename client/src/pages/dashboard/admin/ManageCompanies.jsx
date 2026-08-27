@@ -2,10 +2,44 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FiEye, FiBriefcase, FiUsers, FiEdit2, FiMail, FiSearch, FiFilter, FiRefreshCcw, FiPlus, FiX, FiCheckCircle, FiMapPin, FiGlobe, FiPhone, FiShield, FiUser, FiFileText, FiFacebook, FiLinkedin, FiInstagram, FiSend } from 'react-icons/fi';
+import { FiEye, FiBriefcase, FiUsers, FiEdit2, FiMail, FiSearch, FiFilter, FiRefreshCcw, FiPlus, FiX, FiCheckCircle, FiMapPin, FiGlobe, FiPhone, FiShield, FiUser, FiFileText, FiFacebook, FiLinkedin, FiInstagram, FiSend, FiExternalLink, FiCalendar, FiAward } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { fetchAdminCompanies, approveCompany, rejectCompany, verifyCompany } from '../../../store/slices/adminSlice';
+import api from '../../../services/api';
 import toast from 'react-hot-toast';
+
+const REVIEW_DOC_TYPES = ['businessLicense', 'tinCertificate', 'companyRegistration'];
+
+const InfoItem = ({ icon: Icon, label, value }) => (
+  <div>
+    <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
+      <Icon className="h-3.5 w-3.5" />
+      <span>{label}</span>
+    </div>
+    <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">{value}</p>
+  </div>
+);
+
+const DetailRow = ({ icon: Icon, label, value, href }) => (
+  <div className="flex items-start gap-3">
+    <Icon className="mt-0.5 h-4 w-4 shrink-0 text-[var(--primary)]" />
+    <div className="min-w-0">
+      <p className="text-xs text-[var(--text-secondary)]">{label}</p>
+      {href ? (
+        <a
+          href={href}
+          target={href.startsWith('http') ? '_blank' : undefined}
+          rel="noreferrer"
+          className="break-words text-sm font-medium text-[var(--primary)] hover:underline"
+        >
+          {value}
+        </a>
+      ) : (
+        <p className="break-words text-sm font-medium text-[var(--text-primary)]">{value}</p>
+      )}
+    </div>
+  </div>
+);
 
 const ManageCompanies = () => {
   const { t } = useTranslation();
@@ -19,7 +53,11 @@ const ManageCompanies = () => {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [documentPreview, setDocumentPreview] = useState({ open: false, title: '', url: '' });
+  const [documentPreview, setDocumentPreview] = useState({ open: false, title: '', subtitle: '', url: '', name: '' });
+  const [docBlobUrl, setDocBlobUrl] = useState(null);
+  const [docContentType, setDocContentType] = useState('');
+  const [docLoading, setDocLoading] = useState(false);
+  const [docError, setDocError] = useState('');
 
   useEffect(() => {
     dispatch(fetchAdminCompanies());
@@ -131,14 +169,77 @@ const ManageCompanies = () => {
     setIsReviewOpen(true);
   };
 
-  const openDocumentPreview = (title, url) => {
-    if (!url) return;
-    setDocumentPreview({ open: true, title, url });
+  const openDocumentPreview = (company, docType) => {
+    const field = docType; // e.g. 'businessLicense'
+    if (!company || !company[field]) return;
+    const token = localStorage.getItem('token');
+    // Build an ABSOLUTE url so that api.get() does not prepend the /api baseURL
+    // a second time (which previously produced /api/api/... and a 404).
+    const apiBase = import.meta.env.VITE_API_URL || `${window.location.origin}/api`;
+    const url = `${apiBase}/admin/companies/${company._id}/documents/${docType}?token=${encodeURIComponent(token || '')}`;
+    const docLabel = t(`admin.manageCompanies.${docType}`) || docType;
+    const realName = company[`${field}Name`];
+    const name = realName || docLabel;
+    setDocumentPreview({
+      open: true,
+      title: docLabel,
+      subtitle: t('admin.manageCompanies.documentPreview') || 'Document preview',
+      url,
+      name,
+    });
   };
 
   const closeDocumentPreview = () => {
-    setDocumentPreview({ open: false, title: '', url: '' });
+    setDocumentPreview({ open: false, title: '', subtitle: '', url: '', name: '' });
+    setDocBlobUrl(null);
+    setDocContentType('');
+    setDocError('');
+    setDocLoading(false);
   };
+
+  // Fetch the document through the authenticated backend proxy and render it
+  // inside the modal. We fetch as a blob so we can surface a real error message
+  // (instead of a blank page) and still render the actual PDF/image in the viewer.
+  useEffect(() => {
+    if (!documentPreview.open || !documentPreview.url) return undefined;
+    let cancelled = false;
+    let objectUrl = null;
+    setDocLoading(true);
+    setDocError('');
+    setDocBlobUrl(null);
+    setDocContentType('');
+
+    api
+      .get(documentPreview.url, {
+        responseType: 'blob',
+        skipAuthRedirect: true,
+        skipGlobalErrorToast: true,
+      })
+      .then((res) => {
+        if (cancelled) return;
+        const contentType = res.headers?.['content-type'] || '';
+        if (contentType.includes('application/json')) {
+          // backend returned an error payload instead of the file
+          setDocError(t('admin.manageCompanies.documentFetchError') || 'Could not retrieve this document.');
+          setDocLoading(false);
+          return;
+        }
+        objectUrl = URL.createObjectURL(res.data);
+        setDocBlobUrl(objectUrl);
+        setDocContentType(contentType);
+        setDocLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDocError(t('admin.manageCompanies.documentFetchError') || 'Could not retrieve this document.');
+        setDocLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [documentPreview.open, documentPreview.url, t]);
 
   const handleManageJobs = (company) => {
     navigate(`/companies/${company._id}?view=jobs`);
@@ -176,6 +277,33 @@ const ManageCompanies = () => {
     setApprovalFilter('All');
     setIndustryFilter('All');
     dispatch(fetchAdminCompanies());
+  };
+
+  const selectedType = selectedCompany ? statusType(selectedCompany) : 'pending';
+
+  const reviewSocials = (() => {
+    const links = selectedCompany?.socialLinks || {};
+    return [
+      { key: 'linkedin', label: t('admin.manageCompanies.socialLinkedin'), icon: FiLinkedin, url: links.linkedin },
+      { key: 'facebook', label: t('admin.manageCompanies.socialFacebook'), icon: FiFacebook, url: links.facebook },
+      { key: 'telegram', label: t('admin.manageCompanies.socialTelegram'), icon: FiSend, url: links.telegram },
+      { key: 'instagram', label: t('admin.manageCompanies.socialInstagram'), icon: FiInstagram, url: links.instagram },
+    ].filter((s) => s.url);
+  })();
+
+  const getFileTypeLabel = (docType) => {
+    const name = selectedCompany?.[`${docType}Name`];
+    if (name) {
+      const lower = name.toLowerCase();
+      if (lower.endsWith('.pdf')) return t('admin.manageCompanies.pdfDocument');
+      if (/\.(png|jpe?g|gif|webp|bmp)$/i.test(lower)) return t('admin.manageCompanies.imageDocument');
+    }
+    const mime = selectedCompany?.[`${docType}Mime`];
+    if (mime) {
+      if (mime.includes('pdf')) return t('admin.manageCompanies.pdfDocument');
+      if (mime.startsWith('image/')) return t('admin.manageCompanies.imageDocument');
+    }
+    return t('admin.manageCompanies.otherDocument');
   };
 
   return (
@@ -359,213 +487,279 @@ const ManageCompanies = () => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/55 p-4">
           <div className="w-full max-w-6xl overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-slate-950">
             <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{documentPreview.title}</h3>
+              <div className="min-w-0">
+                <h3 className="truncate text-lg font-semibold text-gray-900 dark:text-white">{documentPreview.title}</h3>
+                <p className="mt-0.5 text-sm text-gray-500">{documentPreview.subtitle}</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-200">
+                  <FiFileText className="h-4 w-4 text-primary-500" /> {documentPreview.name}
+                </p>
+              </div>
               <button type="button" onClick={closeDocumentPreview} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:border-primary-300 hover:text-primary-600">
                 <FiX />
               </button>
             </div>
             <div className="bg-gray-50 p-4 dark:bg-slate-900">
-              {documentPreview.url.toLowerCase().includes('.pdf') ? (
-                <iframe src={documentPreview.url} title={documentPreview.title} className="h-[70vh] w-full rounded-2xl border border-gray-200 bg-white dark:border-gray-700" />
-              ) : (
-                <img src={documentPreview.url} alt={documentPreview.title} className="max-h-[70vh] w-full rounded-2xl object-contain" />
-              )}
+              <div className="space-y-3">
+                {docLoading ? (
+                  <div className="flex h-[70vh] w-full items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-500 dark:border-gray-700 dark:bg-slate-950">
+                    {t('admin.manageCompanies.loadingDocument') || 'Loading document…'}
+                  </div>
+                ) : docError ? (
+                  <div className="flex h-[70vh] w-full flex-col items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white text-center text-gray-500 dark:border-gray-700 dark:bg-slate-950">
+                    <FiFileText className="h-10 w-10 text-gray-300" />
+                    <p>{docError}</p>
+                    <a
+                      href={documentPreview.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-primary inline-flex items-center gap-2"
+                    >
+                      <FiExternalLink /> {t('admin.manageCompanies.openInNewTab') || 'Open in new tab'}
+                    </a>
+                  </div>
+                ) : docContentType.startsWith('image/') ? (
+                  <div className="space-y-3">
+                    <img
+                      src={docBlobUrl}
+                      alt={documentPreview.title}
+                      className="mx-auto max-h-[70vh] w-full rounded-2xl border border-gray-200 bg-white object-contain dark:border-gray-700"
+                    />
+                    <a
+                      href={documentPreview.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-outline inline-flex items-center gap-2"
+                    >
+                      <FiExternalLink /> {t('admin.manageCompanies.openInNewTab') || 'Open in new tab'}
+                    </a>
+                  </div>
+                ) : docContentType === 'application/pdf' ? (
+                  <div className="space-y-3">
+                    <iframe
+                      src={docBlobUrl}
+                      title={documentPreview.title}
+                      className="h-[70vh] w-full rounded-2xl border border-gray-200 bg-white dark:border-gray-700"
+                    />
+                    <a
+                      href={documentPreview.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-outline inline-flex items-center gap-2"
+                    >
+                      <FiExternalLink /> {t('admin.manageCompanies.openInNewTab') || 'Open in new tab'}
+                    </a>
+                  </div>
+                ) : (
+                  <div className="flex h-[70vh] w-full flex-col items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white text-center text-gray-500 dark:border-gray-700 dark:bg-slate-950">
+                    <FiFileText className="h-10 w-10 text-gray-300" />
+                    <p>{t('admin.manageCompanies.documentPreviewUnsupported') || 'This file type cannot be previewed here.'}</p>
+                    <a
+                      href={documentPreview.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-primary inline-flex items-center gap-2"
+                    >
+                      <FiExternalLink /> {t('admin.manageCompanies.openInNewTab') || 'Open in new tab'}
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       ) : null}
 
       {isReviewOpen && selectedCompany ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 p-4">
-          <div className="h-[92vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-slate-950">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-5 py-4 dark:border-gray-700 dark:bg-slate-950">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">{t('admin.manageCompanies.companyReview') || 'Company Review'}</p>
-                <h2 className="mt-1 text-xl font-semibold text-gray-900 dark:text-white">{selectedCompany.name}</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+          <div className="modal-surface flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] px-6 py-4">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-secondary)]">{t('admin.manageCompanies.companyReview')}</p>
+                <h2 className="mt-1 truncate text-xl font-bold text-[var(--text-primary)]">{selectedCompany.name}</h2>
+                <p className="text-sm text-[var(--text-secondary)]">{t('admin.manageCompanies.companyReviewSubtitle')}</p>
               </div>
-              <button type="button" onClick={() => setIsReviewOpen(false)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:border-primary-300 hover:text-primary-600" aria-label={t('admin.manageCompanies.close') || 'Close review panel'}>
+              <button
+                type="button"
+                onClick={() => setIsReviewOpen(false)}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-secondary)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                aria-label={t('admin.manageCompanies.closeReview')}
+              >
                 <FiX />
               </button>
             </div>
 
-            <div className="space-y-4 p-5">
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-slate-900">
-                  {selectedCompany.coverImage ? (
-                    <img src={selectedCompany.coverImage} alt={`${selectedCompany.name} cover`} className="h-40 w-full object-cover" />
+            {/* Body */}
+            <div className="flex-1 space-y-6 overflow-y-auto p-6">
+              {/* Company Identity */}
+              <div className="card">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                  {selectedCompany.logo ? (
+                    <img src={selectedCompany.logo} alt={`${selectedCompany.name} logo`} className="h-20 w-20 rounded-2xl border border-[var(--border)] object-cover" />
                   ) : (
-                    <div className="flex h-40 items-center justify-center bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 text-sm text-white/80">
-                      {t('admin.manageCompanies.noCoverImage') || 'No cover image'}
+                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#1769E0]/10 text-[#1769E0]">
+                      <FiBriefcase className="h-8 w-8" />
                     </div>
                   )}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-2xl font-bold text-[var(--text-primary)]">{selectedCompany.name}</h3>
+                    <p className="mt-1 text-sm text-[var(--text-secondary)]">{selectedCompany.industry || t('admin.manageCompanies.industryNotSpecified')}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className={`badge ${selectedType === 'approved' ? 'badge-success' : selectedType === 'rejected' ? 'badge-danger' : 'badge-warning'}`}>{statusLabel(selectedCompany)}</span>
+                      {selectedCompany.isVerified ? (
+                        <span className="badge badge-primary"><FiCheckCircle className="mr-1 h-3.5 w-3.5" />{t('admin.manageCompanies.verified')}</span>
+                      ) : null}
+                      {selectedCompany.isFeatured ? (
+                        <span className="badge badge-muted"><FiAward className="mr-1 h-3.5 w-3.5" />{t('admin.manageCompanies.featured')}</span>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
 
-                  <div className="absolute bottom-3 left-3 flex items-center gap-3 rounded-2xl bg-white/90 px-3 py-2 backdrop-blur-sm">
-                    {selectedCompany.logo ? (
-                      <img src={selectedCompany.logo} alt={`${selectedCompany.name} logo`} className="h-12 w-12 rounded-xl object-cover" />
+                <div className="mt-5 grid grid-cols-2 gap-4 border-t border-[var(--border)] pt-5 sm:grid-cols-4">
+                  <InfoItem icon={FiBriefcase} label={t('admin.manageCompanies.companyType')} value={selectedCompany.companyType || t('admin.manageCompanies.notProvided')} />
+                  <InfoItem icon={FiUsers} label={t('admin.manageCompanies.companySize')} value={selectedCompany.companySize || t('admin.manageCompanies.notProvided')} />
+                  <InfoItem icon={FiCalendar} label={t('admin.manageCompanies.foundedYear')} value={selectedCompany.foundedYear ? String(selectedCompany.foundedYear) : t('admin.manageCompanies.notProvided')} />
+                  <InfoItem icon={FiShield} label={t('admin.manageCompanies.currentStatusLabel')} value={selectedCompany.isActive ? t('admin.manageCompanies.active') : t('admin.manageCompanies.inactive')} />
+                </div>
+              </div>
+
+              {/* Overview + Contact */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="card">
+                  <h3 className="text-base font-semibold text-[var(--text-primary)]">{t('admin.manageCompanies.companyOverview')}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--text-secondary)]">{selectedCompany.description || t('admin.manageCompanies.noDescription')}</p>
+                  <div className="mt-4 space-y-3 border-t border-[var(--border)] pt-4">
+                    <DetailRow icon={FiBriefcase} label={t('admin.manageCompanies.companyType')} value={selectedCompany.companyType || t('admin.manageCompanies.notProvided')} />
+                    <DetailRow icon={FiGlobe} label={t('admin.manageCompanies.websiteLabel')} value={selectedCompany.website || t('admin.manageCompanies.notProvided')} href={selectedCompany.website} />
+                    <DetailRow icon={FiUsers} label={t('admin.manageCompanies.companySize')} value={selectedCompany.companySize || t('admin.manageCompanies.notProvided')} />
+                    <DetailRow icon={FiCalendar} label={t('admin.manageCompanies.foundedYear')} value={selectedCompany.foundedYear ? String(selectedCompany.foundedYear) : t('admin.manageCompanies.notProvided')} />
+                  </div>
+                </div>
+
+                <div className="card">
+                  <h3 className="text-base font-semibold text-[var(--text-primary)]">{t('admin.manageCompanies.contactInformation')}</h3>
+                  <div className="mt-4 space-y-3">
+                    <DetailRow icon={FiMail} label={t('admin.manageCompanies.email')} value={selectedCompany.email || t('admin.manageCompanies.notProvided')} href={selectedCompany.email ? `mailto:${selectedCompany.email}` : null} />
+                    <DetailRow icon={FiPhone} label={t('admin.manageCompanies.phone')} value={selectedCompany.phone || t('admin.manageCompanies.notProvided')} href={selectedCompany.phone ? `tel:${selectedCompany.phone}` : null} />
+                    <DetailRow icon={FiMapPin} label={t('admin.manageCompanies.regionLabel')} value={selectedCompany.location?.region || t('admin.manageCompanies.notProvided')} />
+                    <DetailRow icon={FiMapPin} label={t('admin.manageCompanies.city')} value={selectedCompany.location?.city || t('admin.manageCompanies.notProvided')} />
+                    <DetailRow icon={FiMapPin} label={t('admin.manageCompanies.addressLabel')} value={selectedCompany.location?.address || t('admin.manageCompanies.notProvided')} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Social + Recruiter */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="card">
+                  <h3 className="text-base font-semibold text-[var(--text-primary)]">{t('admin.manageCompanies.socialPresence')}</h3>
+                  <div className="mt-4 space-y-2">
+                    {reviewSocials.length > 0 ? (
+                      reviewSocials.map((s) => (
+                        <a
+                          key={s.key}
+                          href={s.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-2 text-sm font-medium text-[var(--text-primary)] transition hover:border-[var(--primary)] hover:text-[var(--primary)]"
+                        >
+                          <s.icon className="h-4 w-4" />
+                          <span>{s.label}</span>
+                          <FiExternalLink className="ml-auto h-4 w-4 text-[var(--text-secondary)]" />
+                        </a>
+                      ))
                     ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
-                        <FiBriefcase className="h-5 w-5" />
-                      </div>
+                      <p className="text-sm text-[var(--text-secondary)]">{t('admin.manageCompanies.notProvided')}</p>
                     )}
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{selectedCompany.name}</p>
-                      <p className="text-xs text-gray-500">{selectedCompany.industry || t('admin.manageCompanies.industryNotSpecified') || 'Industry not specified'}</p>
+                  </div>
+                </div>
+
+                <div className="card">
+                  <h3 className="text-base font-semibold text-[var(--text-primary)]">{t('admin.manageCompanies.recruiterContact')}</h3>
+                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <DetailRow icon={FiUser} label={t('admin.manageCompanies.hrManager')} value={selectedCompany.recruiter?.hrManagerName || t('admin.manageCompanies.notProvided')} />
+                    <DetailRow icon={FiShield} label={t('admin.manageCompanies.position')} value={selectedCompany.recruiter?.position || t('admin.manageCompanies.notProvided')} />
+                    <DetailRow icon={FiMail} label={t('admin.manageCompanies.email')} value={selectedCompany.recruiter?.email || t('admin.manageCompanies.notProvided')} href={selectedCompany.recruiter?.email ? `mailto:${selectedCompany.recruiter.email}` : null} />
+                    <DetailRow icon={FiPhone} label={t('admin.manageCompanies.phone')} value={selectedCompany.recruiter?.phone || t('admin.manageCompanies.notProvided')} href={selectedCompany.recruiter?.phone ? `tel:${selectedCompany.recruiter.phone}` : null} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Verification Documents */}
+              <div className="card">
+                <h3 className="text-base font-semibold text-[var(--text-primary)]">{t('admin.manageCompanies.verificationDocuments')}</h3>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {REVIEW_DOC_TYPES.map((docType) => {
+                    const label = t(`admin.manageCompanies.${docType}`);
+                    const hasDoc = !!selectedCompany[docType];
+                    const name = selectedCompany[`${docType}Name`];
+                    const fileType = getFileTypeLabel(docType);
+                    return (
+                      <div key={docType} className="flex flex-col rounded-xl border border-[var(--border)] bg-[var(--surface-secondary)] p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#1769E0]/10 text-[#1769E0]">
+                            <FiFileText className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-[var(--text-primary)]">{label}</p>
+                            {hasDoc ? (
+                              <>
+                                <p className="mt-0.5 truncate text-sm text-[var(--text-secondary)]">{name}</p>
+                                <p className="text-xs text-[var(--text-secondary)]">{fileType}</p>
+                              </>
+                            ) : (
+                              <p className="mt-1 text-sm text-[var(--text-secondary)]">{t('admin.manageCompanies.notUploaded')}</p>
+                            )}
+                          </div>
+                        </div>
+                        {hasDoc ? (
+                          <button
+                            type="button"
+                            onClick={() => openDocumentPreview(selectedCompany, docType)}
+                            className="btn btn-outline mt-4 w-full"
+                          >
+                            <FiEye className="mr-2 h-4 w-4" />
+                            {t('admin.manageCompanies.viewDocument')}
+                          </button>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Admin Decision */}
+              <div className="card">
+                <h3 className="text-base font-semibold text-[var(--text-primary)]">{t('admin.manageCompanies.adminDecision')}</h3>
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">{t('admin.manageCompanies.currentStatusLabel')}</p>
+                    <div className="mt-2">
+                      <span className={`badge ${selectedType === 'approved' ? 'badge-success' : selectedType === 'rejected' ? 'badge-danger' : 'badge-warning'}`}>{statusLabel(selectedCompany)}</span>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">{t('admin.manageCompanies.overview') || 'Overview'}</p>
-                <div className="mt-3 space-y-3 text-sm text-gray-700 dark:text-gray-300">
-                  <div className="flex items-start gap-2">
-                    <FiFileText className="mt-0.5 h-4 w-4 text-primary-500" />
-                    <span>{selectedCompany.description || t('admin.manageCompanies.noDescription') || 'No company description provided yet.'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FiMapPin className="h-4 w-4 text-primary-500" />
-                    <span>{selectedCompany.location?.city || t('admin.manageCompanies.cityNotSet') || 'City not set'}, {selectedCompany.location?.region || t('admin.manageCompanies.regionNotSet') || 'Region not set'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FiGlobe className="h-4 w-4 text-primary-500" />
-                    <span>{selectedCompany.website || t('admin.manageCompanies.websiteNotSet') || 'Website not set'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FiMail className="h-4 w-4 text-primary-500" />
-                    <span>{selectedCompany.email || t('admin.manageCompanies.emailNotSet') || 'Company email not set'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FiPhone className="h-4 w-4 text-primary-500" />
-                    <span>{selectedCompany.phone || t('admin.manageCompanies.phoneNotSet') || 'Phone number not set'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">{t('admin.manageCompanies.socialLinks') || 'Social Links'}</p>
-                <div className="mt-3 grid gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  {selectedCompany.socialLinks?.linkedin ? (
-                    <a href={selectedCompany.socialLinks.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700 hover:border-primary-300 hover:text-primary-600 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-300">
-                      <FiLinkedin className="h-4 w-4" />
-                      <span>{selectedCompany.socialLinks.linkedin}</span>
-                    </a>
-                  ) : (
-                    <div className="rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-700 dark:bg-slate-900 dark:text-gray-300">{t('admin.manageCompanies.linkedinNotSet') || 'LinkedIn: Not set'}</div>
-                  )}
-
-                  {selectedCompany.socialLinks?.facebook ? (
-                    <a href={selectedCompany.socialLinks.facebook} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700 hover:border-primary-300 hover:text-primary-600 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-300">
-                      <FiFacebook className="h-4 w-4" />
-                      <span>{selectedCompany.socialLinks.facebook}</span>
-                    </a>
-                  ) : (
-                    <div className="rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-700 dark:bg-slate-900 dark:text-gray-300">{t('admin.manageCompanies.facebookNotSet') || 'Facebook: Not set'}</div>
-                  )}
-
-                  {selectedCompany.socialLinks?.telegram ? (
-                    <a href={selectedCompany.socialLinks.telegram} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700 hover:border-primary-300 hover:text-primary-600 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-300">
-                      <FiSend className="h-4 w-4" />
-                      <span>{selectedCompany.socialLinks.telegram}</span>
-                    </a>
-                  ) : (
-                    <div className="rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-700 dark:bg-slate-900 dark:text-gray-300">{t('admin.manageCompanies.telegramNotSet') || 'Telegram: Not set'}</div>
-                  )}
-
-                  {selectedCompany.socialLinks?.instagram ? (
-                    <a href={selectedCompany.socialLinks.instagram} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700 hover:border-primary-300 hover:text-primary-600 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-300">
-                      <FiInstagram className="h-4 w-4" />
-                      <span>{selectedCompany.socialLinks.instagram}</span>
-                    </a>
-                  ) : (
-                    <div className="rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-700 dark:bg-slate-900 dark:text-gray-300">{t('admin.manageCompanies.instagramNotSet') || 'Instagram: Not set'}</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">{t('admin.manageCompanies.recruiter') || 'Recruiter'}</p>
-                <div className="mt-3 space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  <div className="flex items-center gap-2">
-                    <FiUser className="h-4 w-4 text-primary-500" />
-                    <span>{selectedCompany.recruiter?.hrManagerName || t('admin.manageCompanies.recruiterNotSet') || 'Recruiter not set'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FiShield className="h-4 w-4 text-primary-500" />
-                    <span>{selectedCompany.recruiter?.position || t('admin.manageCompanies.positionNotSet') || 'Position not set'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FiMail className="h-4 w-4 text-primary-500" />
-                    <span>{selectedCompany.recruiter?.email || t('admin.manageCompanies.recruiterEmailNotSet') || 'Recruiter email not set'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FiPhone className="h-4 w-4 text-primary-500" />
-                    <span>{selectedCompany.recruiter?.phone || t('admin.manageCompanies.recruiterPhoneNotSet') || 'Recruiter phone not set'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">{t('admin.manageCompanies.verificationDocuments') || 'Verification Documents'}</p>
-                <div className="mt-3 grid gap-2">
-                  {selectedCompany.businessLicense ? (
-                    <button
-                      type="button"
-                      onClick={() => openDocumentPreview(t('admin.manageCompanies.businessLicense') || 'Business License', selectedCompany.businessLicense)}
-                      className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-xs text-gray-700 transition hover:border-primary-300 hover:text-primary-600 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-300 dark:hover:border-primary-400 dark:hover:text-primary-300"
-                    >
-                      {t('admin.manageCompanies.license') || 'License'}: {selectedCompany.businessLicense.split('/').pop()}
-                    </button>
-                  ) : (
-                    <div className="rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-700 dark:bg-slate-900 dark:text-gray-300">
-                      {t('admin.manageCompanies.license') || 'License'}: {t('admin.manageCompanies.notUploaded') || 'Not uploaded'}
-                    </div>
-                  )}
-
-                  {selectedCompany.tinCertificate ? (
-                    <button
-                      type="button"
-                      onClick={() => openDocumentPreview(t('admin.manageCompanies.tinCertificate') || 'TIN Certificate', selectedCompany.tinCertificate)}
-                      className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-xs text-gray-700 transition hover:border-primary-300 hover:text-primary-600 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-300 dark:hover:border-primary-400 dark:hover:text-primary-300"
-                    >
-                      {t('admin.manageCompanies.tin') || 'TIN'}: {selectedCompany.tinCertificate.split('/').pop()}
-                    </button>
-                  ) : (
-                    <div className="rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-700 dark:bg-slate-900 dark:text-gray-300">
-                      {t('admin.manageCompanies.tin') || 'TIN'}: {t('admin.manageCompanies.notUploaded') || 'Not uploaded'}
-                    </div>
-                  )}
-
-                  {selectedCompany.companyRegistration ? (
-                    <button
-                      type="button"
-                      onClick={() => openDocumentPreview(t('admin.manageCompanies.companyRegistration') || 'Company Registration', selectedCompany.companyRegistration)}
-                      className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-xs text-gray-700 transition hover:border-primary-300 hover:text-primary-600 dark:border-gray-700 dark:bg-slate-900 dark:text-gray-300 dark:hover:border-primary-400 dark:hover:text-primary-300"
-                    >
-                      {t('admin.manageCompanies.registration') || 'Registration'}: {selectedCompany.companyRegistration.split('/').pop()}
-                    </button>
-                  ) : (
-                    <div className="rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-700 dark:bg-slate-900 dark:text-gray-300">
-                      {t('admin.manageCompanies.registration') || 'Registration'}: {t('admin.manageCompanies.notUploaded') || 'Not uploaded'}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">{t('admin.manageCompanies.adminDecision') || 'Admin Decision'}</p>
-                <div className="mt-3 space-y-3">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {t('admin.manageCompanies.rejectionReason') || 'Rejection reason'}
+                  <label className="block">
+                    <span className="text-sm font-medium text-[var(--text-primary)]">{t('admin.manageCompanies.rejectionReason')}</span>
                     <textarea
                       value={rejectionReason}
-                      onChange={(event) => setRejectionReason(event.target.value)}
+                      onChange={(e) => setRejectionReason(e.target.value)}
                       rows="4"
-                      placeholder={t('admin.manageCompanies.rejectionReasonPlaceholder') || 'Enter the reason this company is being rejected...'}
-                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-gray-700 dark:bg-slate-900 dark:text-white"
+                      placeholder={t('admin.manageCompanies.rejectionReasonPlaceholder')}
+                      className="textarea mt-2"
                     />
                   </label>
 
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap justify-end gap-3">
+                    <button type="button" onClick={() => setIsReviewOpen(false)} className="btn btn-outline">{t('admin.manageCompanies.close')}</button>
+                    <button
+                      type="button"
+                      onClick={() => handleReject(selectedCompany._id, rejectionReason)}
+                      className="btn btn-danger inline-flex items-center gap-2"
+                    >
+                      <FiX />
+                      {t('admin.manageCompanies.reject')}
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
@@ -575,22 +769,7 @@ const ManageCompanies = () => {
                       className="btn btn-primary inline-flex items-center gap-2"
                     >
                       <FiCheckCircle />
-                      {t('admin.manageCompanies.approve') || 'Approve'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleReject(selectedCompany._id, rejectionReason)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
-                    >
-                      <FiX />
-                      {t('admin.manageCompanies.reject') || 'Reject'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsReviewOpen(false)}
-                      className="btn btn-outline"
-                    >
-                      {t('admin.manageCompanies.close') || 'Close'}
+                      {t('admin.manageCompanies.approve')}
                     </button>
                   </div>
                 </div>

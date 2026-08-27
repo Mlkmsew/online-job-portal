@@ -23,6 +23,12 @@ const companySchema = new mongoose.Schema(
     tinCertificatePublicId: { type: String },
     companyRegistration: { type: String },
     companyRegistrationPublicId: { type: String },
+    businessLicenseName: { type: String },
+    tinCertificateName: { type: String },
+    companyRegistrationName: { type: String },
+    businessLicenseMime: { type: String },
+    tinCertificateMime: { type: String },
+    companyRegistrationMime: { type: String },
 
     // Industry & Size
     industry: { type: String },
