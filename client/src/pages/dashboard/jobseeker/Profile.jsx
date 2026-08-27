@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { updateProfile, uploadAvatar, uploadCV, deleteAvatar, deleteCV } from '../../../store/slices/authSlice';
+import { setDefaultResume } from '../../../services/resumeService';
 import { calculateProfileCompletion } from '../../../utils/resumeCompletion';
 import { toast } from 'react-hot-toast';
 import {
@@ -345,7 +346,7 @@ const JobSeekerProfile = () => {
       : null;
   };
 
-  const handleSelectBuilderCV = (resume) => {
+  const handleSelectBuilderCV = async (resume) => {
     const selection = {
       id: resume.id,
       title: resume.title || t('resume.untitledResume', { defaultValue: 'Untitled Resume' }),
@@ -359,6 +360,38 @@ const JobSeekerProfile = () => {
     setActiveBuilderCV(selection);
     setCvMenuOpen(false);
     toast.success(t('profile.builderCVActive') || 'Resume Builder CV set as your active CV');
+
+    // Keep the local Resume Builder cache in sync so the DEFAULT badge updates
+    // immediately without a manual refresh.
+    const resumeKey = resumeStorageKey;
+    try {
+      const stored = localStorage.getItem(resumeKey);
+      if (stored) {
+        const list = JSON.parse(stored);
+        if (Array.isArray(list)) {
+          const updatedList = list.map((r) => ({
+            ...r,
+            isDefault: (r._id || r.id) === (resume._id || resume.id),
+          }));
+          localStorage.setItem(resumeKey, JSON.stringify(updatedList));
+          setBuilderCVs(updatedList);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to sync default CV cache:', error);
+    }
+
+    // Persist the selected CV as the single default in the backend so the
+    // Resume Builder DEFAULT and the My Profile attached resume stay identical
+    // across refresh, logout/login and other devices.
+    const backendId = resume._id;
+    if (backendId) {
+      try {
+        await setDefaultResume(backendId);
+      } catch (error) {
+        console.error('Failed to set default resume in backend:', error);
+      }
+    }
   };
 
   const handleUploadFromFile = () => {

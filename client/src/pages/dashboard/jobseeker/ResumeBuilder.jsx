@@ -187,6 +187,7 @@ const ResumeBuilder = () => {
   const dispatch = useDispatch();
   const { user, token } = useSelector((state) => state.auth);
   const resumeStorageKey = `ethiojob_resumes_${user?._id || user?.id || user?.email || token || 'guest'}`;
+  const activeCVStorageKey = `ethiojob_active_cv_${user?._id || user?.id || user?.email || token || 'guest'}`;
   const [view, setView] = useState('list');
   const [resumes, setResumes] = useState([]);
   const [activeResumeId, setActiveResumeId] = useState(null);
@@ -619,15 +620,55 @@ const ResumeBuilder = () => {
     setActiveTab('Profile');
   };
 
-  const handleDeleteResume = (resumeId) => {
-    if (window.confirm('Are you sure you want to delete this resume?')) {
-      const target = resumes.find((r) => r.id === resumeId);
-      const filtered = resumes.filter(r => r.id !== resumeId);
-      saveToStorage(filtered);
-      toast.success('Resume deleted successfully');
-      if (target && user?._id) {
-        const backendId = target._id || target.id;
-        deleteResume(backendId).catch(() => {});
+  const handleDeleteResume = async (resumeId) => {
+    if (!window.confirm('Are you sure you want to delete this resume?')) return;
+    const target = resumes.find((r) => r.id === resumeId);
+    const wasDefault = Boolean(target?.isDefault);
+    const filtered = resumes.filter((r) => r.id !== resumeId);
+    let updatedList = filtered;
+    if (wasDefault && filtered.length > 0) {
+      // Promote the most recently updated remaining CV as the new default.
+      const candidate = filtered
+        .slice()
+        .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))[0];
+      updatedList = filtered.map((r) => ({ ...r, isDefault: r.id === candidate.id }));
+      try {
+        localStorage.setItem(
+          activeCVStorageKey,
+          JSON.stringify({ id: candidate.id, title: candidate.title, createdAt: candidate.createdAt || null }),
+        );
+      } catch {}
+    }
+    saveToStorage(updatedList);
+    toast.success('Resume deleted successfully');
+    if (target && user?._id) {
+      const backendId = target._id || target.id;
+      try {
+        await deleteResume(backendId);
+        // The backend promotes a new default; reconcile the local cache + the
+        // active CV reference used by My Profile so they stay consistent.
+        const response = await getResumes();
+        const backendList = Array.isArray(response?.data?.data) ? response.data.data : [];
+        const newDefault = backendList.find((r) => r.isDefault);
+        if (newDefault) {
+          const reconciled = filtered.map((r) => ({
+            ...r,
+            isDefault: (r._id || r.id) === newDefault._id,
+          }));
+          saveToStorage(reconciled);
+          try {
+            localStorage.setItem(
+              activeCVStorageKey,
+              JSON.stringify({
+                id: newDefault._id || newDefault.id,
+                title: newDefault.title,
+                createdAt: newDefault.createdAt || null,
+              }),
+            );
+          } catch {}
+        }
+      } catch (error) {
+        console.error('Failed to delete resume from backend:', error);
       }
     }
   };
@@ -640,6 +681,13 @@ const ResumeBuilder = () => {
       await setDefaultResume(backendId);
       const updated = resumes.map((r) => ({ ...r, isDefault: r.id === resumeId }));
       saveToStorage(updated);
+      // Keep My Profile's attached/current resume in sync with the default.
+      try {
+        localStorage.setItem(
+          activeCVStorageKey,
+          JSON.stringify({ id: target.id, title: target.title, createdAt: target.createdAt || null }),
+        );
+      } catch {}
       toast.success('Default resume updated');
     } catch {
       toast.error('Failed to update default resume');
