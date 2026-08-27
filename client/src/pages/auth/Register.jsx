@@ -160,10 +160,9 @@ const Register = () => {
                     onChange={(e) => {
                       let v = e.target.value.replace(/[^0-9]/g, '');
                       if (selectedCountry.code === '+251') {
-                        if (v.length > 10) v = v.slice(0, 10);
+                        if (v.length > 9) v = v.slice(0, 9);
                         if (v === '') { setPhoneLocal(''); return; }
-                        if (!v.startsWith('0')) return;
-                        if (v.length >= 2 && v[1] !== '9') v = v.slice(0, 1);
+                        if (!v.startsWith('9')) return;
                       }
                       setPhoneLocal(v);
                     }}
@@ -287,7 +286,7 @@ const Register = () => {
 
             {/* Role Selection */}
             <div>
-              <label className="block text-sm font-medium mb-2">{t('common.user')}</label>
+              <label className="block text-sm font-medium mb-2">{t('common.role')}</label>
               <select {...register('role')} className="select">
                 <option value="jobseeker">{t('roles.jobSeeker')}</option>
                 <option value="employer">{t('roles.employer')}</option>
