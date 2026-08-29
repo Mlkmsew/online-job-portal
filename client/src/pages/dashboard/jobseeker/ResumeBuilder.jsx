@@ -1572,7 +1572,7 @@ const ResumeBuilder = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-xl font-bold leading-none text-slate-900 dark:text-white">{resumes.length}</p>
-                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">CVs</p>
+                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Total CVs</p>
               </div>
             </div>
             <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/70 bg-white p-4 shadow-xs dark:border-slate-700/80 dark:bg-slate-800/80">
@@ -1580,8 +1580,8 @@ const ResumeBuilder = () => {
                 <FiEdit2 className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-xl font-bold leading-none text-slate-900 dark:text-white">{resumes.filter((r) => r.status === 'draft').length}</p>
-                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Drafts</p>
+                <p className="truncate text-base font-bold leading-tight text-slate-900 dark:text-white" title={resumes.find((r) => r.isDefault)?.title || ''}>{resumes.find((r) => r.isDefault)?.title || '—'}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Default CV</p>
               </div>
             </div>
           </div>
