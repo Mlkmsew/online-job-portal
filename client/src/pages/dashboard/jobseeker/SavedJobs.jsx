@@ -3,18 +3,22 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import api from '../../../services/api';
-import { FiMapPin, FiBriefcase, FiTrash2, FiClock, FiZap, FiAward } from 'react-icons/fi';
+import { FiMapPin, FiBriefcase, FiTrash2, FiClock, FiZap, FiAward, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { getPreferredBuilderResume, buildResumePdf } from '../../../utils/builderResumePdf';
 
 const SavedJobs = () => {
   const { t } = useTranslation();
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [applyingId, setApplyingId] = useState(null);
+  const [appliedJobIds, setAppliedJobIds] = useState(() => new Set());
   const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchBookmarks();
+    fetchAppliedJobs();
   }, []);
 
   const fetchBookmarks = async () => {
@@ -25,6 +29,16 @@ const SavedJobs = () => {
       toast.error(t('savedJobs.loadFailed') || 'Failed to load saved jobs');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAppliedJobs = async () => {
+    try {
+      const res = await api.get('/applications/my');
+      const ids = (res.data?.data || []).map((a) => a.job?._id || a.job);
+      setAppliedJobIds(new Set(ids.filter(Boolean)));
+    } catch {
+      // Non-blocking: Quick Apply still works even if we cannot prefetch state.
     }
   };
 
@@ -52,26 +66,74 @@ const SavedJobs = () => {
     return t('jobs.closesInDays', { count: diffDays, defaultValue: `Closes in ${diffDays} days` });
   };
 
-  const handleQuickApply = async (jobId) => {
-    if (!user?.cv) {
+  const handleQuickApply = async (jobId, job) => {
+    if (applyingId) return;
+
+    if (appliedJobIds.has(jobId)) {
+      toast(t('savedJobs.alreadyApplied') || 'You have already applied for this job.');
+      return;
+    }
+
+    // Employer-required application fields can't be auto-filled by Quick Apply.
+    // Send the user to the full application form so they can complete them.
+    const requiredFields = Array.isArray(job?.applicationFields)
+      ? job.applicationFields.filter((field) => field?.required)
+      : [];
+    if (requiredFields.length > 0) {
+      toast(t('savedJobs.needsFullApply') || 'This job requires additional information. Redirecting to the application form…');
+      navigate(`/jobs/${jobId}/apply`);
+      return;
+    }
+
+    // A resume is available if the user uploaded a CV (user.cv) or built one
+    // in the Resume Builder. Without either, Quick Apply cannot attach a resume.
+    const hasUploadedCV = Boolean(user?.cv);
+    const builtResume = hasUploadedCV ? null : getPreferredBuilderResume(user?._id || user?.id);
+
+    if (!hasUploadedCV && !builtResume) {
       toast.error(t('savedJobs.resumeRequired') || 'Please build or upload a resume in the Profile/Resume tab first!', {
         duration: 4000,
       });
       return;
     }
 
+    setApplyingId(jobId);
     const loadToast = toast.loading(t('savedJobs.submitting') || 'Submitting your quick application...');
     try {
-      await api.post('/applications', {
-        job: jobId,
-        useProfileCV: true,
-        coverLetter: t('savedJobs.quickApplyCover', { defaultValue: 'Quick Applied via Saved Jobs.' }),
-      });
+      let response;
+      if (hasUploadedCV) {
+        response = await api.post(
+          '/applications',
+          {
+            job: jobId,
+            useProfileCV: true,
+            coverLetter: t('savedJobs.quickApplyCover', { defaultValue: 'Quick Applied via Saved Jobs.' }),
+          },
+          { skipGlobalErrorToast: true }
+        );
+      } else {
+        const pdf = buildResumePdf(builtResume);
+        const formData = new FormData();
+        formData.append('job', jobId);
+        formData.append('coverLetter', t('savedJobs.quickApplyCover', { defaultValue: 'Quick Applied via Saved Jobs.' }));
+        formData.append('useProfileCV', 'false');
+        formData.append('resume', pdf);
+        response = await api.post('/applications', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          skipGlobalErrorToast: true,
+        });
+      }
+      setAppliedJobIds((prev) => new Set(prev).add(jobId));
       toast.success(t('savedJobs.appliedSuccess') || 'Quick Applied successfully!', { id: loadToast });
     } catch (error) {
-      toast.error(error.response?.data?.message || t('savedJobs.applyFailed') || 'Quick Apply failed.', {
-        id: loadToast,
-      });
+      const message =
+        error.response?.data?.message || t('savedJobs.applyFailed') || 'Quick Apply failed.';
+      if (/already applied/i.test(message)) {
+        setAppliedJobIds((prev) => new Set(prev).add(jobId));
+      }
+      toast.error(message, { id: loadToast });
+    } finally {
+      setApplyingId(null);
     }
   };
 
@@ -81,7 +143,7 @@ const SavedJobs = () => {
 
       {loading ? (
         <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--primary)]"></div>
         </div>
       ) : bookmarks.length === 0 ? (
         <div className="card text-center py-16 px-6 border-dashed border-gray-300 dark:border-gray-700 bg-slate-50 dark:bg-slate-900">
@@ -110,10 +172,10 @@ const SavedJobs = () => {
                 <div>
                   <div className="flex justify-between items-start mb-3 gap-4">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white hover:text-teal-600 transition">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white hover:text-[var(--primary)] transition">
                         <Link to={`/jobs/${job._id}`}>{job.title}</Link>
                       </h3>
-                      <p className="text-sm font-semibold text-teal-600 dark:text-teal-400 mt-0.5">{job.company?.name || t('dashboard.jobCard.company')}</p>
+                      <p className="text-sm font-semibold text-[var(--primary)] mt-0.5">{job.company?.name || t('dashboard.jobCard.company')}</p>
                     </div>
                     <button
                       onClick={() => handleRemove(bookmark._id)}
@@ -151,15 +213,30 @@ const SavedJobs = () => {
 
                 {/* Apply Actions */}
                 <div className="flex items-center gap-3 pt-4 border-t dark:border-gray-700">
-                  <button
-                    onClick={() => handleQuickApply(job._id)}
-                    className="flex-1 btn btn-primary bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-4 rounded-xl text-center text-sm shadow"
-                  >
-                    {t('savedJobs.quickApply') || 'Quick Apply'}
-                  </button>
+                  {appliedJobIds.has(job._id) ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-[var(--primary)]/10 text-[var(--primary)] font-bold py-2.5 px-4 rounded-xl text-center text-sm cursor-default"
+                    >
+                      <FiCheck className="w-4 h-4" />
+                      {t('savedJobs.applied') || 'Applied'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleQuickApply(job._id, job)}
+                      disabled={applyingId === job._id}
+                      className={`flex-1 btn btn-primary bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-bold py-2.5 px-4 rounded-xl text-center text-sm shadow ${applyingId === job._id ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    >
+                      {applyingId === job._id
+                        ? (t('savedJobs.applying') || 'Applying...')
+                        : (t('savedJobs.quickApply') || 'Quick Apply')}
+                    </button>
+                  )}
                   <Link
                     to={`/jobs/${job._id}`}
-                    className="flex-1 btn btn-outline border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 py-2.5 px-4 rounded-xl text-center text-sm font-bold"
+                    className="flex-1 btn btn-outline border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary)]/10 py-2.5 px-4 rounded-xl text-center text-sm font-bold"
                   >
                     {t('jobs.viewDetails')}
                   </Link>

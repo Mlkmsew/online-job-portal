@@ -1872,6 +1872,7 @@
     "removedSuccess": "Job removed from saved",
     "removeFailed": "Failed to remove job",
     "resumeRequired": "Please build or upload a resume in the Profile/Resume tab first!",
+    "needsFullApply": "This job requires additional information. Redirecting to the application form…",
     "submitting": "Submitting your quick application...",
     "appliedSuccess": "Quick Applied successfully!",
     "applyFailed": "Quick Apply failed.",
