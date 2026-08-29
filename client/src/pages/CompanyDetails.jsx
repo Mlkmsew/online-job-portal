@@ -9,7 +9,15 @@ import {
 } from 'react-icons/fi';
 import api from '../services/api';
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ── brand palette (professional blue) ──────────────────────────────────────────
+const PRIMARY = '#2563eb';
+const PRIMARY_DARK = '#1d4ed8';
+const PRIMARY_DARKER = '#1e40af';
+const PRIMARY_LIGHT = '#eff6ff';
+const PRIMARY_LIGHTER = '#dbeafe';
+const PRIMARY_BORDER = '#bfdbfe';
+
+// ── helpers ───────────────────────────────────────────────────────────────────
 const capitalize = (str) =>
   str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 
@@ -23,61 +31,6 @@ const jobTypeColor = (type) => {
   };
   return map[(type || '').toLowerCase()] || '#6b7280';
 };
-
-// ── sub-components ────────────────────────────────────────────────────────────
-const InfoBadge = ({ icon: Icon, label, value }) => {
-  const isDark = useDarkMode();
-  return value ? (
-    <div style={{
-      display: 'flex', alignItems: 'flex-start', gap: '10px',
-      padding: '14px 16px',
-      background: isDark ? 'rgba(17,24,39,0.6)' : 'rgba(255,255,255,0.6)',
-      border: '1px solid rgba(16,185,129,0.12)',
-      borderRadius: '12px',
-      backdropFilter: 'blur(8px)',
-    }}>
-      <div style={{
-        width: 34, height: 34, borderRadius: '8px',
-        background: isDark ? 'linear-gradient(135deg,#0D1F1A,#123326)' : 'linear-gradient(135deg,#ecfdf5,#d1fae5)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <Icon size={16} color="#059669" />
-      </div>
-      <div>
-        <p style={{ fontSize: '11px', color: isDark ? '#94A3B8' : '#6b7280', marginBottom: 2, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</p>
-        <p style={{ fontSize: '14px', color: isDark ? '#F4F8F6' : '#111827', fontWeight: 500, lineHeight: 1.4 }}>{value}</p>
-      </div>
-    </div>
-  ) : null;
-};
-
-const Tag = ({ label, color = '#10b981' }) => (
-  <span style={{
-    display: 'inline-flex', alignItems: 'center',
-    padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 600,
-    background: `${color}18`, color, border: `1px solid ${color}30`,
-  }}>
-    {label}
-  </span>
-);
-
-const SocialLink = ({ href, icon: Icon, label, color }) =>
-  href ? (
-    <a href={href} target="_blank" rel="noreferrer" title={label} style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      width: 40, height: 40, borderRadius: '10px',
-      background: `${color}15`, color,
-      border: `1px solid ${color}30`,
-      transition: 'transform 0.2s, box-shadow 0.2s',
-      textDecoration: 'none',
-    }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 4px 12px ${color}40`; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-    >
-      <Icon size={18} />
-    </a>
-  ) : null;
 
 // ── dark mode hook ─────────────────────────────────────────────────────────────
 const useDarkMode = () => {
@@ -94,7 +47,67 @@ const useDarkMode = () => {
   return isDark;
 };
 
-// ── main page ─────────────────────────────────────────────────────────────────
+// ── shared style fragments ──────────────────────────────────────────────────────
+const cardBase = (isDark) => ({
+  background: isDark ? '#0f172a' : '#ffffff',
+  borderRadius: 16,
+  padding: 24,
+  border: `1px solid ${isDark ? '#1e293b' : '#e8edf5'}`,
+  boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
+});
+
+const sectionTitle = (isDark) => ({
+  fontSize: 17, fontWeight: 700, color: isDark ? '#F4F8F6' : '#0f172a', marginBottom: 16,
+  display: 'flex', alignItems: 'center', gap: 8,
+});
+
+const primaryButton = {
+  display: 'inline-flex', alignItems: 'center', gap: 8,
+  padding: '10px 20px', borderRadius: 10, fontSize: 14, fontWeight: 700,
+  background: PRIMARY, color: '#fff',
+  textDecoration: 'none', border: 'none', cursor: 'pointer',
+  transition: 'background 0.15s ease',
+};
+
+// ── sub-components ─────────────────────────────────────────────────────────────
+
+// Compact information-list row used for Company Info
+const InfoRow = ({ icon: Icon, label, value }) => {
+  if (!value) return null;
+  return (
+    <div className="cd-info-row" style={{
+      display: 'flex', alignItems: 'center', gap: 12, padding: '11px 0',
+    }}>
+      <div style={{
+        width: 34, height: 34, borderRadius: 9,
+        background: PRIMARY_LIGHT,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Icon size={16} color={PRIMARY} />
+      </div>
+      <p style={{ flex: '0 0 130px', fontSize: 13, color: '#64748b', margin: 0, fontWeight: 600, letterSpacing: '0.02em' }}>{label}</p>
+      <p style={{ flex: 1, minWidth: 0, margin: 0, fontSize: 14, color: '#0f172a', fontWeight: 600, textAlign: 'left', wordBreak: 'break-word' }}>{value}</p>
+    </div>
+  );
+};
+
+const SocialLink = ({ href, icon: Icon, label, color }) =>
+  href ? (
+    <a href={href} target="_blank" rel="noreferrer" title={label} className="cd-social"
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 42, height: 42, borderRadius: 10,
+        background: PRIMARY_LIGHT, color,
+        border: `1px solid ${PRIMARY_BORDER}`,
+        textDecoration: 'none',
+      }}
+    >
+      <Icon size={18} />
+    </a>
+  ) : null;
+
+// ── main page ───────────────────────────────────────────────────────────────────
 const CompanyDetails = () => {
   const { t } = useTranslation();
   const isDark = useDarkMode();
@@ -124,11 +137,11 @@ const CompanyDetails = () => {
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
-            width: 48, height: 48, borderRadius: '50%',
-            border: '4px solid #d1fae5', borderTopColor: '#10b981',
+            width: 44, height: 44, borderRadius: '50%',
+            border: `4px solid ${PRIMARY_BORDER}`, borderTopColor: PRIMARY,
             animation: 'spin 0.8s linear infinite', margin: '0 auto 16px',
           }} />
-          <p style={{ color: isDark ? '#94A3B8' : '#6b7280', fontSize: '14px' }}>{t('common.loading')}</p>
+          <p style={{ color: isDark ? '#94A3B8' : '#64748b', fontSize: '14px' }}>{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -137,9 +150,9 @@ const CompanyDetails = () => {
   if (!company) {
     return (
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-        <FiBriefcase size={48} color={isDark ? '#475569' : '#d1d5db'} />
-        <p style={{ color: isDark ? '#94A3B8' : '#6b7280', fontSize: '16px' }}>Company not found.</p>
-        <Link to="/companies" style={{ color: '#10b981', fontWeight: 600, textDecoration: 'none' }}>← Back to Companies</Link>
+        <FiBriefcase size={48} color={isDark ? '#475569' : '#cbd5e1'} />
+        <p style={{ color: isDark ? '#94A3B8' : '#64748b', fontSize: '16px' }}>Company not found.</p>
+        <Link to="/companies" style={{ color: PRIMARY, fontWeight: 600, textDecoration: 'none' }}>← Back to Companies</Link>
       </div>
     );
   }
@@ -157,65 +170,71 @@ const CompanyDetails = () => {
   ];
 
   return (
-    <div style={{ background: isDark ? 'linear-gradient(135deg,#0B1220 0%,#0F172A 50%,#0D1624 100%)' : 'linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 50%,#f8fafc 100%)', minHeight: '100vh', fontFamily: "'Inter','Outfit',sans-serif", overflowX: 'hidden' }}>
+    <div style={{ background: isDark ? '#0b1220' : '#f4f7fb', minHeight: '100vh', fontFamily: "'Inter','Outfit',sans-serif", overflowX: 'hidden' }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
-        .cd-overview-grid { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:28px; align-items:start; }
-        @media (max-width: 900px) { .cd-overview-grid { grid-template-columns:1fr; } }
-        .cd-profile-strip { max-width:960px; margin:0 auto; padding:0 24px; display:flex; align-items:flex-end; gap:24; flex-wrap:wrap; }
-        .cd-tab { background:transparent; border:none; cursor:pointer; padding:10px 20px; font-size:14px; font-weight:600; color:#6b7280; border-bottom:2px solid transparent; transition:all 0.2s; }
-        .cd-tab.active { color:#10b981; border-bottom-color:#10b981; }
-        .cd-tab:hover { color:#10b981; }
-        .job-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(16,185,129,0.12)!important; }
-        .job-card { transition:transform 0.2s,box-shadow 0.2s; }
+        .cd-overview-grid { display:grid; grid-template-columns:minmax(0,1fr) 500px; gap:28px; align-items:stretch; }
+        @media (max-width: 920px) { .cd-overview-grid { grid-template-columns:1fr; } }
+        .cd-tabs { display:flex; gap:4px; overflow-x:auto; }
+        .cd-tab { background:transparent; border:none; cursor:pointer; padding:14px 20px; font-size:14px; font-weight:600; color:#64748b; border-bottom:2px solid transparent; transition:color 0.15s ease, border-color 0.15s ease; white-space:nowrap; }
+        .cd-tab.active { color:${PRIMARY}; border-bottom-color:${PRIMARY}; }
+        .cd-tab:hover { color:${PRIMARY}; }
+        .cd-tab:focus-visible { outline:2px solid ${PRIMARY}; outline-offset:-2px; border-radius:4px; }
+        .cd-info-row { border-bottom:1px solid #eef2f7; }
+        .cd-info-row:last-child { border-bottom:none; }
+        .dark .cd-info-row { border-bottom:1px solid #1e293b; }
+        .cd-social { transition:background 0.15s ease, border-color 0.15s ease; }
+        .cd-social:hover { background:${PRIMARY_LIGHTER}; border-color:${PRIMARY_BORDER}; }
+        .job-card { transition:border-color 0.15s ease, box-shadow 0.15s ease; }
+        .job-card:hover { border-color:${PRIMARY_BORDER}; box-shadow:0 4px 14px rgba(37,99,235,0.10); }
+        .job-card:focus-visible { outline:2px solid ${PRIMARY}; outline-offset:2px; }
+        a:focus-visible, button:focus-visible { outline:2px solid ${PRIMARY}; outline-offset:2px; border-radius:6px; }
       `}</style>
 
       {/* ── HERO / COVER ───────────────────────────────────────────── */}
       <div style={{
         background: company.coverImage
-          ? `linear-gradient(rgba(0,0,0,0.45),rgba(0,0,0,0.55)), url(${company.coverImage}) center/cover no-repeat`
-          : 'linear-gradient(135deg,#064e3b 0%,#065f46 40%,#047857 100%)',
-        minHeight: 220,
+          ? `linear-gradient(rgba(15,23,42,0.45),rgba(15,23,42,0.6)), url(${company.coverImage}) center/cover no-repeat`
+          : (isDark ? '#1e3a8a' : PRIMARY_DARK),
+        minHeight: 200,
         position: 'relative',
-      }}>
-        {!company.coverImage && <>
-          <div style={{ position: 'absolute', top: 30, right: '15%', width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: 20, left: '10%', width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
-        </>}
-      </div>
+      }} />
 
       {/* ── PROFILE STRIP ───────────────────────────────────────────── */}
-      <div style={{ background: isDark ? '#111827' : '#fff', borderBottom: isDark ? '1px solid #1E293B' : '1px solid #e5e7eb', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-        <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'flex-end', gap: 24, flexWrap: 'wrap' }}>
+      <div style={{
+        background: isDark ? '#0f172a' : '#ffffff',
+        borderBottom: `1px solid ${isDark ? '#1e293b' : '#e8edf5'}`,
+        boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
+      }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'flex-end', gap: 24, flexWrap: 'wrap' }}>
 
           {/* Logo */}
           <div style={{
-            width: 100, height: 100, borderRadius: 20,
-            border: isDark ? '4px solid #111827' : '4px solid #fff',
-            background: hasLogo ? (isDark ? '#111827' : '#fff') : 'linear-gradient(135deg,#10b981,#059669)',
+            width: 104, height: 104, borderRadius: 20,
+            border: isDark ? '4px solid #0f172a' : '4px solid #fff',
+            background: hasLogo ? (isDark ? '#0f172a' : '#fff') : PRIMARY,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 20px rgba(16,185,129,0.25)',
+            boxShadow: '0 4px 16px rgba(37,99,235,0.20)',
             overflow: 'hidden', flexShrink: 0,
-            marginTop: -50,
+            marginTop: -52,
           }}>
             {hasLogo ? (
               <img src={company.logo} alt={company.name} onError={() => setLogoFailed(true)}
                 style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             ) : (
-              <span style={{ fontSize: 40, fontWeight: 800, color: '#fff' }}>{initial}</span>
+              <span style={{ fontSize: 42, fontWeight: 800, color: '#fff' }}>{initial}</span>
             )}
           </div>
 
           {/* Name + meta */}
-          <div style={{ flex: 1, minWidth: 200, paddingBottom: 16, paddingTop: 12 }}>
+          <div style={{ flex: 1, minWidth: 220, paddingBottom: 16, paddingTop: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 'clamp(20px,3vw,28px)', fontWeight: 800, color: isDark ? '#F4F8F6' : '#111827', margin: 0 }}>{company.name}</h1>
+              <h1 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 800, color: isDark ? '#F4F8F6' : '#0f172a', margin: 0, letterSpacing: '-0.01em' }}>{company.name}</h1>
               {company.isVerified && (
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px',
-                  background: isDark ? 'rgba(16,185,129,0.15)' : '#ecfdf5', color: '#059669', borderRadius: 20, fontSize: 12, fontWeight: 700,
-                  border: '1px solid #a7f3d0',
+                  background: isDark ? 'rgba(37,99,235,0.15)' : PRIMARY_LIGHT, color: PRIMARY_DARK, borderRadius: 20, fontSize: 12, fontWeight: 700,
+                  border: `1px solid ${PRIMARY_BORDER}`,
                 }}>
                   <FiCheckCircle size={12} /> Verified
                 </span>
@@ -230,19 +249,19 @@ const CompanyDetails = () => {
                 </span>
               )}
             </div>
-            <div style={{ display: 'flex', gap: 16, marginTop: 6, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 18, marginTop: 10, flexWrap: 'wrap' }}>
               {company.industry && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: isDark ? '#94A3B8' : '#6b7280', fontSize: 13 }}>
-                  <FiTag size={13} color="#10b981" /> {company.industry}
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: isDark ? '#94A3B8' : '#64748b', fontSize: 13 }}>
+                  <FiTag size={13} color={PRIMARY} /> {company.industry}
                 </span>
               )}
               {location && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: isDark ? '#94A3B8' : '#6b7280', fontSize: 13 }}>
-                  <FiMapPin size={13} color="#10b981" /> {location}
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: isDark ? '#94A3B8' : '#64748b', fontSize: 13 }}>
+                  <FiMapPin size={13} color={PRIMARY} /> {location}
                 </span>
               )}
               {openJobs.length > 0 && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#10b981', fontSize: 13, fontWeight: 700 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: PRIMARY, fontSize: 13, fontWeight: 700 }}>
                   <FiBriefcase size={13} /> {openJobs.length} Open Position{openJobs.length !== 1 ? 's' : ''}
                 </span>
               )}
@@ -251,16 +270,10 @@ const CompanyDetails = () => {
 
           {/* Website CTA */}
           {company.website && (
-            <div style={{ paddingBottom: 20 }}>
-              <a href={company.website} target="_blank" rel="noreferrer" style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '10px 20px', borderRadius: 10, fontSize: 14, fontWeight: 700,
-                background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff',
-                textDecoration: 'none', boxShadow: '0 4px 12px rgba(16,185,129,0.35)',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-              }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(16,185,129,0.45)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.35)'; }}
+            <div style={{ paddingBottom: 18 }}>
+              <a href={company.website} target="_blank" rel="noreferrer" style={primaryButton}
+                onMouseEnter={e => { e.currentTarget.style.background = PRIMARY_DARK; }}
+                onMouseLeave={e => { e.currentTarget.style.background = PRIMARY; }}
               >
                 <FiExternalLink size={15} /> Visit Website
               </a>
@@ -269,50 +282,57 @@ const CompanyDetails = () => {
         </div>
 
         {/* Tabs */}
-        <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px', display: 'flex', borderTop: isDark ? '1px solid #1E293B' : '1px solid #f3f4f6' }}>
-          {tabs.map(tab => (
-            <button key={tab.id} className={`cd-tab${activeTab === tab.id ? ' active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}>
-              {tab.label}
-            </button>
-          ))}
+        <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 20px', borderTop: `1px solid ${isDark ? '#1e293b' : '#f1f5f9'}` }}>
+          <div className="cd-tabs">
+            {tabs.map(tab => (
+              <button key={tab.id} className={`cd-tab${activeTab === tab.id ? ' active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* ── CONTENT ───────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 24px', animation: 'fadeUp 0.4s ease both' }}>
+      <div style={{ maxWidth: 1080, margin: '0 auto', padding: '28px 24px' }}>
 
         {/* ─── OVERVIEW TAB ─── */}
         {activeTab === 'overview' && (
           <div className="cd-overview-grid">
 
             {/* Left: About + tagline */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24, height: '100%' }}>
 
               {/* About */}
-              <div style={{ background: isDark ? '#111827' : '#fff', borderRadius: 16, padding: 28, border: isDark ? '1px solid #1E293B' : '1px solid #f3f4f6', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: isDark ? '#F4F8F6' : '#111827', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <FiBriefcase size={18} color="#10b981" /> About {company.name}
+              <div style={{ ...cardBase(isDark), flex: 1 }}>
+                <h2 style={sectionTitle(isDark)}>
+                  <FiBriefcase size={18} color={PRIMARY} /> About {company.name}
                 </h2>
                 {company.tagline && (
-                  <p style={{ fontSize: 15, color: '#059669', fontWeight: 600, fontStyle: 'italic', marginBottom: 12, lineHeight: 1.5 }}>
+                  <p style={{ fontSize: 15, color: PRIMARY_DARK, fontWeight: 600, fontStyle: 'italic', marginBottom: 12, lineHeight: 1.5 }}>
                     &ldquo;{company.tagline}&rdquo;
                   </p>
                 )}
-                <p style={{ color: isDark ? '#C7D2E0' : '#374151', lineHeight: 1.8, fontSize: 14, whiteSpace: 'pre-line' }}>
+                <p style={{ color: isDark ? '#C7D2E0' : '#475569', lineHeight: 1.8, fontSize: 14, whiteSpace: 'pre-line', margin: 0 }}>
                   {company.description || company.shortDescription || 'No description available.'}
                 </p>
               </div>
 
               {/* Tech Stack */}
               {company.techStack?.length > 0 && (
-                <div style={{ background: isDark ? '#111827' : '#fff', borderRadius: 16, padding: 28, border: isDark ? '1px solid #1E293B' : '1px solid #f3f4f6', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                  <h2 style={{ fontSize: 18, fontWeight: 700, color: isDark ? '#F4F8F6' : '#111827', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FiAward size={18} color="#10b981" /> Tech Stack
+                <div style={cardBase(isDark)}>
+                  <h2 style={sectionTitle(isDark)}>
+                    <FiAward size={18} color={PRIMARY} /> Tech Stack
                   </h2>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {company.techStack.map((tech, i) => (
-                      <Tag key={i} label={tech} color="#6366f1" />
+                      <span key={i} style={{
+                        display: 'inline-flex', alignItems: 'center',
+                        padding: '5px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+                        background: isDark ? 'rgba(37,99,235,0.12)' : PRIMARY_LIGHT, color: PRIMARY_DARK,
+                        border: `1px solid ${PRIMARY_BORDER}`,
+                      }}>{tech}</span>
                     ))}
                   </div>
                 </div>
@@ -320,8 +340,8 @@ const CompanyDetails = () => {
 
               {/* Social Links */}
               {hasSocials && (
-                <div style={{ background: isDark ? '#111827' : '#fff', borderRadius: 16, padding: 28, border: isDark ? '1px solid #1E293B' : '1px solid #f3f4f6', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                  <h2 style={{ fontSize: 18, fontWeight: 700, color: isDark ? '#F4F8F6' : '#111827', marginBottom: 16 }}>Follow Us</h2>
+                <div style={cardBase(isDark)}>
+                  <h2 style={sectionTitle(isDark)}>Follow Us</h2>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     <SocialLink href={company.socialLinks?.linkedin} icon={FiLinkedin} label="LinkedIn" color="#0a66c2" />
                     <SocialLink href={company.socialLinks?.facebook} icon={FiFacebook} label="Facebook" color="#1877f2" />
@@ -333,64 +353,45 @@ const CompanyDetails = () => {
             </div>
 
             {/* Right: Info cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24, height: '100%' }}>
 
-              {/* Quick stats */}
-              <div style={{ background: isDark ? '#111827' : '#fff', borderRadius: 16, padding: 20, border: isDark ? '1px solid #1E293B' : '1px solid #f3f4f6', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#F4F8F6' : '#111827', marginBottom: 16 }}>Company Info</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <InfoBadge icon={FiUsers} label="Company Size" value={company.companySize ? `${company.companySize} employees` : null} />
-                  <InfoBadge icon={FiCalendar} label="Founded" value={company.foundedYear} />
-                  <InfoBadge icon={FiTag} label="Type" value={company.companyType} />
-                  <InfoBadge icon={FiTag} label="Industry" value={company.industry} />
-                  <InfoBadge icon={FiMapPin} label="Location" value={location || null} />
+              {/* Company Information (compact list) */}
+              <div style={{ ...cardBase(isDark), height: '100%' }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#F4F8F6' : '#0f172a', marginBottom: 6 }}>Company Information</h3>
+                <div>
+                  <InfoRow icon={FiUsers} label="Company Size" value={company.companySize ? `${company.companySize} employees` : null} />
+                  <InfoRow icon={FiCalendar} label="Founded" value={company.foundedYear} />
+                  <InfoRow icon={FiTag} label="Type" value={company.companyType} />
+                  <InfoRow icon={FiTag} label="Industry" value={company.industry} />
+                  <InfoRow icon={FiMapPin} label="Location" value={location || null} />
                   {company.location?.address && (
-                    <InfoBadge icon={FiMapPin} label="Address" value={company.location.address} />
+                    <InfoRow icon={FiMapPin} label="Address" value={company.location.address} />
                   )}
-                  <InfoBadge icon={FiMail} label="Email" value={company.email} />
-                  <InfoBadge icon={FiPhone} label="Phone" value={company.phone} />
-                  <InfoBadge icon={FiGlobe} label="Website" value={company.website} />
+                  <InfoRow icon={FiMail} label="Email" value={company.email} />
+                  <InfoRow icon={FiPhone} label="Phone" value={company.phone} />
+                  <InfoRow icon={FiGlobe} label="Website" value={company.website} />
                 </div>
               </div>
-
-              {/* Stats */}
-              <div style={{ background: isDark ? 'linear-gradient(135deg,#0D1F1A,#123326)' : 'linear-gradient(135deg,#ecfdf5,#d1fae5)', borderRadius: 16, padding: 20, border: '1px solid #a7f3d0' }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#6EE7B7' : '#065f46', marginBottom: 14 }}>At a Glance</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  {[
-                    { icon: FiBriefcase, label: 'Open Jobs', value: openJobs.length },
-                    { icon: FiUsers, label: 'Total Hires', value: company.totalHires || 0 },
-                    { icon: FiStar, label: 'Rating', value: company.averageRating ? `${company.averageRating.toFixed(1)} / 5` : 'N/A' },
-                    { icon: FiAward, label: 'Reviews', value: company.totalReviews || 0 },
-                  ].map(({ icon: Icon, label, value }) => (
-                    <div key={label} style={{ background: isDark ? 'rgba(30,41,59,0.6)' : 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
-                      <Icon size={18} color="#059669" style={{ margin: '0 auto 4px' }} />
-                      <p style={{ fontSize: 18, fontWeight: 800, color: isDark ? '#6EE7B7' : '#065f46', margin: 0 }}>{value}</p>
-                      <p style={{ fontSize: 11, color: isDark ? '#6EE7B7' : '#047857', margin: 0 }}>{label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recruiter */}
-              {company.recruiter?.hrManagerName && (
-                <div style={{ background: isDark ? '#111827' : '#fff', borderRadius: 16, padding: 20, border: isDark ? '1px solid #1E293B' : '1px solid #f3f4f6', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#F4F8F6' : '#111827', marginBottom: 12 }}>HR Contact</h3>
-                  <p style={{ fontWeight: 700, color: isDark ? '#F4F8F6' : '#111827', fontSize: 14, margin: '0 0 2px' }}>{company.recruiter.hrManagerName}</p>
-                  {company.recruiter.position && <p style={{ color: isDark ? '#94A3B8' : '#6b7280', fontSize: 13, margin: '0 0 8px' }}>{company.recruiter.position}</p>}
-                  {company.recruiter.email && (
-                    <a href={`mailto:${company.recruiter.email}`} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontSize: 13, textDecoration: 'none', marginBottom: 4 }}>
-                      <FiMail size={13} /> {company.recruiter.email}
-                    </a>
-                  )}
-                  {company.recruiter.phone && (
-                    <a href={`tel:${company.recruiter.phone}`} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontSize: 13, textDecoration: 'none' }}>
-                      <FiPhone size={13} /> {company.recruiter.phone}
-                    </a>
-                  )}
-                </div>
-              )}
             </div>
+          </div>
+        )}
+
+        {/* HR Contact (full-width below the grid, overview only) */}
+        {activeTab === 'overview' && company.recruiter?.hrManagerName && (
+          <div style={{ ...cardBase(isDark), marginTop: 24 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#F4F8F6' : '#0f172a', marginBottom: 12 }}>HR Contact</h3>
+            <p style={{ fontWeight: 700, color: isDark ? '#F4F8F6' : '#0f172a', fontSize: 15, margin: '0 0 2px' }}>{company.recruiter.hrManagerName}</p>
+            {company.recruiter.position && <p style={{ color: isDark ? '#94A3B8' : '#64748b', fontSize: 13, margin: '0 0 10px' }}>{company.recruiter.position}</p>}
+            {company.recruiter.email && (
+              <a href={`mailto:${company.recruiter.email}`} style={{ display: 'flex', alignItems: 'center', gap: 6, color: PRIMARY, fontSize: 13, textDecoration: 'none', marginBottom: 6, fontWeight: 500 }}>
+                <FiMail size={14} /> {company.recruiter.email}
+              </a>
+            )}
+            {company.recruiter.phone && (
+              <a href={`tel:${company.recruiter.phone}`} style={{ display: 'flex', alignItems: 'center', gap: 6, color: PRIMARY, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
+                <FiPhone size={14} /> {company.recruiter.phone}
+              </a>
+            )}
           </div>
         )}
 
@@ -398,31 +399,31 @@ const CompanyDetails = () => {
         {activeTab === 'jobs' && (
           <div>
             {openJobs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 24px', background: isDark ? '#111827' : '#fff', borderRadius: 16, border: isDark ? '1px solid #1E293B' : '1px solid #f3f4f6' }}>
-                <FiBriefcase size={48} color={isDark ? '#475569' : '#d1d5db'} style={{ marginBottom: 16 }} />
-                <h3 style={{ color: isDark ? '#C7D2E0' : '#374151', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No Open Positions</h3>
-                <p style={{ color: isDark ? '#64748B' : '#9ca3af', fontSize: 14 }}>This company doesn&apos;t have any active job listings right now. Check back later!</p>
+              <div style={{ ...cardBase(isDark), textAlign: 'center', padding: '56px 24px' }}>
+                <FiBriefcase size={48} color={isDark ? '#475569' : '#cbd5e1'} style={{ marginBottom: 16 }} />
+                <h3 style={{ color: isDark ? '#C7D2E0' : '#334155', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No Open Positions</h3>
+                <p style={{ color: isDark ? '#64748B' : '#94a3b8', fontSize: 14 }}>This company doesn&apos;t have any active job listings right now. Check back later!</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: isDark ? '#F4F8F6' : '#111827', marginBottom: 4 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: isDark ? '#F4F8F6' : '#0f172a', marginBottom: 4 }}>
                   {openJobs.length} Open Position{openJobs.length !== 1 ? 's' : ''} at {company.name}
                 </h2>
                 {openJobs.map((job) => {
                   const jLocation = [job.location?.city, job.location?.region].filter(Boolean).join(', ');
                   const color = jobTypeColor(job.jobType);
                   return (
-                    <Link key={job._id} to={`/jobs/${job._id}`} style={{ textDecoration: 'none' }}>
-                      <div className="job-card" style={{
-                        background: isDark ? '#111827' : '#fff', borderRadius: 16, padding: '20px 24px',
-                        border: isDark ? '1px solid #1E293B' : '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    <Link key={job._id} to={`/jobs/${job._id}`} className="job-card" style={{ textDecoration: 'none' }}>
+                      <div style={{
+                        background: isDark ? '#0f172a' : '#fff', borderRadius: 14, padding: '18px 22px',
+                        border: `1px solid ${isDark ? '#1e293b' : '#e8edf5'}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         gap: 16, flexWrap: 'wrap',
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
                           <div style={{
                             width: 48, height: 48, borderRadius: 12, overflow: 'hidden',
-                            border: isDark ? '1px solid #1E293B' : '1px solid #f3f4f6', background: hasLogo ? (isDark ? '#111827' : '#fff') : 'linear-gradient(135deg,#10b981,#059669)',
+                            border: isDark ? '1px solid #1e293b' : '1px solid #f1f5f9', background: hasLogo ? (isDark ? '#0f172a' : '#fff') : PRIMARY,
                             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                           }}>
                             {hasLogo ? (
@@ -431,16 +432,16 @@ const CompanyDetails = () => {
                               <span style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{initial}</span>
                             )}
                           </div>
-                          <div>
-                            <p style={{ fontWeight: 700, color: isDark ? '#F4F8F6' : '#111827', fontSize: 15, margin: '0 0 4px' }}>{job.title}</p>
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ fontWeight: 700, color: isDark ? '#F4F8F6' : '#0f172a', fontSize: 15, margin: '0 0 4px' }}>{job.title}</p>
                             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                               {jLocation && (
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isDark ? '#94A3B8' : '#6b7280', fontSize: 12 }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isDark ? '#94A3B8' : '#64748b', fontSize: 12 }}>
                                   <FiMapPin size={11} /> {jLocation}
                                 </span>
                               )}
                               {job.applicationDeadline && (
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isDark ? '#94A3B8' : '#6b7280', fontSize: 12 }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: isDark ? '#94A3B8' : '#64748b', fontSize: 12 }}>
                                   <FiClock size={11} /> Deadline: {new Date(job.applicationDeadline).toLocaleDateString()}
                                 </span>
                               )}
@@ -450,15 +451,15 @@ const CompanyDetails = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           {job.jobType && (
                             <span style={{
-                              padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                              padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700,
                               background: `${color}18`, color, border: `1px solid ${color}30`,
                             }}>
                               {capitalize(job.jobType.replace('-', ' '))}
                             </span>
                           )}
                           <span style={{
-                            padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
-                            background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff',
+                            padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                            background: PRIMARY, color: '#fff',
                           }}>
                             Apply →
                           </span>
@@ -474,18 +475,18 @@ const CompanyDetails = () => {
 
         {/* ─── BENEFITS TAB ─── */}
         {activeTab === 'benefits' && (
-          <div style={{ background: isDark ? '#111827' : '#fff', borderRadius: 16, padding: 28, border: isDark ? '1px solid #1E293B' : '1px solid #f3f4f6', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: isDark ? '#F4F8F6' : '#111827', marginBottom: 20 }}>Benefits &amp; Perks</h2>
+          <div style={cardBase(isDark)}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: isDark ? '#F4F8F6' : '#0f172a', marginBottom: 20 }}>Benefits &amp; Perks</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 14 }}>
               {company.benefits.map((b, i) => (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   padding: '14px 16px', borderRadius: 12,
-                  background: isDark ? 'linear-gradient(135deg,#0D1F1A,#123326)' : 'linear-gradient(135deg,#ecfdf5,#d1fae5)',
-                  border: '1px solid #a7f3d0',
+                  background: isDark ? 'rgba(37,99,235,0.10)' : PRIMARY_LIGHT,
+                  border: `1px solid ${PRIMARY_BORDER}`,
                 }}>
-                  <FiCheckCircle size={16} color="#10b981" />
-                  <span style={{ color: isDark ? '#6EE7B7' : '#065f46', fontWeight: 600, fontSize: 14 }}>{b}</span>
+                  <FiCheckCircle size={16} color={PRIMARY} />
+                  <span style={{ color: isDark ? '#93c5fd' : PRIMARY_DARKER, fontWeight: 600, fontSize: 14 }}>{b}</span>
                 </div>
               ))}
             </div>
@@ -494,8 +495,8 @@ const CompanyDetails = () => {
       </div>
 
       {/* ── back link ─────────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px 48px' }}>
-        <Link to="/companies" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: isDark ? '#94A3B8' : '#6b7280', fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>
+      <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 24px 48px' }}>
+        <Link to="/companies" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: isDark ? '#94A3B8' : '#64748b', fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>
           ← Back to All Companies
         </Link>
       </div>
