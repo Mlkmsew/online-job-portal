@@ -214,7 +214,7 @@ const EmployerDashboard = () => {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 pb-16">
+    <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 pb-16">
       
       {/* ── Top Header Greeting & Right Control Bar ── */}
       <section className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">

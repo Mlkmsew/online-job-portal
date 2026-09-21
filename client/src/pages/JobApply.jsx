@@ -652,7 +652,7 @@ const JobApply = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0D1624] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1300px] space-y-6">
+      <div className="w-full space-y-6">
         <Link to={`/jobs/${id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-[#1769E0] dark:text-blue-400 transition hover:text-[#1769E0]">
           <FiArrowLeft className="h-4 w-4" /> Back to Job Details
         </Link>
@@ -1200,7 +1200,7 @@ const JobApply = () => {
                         ['Expected Salary', expectedSalary || 'Not Provided'],
                         ['Availability', availability],
                         ['Portfolio', portfolioUrl || 'Not Provided'],
-                        ['Applied Via', 'Ethio Job Portal'],
+                        ['Applied Via', 'Emare Job Portal'],
                         ['Date', applicationDate],
                       ].map(([label, value]) => (
                         <div key={label} className="grid grid-cols-[110px_1fr] gap-4 rounded-[14px] bg-white dark:bg-gray-900 px-4 py-3 text-sm shadow-sm">

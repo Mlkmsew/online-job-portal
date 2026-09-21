@@ -1,5 +1,5 @@
 // ============================================
-// Contact Us Page - OnlineJob Portal
+// Contact Us Page - Emare Job Portal
 // Modern, premium contact page with hero, form & info card
 // ============================================
 import { useState } from 'react';
@@ -158,7 +158,7 @@ const Contact = () => {
         <div className="absolute bottom-16 left-1/3 hidden h-14 w-14 rounded-full bg-white/40 blur-sm lg:block" aria-hidden="true" />
 
         {/* hero content */}
-        <div className="relative container-custom px-4 py-16 text-center sm:py-20 lg:py-24">
+        <div className="relative px-4 sm:px-6 lg:px-8 xl:px-12 py-16 text-center sm:py-20 lg:py-24">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#1769E0] dark:text-blue-400">
             {t('contact.title', { defaultValue: 'Contact Us' })}
           </p>
@@ -178,7 +178,7 @@ const Contact = () => {
       </section>
 
       {/* ===== MAIN CONTENT AREA ===== */}
-      <div className="container-custom relative z-10 px-4 pb-24">
+      <div className="relative z-10 px-4 sm:px-6 lg:px-8 xl:px-12 pb-24">
         <div className="grid gap-8 lg:grid-cols-5">
           {/* LEFT — CONTACT FORM */}
           <div className="rounded-[22px] bg-white dark:bg-gray-900 p-6 shadow-xl sm:p-8 lg:col-span-3 lg:p-10">
@@ -193,7 +193,7 @@ const Contact = () => {
                 <p className="mt-3 max-w-md text-[#536273] dark:text-gray-400">
                   {t('contact.successText', {
                     defaultValue:
-                      'Thank you for contacting OnlineJob Portal. We will get back to you shortly.',
+                      'Thank you for contacting Emare Job Portal. We will get back to you shortly.',
                   })}
                 </p>
                 <button

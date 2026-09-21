@@ -1,12 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { fetchEmployerCompany } from '../../../store/slices/employerSlice';
 import api from '../../../services/api';
+import systemSettingsService from '../../../services/systemSettingsService';
 import toast from 'react-hot-toast';
+import { FiDollarSign, FiCheckCircle, FiCreditCard, FiLock, FiRefreshCw, FiAlertCircle } from 'react-icons/fi';
 import { REGIONS, REGION_CITIES } from '../../../constants/locations';
+
+// Timeout wrapper for fetch requests
+const fetchWithTimeout = (promise, ms = 15000) => {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Request timeout')), ms)
+  );
+  return Promise.race([promise, timeout]);
+};
 
 const BENEFIT_OPTIONS = [
   { value: 'Health Insurance', labelKey: 'employer.postJob.benefitsOptions.healthInsurance', icon: '🩺' },
@@ -83,6 +93,7 @@ const PostJob = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { company, loading: companyLoading } = useSelector((state) => state.employer);
   const [categories, setCategories] = useState([]);
   const [skills, setSkills] = useState([]);
@@ -92,6 +103,47 @@ const PostJob = () => {
   const [technicalInput, setTechnicalInput] = useState('');
   const [softInput, setSoftInput] = useState('');
   const [applicationFields, setApplicationFields] = useState([]);
+
+  // Job posting fee settings
+  const [feeSettings, setFeeSettings] = useState({
+    enabled: false,
+    amount: 0,
+    currency: 'ETB',
+  });
+  const [feeLoading, setFeeLoading] = useState(true);
+  const [feeError, setFeeError] = useState(null);
+
+  // Payment verification state (from checkout page)
+  const [paymentVerified, setPaymentVerified] = useState(false);
+  const [paymentData, setPaymentData] = useState(null);
+
+  // Check for payment verification in location state (from checkout redirect) or sessionStorage
+  useEffect(() => {
+    const state = location.state || {};
+    if (state.paymentVerified && state.transactionReference) {
+      setPaymentVerified(true);
+      const paymentInfo = {
+        transactionReference: state.transactionReference,
+        paymentMethod: state.paymentMethod,
+        verifiedAt: state.verifiedAt,
+      };
+      setPaymentData(paymentInfo);
+      // Persist in sessionStorage for page refresh survival
+      sessionStorage.setItem('jobPostPaymentVerified', JSON.stringify(paymentInfo));
+    } else {
+      // Try to restore from sessionStorage
+      const stored = sessionStorage.getItem('jobPostPaymentVerified');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setPaymentVerified(true);
+          setPaymentData(parsed);
+        } catch (e) {
+          sessionStorage.removeItem('jobPostPaymentVerified');
+        }
+      }
+    }
+  }, [location]);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     defaultValues: {
@@ -121,6 +173,22 @@ const PostJob = () => {
   const selectedSoftSkills = watch('skills.soft') || [];
   const hasOtherBenefit = watch('hasOtherBenefit');
   const isEditMode = Boolean(jobId);
+  const needsPayment = feeSettings.enabled && !isEditMode && !paymentVerified;
+  const isSalaryNegotiable = watch('salary.isNegotiable');
+
+  // Check if we're returning from payment verification (to prevent redirect loop)
+  const isReturningFromPayment = useMemo(() => {
+    const state = location.state || {};
+    return state.paymentVerified === true;
+  }, [location]);
+
+  // Clear salary min/max when negotiable is checked
+  useEffect(() => {
+    if (isSalaryNegotiable) {
+      setValue('salary.min', '');
+      setValue('salary.max', '');
+    }
+  }, [isSalaryNegotiable, setValue]);
 
   useEffect(() => {
     register('skills.technical');
@@ -235,7 +303,37 @@ const PostJob = () => {
 
     loadCategories();
     loadSkills();
+    loadFeeSettings();
   }, [dispatch]);
+
+  // Load fee settings with timeout
+  const loadFeeSettings = useCallback(async () => {
+    setFeeError(null);
+    setFeeLoading(true);
+    try {
+      const res = await fetchWithTimeout(systemSettingsService.getJobPostingFeeSettings(), 15000);
+      if (res.data?.success && res.data?.data?.jobPostingFee) {
+        setFeeSettings(res.data.data.jobPostingFee);
+      } else {
+        throw new Error(res.data?.message || 'Failed to load fee settings.');
+      }
+    } catch (err) {
+      console.error('Failed to load fee settings:', err);
+      const errorMessage = err.response?.data?.message || err.message || t('employer.postJob.error.loadFeeSettingsFailed') || 'Failed to load fee settings.';
+      setFeeError(errorMessage);
+      // Keep default fee settings (enabled: false) on error so form can still be used
+      setFeeSettings({ enabled: false, amount: 0, currency: 'ETB' });
+      if (!err.message?.includes('timeout')) {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setFeeLoading(false);
+    }
+  }, [t]);
+
+  const handleFeeRetry = useCallback(() => {
+    loadFeeSettings();
+  }, [loadFeeSettings]);
 
   useEffect(() => {
     if (!isEditMode) return;
@@ -358,12 +456,20 @@ const PostJob = () => {
         applicationFields: normalizedApplicationFields,
       };
 
+      // Include payment verification info for new jobs when fee is enabled and payment is verified
+      if (!isEditMode && feeSettings.enabled && paymentVerified && paymentData) {
+        payload.paymentReference = paymentData.transactionReference;
+        payload.paymentMethod = paymentData.paymentMethod;
+      }
+
       if (isEditMode) {
         await api.put(`/jobs/${jobId}`, payload);
         toast.success(t('employer.postJob.success.jobUpdated'));
       } else {
         await api.post('/jobs', payload);
         toast.success(t('employer.postJob.success.jobPosted'));
+        // Clear payment verification storage after successful job creation
+        sessionStorage.removeItem('jobPostPaymentVerified');
       }
       navigate('/employer/jobs');
     } catch (err) {
@@ -374,7 +480,18 @@ const PostJob = () => {
     }
   };
 
-  const selectedCities = selectedRegion ? REGION_CITIES[selectedRegion] || [] : [];
+const selectedCities = selectedRegion ? REGION_CITIES[selectedRegion] || [] : [];
+
+  // Redirect to payment checkout if payment is required but not verified
+  // Must be before early returns to maintain consistent hook order
+  useEffect(() => {
+    // Don't redirect if we're returning from payment verification
+    if (isReturningFromPayment) return;
+    
+    if (needsPayment && !feeLoading) {
+      navigate('/employer/post-job/checkout', { replace: true });
+    }
+  }, [needsPayment, feeLoading, navigate, isReturningFromPayment]);
 
   if (companyLoading || jobLoading) {
     return <div className="text-center py-12">{t('employer.postJob.loadingJobInfo')}</div>;
@@ -411,6 +528,96 @@ const PostJob = () => {
   return (
     <div className="max-w-4xl mx-auto pb-12">
       <h1 className="text-3xl font-bold mb-8">{isEditMode ? t('employer.postJob.editJob') : t('employer.postJob.newJob')}</h1>
+
+      {/* Job Posting Fee Notice */}
+      {feeLoading ? (
+        <div className="card bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800 mb-6">
+          <div className="flex items-center gap-3 p-4">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+            <span className="text-sm text-emerald-700 dark:text-emerald-300">{t('employer.postJob.loadingFeeSettings') || 'Loading fee settings...'}</span>
+          </div>
+        </div>
+      ) : feeError ? (
+        <div className="card bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800 mb-6">
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <FiAlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-800 dark:text-red-300">
+                  {t('employer.postJob.error.loadFeeSettingsTitle') || 'Unable to Load Fee Settings'}
+                </h3>
+                <p className="text-sm text-red-700 dark:text-red-400 mt-1">{feeError}</p>
+              </div>
+              <button onClick={handleFeeRetry} className="btn btn-primary whitespace-nowrap">
+                <FiRefreshCw className="mr-2 h-4 w-4" />
+                {t('common.retry') || 'Retry'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : paymentVerified && paymentData ? (
+        <div className="card bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800 mb-6">
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <FiCheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                  <FiLock className="h-5 w-5" />
+                  {t('employer.postJob.paymentVerified') || 'Payment Verified'}
+                </h3>
+                <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                  {t('employer.postJob.paymentVerifiedDesc', { 
+                    amount: feeSettings.amount, 
+                    currency: feeSettings.currency,
+                    method: paymentData.paymentMethod,
+                    ref: paymentData.transactionReference
+                  }) || `Payment of ${feeSettings.amount} ${feeSettings.currency} verified via ${paymentData.paymentMethod}. Transaction: ${paymentData.transactionReference}. You can now post your job.`}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : feeSettings.enabled && !isEditMode ? (
+        <div className="card bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800 mb-6">
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <FiDollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-emerald-800 dark:text-emerald-300">
+                  {t('employer.postJob.feeRequired') || 'Job Posting Fee Required'}
+                </h3>
+                <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                  {t('employer.postJob.feeRequiredDesc', { amount: feeSettings.amount, currency: feeSettings.currency }) || `A job posting fee of ${feeSettings.amount} ${feeSettings.currency} is required before this job can be published. Payment will be required after admin approval.`}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : !feeSettings.enabled && !isEditMode ? (
+        <div className="card bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800 mb-6">
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <FiCheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-emerald-800 dark:text-emerald-300">
+                  {t('employer.postJob.feeNotRequired') || 'Job Posting is Free'}
+                </h3>
+                <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
+                  {t('employer.postJob.feeNotRequiredDesc') || 'No payment is required to publish this job. It will be published immediately after admin approval.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Basic Information */}
@@ -556,6 +763,7 @@ const PostJob = () => {
                 {...register('salary.min')}
                 className="input"
                 placeholder={t('employer.postJob.placeholders.minimumSalary')}
+                disabled={isSalaryNegotiable}
               />
             </div>
             <div>
@@ -565,6 +773,7 @@ const PostJob = () => {
                 {...register('salary.max')}
                 className="input"
                 placeholder={t('employer.postJob.placeholders.maximumSalary')}
+                disabled={isSalaryNegotiable}
               />
             </div>
             <div className="md:col-span-2 flex items-center gap-4">

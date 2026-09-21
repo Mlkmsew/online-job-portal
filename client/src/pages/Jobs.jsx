@@ -408,7 +408,7 @@ const Jobs = () => {
   const availableCities = selectedRegion ? REGION_CITIES[selectedRegion] || [] : CITIES;
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
       <div className="space-y-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>

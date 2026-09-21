@@ -117,7 +117,7 @@ const createNotification = async (data) => {
         let mailPayload = {
           to: recipientUser.email,
           subject: data.title,
-          text: `${data.message}\n\n— OnlineJob Portal`,
+          text: `${data.message}\n\n— Emare Job Portal`,
           html: `<div style="font-family:sans-serif;padding:20px;color:#334155;"><h2 style="color:#0F766E">${data.title}</h2><p style="font-size:15px;line-height:1.6">${data.message}</p></div>`,
         };
 
@@ -127,7 +127,7 @@ const createNotification = async (data) => {
             ...emailTemplates.interviewInvitation(
               recipientUser.firstName || 'Candidate',
               data.title || 'Interview',
-              'OnlineJob Portal Employer',
+              'Emare Job Portal Employer',
               data.message || 'Scheduled interview',
               'Online / Check Portal'
             ),
@@ -138,7 +138,7 @@ const createNotification = async (data) => {
             ...emailTemplates.applicationReceived(
               recipientUser.firstName || 'Applicant',
               data.title || 'Application Update',
-              'OnlineJob Portal Employer'
+              'Emare Job Portal Employer'
             ),
           };
         }

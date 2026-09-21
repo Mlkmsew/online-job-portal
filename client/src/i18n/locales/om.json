@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "OnlineJob Portal",
+    "appName": "Emare Job Portal",
     "tagline": "Dargaggoota Itiyoophiyaa Carraa Hojii waliin walqunnamsiisuu",
     "loading": "Fe'aa jira...",
     "error": "Dogoggora",
@@ -25,8 +25,8 @@
     "dashboardControls": "To'annoo Daashboordii",
     "viewAll": "Waliigala Daawwadhu",
     "resend": "Irra deebi'ii ergi",
-    "appNameBrand": "OnlineJob",
-    "appNameBrandHighlight": "Portal",
+    "appNameBrand": "Emare",
+    "appNameBrandHighlight": "Job Portal",
     "backToHome": "Gara Manaatti Deebi'i",
     "or": "yookaan",
     "pageNotFound": "Fuula Hin Argamne",
@@ -67,7 +67,7 @@
     "browseJobs": "Hojiiwwan Daawwadhu"
   },
   "aria": {
-    "homepage": "OnlineJob Portal - Manaa deebi'i"
+    "homepage": "Emare Job Portal - Manaa deebi'i"
   },
   "auth": {
     "login": "Seeni",
@@ -252,7 +252,7 @@
     "seekerCtaSub": "Kuma hedduu hojii barbaaddotaa wajjin makami; hojii feetu argadhu.",
     "startApplying": "Iyyachuu Jalqabi",
     "statsEyebrow": "Waldaa keenya guddachaa jiru",
-    "statsTitle": "Kuma Hedduun OnlineJob Portal Amananu",
+    "statsTitle": "Kuma Hedduun Emare Job Portal Amananu",
     "subscribe": "Galmaa'i",
     "testimonialEyebrow": "Seenaa milkaa'inaa",
     "testimonialSubtitle": "Muuxannoo dhugaa hojii barbaaddotaa fi abbootii hojii Itoophiyaa irraa.",
@@ -264,7 +264,7 @@
     "viewDetails": "Gadifageenya Daawwadhu",
     "whyEyebrow": "Maaliif nu filatta",
     "whySubtitle": "Waan carraa sirrii argachuu yookaan nama sirrii qaxaruu barbaaddu hunda.",
-    "whyTitle": "Maaliif OnlineJob Portal Filatta?"
+    "whyTitle": "Maaliif Emare Job Portal Filatta?"
   },
   "jobs": {
     "findJobsSubtitle": "Carraawwan hojii barbaadaa fi gosa hojii piroofaayilii keessan waliin simatuus iyyadhaa.",
@@ -453,7 +453,8 @@
     "manageCompanies": "Dhaabbilee Bulchi",
     "jobCategories": "Ramaddii Hojii",
     "notifications": "Beeksisaawwan",
-    "reports": "Gabaasa & Iskriptii"
+    "reports": "Gabaasa & Iskriptii",
+    "agreements": "Waliigaltee Dhugaa"
   },
   "roles": {
     "admin": "BULCHAA",
@@ -1709,6 +1710,55 @@
       "currentPasswordRequired": "Maaloo dubbii teessoo ammaa galchi.",
       "weakPassword": "Dubbii teessoon haaraan xiqqaatti qubee 6 ta'uu qaba.",
       "passwordMismatch": "Dubbii teessoon mirkannoo wajjin hin walsinne."
+    },
+    "agreements": {
+      "title": "Waliigallee Dhugaa",
+      "subtitle": "Waliigallee fayyadamaa fi pooliisii dhoksaa kan abbootii hojii itti argaman bulchi.",
+      "createAgreement": "Waliigallee Uumi",
+      "editAgreement": "Waliigallee Gulaali",
+      "agreementType": "Gosa Waliigallee",
+      "agreementTitle": "Mata dura Waliigallee",
+      "description": "Ibsa Xiqqaa",
+      "descriptionPlaceholder": "Abbootii hojii itti argaman ibsa xiqqaa...",
+      "fullContent": "Ibsa Guutuu Waliigallee",
+      "contentPlaceholder": "Halkan ibsa guutuu waliigallee galchi...",
+      "status": "Haala",
+      "active": "Akaakuu",
+      "inactive": "Akaakuu Miti",
+      "activate": "Guddisu",
+      "deactivate": "Dhaabisu",
+      "delete": "Haqi",
+      "deleteConfirm": "Waliigallee kana haqaa barbaaddaa? Gochi kun deebi'uu hin danda'u.",
+      "deleteTitle": "Waliigallee Haqi",
+      "noAgreements": "Waliigallee hin jiru.",
+      "noAgreementsDesc": "Waliigallee fayyadamaa fi pooliisii dhoksaa haaraa uumi.",
+      "typeTerms": "Waliigallee Fayyadamaa",
+      "typePrivacy": "Pooliisii Dhoksaa",
+      "createSuccess": "Waliigallee milkaa'inaan uumameera.",
+      "updateSuccess": "Waliigallee milkaa'inaan fooyya'eera.",
+      "deleteSuccess": "Waliigallee milkaa'inaan haqameera.",
+      "statusUpdateSuccess": "Haalli waliigallee milkaa'inaan haaromfameera.",
+      "createFailed": "Waliigallee uumuun hin danda'amne.",
+      "updateFailed": "Waliigallee fooyyessuun hin danda'amne.",
+      "deleteFailed": "Waliigallee haquun hin danda'amne.",
+      "statusUpdateFailed": "Haalli waliigallee haaromsuun hin danda'amne.",
+      "activeAgreementExists": "Waliigallee akaakuu {{type}} jira. Maaloo dura dhaabisu.",
+      "version": "Wersii",
+      "createdAt": "Yeroo Uumame",
+      "updatedAt": "Yeroo Fooyya'e",
+      "actions": "Gochaalee",
+      "viewFullContent": "Ibsa Guuttuu Ilaali",
+      "close": "Cufi",
+      "cancel": "Haqi",
+      "save": "Olkaa'i",
+      "saving": "Olkaa'aa jira...",
+      "loading": "Waliigallee fe'aniiru...",
+      "emptyStateTitle": "Waliigallee dhugaa hin jiru",
+      "emptyStateDesc": "Abbootii hojii keessan waliigallee fayyadamaa fi pooliisii dhoksaa uumi.",
+      "agreementTypeRequired": "Gosa waliigallee barbaachisaadha.",
+      "titleRequired": "Mata dura waliigallee barbaachisaadha.",
+      "descriptionRequired": "Ibsa xiqqaa barbaachisaadha.",
+      "contentRequired": "Ibsa guuttuu waliigallee barbaachisaadha."
     }
   },
   "company": {
@@ -1722,15 +1772,15 @@
     "location": "Bakka"
   },
   "about": {
-    "title": "Waa'ee OnlineJob Portal",
+    "title": "Waa'ee Emare Job Portal",
     "descriptionTitle": "Ibsa",
-    "description": "OnlineJob Portal marsariitii hojii gabaa hammayyaa kan hojii barbaaddota fi qacaroota meeshaalee salphaadhaan walqunnamsiisudha.",
+    "description": "Emare Job Portal marsariitii hojii gabaa hammayyaa kan hojii barbaaddota fi qacaroota meeshaalee salphaadhaan walqunnamsiisudha.",
     "missionTitle": "Ergaa Keenya",
     "missionText": "Ogeeyyii dandeettii isaaniif hojii ta'u, qajeelfama gahaa fi iyyannoo salphaa dhiyeessuu.",
     "visionTitle": "Mul'ata Keenya",
     "visionText": "Fuulduratti carraan hojii salphaatti kan argamu fi tokkoon tokkoon namaa hojii jaallatuun kan walqunnamu ta'uu.",
     "eyebrow": "Waa'ee Keenya",
-    "heroDescription": "OnlineJob Portal gabaa hojii ammayyaa kan hojii barbaaddotaafi abbootii hojii meeshaalee hojii cimaa fi saffisaan gargaaru. Marsariitni keenya dandeettii naannoo, carraa hojii filatamoo fi meeshaalee ogummaa hunda walitti qaba.",
+    "heroDescription": "Emare Job Portal gabaa hojii ammayyaa kan hojii barbaaddotaafi abbootii hojii meeshaalee hojii cimaa fi saffisaan gargaaru. Marsariitni keenya dandeettii naannoo, carraa hojii filatamoo fi meeshaalee ogummaa hunda walitti qaba.",
     "imageAlt": "Ogeeyyii Itoophiyaa waajjira ammayyaa keessatti waliin hojjatan"
   },
   "contact": {
@@ -1766,7 +1816,7 @@
     "headlineB": "Nu gargaaruuf as jirra.",
     "sendAnother": "Ergaa Biroo Ergi",
     "subtitle2": "Ergaa nuuf ergi",
-    "successText": "OnlineJob Portal quunnamtaniif galatoomi. Yeroo dhihoo deebii siif kennina.",
+    "successText": "Emare Job Portal quunnamtaniif galatoomi. Yeroo dhihoo deebii siif kennina.",
     "successTitle": "Ergaan milkaa'inaan ergameera!"
   },
   "footer": {
@@ -1780,13 +1830,13 @@
     "followUs": "Nu Hordofaa",
     "faq": "Gaaffiiwwan Baay'eetan",
     "brandDescription": "Dargaggoota Itiyoophiyaa Carraa Hojii waliin walqunnamsiisuu",
-    "copyright": "© 2024 OnlineJob Portal. Mirgi hundaa eegamaadha.",
-    "aboutTitle": "About OnlineJob Portal",
-    "aboutDescription": "OnlineJob Portal is a modern employment marketplace built to empower job seekers and employers with smarter, faster hiring tools. Our platform brings together local talent, curated job opportunities, and career resources in one easy-to-use experience.",
+    "copyright": "© 2024 Emare Job Portal. Mirgi hundaa eegamaadha.",
+    "aboutTitle": "About Emare Job Portal",
+    "aboutDescription": "Emare Job Portal is a modern employment marketplace built to empower job seekers and employers with smarter, faster hiring tools. Our platform brings together local talent, curated job opportunities, and career resources in one easy-to-use experience.",
     "missionTitle": "Our Mission",
     "missionDescription": "To empower every professional with access to relevant jobs, clear career guidance, and a seamless application journey. We strive to create a trusted hiring ecosystem that helps talent grow and employers hire with confidence.",
     "visionTitle": "Our Vision",
-    "visionDescription": "A future where opportunity is easy to find and every candidate can connect with work they love. We want OnlineJob Portal to set the standard for transparent, inclusive, and efficient hiring nationwide.",
+    "visionDescription": "A future where opportunity is easy to find and every candidate can connect with work they love. We want Emare Job Portal to set the standard for transparent, inclusive, and efficient hiring nationwide.",
     "support": "Support",
     "emailAddress": "info@onlinejobportal.com",
     "phoneNumber": "+251 911 123 456",
@@ -1813,7 +1863,7 @@
     "applications": "Appikaashinoota",
     "companyProfile": "Piroofaayilii Dhaabbataa",
     "contactUs": "Nu Qunnamaa",
-    "copyrightLine": "© 2026 OnlineJob Portal. Mirgawwan hundi eegamaniru.",
+    "copyrightLine": "© 2026 Emare Job Portal. Mirgawwan hundi eegamaniru.",
     "createCv": "CV Uumi",
     "jobAlerts": "Hubachiisa Hojii",
     "manageJobs": "Hojiiwwan Bulchi",
@@ -1824,7 +1874,7 @@
     "title": "Gaaffiiwwan Baay'ee Gaafataman",
     "question1": "Akkamitti akunntii uuma?",
     "answer1": "Get Started tuqaa odeeffannoo guutaa. Akunntii keessan banuuf email mirkaneessaa.",
-    "question2": "OnlineJob Portal bilisaanii?",
+    "question2": "Emare Job Portal bilisaanii?",
     "answer2": "Eeyyee! Akunntii uumuun fi hojiidhaaf iyyachuun hojii barbaaddotaaf bilisa.",
     "question3": "Akkamitti hojiif iyyadha?",
     "answer3": "Hojiiwwan barbaadaa, hojii irratti tuqaatii Apply Now tuqaa.",
@@ -2047,8 +2097,8 @@
   },
   "careerGuide": {
     "heroBadge": "Tajaajila Hojiin Walqabatan",
-    "heroTitle": "Qajeelfama OnlineJob Hojii Keessan Saffisiisaa",
-    "heroSubtitle": "Nu hojii adda baasuu qofa miti. OnlineJob carraa hojii mul'ata keessanii akka argattaniif mijeessa.",
+    "heroTitle": "Qajeelfama Emare Job Portal Hojii Keessan Saffisiisaa",
+    "heroSubtitle": "Nu hojii adda baasuu qofa miti. Emare Job Portal carraa hojii mul'ata keessanii akka argattaniif mijeessa.",
     "learnMore": "Dabalata Baradhu",
     "insights": "Qabxiilee fi Tarkaanfiiwwan Ijoo",
     "standoutCV": "CV Adda Ta'e Qopheessuu",
@@ -2056,7 +2106,7 @@
     "employability": "Leenjii Dandeettii",
     "employabilityDesc": "Leenjii qophaa'ummaa hojii baradhaa.",
     "campus": "Waliigaltee Yuunivarsiitii",
-    "campusDesc": "OnlineJob yuunivarsiitiilee Itoophiyaa waliin hojjeta.",
+    "campusDesc": "Emare Job Portal yuunivarsiitiilee Itoophiyaa waliin hojjeta.",
     "interview": "Gaaffii fi Deebii Darbuu",
     "interviewDesc": "Qophiin murteessadha; gaaffiilee fi qajeelfama gaaffii fi deebii."
   },

@@ -43,7 +43,7 @@ const emailPass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
 const brevoApiKey = (process.env.BREVO_API_KEY || '').trim();
 
 // Parse EMAIL_FROM which may be:
-//   "OnlineJob Portal <me@gmail.com>"  |  "OnlineJob Portal me@gmail.com"  |  "me@gmail.com"
+//   "Emare Job Portal <me@gmail.com>"  |  "Emare Job Portal me@gmail.com"  |  "me@gmail.com"
 const parseFromAddress = (raw) => {
   const value = (raw || '').trim();
   const bracket = value.match(/^(.*?)<\s*([^>]+@[^>]+)\s*>$/);
@@ -51,9 +51,9 @@ const parseFromAddress = (raw) => {
   const token = value.split(/\s+/).find((part) => part.includes('@'));
   if (!token) return null;
   const name = value.replace(token, '').trim().replace(/^["']|["']$/g, '');
-  return { name: name || 'OnlineJob Portal', email: token };
+  return { name: name || 'Emare Job Portal', email: token };
 };
-const fromAddress = parseFromAddress(process.env.EMAIL_FROM) || { name: 'OnlineJob Portal', email: emailUser };
+const fromAddress = parseFromAddress(process.env.EMAIL_FROM) || { name: 'Emare Job Portal', email: emailUser };
 
 const missingEmailVars =
   emailProvider === 'https'
@@ -127,7 +127,7 @@ const sendEmailViaBrevo = async (options) => {
   }
 
   const payload = {
-    sender: { name: fromAddress.name || 'OnlineJob Portal', email: fromAddress.email },
+    sender: { name: fromAddress.name || 'Emare Job Portal', email: fromAddress.email },
     to: [{ email: options.to }],
     subject: options.subject,
   };
@@ -196,7 +196,7 @@ const sendEmailViaBrevo = async (options) => {
  */
 const sendEmail = async (options) => {
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'OnlineJob Portal <noreply@ethiojob.com>',
+    from: process.env.EMAIL_FROM || 'Emare Job Portal <noreply@ethiojob.com>',
     to: options.to,
     subject: options.subject,
     html: options.html,
@@ -258,7 +258,7 @@ const getClientURL = () => {
 // Email templates
 const emailTemplates = {
   verifyEmail: (name, verifyUrl) => ({
-    subject: 'Verify Your Email - OnlineJob Portal',
+    subject: 'Verify Your Email - Emare Job Portal',
     html: `
       <!DOCTYPE html>
       <html>
@@ -280,17 +280,17 @@ const emailTemplates = {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🌍 OnlineJob Portal</h1>
+            <h1>🌍 Emare Job Portal</h1>
             <p>Connecting Ethiopian Youth with Employment Opportunities</p>
           </div>
           <div class="body">
             <h2>Hello, ${name}! 👋</h2>
-            <p>Welcome to OnlineJob Portal! We're excited to have you on board. Please verify your email address to activate your account and start exploring thousands of job opportunities.</p>
+            <p>Welcome to Emare Job Portal! We're excited to have you on board. Please verify your email address to activate your account and start exploring thousands of job opportunities.</p>
             <a href="${verifyUrl}" class="btn">✅ Verify Email Address</a>
             <p>This link expires in <strong>24 hours</strong>. If you didn't create an account, please ignore this email.</p>
           </div>
           <div class="footer">
-            <p>© 2024 OnlineJob Portal. All rights reserved.</p>
+            <p>© 2024 Emare Job Portal. All rights reserved.</p>
             <p>Addis Ababa, Ethiopia</p>
           </div>
         </div>
@@ -300,8 +300,8 @@ const emailTemplates = {
   }),
 
   verifyOTP: (name, code) => ({
-    subject: 'Your verification code - OnlineJob Portal',
-    text: `Hello ${name},\n\nYour verification code is: ${code}. It expires in ${otpExpiryPhrase}.\n\nIf you did not request this, please ignore this email.\n\n— OnlineJob Portal`,
+    subject: 'Your verification code - Emare Job Portal',
+    text: `Hello ${name},\n\nYour verification code is: ${code}. It expires in ${otpExpiryPhrase}.\n\nIf you did not request this, please ignore this email.\n\n— Emare Job Portal`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -313,7 +313,7 @@ const emailTemplates = {
           <p style="font-size:22px;font-weight:bold;letter-spacing:4px">${code}</p>
           <p style="color:#64748B">This code expires in <strong>${otpExpiryPhrase}</strong>. If you didn't create an account, please ignore this email.</p>
           <hr style="margin-top:20px;border:none;border-top:1px solid #EEF2F7" />
-          <p style="font-size:12px;color:#94A3B8">© OnlineJob Portal</p>
+          <p style="font-size:12px;color:#94A3B8">© Emare Job Portal</p>
         </div>
       </body>
       </html>
@@ -321,7 +321,7 @@ const emailTemplates = {
   }),
 
   resetPassword: (name, resetUrl) => ({
-    subject: 'Reset Your Password - OnlineJob Portal',
+    subject: 'Reset Your Password - Emare Job Portal',
     html: `
       <!DOCTYPE html>
       <html>
@@ -353,7 +353,7 @@ const emailTemplates = {
             <p>This link expires in <strong>10 minutes</strong>. If you didn't request a password reset, please ignore this email and your password will remain unchanged.</p>
           </div>
           <div class="footer">
-            <p>© 2024 OnlineJob Portal. All rights reserved.</p>
+            <p>© 2024 Emare Job Portal. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -362,7 +362,7 @@ const emailTemplates = {
   }),
 
   newMessageAlert: (recipientName, senderName, preview, conversationLink) => ({
-    subject: `New message from ${senderName} - OnlineJob Portal`,
+    subject: `New message from ${senderName} - Emare Job Portal`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -431,7 +431,7 @@ const emailTemplates = {
             </div>
             <p>The employer will review your application and get back to you. You can track your application status from your dashboard.</p>
           </div>
-          <div class="footer"><p>© 2024 OnlineJob Portal</p></div>
+          <div class="footer"><p>© 2024 Emare Job Portal</p></div>
         </div>
       </body>
       </html>
@@ -467,7 +467,7 @@ const emailTemplates = {
             </div>
             <p>Please confirm your attendance by logging into your dashboard.</p>
           </div>
-          <div class="footer"><p>© 2024 OnlineJob Portal</p></div>
+          <div class="footer"><p>© 2024 Emare Job Portal</p></div>
         </div>
       </body>
       </html>

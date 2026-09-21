@@ -124,7 +124,7 @@ const Categories = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0D1624] pb-16 lg:pb-24">
-      <div className="container-custom">
+      <div className="px-4 sm:px-6 lg:px-8 xl:px-12">
         {/* ===== PAGE HEADER ===== */}
         <div className="pt-10 text-center lg:pt-14">
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blue-600 dark:text-blue-400">

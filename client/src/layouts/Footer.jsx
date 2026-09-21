@@ -1,5 +1,5 @@
 // ============================================
-// Footer Component - OnlineJob Portal
+// Footer Component - Emare Job Portal
 // Professional multi-column footer
 // ============================================
 import { useState, useEffect } from 'react';
@@ -85,7 +85,7 @@ const Footer = () => {
 
   return (
     <footer className="bg-[#0B1F3A] text-[#CBD5E1] dark:bg-[#0B1F3A] dark:text-gray-300">
-      <div className="container-custom py-16">
+      <div className="px-4 sm:px-6 lg:px-8 xl:px-12 py-16">
         {/* ===== 5 COLUMN FOOTER ===== */}
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {/* Column 1 — Brand */}
@@ -93,7 +93,7 @@ const Footer = () => {
             <div className="flex items-center gap-2">
               <FiBriefcase className="h-9 w-9 text-blue-400 dark:text-blue-400" aria-hidden="true" />
               <span className="text-2xl font-bold text-white dark:text-white">
-                OnlineJob <span className="text-blue-400 dark:text-blue-400">Portal</span>
+                Emare <span className="text-blue-400 dark:text-blue-400">Job Portal</span>
               </span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed">
@@ -142,7 +142,7 @@ const Footer = () => {
         {/* ===== COPYRIGHT ===== */}
         <div className="mt-14 border-t border-[#274060] pt-8 text-center dark:border-gray-800">
           <p className="text-sm text-[#94A3B8] dark:text-gray-400">
-            {t('footer.copyrightLine', { defaultValue: '© 2026 OnlineJob Portal. All Rights Reserved.' })}
+            {t('footer.copyrightLine', { defaultValue: '© 2026 Emare Job Portal. All Rights Reserved.' })}
           </p>
         </div>
       </div>

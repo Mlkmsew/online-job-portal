@@ -14,11 +14,14 @@ import {
   FiAlertCircle,
   FiStar,
   FiLayers,
-  FiTrendingUp,
   FiSend,
   FiShield,
   FiUsers,
   FiGrid,
+  FiPauseCircle,
+  FiTrash2,
+  FiPlayCircle,
+  FiTrendingUp,
 } from 'react-icons/fi';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -27,6 +30,8 @@ import {
   fetchAdminJobs,
   approveAdminJob,
   rejectAdminJob,
+  updateAdminJobStatus,
+  deleteAdminJob,
 } from '../../../store/slices/adminSlice';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -285,9 +290,106 @@ const RejectModal = ({ job, onConfirm, onCancel, loading }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Deactivate/Activate confirmation modal
+// ─────────────────────────────────────────────────────────────────────────────
+const DeactivateModal = ({ job, onConfirm, onCancel, loading }) => {
+  const { t } = useTranslation();
+  const isActive = job.status === 'active' || job.status === 'published';
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-3xl border border-gray-100 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+        <div className="mb-4 flex items-center gap-3">
+          <span className={`flex h-10 w-10 items-center justify-center rounded-full ${isActive ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>
+            {isActive ? <FiPauseCircle className="h-5 w-5" /> : <FiPlayCircle className="h-5 w-5" />}
+          </span>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {isActive
+                ? (t('admin.manageJobs.deactivateJobTitle') || 'Deactivate Job')
+                : (t('admin.manageJobs.activateJobTitle') || 'Activate Job')}
+            </h2>
+            <p className="text-sm text-gray-500">{job.title}</p>
+          </div>
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-5">
+          {isActive
+            ? (t('admin.manageJobs.deactivateConfirm', { title: job.title }) || `Are you sure you want to deactivate "${job.title}"? The job will no longer be visible to job seekers.`)
+            : (t('admin.manageJobs.activateConfirm', { title: job.title }) || `Are you sure you want to activate "${job.title}"? The job will be visible to job seekers.`)}
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-full border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300"
+          >
+            {t('admin.manageJobs.cancel') || 'Cancel'}
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onConfirm}
+            className={`rounded-full px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 ${isActive ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'}`}
+          >
+            {loading
+              ? (isActive
+                  ? (t('admin.manageJobs.deactivating') || 'Deactivating...')
+                  : (t('admin.manageJobs.activating') || 'Activating...'))
+              : (isActive
+                  ? (t('admin.manageJobs.deactivate') || 'Deactivate')
+                  : (t('admin.manageJobs.activate') || 'Activate'))}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Delete confirmation modal
+// ─────────────────────────────────────────────────────────────────────────────
+const DeleteModal = ({ job, onConfirm, onCancel, loading }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-3xl border border-gray-100 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+        <div className="mb-4 flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
+            <FiAlertCircle className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('admin.manageJobs.deleteJobTitle') || 'Delete Job'}</h2>
+            <p className="text-sm text-gray-500">{job.title}</p>
+          </div>
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-5">
+          {t('admin.manageJobs.deleteConfirm', { title: job.title }) || `Are you sure you want to permanently delete "${job.title}"? This action cannot be undone.`}
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-full border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300"
+          >
+            {t('admin.manageJobs.cancel') || 'Cancel'}
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onConfirm}
+            className="rounded-full bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+          >
+            {loading ? (t('admin.manageJobs.deleting') || 'Deleting...') : (t('admin.manageJobs.delete') || 'Delete')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Job card (polished, premium)
 // ─────────────────────────────────────────────────────────────────────────────
-const JobCard = ({ job, onApprove, onReject, actionLoading }) => {
+const JobCard = ({ job, onApprove, onReject, onDeactivate, onDelete, actionLoading }) => {
   const { t } = useTranslation();
   const company = job.company || {};
   const location = [job.location?.city, job.location?.region].filter(Boolean).join(', ') || '—';
@@ -295,6 +397,7 @@ const JobCard = ({ job, onApprove, onReject, actionLoading }) => {
   const postedAt = job.createdAt ? format(new Date(job.createdAt), 'dd MMM yyyy') : '—';
   const isPending = job.status === 'pending' && !job.isApproved;
   const isPublished = job.status === 'published' || job.isApproved;
+  const isActive = job.status === 'active' || job.status === 'published';
 
   return (
     <div className="group rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:border-emerald-700">
@@ -317,9 +420,9 @@ const JobCard = ({ job, onApprove, onReject, actionLoading }) => {
         </div>
 
         {/* Right */}
-        <div className="flex flex-shrink-0 flex-col items-start gap-2 sm:items-end">
+        <div className="flex flex-shrink-0 flex-col items-start gap-2 sm:items-end sm:flex-row sm:gap-3">
           <StatusBadge status={job.status} isApproved={job.isApproved} />
-          <div className="mt-1 flex flex-wrap gap-2">
+          <div className="mt-1 flex flex-wrap gap-2 sm:ml-auto">
             <Link
               to={`/jobs/${job._id}`}
               target="_blank"
@@ -350,10 +453,43 @@ const JobCard = ({ job, onApprove, onReject, actionLoading }) => {
                 </button>
               </>
             )}
-            {isPublished && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF2FE] px-3 py-1.5 text-xs font-semibold text-[#1769E0]">
-                <FiStar className="h-3.5 w-3.5" /> {t('admin.status.live') || 'Live'}
-              </span>
+            {isPublished && !isPending && (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF2FE] px-3 py-1.5 text-xs font-semibold text-[#1769E0]">
+                  <FiStar className="h-3.5 w-3.5" /> {t('admin.status.live') || 'Live'}
+                </span>
+                {/* Actions for published jobs */}
+                <div className="flex items-center gap-1.5">
+                  {/* Deactivate/Activate button */}
+                  <button
+                    type="button"
+                    disabled={actionLoading === job._id}
+                    onClick={() => onDeactivate(job)}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${
+                      isActive
+                        ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300'
+                        : 'bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300'
+                    }`}
+                    aria-label={isActive ? t('admin.manageJobs.deactivateJob') || 'Deactivate Job' : t('admin.manageJobs.activateJob') || 'Activate Job'}
+                    title={isActive ? t('admin.manageJobs.deactivateJob') || 'Deactivate Job' : t('admin.manageJobs.activateJob') || 'Activate Job'}
+                  >
+                    {isActive ? <FiPauseCircle className="h-3.5 w-3.5" /> : <FiPlayCircle className="h-3.5 w-3.5" />}
+                    <span className="hidden sm:inline">{isActive ? (t('admin.manageJobs.deactivate') || 'Deactivate') : (t('admin.manageJobs.activate') || 'Activate')}</span>
+                  </button>
+                  {/* Delete button */}
+                  <button
+                    type="button"
+                    disabled={actionLoading === job._id}
+                    onClick={() => onDelete(job)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                    aria-label={t('admin.manageJobs.deleteJob') || 'Delete Job'}
+                    title={t('admin.manageJobs.deleteJob') || 'Delete Job'}
+                  >
+                    <FiTrash2 className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">{t('admin.manageJobs.delete') || 'Delete'}</span>
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -540,6 +676,50 @@ const AdminManageJobs = () => {
     }
   };
 
+  const [deactivateTarget, setDeactivateTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const handleDeactivate = async (job) => {
+    setDeactivateTarget(job);
+  };
+
+  const handleDeactivateConfirm = async () => {
+    if (!deactivateTarget) return;
+    const newStatus = (deactivateTarget.status === 'active' || deactivateTarget.status === 'published') ? 'paused' : 'published';
+    setActionLoading(deactivateTarget._id);
+    try {
+      await dispatch(updateAdminJobStatus({ jobId: deactivateTarget._id, status: newStatus })).unwrap();
+      toast.success(
+        newStatus === 'paused'
+          ? t('admin.manageJobs.deactivateSuccess', { title: deactivateTarget.title }) || `"${deactivateTarget.title}" deactivated.`
+          : t('admin.manageJobs.activateSuccess', { title: deactivateTarget.title }) || `"${deactivateTarget.title}" activated.`
+      );
+      setDeactivateTarget(null);
+    } catch (err) {
+      toast.error(err || (t('admin.manageJobs.deactivateFailed') || 'Failed to update job status.'));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDelete = async (job) => {
+    setDeleteTarget(job);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setActionLoading(deleteTarget._id);
+    try {
+      await dispatch(deleteAdminJob(deleteTarget._id)).unwrap();
+      toast.success(t('admin.manageJobs.deleteSuccess', { title: deleteTarget.title }) || `"${deleteTarget.title}" deleted.`);
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err || (t('admin.manageJobs.deleteFailed') || 'Failed to delete job.'));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const emptyState = EMPTY_STATES[tab] || EMPTY_STATES.All;
 
   return (
@@ -691,15 +871,17 @@ const AdminManageJobs = () => {
           </div>
         ) : (
           <div className="grid gap-4">
-            {filtered.map((job) => (
-              <JobCard
-                key={job._id}
-                job={job}
-                onApprove={handleApprove}
-                onReject={setRejectTarget}
-                actionLoading={actionLoading}
-              />
-            ))}
+{filtered.map((job) => (
+                <JobCard
+                  key={job._id}
+                  job={job}
+                  onApprove={handleApprove}
+                  onReject={setRejectTarget}
+                  onDeactivate={handleDeactivate}
+                  onDelete={handleDelete}
+                  actionLoading={actionLoading}
+                />
+              ))}
           </div>
         )}
 
@@ -727,6 +909,26 @@ const AdminManageJobs = () => {
           onConfirm={handleRejectConfirm}
           onCancel={() => setRejectTarget(null)}
           loading={actionLoading === rejectTarget._id}
+        />
+      )}
+
+      {/* Deactivate/Activate modal */}
+      {deactivateTarget && (
+        <DeactivateModal
+          job={deactivateTarget}
+          onConfirm={handleDeactivateConfirm}
+          onCancel={() => setDeactivateTarget(null)}
+          loading={actionLoading === deactivateTarget._id}
+        />
+      )}
+
+      {/* Delete modal */}
+      {deleteTarget && (
+        <DeleteModal
+          job={deleteTarget}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteTarget(null)}
+          loading={actionLoading === deleteTarget._id}
         />
       )}
     </div>

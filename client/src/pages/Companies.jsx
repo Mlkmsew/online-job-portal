@@ -1,5 +1,5 @@
 // ============================================
-// Companies Page - OnlineJob Portal
+// Companies Page - Emare Job Portal
 // Dedicated page for Featured + All Companies with search & pagination
 // ============================================
 import { useState, useEffect, useMemo } from 'react';
@@ -148,7 +148,7 @@ const Companies = () => {
 
   return (
     <div className="min-h-screen bg-[#F3F9F7] dark:bg-[#0B1220] pb-16 lg:pb-24">
-      <div className="container-custom">
+      <div className="px-4 sm:px-6 lg:px-8 xl:px-12">
         {/* ===== PAGE HEADER ===== */}
         <div className="pt-10 text-center lg:pt-14">
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#1769E0]">

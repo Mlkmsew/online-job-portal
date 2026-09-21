@@ -13,6 +13,8 @@ import {
   FiLock,
   FiCheckCircle,
   FiSave,
+  FiDollarSign,
+  FiSettings,
 } from 'react-icons/fi';
 import {
   updateProfile,
@@ -21,6 +23,7 @@ import {
   updateSettings,
   updatePassword,
 } from '../../../store/slices/authSlice';
+import systemSettingsService from '../../../services/systemSettingsService';
 
 const NOTIFICATION_ITEMS = [
   { key: 'email', title: 'Email Alerts', desc: 'Receive job updates and newsletters by email.' },
@@ -86,6 +89,77 @@ const AdminSettings = () => {
     confirmPassword: '',
   });
   const [passwordSaving, setPasswordSaving] = useState(false);
+
+  // ── Job Posting Fee settings ───────────────────────────────────────────────
+  const [feeSettings, setFeeSettings] = useState({
+    enabled: false,
+    amount: 0,
+    currency: 'ETB',
+    paymentProvider: 'manual',
+  });
+  const [feeLoading, setFeeLoading] = useState(false);
+  const [feeSaving, setFeeSaving] = useState(false);
+
+  // Load fee settings on mount
+  useEffect(() => {
+    const loadFeeSettings = async () => {
+      setFeeLoading(true);
+      try {
+        const response = await systemSettingsService.getJobPostingFeeSettings();
+        if (response.data?.success && response.data?.data) {
+          setFeeSettings(response.data.data.jobPostingFee);
+        }
+      } catch (err) {
+        console.error('Failed to load fee settings:', err);
+      } finally {
+        setFeeLoading(false);
+      }
+    };
+    loadFeeSettings();
+  }, []);
+
+  const handlePaymentProviderChange = (e) => {
+    setFeeSettings(prev => ({ ...prev, paymentProvider: e.target.value }));
+  };
+
+  const handleFeeToggle = async () => {
+    const newEnabled = !feeSettings.enabled;
+    setFeeSettings(prev => ({ ...prev, enabled: newEnabled }));
+    try {
+      await systemSettingsService.updateJobPostingFeeSettings({ enabled: newEnabled });
+      toast.success(t('admin.settings.feeUpdated', { defaultValue: 'Job posting fee settings updated.' }));
+    } catch (err) {
+      setFeeSettings(prev => ({ ...prev, enabled: !newEnabled }));
+      toast.error(err || t('admin.settings.feeUpdateFailed', { defaultValue: 'Failed to update fee settings.' }));
+    }
+  };
+
+  const handleFeeAmountChange = (e) => {
+    const value = parseFloat(e.target.value) || 0;
+    setFeeSettings(prev => ({ ...prev, amount: Math.max(0, value) }));
+  };
+
+  const handleFeeCurrencyChange = (e) => {
+    setFeeSettings(prev => ({ ...prev, currency: e.target.value }));
+  };
+
+  const handleFeeSave = async (e) => {
+    e.preventDefault();
+    if (feeSaving) return;
+    setFeeSaving(true);
+    try {
+      await systemSettingsService.updateJobPostingFeeSettings({
+        amount: feeSettings.amount,
+        currency: feeSettings.currency,
+        paymentProvider: feeSettings.paymentProvider,
+      });
+      toast.success(t('admin.settings.feeUpdated', { defaultValue: 'Job posting fee settings updated.' }));
+    } catch (err) {
+      toast.error(err || t('admin.settings.feeUpdateFailed', { defaultValue: 'Failed to update fee settings.' }));
+    } finally {
+      setFeeSaving(false);
+    }
+  };
 
   // ── Scroll to #notifications anchor (avatar dropdown "Notification Settings")
   useEffect(() => {
@@ -445,6 +519,143 @@ const AdminSettings = () => {
               <FiCheckCircle className="h-3.5 w-3.5 text-emerald-500" />
               {t('admin.settings.autoSaveNotice', { defaultValue: 'Preferences auto-save directly to your database profile.' })}
             </p>
+          </div>
+
+          {/* Job Posting Fee */}
+          <div className="card">
+            <h2 className="mb-1.5 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
+              <FiDollarSign className="h-5 w-5 text-emerald-600" />
+              {t('admin.settings.jobPostingFee', { defaultValue: 'Job Posting Fee' })}
+            </h2>
+            <p className="mb-5 text-sm text-gray-600 dark:text-gray-400">
+              {t('admin.settings.jobPostingFeeDesc', { defaultValue: 'Control whether employers must pay a fee before publishing a job.' })}
+            </p>
+
+            <div className="space-y-4">
+              {/* Enable/Disable Toggle */}
+              <div className="flex items-center justify-between rounded-xl border border-gray-100 px-4 py-3 transition hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/60">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {t('admin.settings.jobPostingFeeEnabled', { defaultValue: 'Enable Job Posting Fee' })}
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {feeSettings.enabled
+                      ? t('admin.settings.feeEnabledDesc', { defaultValue: 'Employers must pay the required fee before publishing a job.' })
+                      : t('admin.settings.feeDisabledDesc', { defaultValue: 'Employers can publish jobs without paying a posting fee.' })}
+                  </p>
+                </div>
+                <label className="relative inline-flex cursor-pointer items-center">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={feeSettings.enabled}
+                    disabled={feeSaving}
+                    onChange={handleFeeToggle}
+                  />
+                  <span
+                    className={`inline-block h-6 w-11 rounded-full transition-colors ${
+                      feeSettings.enabled ? 'bg-emerald-600' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <span
+                    className={`absolute left-0 top-0 mt-0.5 ml-0.5 inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      feeSettings.enabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                    aria-hidden="true"
+                  />
+                </label>
+              </div>
+
+              {/* Fee Amount and Currency (only shown when enabled) */}
+              {feeSettings.enabled && (
+                <form onSubmit={handleFeeSave} className="space-y-4 p-4 bg-gray-50 rounded-xl border border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-900/30">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="fee-amount" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {t('admin.settings.feeAmount', { defaultValue: 'Fee Amount' })}
+                      </label>
+                      <input
+                        id="fee-amount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={feeSettings.amount}
+                        onChange={handleFeeAmountChange}
+                        className="input w-full"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="fee-currency" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {t('admin.settings.feeCurrency', { defaultValue: 'Currency' })}
+                      </label>
+                      <select
+                        id="fee-currency"
+                        value={feeSettings.currency}
+                        onChange={handleFeeCurrencyChange}
+                        className="select w-full"
+                      >
+                        <option value="ETB">ETB (Ethiopian Birr)</option>
+                        <option value="USD">USD (US Dollar)</option>
+                        <option value="EUR">EUR (Euro)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="fee-payment-provider" className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {t('admin.settings.paymentProvider', { defaultValue: 'Payment Provider' })}
+                      </label>
+                      <select
+                        id="fee-payment-provider"
+                        value={feeSettings.paymentProvider}
+                        onChange={handlePaymentProviderChange}
+                        className="select w-full"
+                      >
+                        <option value="manual">{t('admin.settings.paymentProviderManual', { defaultValue: 'Manual / Demo Verification' })}</option>
+                        <option value="chapa">{t('admin.settings.paymentProviderChapa', { defaultValue: 'Chapa (Real Payment)' })}</option>
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {feeSettings.paymentProvider === 'chapa'
+                          ? t('admin.settings.chapaDescription', { defaultValue: 'Employers will be redirected to Chapa checkout for real payment processing.' })
+                          : t('admin.settings.manualDescription', { defaultValue: 'Employers will manually enter transaction references for verification.' })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end border-t border-emerald-100 pt-4 dark:border-emerald-900/30">
+                    <button
+                      type="submit"
+                      disabled={feeSaving}
+                      className="btn btn-primary min-w-[160px]"
+                    >
+                      {feeSaving ? (
+                        <>
+                          <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                          {t('admin.settings.saving', { defaultValue: 'Saving...' })}
+                        </>
+                      ) : (
+                        <>
+                          <FiSave className="mr-2 h-4 w-4" />
+                          {t('admin.settings.saveChanges', { defaultValue: 'Save Changes' })}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {!feeSettings.enabled && (
+                <p className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
+                  {t('admin.settings.feeDisabledInfo', { defaultValue: 'Enable the toggle above to require employers to pay a fee before publishing jobs.' })}
+                </p>
+              )}
+
+              {feeLoading && (
+                <p className="text-center py-2 text-sm text-gray-500 dark:text-gray-400">
+                  {t('admin.settings.loading', { defaultValue: 'Loading fee settings...' })}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Security */}

@@ -1,5 +1,5 @@
 // ============================================
-// OnlineJob Portal - Backend Server Entry Point
+// Emare Job Portal - Backend Server Entry Point
 // ============================================
 const fs = require('fs');
 const path = require('path');
@@ -126,7 +126,7 @@ app.use('/api/', apiLimiter);
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
-    message: '🌍 OnlineJob Portal API is running!',
+    message: '🌍 Emare Job Portal API is running!',
     version: '1.0.0',
     environment: process.env.NODE_ENV,
   });
@@ -164,6 +164,7 @@ app.post('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api/resumes', require('./routes/resumeRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
+app.use('/api/agreements', require('./routes/agreementRoutes'));
 
 // NOTE: Debug/test email routes were removed for security. The former
 // POST /api/debug/send-test-email endpoint allowed anyone to send emails
@@ -198,7 +199,7 @@ server.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
-║        🌍  OnlineJob Portal - BACKEND SERVER 🌍           ║
+║        🌍  Emare Job Portal - BACKEND SERVER 🌍           ║
 ║                                                           ║
 ║   Environment: ${process.env.NODE_ENV?.toUpperCase() || 'DEVELOPMENT'}                                    ║
 ║   Server running on: http://localhost:${PORT}              ║

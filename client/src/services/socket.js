@@ -5,8 +5,9 @@ import { io } from 'socket.io-client';
 
 // VITE_SOCKET_URL overrides the socket endpoint (used when the frontend and
 // backend are hosted on different origins, e.g. Render Static Site + Web Service).
-// Falls back to the current origin so same-origin deployments keep working.
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+// In development, fall back to localhost:5000 if not explicitly set.
+// In production, VITE_SOCKET_URL must be set (empty string = same-origin).
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '');
 
 class SocketService {
   constructor() {

@@ -4,6 +4,8 @@
 const Job = require('../models/job');
 const Company = require('../models/Company');
 const Bookmark = require('../models/Bookmark');
+const PaymentTransaction = require('../models/PaymentTransaction');
+const SystemSettings = require('../models/SystemSettings');
 const { asyncHandler, paginate, escapeRegex } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 const APIFeatures = require('../utils/apiFeatures');
@@ -243,9 +245,56 @@ exports.createJob = asyncHandler(async (req, res, next) => {
     return next(new AppError('Your company profile is awaiting admin approval. You can post jobs once it has been approved.', 403));
   }
 
+  // Check job posting fee setting
+  const settings = await SystemSettings.getSettings();
+  const feeEnabled = settings.jobPostingFee?.enabled === true;
+  const feeAmount = settings.jobPostingFee?.amount ?? 0;
+  const feeCurrency = settings.jobPostingFee?.currency ?? 'ETB';
+
+  // If fee is enabled, require payment verification
+  let paymentVerified = false;
+  let paymentTransaction = null;
+
+  if (feeEnabled && feeAmount > 0) {
+    // Accept both transactionReference (legacy) and paymentReference (current)
+    const transactionReference = req.body.transactionReference || req.body.paymentReference;
+    const paymentMethod = req.body.paymentMethod;
+    
+    if (!transactionReference || !paymentMethod) {
+      return next(new AppError('Payment verification is required before posting a job. Please complete the payment checkout first.', 400));
+    }
+
+    // Find and verify the payment transaction
+    paymentTransaction = await PaymentTransaction.findOne({
+      employer: req.user.id,
+      company: company._id,
+      transactionReference,
+      amount: feeAmount,
+      currency: feeCurrency,
+      status: 'verified',
+      job: null, // Not yet used for a job
+    });
+
+    if (!paymentTransaction) {
+      return next(new AppError('Invalid or expired payment verification. Please complete the payment checkout again.', 400));
+    }
+
+    paymentVerified = true;
+  }
+
   req.body.postedBy = req.user.id;
   req.body.isApproved = false;
-  req.body.status = 'pending'; // Always start as pending — awaiting admin approval
+  // If payment was verified, set status to payment_pending (awaiting admin approval)
+  // If no fee, status remains pending
+  req.body.status = paymentVerified ? 'payment_pending' : 'pending';
+  
+  // Store payment info on job if verified
+  if (paymentVerified && paymentTransaction) {
+    req.body.paymentReference = paymentTransaction.transactionReference;
+    req.body.paymentMethod = paymentTransaction.paymentMethod;
+    req.body.paymentVerifiedAt = paymentTransaction.verifiedAt;
+  }
+
   if (req.body.benefits !== undefined) {
     req.body.benefits = normalizeStringArray(req.body.benefits);
   }
@@ -289,6 +338,12 @@ exports.createJob = asyncHandler(async (req, res, next) => {
     req.body.applicationFields = normalizeApplicationFields(req.body.applicationFields);
   }
   const job = await Job.create(req.body);
+
+  // Link payment transaction to job
+  if (paymentVerified && paymentTransaction) {
+    paymentTransaction.job = job._id;
+    await paymentTransaction.save();
+  }
 
   // Update company job count
   company.totalJobs += 1;

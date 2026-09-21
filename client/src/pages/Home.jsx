@@ -1,5 +1,5 @@
 // ============================================
-// Home Page - OnlineJob Portal
+// Home Page - Emare Job Portal
 // Professional blue-based landing page for Ethiopia
 // ============================================
 import { useState, useEffect, useMemo } from 'react';
@@ -422,7 +422,8 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0B1220]">
+    <main id="main-content" className="flex-1 w-full">
+        <div className="min-h-screen bg-white dark:bg-[#0B1220]">
       {/* ════════════════════════════════════════
           1. HERO SECTION
           ════════════════════════════════════════ */}
@@ -434,7 +435,7 @@ const Home = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-br from-[#06152B]/85 via-[#0A2A5E]/80 to-[#10337F]/70 dark:from-[#02040A]/95 dark:via-[#0A1626]/90 dark:to-[#0E1B33]/85" />
 
-        <div className="container-custom relative z-10 pt-10 pb-16 lg:pt-14 lg:pb-24">
+        <div className="relative z-10 pt-10 pb-16 lg:pt-14 lg:pb-24 px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
             {/* Left — copy + search */}
             <div>
@@ -573,7 +574,7 @@ const Home = () => {
           3. POPULAR JOB CATEGORIES
           ════════════════════════════════════════ */}
       <section className="bg-slate-50 py-16 lg:py-20 dark:bg-[#0D1624]" aria-labelledby="categories-heading">
-        <div className="container-custom">
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-12">
           <SectionHeading
             id="categories-heading"
             eyebrow={t('home.categoriesEyebrow', { defaultValue: 'Browse by field' })}
@@ -620,7 +621,7 @@ const Home = () => {
           4. LATEST JOBS
           ════════════════════════════════════════ */}
       <section className="bg-white py-16 lg:py-20 dark:bg-[#0B1220]" aria-labelledby="latest-jobs-heading">
-        <div className="container-custom">
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-12">
           <SectionHeading
             id="latest-jobs-heading"
             eyebrow={t('home.latestEyebrow', { defaultValue: 'Fresh opportunities' })}
@@ -722,7 +723,7 @@ className={`flex h-10 w-10 items-center justify-center rounded-full transition $
           5. TOP COMPANIES
           ════════════════════════════════════════ */}
       <section className="bg-slate-50 py-16 lg:py-20 dark:bg-[#0D1624]" aria-labelledby="companies-heading">
-        <div className="container-custom">
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-12">
           <SectionHeading
             id="companies-heading"
             eyebrow={t('home.companiesEyebrow', { defaultValue: 'Trusted employers' })}
@@ -771,7 +772,7 @@ className={`flex h-10 w-10 items-center justify-center rounded-full transition $
           6. HOW IT WORKS
           ════════════════════════════════════════ */}
       <section className="bg-white py-16 lg:py-20 dark:bg-[#0B1220]" aria-labelledby="how-heading">
-        <div className="container-custom">
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-12">
           <SectionHeading
             id="how-heading"
             eyebrow={t('home.howEyebrow', { defaultValue: 'Simple process' })}
@@ -844,12 +845,12 @@ className={`flex h-10 w-10 items-center justify-center rounded-full transition $
           ════════════════════════════════════════ */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#0B1F3F] via-[#0D2A5C] to-[#123B7C] py-16 lg:py-20" aria-label="Platform statistics">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url('/images/hero-bg-career.svg')", backgroundSize: 'cover', backgroundPosition: 'center' }} aria-hidden="true" />
-        <div className="container-custom relative z-10">
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10">
           <SectionHeading
             light
             id="stats-heading"
             eyebrow={t('home.statsEyebrow', { defaultValue: 'Our growing community' })}
-            title={t('home.statsTitle', { defaultValue: 'Thousands Already Trust OnlineJob Portal' })}
+            title={t('home.statsTitle', { defaultValue: 'Thousands Already Trust Emare Job Portal' })}
           />
           <div className="mx-auto grid max-w-5xl grid-cols-2 gap-5 lg:grid-cols-4">
             {STAT_ITEMS.map((stat) => {
@@ -873,11 +874,11 @@ className={`flex h-10 w-10 items-center justify-center rounded-full transition $
           8. WHY CHOOSE US
           ════════════════════════════════════════ */}
       <section className="bg-slate-50 py-16 lg:py-20 dark:bg-[#0D1624]" aria-labelledby="why-heading">
-        <div className="container-custom">
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-12">
           <SectionHeading
             id="why-heading"
             eyebrow={t('home.whyEyebrow', { defaultValue: 'Why choose us' })}
-            title={t('home.whyTitle', { defaultValue: 'Why Choose OnlineJob Portal?' })}
+            title={t('home.whyTitle', { defaultValue: 'Why Choose Emare Job Portal?' })}
             subtitle={t('home.whySubtitle', { defaultValue: 'Everything you need to find the right opportunity or hire the right person.' })}
           />
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -898,7 +899,7 @@ className={`flex h-10 w-10 items-center justify-center rounded-full transition $
           9. CV PROMOTION
           ════════════════════════════════════════ */}
       <section className="bg-white py-16 lg:py-20 dark:bg-[#0B1220]" aria-labelledby="cv-heading">
-        <div className="container-custom">
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B1F3F] via-[#0D2A5C] to-[#123B7C]">
             <div className="grid items-center gap-10 p-8 lg:grid-cols-[1.2fr_0.8fr] lg:p-14">
               <div>
@@ -953,7 +954,7 @@ className={`flex h-10 w-10 items-center justify-center rounded-full transition $
           10. JOB SEEKER & EMPLOYER CTA
           ════════════════════════════════════════ */}
       <section className="bg-slate-50 py-16 lg:py-20 dark:bg-[#0D1624]" aria-label="Call to action">
-        <div className="container-custom">
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-blue-800 p-8 lg:p-10">
               <span className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/10" aria-hidden="true" />
@@ -985,7 +986,7 @@ className={`flex h-10 w-10 items-center justify-center rounded-full transition $
           11. TESTIMONIALS
           ════════════════════════════════════════ */}
       <section className="bg-white py-16 lg:py-20 dark:bg-[#0B1220]" aria-labelledby="testimonials-heading">
-        <div className="container-custom">
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-12">
           <SectionHeading
             id="testimonials-heading"
             eyebrow={t('home.testimonialEyebrow', { defaultValue: 'Success stories' })}
@@ -1016,7 +1017,7 @@ className={`flex h-10 w-10 items-center justify-center rounded-full transition $
           12. JOB ALERT SUBSCRIPTION
           ════════════════════════════════════════ */}
       <section className="bg-slate-50 py-16 lg:py-20 dark:bg-[#0D1624]" aria-labelledby="alert-heading">
-        <div className="container-custom">
+        <div className="px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm lg:p-12 dark:border-gray-800 dark:bg-gray-900">
             <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
               <FiBell className="h-7 w-7" aria-hidden="true" />
@@ -1051,6 +1052,7 @@ className={`flex h-10 w-10 items-center justify-center rounded-full transition $
         </div>
       </section>
     </div>
+      </main>
   );
 };
 

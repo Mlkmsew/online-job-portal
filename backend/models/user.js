@@ -125,6 +125,20 @@ const userSchema = new mongoose.Schema(
         resetPasswordToken: String,
         resetPasswordExpire: Date,
 
+        // Agreement Acceptance
+        termsAccepted: { type: Boolean, default: false },
+        termsAcceptedAt: Date,
+        privacyAccepted: { type: Boolean, default: false },
+        privacyAcceptedAt: Date,
+        acceptedAgreements: [
+            {
+                agreementId: { type: mongoose.Schema.Types.ObjectId, ref: 'Agreement' },
+                type: { type: String, enum: ['terms', 'privacy'] },
+                version: Number,
+                acceptedAt: { type: Date, default: Date.now },
+            },
+        ],
+
         // Stats
         profileViews: { type: Number, default: 0 },
         profileCompleteness: { type: Number, default: 0 },

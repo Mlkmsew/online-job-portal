@@ -97,7 +97,7 @@ const jobSchema = new mongoose.Schema(
     // Status
     status: {
       type: String,
-      enum: ['pending', 'published', 'active', 'draft', 'closed', 'expired', 'paused'],
+      enum: ['pending', 'published', 'active', 'draft', 'closed', 'expired', 'paused', 'payment_pending'],
       default: 'pending',
     },
     publishedAt: { type: Date },
@@ -116,6 +116,10 @@ const jobSchema = new mongoose.Schema(
     // Admin
     isApproved: { type: Boolean, default: false },
     adminNote: { type: String },
+    // Payment
+    paymentReference: { type: String },
+    paymentMethod: { type: String },
+    paymentVerifiedAt: { type: Date },
     // Accessibility / Inclusive Hiring
     accessibility: {
       disabilityFriendly: { type: Boolean, default: false },

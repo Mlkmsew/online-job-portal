@@ -8,9 +8,11 @@ const {
   getAdminApplications, deleteApplication,
   getUsers, getUserById, updateUser, updateUserStatus, suspendUser, deleteUser,
   getCompanies, approveCompany, rejectCompany, verifyCompany, featureCompany,
-  getJobs, approveJob, rejectJob, featureJob,
+  getJobs, approveJob, rejectJob, featureJob, updateJobStatus, deleteJob,
   getCategories, createCategory, updateCategory, deleteCategory,
   getSkills, createSkill, updateSkill, deleteSkill,
+  getJobPostingFeeSettings, updateJobPostingFeeSettings,
+  getPlatformSettings, updatePlatformSettings,
 } = require('../controllers/adminController');
 const {
   getAllVerifications,
@@ -63,6 +65,8 @@ router.get('/jobs', getJobs);
 router.put('/jobs/:id/approve', approveJob);
 router.put('/jobs/:id/reject', rejectJob);
 router.put('/jobs/:id/feature', featureJob);
+router.patch('/jobs/:id/status', updateJobStatus);
+router.delete('/jobs/:id', deleteJob);
 
 // Categories
 router.route('/categories').get(getCategories).post(createCategory);
@@ -77,5 +81,11 @@ router.get('/certificates', getAllVerifications);
 router.get('/certificates/:id', getVerification);
 router.put('/certificates/:id/review', reviewVerification);
 router.put('/certificates/:id/suspend-user', suspendUserForFraud);
+
+// System Settings
+router.get('/settings/job-posting-fee', getJobPostingFeeSettings);
+router.patch('/settings/job-posting-fee', updateJobPostingFeeSettings);
+router.get('/settings/platform', getPlatformSettings);
+router.patch('/settings/platform', updatePlatformSettings);
 
 module.exports = router;

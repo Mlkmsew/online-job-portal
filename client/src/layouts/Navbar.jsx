@@ -106,15 +106,15 @@ const Navbar = () => {
       )}
       <div className="absolute inset-0 bg-gradient-to-r from-[#06152B]/95 via-[#0A2A5E]/90 to-[#0E3A7A]/85 dark:from-[#02040A]/95 dark:via-[#081020]/95 dark:to-[#0D1626]/90" aria-hidden="true" />
 
-      <div className="relative container-custom">
-        <div className="flex justify-between items-center gap-4 lg:gap-8 h-[72px]">
+      <div className="relative w-full px-4 sm:px-6 lg:px-8 xl:px-12">
+        <div className="flex justify-between items-center gap-4 lg:gap-8 h-[72px] w-full">
           {/* Logo */}
-          <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label={t('aria.homepage') || 'OnlineJob Portal - Go to homepage'}>
+          <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label={t('aria.homepage') || 'Emare Job Portal - Go to homepage'}>
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
               <FiBriefcase className={`h-5 w-5 ${logoIconClass}`} aria-hidden="true" />
             </span>
             <span className={`text-[20px] font-extrabold leading-none tracking-tight ${logoTitleClass}`}>
-              OnlineJob <span className={logoAccentClass}>Portal</span>
+              Emare <span className={logoAccentClass}>Job Portal</span>
             </span>
           </Link>
 

@@ -59,8 +59,8 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="w-full max-w-2xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E8F0FE] to-secondary-50 dark:from-gray-900 dark:to-gray-800 p-4">
+      <div className="w-full max-w-2xl px-4 sm:px-6">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-2">
@@ -198,7 +198,7 @@ const Register = () => {
                             setSelectedCountry(country);
                             setCountryOpen(false);
                           }}
-                          className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-primary-50 dark:text-gray-300 dark:hover:bg-gray-800"
+                          className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-gray-700 transition hover:bg-[#E8F0FE] dark:text-gray-300 dark:hover:bg-gray-800"
                         >
                           <span className="flex items-center gap-2">
                             <span className="inline-flex w-6 justify-center">{country.flag}</span>
@@ -302,7 +302,7 @@ const Register = () => {
           {/* Login Link */}
           <p className="text-center mt-6 text-sm text-gray-600 dark:text-gray-400">
             {t('nav.login')}{' '}
-            <Link to="/login" className="text-primary-500 hover:underline font-medium">
+            <Link to="/login" className="text-[#1769E0] dark:text-blue-400 hover:underline font-medium">
               {t('auth.login')}
             </Link>
           </p>

@@ -58,9 +58,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/admin/categories', icon: FiSettings, label: 'sidebar.jobCategories' },
     { path: '/admin/applications', icon: FiFileText, label: 'sidebar.applications' },
     { path: '/admin/certificates', icon: FiShield, label: 'sidebar.certificateVerification' },
+    { path: '/admin/agreements', icon: FiFileText, label: 'sidebar.agreements' },
     { path: '/admin/reports', icon: FiBarChart2, label: 'sidebar.reports' },
     { path: '/admin/notifications', icon: FiBell, label: 'sidebar.notifications', badge: 'notifications' },
     { path: '/admin/messages', icon: FiMail, label: 'nav.messages', badge: 'messages' },
+    { path: '/admin/settings', icon: FiSettings, label: 'nav.settings' },
   ];
 
   const getMenu = () => {

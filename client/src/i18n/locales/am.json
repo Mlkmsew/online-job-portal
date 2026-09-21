@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "OnlineJob Portal",
+    "appName": "Emare Job Portal",
     "tagline": "የኢትዮጵያ ወጣቶችን ከስራ እድሎች ጋር ማገናኘት",
     "loading": "በመጫን ላይ...",
     "error": "ስህተት",
@@ -25,8 +25,8 @@
     "dashboardControls": "የዳሽቦርድ መቆጣጠሪያዎች",
     "viewAll": "ሁሉንም ይመልከቱ",
     "resend": "እንደገና ላክ",
-    "appNameBrand": "OnlineJob",
-    "appNameBrandHighlight": "Portal",
+    "appNameBrand": "Emare",
+    "appNameBrandHighlight": "Job Portal",
     "backToHome": "ወደ መነሻ ተመለስ",
     "or": "ወይም",
     "pageNotFound": "ገፁ አልተገኘም",
@@ -63,7 +63,7 @@
     "browseJobs": "ስራዎችን ይመልከቱ"
   },
   "aria": {
-    "homepage": "OnlineJob Portal - ወደ መነሻ ገጽ ይሂዱ"
+    "homepage": "Emare Job Portal - ወደ መነሻ ገጽ ይሂዱ"
   },
   "auth": {
     "login": "ግባ",
@@ -246,7 +246,7 @@
     "seekerCtaSub": "በሺዎች የሚቆጠሩ ስራ ፈላጊዎችን ይቀላቀሉ እና ከወደፊትዎ ጋር የሚስማማ ስራ ያግኙ።",
     "startApplying": "ማመልከት ጀምር",
     "statsEyebrow": "እያደገ ያለ ማህበረሰባችን",
-    "statsTitle": "በሺዎች የሚቆጠሩ OnlineJob Portalን ይተማመናሉ",
+    "statsTitle": "በሺዎች የሚቆጠሩ Emare Job Portalን ይተማመናሉ",
     "subscribe": "ይመዝገቡ",
     "testimonialEyebrow": "የስኬት ታሪኮች",
     "testimonialSubtitle": "በመላ ኢትዮጵያ ከሚገኙ ስራ ፈላጊዎች እና አሰሪዎች የተገኙ እውነተኛ ልምዶች።",
@@ -258,7 +258,7 @@
     "viewDetails": "ዝርዝሮችን ይመልከቱ",
     "whyEyebrow": "ለምን ይመርጡናል",
     "whySubtitle": "ትክክለኛውን እድል ለማግኘት ወይም ትክክለኛውን ሰው ለመቅጠር የሚያስፈልግዎ ሁሉ።",
-    "whyTitle": "ለምን OnlineJob Portalን ይመርጣሉ?"
+    "whyTitle": "ለምን Emare Job Portalን ይመርጣሉ?"
   },
   "jobs": {
     "title": "ስራዎችን ይመልከቱ",
@@ -1068,6 +1068,55 @@
       "weakPassword": "አዲስ የይለፍ ቃል ቢያንስ 6 ቁምፊዎች ሊሆን ይገባል።",
       "passwordMismatch": "የማረጋገጫ የይለፍ ቃል ከአዲሱ የይለፍ ቃል ጋር አይዛመድም።"
     },
+    "agreements": {
+      "title": "ህጋዊ ስምምነቶች",
+      "subtitle": "ወደ አሰሪዎች የሚታያቸውን የተጠቃሚ ስምምነት እና የግላዊነት ፖሊሲ ያስተዳድሩ።",
+      "createAgreement": "ስምምነት ፍጠር",
+      "editAgreement": "ስምምነት አርትዕ",
+      "agreementType": "የስምምነት አይነት",
+      "agreementTitle": "የስምምነት ርዕስ",
+      "description": "አጭር መግለጫ",
+      "descriptionPlaceholder": "ለአሰሪዎች የሚታይ አጭር መግለጫ...",
+      "fullContent": "ሙሉ የስምምነት ይዘት",
+      "contentPlaceholder": "እዚህ ሙሉ የስምምነትን ይዘት ያስገቡ...",
+      "status": "ሁኔታ",
+      "active": "ንቁ",
+      "inactive": "ንቁ ያልሆነ",
+      "activate": "አንቃ",
+      "deactivate": "አግድ",
+      "delete": "ሰርዝ",
+      "deleteConfirm": "ይህን ስምምነት መሰረዝ ይፈልጋሉ? ይህ እርምጃ ሊመለስ አይችልም።",
+      "deleteTitle": "ስምምነት ሰርዝ",
+      "noAgreements": "ምንም ስምምነት አልተገኘም።",
+      "noAgreementsDesc": "የአዲስ የተጠቃሚ ስምምነት እና የግላዊነት ፖሊሲ ስምምነቶችን ፍጠሩ።",
+      "typeTerms": "የተጠቃሚ ስምምነት",
+      "typePrivacy": "የግላዊነት ፖሊሲ",
+      "createSuccess": "ስምምነት በተሳካ ሁኔታ ተፈጥሯል።",
+      "updateSuccess": "ስምምነት በተሳካ ሁኔታ ተሻሽሏል።",
+      "deleteSuccess": "ስምምነት በተሳካ ሁኔታ ተሰርዟል።",
+      "statusUpdateSuccess": "የስምምነት ሁኔታ በተሳካ ሁኔታ ተዘምኗል።",
+      "createFailed": "ስምምነት መፍጠር አልተሳካም።",
+      "updateFailed": "ስምምነት ማዘመን አልተቻለም።",
+      "deleteFailed": "ስምምነት መሰረዝ አልተሳካም።",
+      "statusUpdateFailed": "የስምምነት ሁኔታ ማዘመን አልተሳካም።",
+      "activeAgreementExists": "ንቁ {{type}} ስምምነት አለ። እባክዎ በመጀመሪያ ይሰናክሉ።",
+      "version": "ሁሉጭ",
+      "createdAt": "የተፈጠረ",
+      "updatedAt": "የተሻሻለ",
+      "actions": "ተግባራት",
+      "viewFullContent": "ሙሉ ይዘት ይመልከቱ",
+      "close": "ዝጋ",
+      "cancel": "ሰርዝ",
+      "save": "አስቀምጥ",
+      "saving": "በማስቀመጥ ላይ...",
+      "loading": "ስምምነቶች በመጫን ላይ...",
+      "emptyStateTitle": "ምንም ህጋዊ ስምምነቶች አልተደረጉም",
+      "emptyStateDesc": "ለአሰሪዎች በመጀመሪያ የተጠቃሚ ስምምነት እና የግላዊነት ፖሊሲ ይፍጠሩ።",
+      "agreementTypeRequired": "የስምምነት አይነት ያስፈልጋል።",
+      "titleRequired": "የስምምነት ርዕስ ያስፈልጋል።",
+      "descriptionRequired": "አጭር መግለጫ ያስፈልጋል።",
+      "contentRequired": "ሙሉ የስምምነት ይዘት ያስፈልጋል።"
+    },
     "dashboardSubtitle": "የመድረክ እንቅስቃሴ እና አስተዳደር አጠቃላይ እይታ",
     "users": {
       "searchPlaceholder": "በስም፣ በኢሜይል ወይም በሚና ይፈልጉ...",
@@ -1111,7 +1160,8 @@
     "manageCompanies": "ድርጅቶችን አስተዳድር",
     "jobCategories": "የስራ ዘርፎች",
     "notifications": "ማስታወቂያዎች",
-    "reports": "ሪፖርቶች እና ስታቲስቲክስ"
+    "reports": "ሪፖርቶች እና ስታቲስቲክስ",
+    "agreements": "ህጋዊ ስምምነቶች"
   },
   "roles": {
     "admin": "አድሚን",
@@ -1737,15 +1787,15 @@
     "location": "ቦታ"
   },
   "about": {
-    "title": "ስለ OnlineJob Portal",
+    "title": "ስለ Emare Job Portal",
     "descriptionTitle": "መግለጫ",
-    "description": "OnlineJob Portal ስራ ፈላጊዎችን እና አሰሪዎችን ለማገናኘት የተፈጠረ ዘመናዊ የስራ ፕላትፎርም ነው።",
+    "description": "Emare Job Portal ስራ ፈላጊዎችን እና አሰሪዎችን ለማገናኘት የተፈጠረ ዘመናዊ የስራ ፕላትፎርም ነው።",
     "missionTitle": "የእኛ ተልዕኮ",
     "missionText": "ለእያንዳንዱ ባለሙያ ተስማሚ የስራ እድሎችን እና ግልጽ የማመልከቻ መንገድ ማቅረብ።",
     "visionTitle": "የእኛ ራዕይ",
     "visionText": "በሀገር አቀፍ ደረጃ በግልፅነት እና በብቃት የስራ እድሎችን ማቅረብ።",
     "eyebrow": "ስለ እኛ",
-    "heroDescription": "OnlineJob Portal ለስራ ፈላጊዎች እና አሰሪዎች ብልህ እና ፈጣን የመቅጠር መሳሪያዎችን በመስጠት የተፈጠረ ዘመናዊ የስራ ገበያ ነው። መድረካችን የአካባቢ ችሎታዎችን፣ የተመረጡ የስራ እድሎችን እና የሙያ ሀብቶችን በአንድ ቀላል ተሞክሮ ያሰባስባል።",
+    "heroDescription": "Emare Job Portal ለስራ ፈላጊዎች እና አሰሪዎች ብልህ እና ፈጣን የመቅጠር መሳሪያዎችን በመስጠት የተፈጠረ ዘመናዊ የስራ ገበያ ነው። መድረካችን የአካባቢ ችሎታዎችን፣ የተመረጡ የስራ እድሎችን እና የሙያ ሀብቶችን በአንድ ቀላል ተሞክሮ ያሰባስባል።",
     "imageAlt": "በዘመናዊ ቢሮ ውስጥ እየተባበሩ የሚሰሩ የኢትዮጵያ ባለሙያዎች"
   },
   "contact": {
@@ -1781,7 +1831,7 @@
     "headlineB": "እኛ ለመርዳት እዚህ ነን።",
     "sendAnother": "ሌላ መልእክት ላክ",
     "subtitle2": "መልእክት ይላኩልን",
-    "successText": "OnlineJob Portalን ስላነጋገሩ እናመሰግናለን። በቅርቡ እንመልስልዎታለን።",
+    "successText": "Emare Job Portalን ስላነጋገሩ እናመሰግናለን። በቅርቡ እንመልስልዎታለን።",
     "successTitle": "መልእክት በተሳካ ሁኔታ ተልኳል!"
   },
   "footer": {
@@ -1795,13 +1845,13 @@
     "followUs": "ይከተሉን",
     "faq": "ተደጋግመው የሚጠየቁ ጥያቄዎች",
     "brandDescription": "የኢትዮጵያ ወጣቶችን ከስራ እድሎች ጋር ማገናኘት",
-    "copyright": "© 2024 OnlineJob Portal. መብቱ በህግ የተጠበቀ ነው።",
-    "aboutTitle": "About OnlineJob Portal",
-    "aboutDescription": "OnlineJob Portal is a modern employment marketplace built to empower job seekers and employers with smarter, faster hiring tools. Our platform brings together local talent, curated job opportunities, and career resources in one easy-to-use experience.",
+    "copyright": "© 2024 Emare Job Portal. መብቱ በህግ የተጠበቀ ነው።",
+    "aboutTitle": "About Emare Job Portal",
+    "aboutDescription": "Emare Job Portal is a modern employment marketplace built to empower job seekers and employers with smarter, faster hiring tools. Our platform brings together local talent, curated job opportunities, and career resources in one easy-to-use experience.",
     "missionTitle": "Our Mission",
     "missionDescription": "To empower every professional with access to relevant jobs, clear career guidance, and a seamless application journey. We strive to create a trusted hiring ecosystem that helps talent grow and employers hire with confidence.",
     "visionTitle": "Our Vision",
-    "visionDescription": "A future where opportunity is easy to find and every candidate can connect with work they love. We want OnlineJob Portal to set the standard for transparent, inclusive, and efficient hiring nationwide.",
+    "visionDescription": "A future where opportunity is easy to find and every candidate can connect with work they love. We want Emare Job Portal to set the standard for transparent, inclusive, and efficient hiring nationwide.",
     "support": "Support",
     "emailAddress": "info@onlinejobportal.com",
     "phoneNumber": "+251 911 123 456",
@@ -1828,7 +1878,7 @@
     "applications": "ማመልከቻዎች",
     "companyProfile": "የድርጅት መገለጫ",
     "contactUs": "አግኙን",
-    "copyrightLine": "© 2026 OnlineJob Portal. ሁሉም መብቶች የተጠበቁ ናቸው።",
+    "copyrightLine": "© 2026 Emare Job Portal. ሁሉም መብቶች የተጠበቁ ናቸው።",
     "createCv": "CV ፍጠር",
     "jobAlerts": "የስራ ማንቂያዎች",
     "manageJobs": "ስራዎችን ያስተዳድሩ",
@@ -1839,7 +1889,7 @@
     "title": "ተደጋግመው የሚጠየቁ ጥያቄዎች",
     "question1": "መለያ እንዴት መክፈት እችላለሁ?",
     "answer1": "ተመዝገብ የሚለውን በመጫን መረጃዎን ያስገቡ እና ኢሜይልዎን ያረጋግጡ።",
-    "question2": "OnlineJob Portal መጠቀም ነጻ ነው?",
+    "question2": "Emare Job Portal መጠቀም ነጻ ነው?",
     "answer2": "አዎ! ለስራ ፈላጊዎች ሙሉ በሙሉ ነጻ ነው።",
     "question3": "ለስራ እንዴት ማመልከት እችላለሁ?",
     "answer3": "ስራዎችን ይመልከቱ፣ አሁኑኑ ያመልክቱ የሚለውን ይጫኑ።",
@@ -2019,7 +2069,7 @@
   },
   "careerGuide": {
     "heroBadge": "ጠቃሚ የሙያ አገልግሎቶች",
-    "heroTitle": "በOnlineJob መመሪያዎች ስኬታማነትዎን ያፋጥኑ",
+"heroTitle": "በEmare Job Portal መመሪያዎች ስኬታማነትዎን ያፋጥኑ",
     "heroSubtitle": "እኛ ስራዎችን ከመዘርዘር ባለፈ አዳዲስ ተመራቂዎች እና ባለሙያዎች የህልማቸውን ስራ እንዲያገኙ እናግዛለን።",
     "learnMore": "የበለጠ ይረዱ",
     "insights": "ዋና ዋና ግንዛቤዎች እና እርምጃዎች",
@@ -2028,7 +2078,7 @@
     "employability": "የክህሎት ስልጠና",
     "employabilityDesc": "ከዩኒቨርሲቲ ወደ ስራ ቦታ ለመሸጋገር የተዘጋጁ የስራ ዝግጁነት ሞጁሎችን ያግኙ።",
     "campus": "የካምፓስ አጋርነት",
-    "campusDesc": "OnlineJob ከዋና ዋና የኢትዮጵያ ዩኒቨርሲቲዎች ጋር በመሆን በካምፓስ ውስጥ የስራ ትርኢቶችን ያዘጋጃል።",
+    "campusDesc": "Emare Job Portal ከዋና ዋና የኢትዮጵያ ዩኒቨርሲቲዎች ጋር በመሆን በካምፓስ ውስጥ የስራ ትርኢቶችን ያዘጋጃል።",
     "interview": "ቃለ መጠይቅ ማለፍ",
     "interviewDesc": "ዝግጅት ቁልፍ ነው፤ የተለመዱ ጥያቄዎች እና የቃለ መጠይቅ መመሪያዎች።"
   },

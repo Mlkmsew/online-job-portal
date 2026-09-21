@@ -21,7 +21,7 @@ const MainLayout = () => {
       <Navbar />
 
       {/* Main content landmark with skip target */}
-      <main id="main-content" className="flex-1" role="main" tabIndex={-1}>
+      <main id="main-content" className="flex-1 w-full" role="main" tabIndex={-1}>
         <Outlet />
       </main>
 

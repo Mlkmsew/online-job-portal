@@ -55,6 +55,7 @@ import CertificateVerification from './pages/dashboard/jobseeker/CertificateVeri
 // Employer Dashboard
 import EmployerDashboard from './pages/dashboard/employer/Dashboard';
 import PostJob from './pages/dashboard/employer/PostJob';
+import PaymentCheckout from './pages/dashboard/employer/PaymentCheckout';
 import ManageJobs from './pages/dashboard/employer/ManageJobs';
 import EmployerApplications from './pages/dashboard/employer/EmployerApplications';
 import EmployerInterviews from './pages/dashboard/employer/EmployerInterviews';
@@ -64,6 +65,7 @@ import EmployerSettings from './pages/dashboard/employer/EmployerSettings';
 import EmployerChangePassword from './pages/dashboard/employer/ChangePassword';
 import ViewApplicants from './pages/dashboard/employer/ViewApplicants';
 import CompanyProfile from './pages/dashboard/employer/CompanyProfile';
+import EmployerAgreements from './pages/dashboard/employer/EmployerAgreements';
 
 // Admin Dashboard
 import AdminDashboard from './pages/dashboard/admin/Dashboard';
@@ -74,6 +76,7 @@ import CreateCompany from './pages/dashboard/admin/CreateCompany';
 import AdminManageJobs from './pages/dashboard/admin/AdminManageJobs';
 import ManageCategories from './pages/dashboard/admin/ManageCategories';
 import AdminApplications from './pages/dashboard/admin/AdminApplications';
+import ManageAgreements from './pages/dashboard/admin/ManageAgreements';
 import AdminReports from './pages/dashboard/admin/AdminReports';
 import AdminMessages from './pages/dashboard/admin/AdminMessages';
 import AdminNotifications from './pages/dashboard/admin/AdminNotifications';
@@ -83,6 +86,7 @@ import AdminCertificateVerifications from './pages/dashboard/admin/CertificateVe
 
 // Protected Route Component
 import ProtectedRoute from './components/ProtectedRoute';
+import EmployerProtectedRoute from './components/EmployerProtectedRoute';
 
 const AppRoutes = () => {
   const dispatch = useDispatch();
@@ -150,10 +154,12 @@ const AppRoutes = () => {
           </Route>
 
           {/* Employer Dashboard */}
-          <Route path="/employer" element={<ProtectedRoute allowedRoles={['employer']}><DashboardLayout /></ProtectedRoute>}>
+          <Route path="/employer" element={<EmployerProtectedRoute><DashboardLayout /></EmployerProtectedRoute>}>
             <Route index element={<EmployerDashboard />} />
+            <Route path="agreements" element={<EmployerAgreements />} />
             <Route path="post-job" element={<PostJob />} />
             <Route path="post-job/:id" element={<PostJob />} />
+            <Route path="post-job/checkout" element={<PaymentCheckout />} />
             <Route path="jobs" element={<ManageJobs />} />
             <Route path="manage-jobs" element={<Navigate to="/employer/jobs" replace />} />
             <Route path="applications" element={<Navigate to="/employer/applicants" replace />} />
@@ -177,6 +183,7 @@ const AppRoutes = () => {
             <Route path="companies/new" element={<CreateCompany />} />
             <Route path="jobs" element={<AdminManageJobs />} />
             <Route path="categories" element={<ManageCategories />} />
+            <Route path="agreements" element={<ManageAgreements />} />
             <Route path="applications" element={<AdminApplications />} />
             <Route path="certificates" element={<AdminCertificateVerifications />} />
             <Route path="reports" element={<AdminReports />} />

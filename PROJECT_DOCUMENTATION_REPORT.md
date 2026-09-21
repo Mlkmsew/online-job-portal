@@ -1,6 +1,6 @@
-# ONLINE JOB PORTAL — COMPREHENSIVE PROJECT DOCUMENTATION & PRESENTATION GUIDE
+# EMARE JOB PORTAL — COMPREHENSIVE PROJECT DOCUMENTATION & PRESENTATION GUIDE
 
-**Project Name:** `ethio-job-portal` v1.0.0
+**Project Name:** `emare-job-portal` v1.0.0
 **Purpose:** Connecting Ethiopian Youth with Employment Opportunities
 **Date:** August 2026
 
@@ -120,7 +120,7 @@ R. What USERS Can Do
 ## SECTION 1: PROJECT OVERVIEW
 
 ### What the Project Is
-This is a full-stack web application — an online job portal specifically designed for the Ethiopian job market. It connects three types of users: **job seekers** (youth looking for work), **employers** (companies posting jobs), and **administrators** (platform operators who maintain quality and trust).
+This is a full-stack web application — Emare Job Portal specifically designed for the Ethiopian job market. It connects three types of users: **job seekers** (youth looking for work), **employers** (companies posting jobs), and **administrators** (platform operators who maintain quality and trust).
 
 ### Why It Exists
 Ethiopia has a large youth population seeking employment, but there's a gap between job seekers and employers. This portal bridges that gap with a modern, multilingual platform that supports English, Amharic, and Oromo languages. It also includes features unique to the Ethiopian context such as certificate verification against trusted university records and disability-friendly job filtering.
@@ -153,7 +153,7 @@ Ethiopia has a large youth population seeking employment, but there's a gap betw
 
 ### CONFIRMED FROM CODE: Project Structure
 ```
-online-job-portal/
+emare-job-portal/
 ├── backend/
 │   ├── config/          (5 files: cloudinary, db, email, otpPolicy, socket)
 │   ├── controllers/     (19 controller files)
@@ -183,7 +183,7 @@ online-job-portal/
 ```
 
 ### What I Should Say During Presentation
-> "This is a full-stack MERN application — MongoDB, Express, React, Node.js — built as an online job portal for the Ethiopian market. What makes it unique is that it goes beyond basic job posting: it includes a resume builder, an AI-powered matching algorithm, real-time messaging, and even certificate verification using OCR technology. The entire platform supports three languages and is designed with accessibility in mind."
+> "This is a full-stack MERN application — MongoDB, Express, React, Node.js — built as Emare Job Portal for the Ethiopian market. What makes it unique is that it goes beyond basic job posting: it includes a resume builder, an AI-powered matching algorithm, real-time messaging, and even certificate verification using OCR technology. The entire platform supports three languages and is designed with accessibility in mind."
 
 ---
 
@@ -1780,7 +1780,7 @@ This feature does X here: Manages configuration across development and productio
 
 ## SECTION 55: "WHAT I BUILT" — 3-5 MINUTE PRESENTATION SCRIPT
 
-> "I built an online job portal called EthioJob Portal, designed specifically for the Ethiopian job market. It's a full-stack MERN application — MongoDB, Express, React, and Node.js.
+> "I built Emare Job Portal, designed specifically for the Ethiopian job market. It's a full-stack MERN application — MongoDB, Express, React, and Node.js.
 >
 > **The platform serves three user roles.** Job seekers can create profiles, build resumes, search for jobs, and apply. Employers can create verified company profiles, post jobs, review applicants, and schedule interviews. Administrators maintain platform quality by approving companies and jobs, managing users, and reviewing certificates.
 >

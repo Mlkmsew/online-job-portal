@@ -1,7 +1,7 @@
 {
-  "name": "ethio-job-portal",
+  "name": "emare-job-portal",
   "version": "1.0.0",
-  "description": "OnlineJob Portal - Connecting Ethiopian Youth with Employment Opportunities",
+  "description": "Emare Job Portal - Connecting Ethiopian Youth with Employment Opportunities",
   "main": "backend/index.js",
   "scripts": {
     "start": "node backend/index.js",
@@ -20,11 +20,12 @@
     "nodejs",
     "mongodb"
   ],
-  "author": "OnlineJob Portal Team",
+  "author": "Emare Job Portal Team",
   "license": "MIT",
   "dependencies": {
     "@napi-rs/canvas": "^1.0.8",
     "bcryptjs": "^2.4.3",
+    "chapa-nodejs": "^2.1.1",
     "cloudinary": "^1.41.3",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
@@ -52,6 +53,7 @@
     "pngjs": "^7.0.0",
     "puppeteer-core": "^25.3.0",
     "socket.io": "^4.6.2",
+    "telebirr-sdk": "^1.0.15",
     "tesseract.js": "^5.1.1",
     "xss-clean": "^0.1.4"
   },

@@ -1,5 +1,5 @@
 // ============================================
-// About Us Page - OnlineJob Portal
+// About Us Page - Emare Job Portal
 // Professional About page for the Ethiopian platform
 // ============================================
 import { useState, useEffect } from 'react';
@@ -40,10 +40,10 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-[#F4F8F7] dark:bg-[#0B1220] pb-16 lg:pb-24">
-      <div className="container-custom pt-10 lg:pt-14">
+      <div className="px-4 sm:px-6 lg:px-8 xl:px-12 pt-10 lg:pt-14">
         {/* ===== PAGE TITLE ===== */}
         <h1 className="text-2xl font-bold tracking-tight text-[#14213D] dark:text-gray-100 sm:text-3xl">
-          {t('about.title', { defaultValue: 'About OnlineJob Portal' })}
+          {t('about.title', { defaultValue: 'About Emare Job Portal' })}
         </h1>
 
         {/* ===== HERO CARD ===== */}
@@ -55,12 +55,12 @@ const About = () => {
                 {t('about.eyebrow', { defaultValue: 'About' })}
               </p>
               <h2 className="mt-3 text-3xl font-extrabold leading-tight text-[#14213D] dark:text-gray-100 sm:text-4xl">
-                OnlineJob <span className="text-[#1769E0]">Portal</span>
+                Emare <span className="text-[#1769E0]">Job Portal</span>
               </h2>
               <p className="mt-6 max-w-xl text-base leading-relaxed text-[#334155] dark:text-gray-300">
                 {t('about.heroDescription', {
                   defaultValue:
-                    'OnlineJob Portal is a modern employment marketplace built to empower job seekers and employers with smarter, faster hiring tools. Our platform brings together local talent, curated job opportunities, and career resources in one easy-to-use experience.',
+                    'Emare Job Portal is a modern employment marketplace built to empower job seekers and employers with smarter, faster hiring tools. Our platform brings together local talent, curated job opportunities, and career resources in one easy-to-use experience.',
                 })}
               </p>
             </div>
@@ -133,7 +133,7 @@ const About = () => {
             <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-[#334155] dark:text-gray-300">
               {t('about.visionText', {
                 defaultValue:
-                  'A future where opportunity is easy to find and every candidate can connect with work they love. We want OnlineJob Portal to set the standard for transparent, inclusive, and efficient hiring nationwide.',
+                  'A future where opportunity is easy to find and every candidate can connect with work they love. We want Emare Job Portal to set the standard for transparent, inclusive, and efficient hiring nationwide.',
               })}
             </p>
             <svg

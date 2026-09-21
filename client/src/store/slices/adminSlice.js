@@ -97,6 +97,24 @@ export const rejectAdminJob = createAsyncThunk('admin/rejectJob', async ({ jobId
   }
 });
 
+export const updateAdminJobStatus = createAsyncThunk('admin/updateJobStatus', async ({ jobId, status }, { rejectWithValue }) => {
+  try {
+    await api.patch(`/admin/jobs/${jobId}/status`, { status });
+    return { jobId, status };
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || error.message || 'Failed to update job status');
+  }
+});
+
+export const deleteAdminJob = createAsyncThunk('admin/deleteJob', async (jobId, { rejectWithValue }) => {
+  try {
+    await api.delete(`/admin/jobs/${jobId}`);
+    return jobId;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.message || error.message || 'Failed to delete job');
+  }
+});
+
 export const toggleUserSuspension = createAsyncThunk('admin/toggleUserSuspension', async (userId, { rejectWithValue }) => {
   try {
     const response = await api.put(`/admin/users/${userId}/suspend`);
@@ -297,6 +315,15 @@ const adminSlice = createSlice({
           state.jobs[idx].isApproved = false;
           state.jobs[idx].status = 'pending';
         }
+      })
+      .addCase(updateAdminJobStatus.fulfilled, (state, action) => {
+        const idx = state.jobs.findIndex((j) => j._id === action.payload.jobId);
+        if (idx !== -1) {
+          state.jobs[idx].status = action.payload.status;
+        }
+      })
+      .addCase(deleteAdminJob.fulfilled, (state, action) => {
+        state.jobs = state.jobs.filter((j) => j._id !== action.payload);
       });
   },
 });

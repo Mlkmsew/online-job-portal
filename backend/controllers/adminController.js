@@ -8,6 +8,7 @@ const Application = require('../models/Application');
 const Category = require('../models/Category');
 const Skill = require('../models/Skill');
 const Notification = require('../models/Notification');
+const SystemSettings = require('../models/SystemSettings');
 const { asyncHandler, paginate, escapeRegex, createNotification } = require('../utils/helpers');
 const { AppError } = require('../middleware/errorHandler');
 
@@ -665,13 +666,58 @@ exports.approveJob = asyncHandler(async (req, res, next) => {
 
   const wasAlreadyApproved = job.isApproved;
 
-  // Mark as approved & published
+  // Check job posting fee setting
+  const SystemSettings = require('../models/SystemSettings');
+  const settings = await SystemSettings.getSettings();
+  const feeEnabled = settings.jobPostingFee?.enabled === true;
+
+  // Mark as approved
+  job.isApproved = true;
+
+  // Check if payment is already verified on the job
+  const paymentAlreadyVerified = job.paymentVerifiedAt && job.paymentReference;
+
+  if (feeEnabled && !wasAlreadyApproved && !paymentAlreadyVerified) {
+    // Fee is enabled, this is a new approval, and payment is NOT yet verified
+    // Require payment after admin approval (legacy flow)
+    job.status = 'payment_pending';
+    job.adminNote = req.body?.adminNote || 'Approved by admin. Payment required before publishing.';
+    
+    await job.save({ validateBeforeSave: false });
+
+    // Notify employer that payment is required
+    if (job.postedBy) {
+      try {
+        await createNotification({
+          recipient: job.postedBy,
+          type: 'job_payment_required',
+          title: 'Job Approved - Payment Required',
+          message: `Your job posting "${job.title}" has been approved but requires payment of ${settings.jobPostingFee?.amount || 0} ${settings.jobPostingFee?.currency || 'ETB'} before it can be published.`,
+          link: '/employer/jobs',
+          data: { jobId: job._id },
+          sender: req.user.id,
+        });
+      } catch (notifErr) {
+        console.error('Job payment required notification error:', notifErr.message);
+      }
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Job approved. Payment required before publishing.',
+      paymentRequired: true,
+      job: job
+    });
+    return;
+  }
+
+  // Mark as approved & published (no fee required, already approved, OR payment already verified)
   job.isApproved = true;
   job.status = 'published';
   if (!wasAlreadyApproved) {
     job.publishedAt = new Date();
   }
-  job.adminNote = req.body?.adminNote || 'Approved by admin.';
+  job.adminNote = req.body?.adminNote || (paymentAlreadyVerified ? 'Approved by admin. Payment already verified.' : 'Approved by admin.');
   await job.save({ validateBeforeSave: false });
 
   // Fan-out new_job notifications — only on first approval.
@@ -769,6 +815,66 @@ exports.featureJob = asyncHandler(async (req, res, next) => {
   job.isFeatured = !job.isFeatured;
   await job.save({ validateBeforeSave: false });
   res.status(200).json({ success: true, message: `Job ${job.isFeatured ? 'featured' : 'unfeatured'}.` });
+});
+
+exports.updateJobStatus = asyncHandler(async (req, res, next) => {
+  const { status } = req.body;
+  const validStatuses = ['pending', 'published', 'active', 'draft', 'closed', 'expired', 'paused', 'payment_pending'];
+
+  if (!status || !validStatuses.includes(status)) {
+    return next(new AppError(`Invalid status. Must be one of: ${validStatuses.join(', ')}.`, 400));
+  }
+
+  const job = await Job.findById(req.params.id);
+  if (!job) return next(new AppError('Job not found.', 404));
+
+  const previousStatus = job.status;
+  job.status = status;
+
+  if (status === 'published' && !job.publishedAt) {
+    job.publishedAt = new Date();
+  }
+
+  await job.save({ validateBeforeSave: false });
+
+  // Notify employer of status change
+  if (job.postedBy && previousStatus !== status) {
+    try {
+      const { createNotification } = require('../utils/helpers');
+      const statusMessages = {
+        published: 'Your job posting has been published.',
+        active: 'Your job posting is now active.',
+        paused: 'Your job posting has been paused.',
+        closed: 'Your job posting has been closed.',
+        expired: 'Your job posting has expired.',
+        draft: 'Your job posting has been moved to draft.',
+        pending: 'Your job posting is pending review.',
+        payment_pending: 'Your job posting is approved but requires payment before it can be published.',
+      };
+
+      await createNotification({
+        recipient: job.postedBy,
+        type: 'job_status_changed',
+        title: 'Job status updated',
+        message: `"${job.title}" ${statusMessages[status] || `status changed to ${status}.`}`,
+        link: '/employer/jobs',
+        data: { jobId: job._id, status },
+        sender: req.user.id,
+      });
+    } catch (notifErr) {
+      console.error('Job status change notification error:', notifErr.message);
+    }
+  }
+
+  res.status(200).json({ success: true, message: `Job status updated to ${status}.`, data: job });
+});
+
+exports.deleteJob = asyncHandler(async (req, res, next) => {
+  const job = await Job.findById(req.params.id);
+  if (!job) return next(new AppError('Job not found.', 404));
+
+  await job.deleteOne();
+  res.status(200).json({ success: true, message: 'Job deleted successfully.' });
 });
 
 // ========== CATEGORY MANAGEMENT ==========
@@ -882,6 +988,107 @@ exports.deleteSkill = asyncHandler(async (req, res, next) => {
   if (!skill) return next(new AppError('Skill not found.', 404));
   await skill.deleteOne();
   res.status(200).json({ success: true, message: 'Skill deleted.' });
+});
+
+// ========== SYSTEM SETTINGS ==========
+
+// @desc    Get job posting fee settings
+// @route   GET /api/admin/settings/job-posting-fee
+// @access  Private (Admin)
+exports.getJobPostingFeeSettings = asyncHandler(async (req, res) => {
+  const settings = await SystemSettings.getSettings();
+  // Ensure paymentProvider has a default value for backward compatibility
+  const jobPostingFee = {
+    ...settings.jobPostingFee.toObject ? settings.jobPostingFee.toObject() : settings.jobPostingFee,
+    paymentProvider: settings.jobPostingFee?.paymentProvider ?? 'manual',
+  };
+  res.status(200).json({
+    success: true,
+    data: {
+      jobPostingFee,
+    },
+  });
+});
+
+// @desc    Update job posting fee settings
+// @route   PATCH /api/admin/settings/job-posting-fee
+// @access  Private (Admin)
+exports.updateJobPostingFeeSettings = asyncHandler(async (req, res, next) => {
+  const { enabled, amount, currency, paymentProvider } = req.body;
+
+  const updates = {};
+  if (typeof enabled === 'boolean') updates['jobPostingFee.enabled'] = enabled;
+  if (typeof amount === 'number' && amount >= 0) updates['jobPostingFee.amount'] = amount;
+  if (currency && ['ETB', 'USD', 'EUR'].includes(currency)) updates['jobPostingFee.currency'] = currency;
+  if (paymentProvider && ['chapa', 'manual'].includes(paymentProvider)) updates['jobPostingFee.paymentProvider'] = paymentProvider;
+
+  if (Object.keys(updates).length === 0) {
+    return next(new AppError('No valid settings provided to update.', 400));
+  }
+
+  // Get current settings for audit log
+  const currentSettings = await SystemSettings.getSettings();
+  const previousEnabled = currentSettings.jobPostingFee?.enabled ?? false;
+  const previousAmount = currentSettings.jobPostingFee?.amount ?? 0;
+  const previousCurrency = currentSettings.jobPostingFee?.currency ?? 'ETB';
+  const previousPaymentProvider = currentSettings.jobPostingFee?.paymentProvider ?? 'manual';
+
+  const settings = await SystemSettings.updateSettings(updates, req.user.id);
+
+  // Audit log: Admin changed Job Posting Fee
+  console.log('[AUDIT] Admin changed Job Posting Fee', {
+    adminId: req.user.id,
+    adminEmail: req.user.email,
+    previousValue: { enabled: previousEnabled, amount: previousAmount, currency: previousCurrency, paymentProvider: previousPaymentProvider },
+    newValue: { enabled: settings.jobPostingFee.enabled, amount: settings.jobPostingFee.amount, currency: settings.jobPostingFee.currency, paymentProvider: settings.jobPostingFee.paymentProvider },
+    changedAt: new Date().toISOString(),
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Job posting fee settings updated successfully.',
+    data: {
+      jobPostingFee: settings.jobPostingFee,
+    },
+  });
+});
+
+// @desc    Get platform settings (maintenance mode, registration, etc.)
+// @route   GET /api/admin/settings/platform
+// @access  Private (Admin)
+exports.getPlatformSettings = asyncHandler(async (req, res) => {
+  const settings = await SystemSettings.getSettings();
+  res.status(200).json({
+    success: true,
+    data: {
+      platform: settings.platform,
+    },
+  });
+});
+
+// @desc    Update platform settings
+// @route   PATCH /api/admin/settings/platform
+// @access  Private (Admin)
+exports.updatePlatformSettings = asyncHandler(async (req, res, next) => {
+  const { maintenanceMode, allowRegistration } = req.body;
+
+  const updates = {};
+  if (typeof maintenanceMode === 'boolean') updates['platform.maintenanceMode'] = maintenanceMode;
+  if (typeof allowRegistration === 'boolean') updates['platform.allowRegistration'] = allowRegistration;
+
+  if (Object.keys(updates).length === 0) {
+    return next(new AppError('No valid settings provided to update.', 400));
+  }
+
+  const settings = await SystemSettings.updateSettings(updates, req.user.id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Platform settings updated successfully.',
+    data: {
+      platform: settings.platform,
+    },
+  });
 });
 
 module.exports = exports;

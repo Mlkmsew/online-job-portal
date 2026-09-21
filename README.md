@@ -1,8 +1,8 @@
-# 🌍 OnlineJob Portal
+# 🌍 Emare Job Portal
 
 **Connecting Ethiopian Youth with Employment Opportunities**
 
-A complete, production-ready Online Job Portal Management System built with the MERN Stack (MongoDB, Express.js, React.js, Node.js).
+A complete, production-ready Emare Job Portal Management System built with the MERN Stack (MongoDB, Express.js, React.js, Node.js).
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -381,7 +381,7 @@ EMAIL_PORT=587
 EMAIL_SECURE=false
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_app_password
-EMAIL_FROM=OnlineJob Portal <noreply@ethiojob.com>
+EMAIL_FROM=Emare Job Portal <noreply@ethiojob.com>
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
@@ -608,7 +608,7 @@ This project is licensed under the MIT License.
 
 ## 👨‍💻 Author
 
-**OnlineJob Portal Team**
+**Emare Job Portal Team**
 
 ---
 

@@ -31,11 +31,11 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E8F0FE] to-secondary-50 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <FiBriefcase className="w-10 h-10 text-primary-500 mx-auto mb-2" />
-          <h1 className="text-3xl font-bold text-primary-500">{t('common.appName')}</h1>
+          <FiBriefcase className="w-10 h-10 text-[#1769E0] dark:text-blue-400 mx-auto mb-2" />
+          <h1 className="text-3xl font-bold text-[#1769E0] dark:text-blue-400">{t('common.appName')}</h1>
         </div>
 
         <div className="card">
@@ -69,12 +69,12 @@ const ForgotPassword = () => {
             </>
           ) : (
             <div className="text-center">
-              <p className="text-green-600 mb-4 dark:text-emerald-400">✅ {t('auth.verifyEmail')}</p>
+              <p className="text-[#1769E0] mb-4 dark:text-blue-400">✅ {t('auth.verifyEmail')}</p>
             </div>
           )}
 
           <p className="text-center mt-6 text-sm">
-            <Link to="/login" className="text-primary-500 hover:underline">
+            <Link to="/login" className="text-[#1769E0] dark:text-blue-400 hover:underline">
               {t('common.back')} {t('auth.login')}
             </Link>
           </p>

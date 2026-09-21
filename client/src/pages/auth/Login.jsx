@@ -1,5 +1,5 @@
 // ============================================
-// Login Page - OnlineJob Portal
+// Login Page - Emare Job Portal
 // ============================================
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -58,7 +58,7 @@ const Login = () => {
       {/* ===== CENTERED LOGIN CARD ===== */}
       <div className="w-full max-w-[480px] overflow-hidden rounded-[32px] border border-blue-100/70 bg-white shadow-[0_35px_90px_-30px_rgba(47,77,172,0.45)] ring-1 ring-white/60 dark:border-gray-800 dark:bg-gray-900 dark:shadow-[0_35px_90px_-30px_rgba(0,0,0,0.6)] dark:ring-white/10">
         <div className="flex w-full flex-col bg-white dark:bg-gray-900">
-          <div className="mx-auto flex w-full max-w-[420px] flex-col items-center justify-center px-8 py-12 sm:px-12">
+          <div className="mx-auto flex w-full max-w-[420px] flex-col items-center justify-center px-6 py-8 sm:px-10 sm:py-10">
           {/* Logo icon */}
           <div className="flex justify-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-blue-100 bg-white shadow-md shadow-blue-100/60 ring-8 ring-blue-50 dark:border-gray-700 dark:bg-gray-800 dark:shadow-none dark:ring-gray-900">

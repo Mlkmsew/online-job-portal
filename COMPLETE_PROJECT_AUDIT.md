@@ -1,12 +1,12 @@
-# COMPLETE PROJECT AUDIT — EthioJob Portal
-## Online Job Portal for Ethiopian Youth
+# COMPLETE PROJECT AUDIT — Emare Job Portal
+## Emare Job Portal for Ethiopian Youth
 
 ---
 
 # PART 1 — COMPLETE PROJECT STRUCTURE
 
 ```
-online-job-portal/
+emare-job-portal/
 ├── package.json                          # Root: scripts (dev, build, seed), concurrently runs backend+frontend
 ├── README.md
 ├── PROJECT_DOCUMENTATION_REPORT.md
@@ -1541,10 +1541,10 @@ Uses `mongodb-memory-server` for in-memory MongoDB during tests.
 # PART 27 — FINAL PRESENTATION GUIDE
 
 ## A. 30-Second Explanation
-"EthioJob Portal is a full-stack MERN application connecting Ethiopian youth with employers. It features AI-powered job matching, resume building with 12 templates, real-time messaging, certificate verification with OCR, and a complete admin moderation system."
+"Emare Job Portal is a full-stack MERN application connecting Ethiopian youth with employers. It features AI-powered job matching, resume building with 12 templates, real-time messaging, certificate verification with OCR, and a complete admin moderation system."
 
 ## B. 1-Minute Explanation
-"Ethiopian youth face high unemployment with limited access to relevant job opportunities. EthioJob Portal solves this by providing a platform where job seekers can build resumes, get AI-matched job recommendations based on their skills and experience, and apply directly. Employers can post jobs, review applicants with match scores, and conduct interviews. Admins moderate all content. The platform supports Amharic, Oromo, and English, includes real-time messaging, certificate verification with OCR, and a fully accessible interface."
+"Ethiopian youth face high unemployment with limited access to relevant job opportunities. Emare Job Portal solves this by providing a platform where job seekers can build resumes, get AI-matched job recommendations based on their skills and experience, and apply directly. Employers can post jobs, review applicants with match scores, and conduct interviews. Admins moderate all content. The platform supports Amharic, Oromo, and English, includes real-time messaging, certificate verification with OCR, and a fully accessible interface."
 
 ## C. 3-5 Minute Explanation
 

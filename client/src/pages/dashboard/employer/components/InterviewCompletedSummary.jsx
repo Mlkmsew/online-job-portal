@@ -14,7 +14,8 @@ const InterviewCompletedSummary = ({ interview, evaluation, onViewProfile, onBac
       </div>
 
       <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200">
-        <table className="min-w-full text-left text-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
           <thead className="bg-slate-50 text-slate-600">
             <tr>
               <th className="px-4 py-3">Candidate</th>
@@ -36,6 +37,7 @@ const InterviewCompletedSummary = ({ interview, evaluation, onViewProfile, onBac
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">

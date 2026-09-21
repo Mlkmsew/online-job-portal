@@ -331,7 +331,7 @@ const JobDetails = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0D1624] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="w-full max-w-full px-0 sm:px-4">
+      <div className="w-full">
         <button
           onClick={() => navigate('/jobs')}
           className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[#1769E0] dark:text-blue-400 transition hover:text-[#1769E0]"
